@@ -38,6 +38,7 @@ const projects = [
     category: "Hôtellerie",
     description: "Visite virtuelle complète de l'hôtel 5 étoiles avec chambres, lobby et espaces communs.",
     size: "2500 m²",
+    tourUrl: "https://my.matterport.com/show/?m=t84zwhnXjvJ",
   },
   {
     id: 2,
@@ -46,6 +47,7 @@ const projects = [
     category: "Immobilier",
     description: "Appartement de luxe avec vue panoramique sur le lac. Visite 3D avec plans interactifs.",
     size: "280 m²",
+    tourUrl: "https://my.matterport.com/show/?m=t84zwhnXjvJ",
   },
   {
     id: 3,
@@ -54,6 +56,7 @@ const projects = [
     category: "Commerce",
     description: "Showroom de mode haut de gamme capturé pour expérience shopping virtuel.",
     size: "450 m²",
+    tourUrl: "https://my.matterport.com/show/?m=t84zwhnXjvJ",
   },
   {
     id: 4,
@@ -62,6 +65,7 @@ const projects = [
     category: "Culture",
     description: "Exposition permanente digitalisée pour visites à distance et archives numériques.",
     size: "800 m²",
+    tourUrl: "https://my.matterport.com/show/?m=t84zwhnXjvJ",
   },
   {
     id: 5,
@@ -70,6 +74,7 @@ const projects = [
     category: "Restaurant",
     description: "Capture de l'ambiance unique du restaurant pour prévisualisation et événements.",
     size: "320 m²",
+    tourUrl: "https://my.matterport.com/show/?m=t84zwhnXjvJ",
   },
   {
     id: 6,
@@ -78,6 +83,7 @@ const projects = [
     category: "Entreprise",
     description: "Bureaux modernes capturés pour recrutement virtuel et visite clients.",
     size: "1200 m²",
+    tourUrl: "https://my.matterport.com/show/?m=t84zwhnXjvJ",
   },
 ];
 
@@ -302,7 +308,7 @@ const Portfolio = () => {
           </DialogHeader>
           <div className="aspect-video w-full">
             <iframe
-              src="https://my.matterport.com/show/?m=t84zwhnXjvJ"
+              src={selectedProject?.tourUrl}
               width="100%"
               height="100%"
               frameBorder="0"
