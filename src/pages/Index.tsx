@@ -107,7 +107,7 @@ const Index = () => {
               transition={{ duration: 0.6 }}
             >
               <span className="inline-block px-4 py-2 rounded-full bg-primary-foreground/10 text-primary-foreground text-sm font-medium mb-6 backdrop-blur-sm border border-primary-foreground/20">
-                ✨ Technologie Matterport Pro 3
+                ✨ 
               </span>
             </motion.div>
 
@@ -143,10 +143,10 @@ const Index = () => {
                   <ArrowRight className="w-5 h-5" />
                 </Link>
               </Button>
-              <Button variant="hero-outline" size="lg" className="flex items-center gap-2">
+             {/* <Button variant="hero-outline" size="lg" className="flex items-center gap-2">
                 <Play className="w-5 h-5" />
                 Voir une Démo
-              </Button>
+              </Button>  */}
             </motion.div>
           </div>
         </div>
@@ -173,7 +173,7 @@ const Index = () => {
         <div className="container mx-auto px-4 lg:px-8">
           <SectionHeading
             badge="Nos Avantages"
-            title="Pourquoi Choisir Visite3D?"
+            title="Pourquoi Choisir PrimeSpace ?"
             description="La technologie Matterport Pro 3 offre une qualité inégalée pour vos visites virtuelles"
           />
 

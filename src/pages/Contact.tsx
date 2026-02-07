@@ -22,13 +22,13 @@ const contactInfo = [
   {
     icon: Phone,
     title: "Téléphone",
-    value: "+216 12 345 678",
-    link: "tel:+21612345678",
+    value: "+353 89 498 5067",
+    link: "tel:+353 89 498 5067",
   },
   {
     icon: Mail,
     title: "Email",
-    value: "contact@visite3d.tn",
+    value: "info@primespace.studio",
     link: "mailto:info@primespace.studio",
   },
   {
@@ -316,39 +316,11 @@ const Contact = () => {
         <div className="container mx-auto px-4 lg:px-8">
           <SectionHeading
             badge="Localisation"
-            title="Basés à Sousse, Nous Intervenons Partout"
+            title="Basés à Tunis, Nous Intervenons Partout"
             description="Notre équipe se déplace sur tout le territoire tunisien pour vos projets"
           />
 
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="max-w-4xl mx-auto"
-          >
-            <div className="aspect-[16/9] rounded-2xl overflow-hidden shadow-elevated bg-muted flex items-center justify-center">
-              <div className="text-center p-8">
-                <MapPin className="w-16 h-16 text-secondary mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-foreground mb-2">
-                  Tunis, Tunisie
-                </h3>
-                <p className="text-muted-foreground mb-4">
-                  Siège social avec interventions sur tout le territoire
-                </p>
-                <Button variant="outline" asChild>
-                  <a
-                    href="https://maps.google.com/?q=Tunis,Tunisia"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2"
-                  >
-                    Voir sur Google Maps
-                    <ArrowRight className="w-4 h-4" />
-                  </a>
-                </Button>
-              </div>
-            </div>
-          </motion.div>
+        
         </div>
       </section>
 

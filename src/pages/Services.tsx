@@ -249,8 +249,8 @@ const Services = () => {
         </div>
       </section>
 
-      {/* Pricing */}
-      <section className="py-24 bg-background">
+      {/* Pricing 
+      {/* <section className="py-24 bg-background">
         <div className="container mx-auto px-4 lg:px-8">
           <SectionHeading
             badge="Tarifs"
@@ -318,7 +318,7 @@ const Services = () => {
             ))}
           </div>
         </div>
-      </section>
+      </section>*/}
 
       {/* Industries */}
       <section className="py-24 bg-muted/50">
