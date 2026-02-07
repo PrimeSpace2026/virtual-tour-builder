@@ -6,6 +6,12 @@ import { Layout } from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { SectionHeading } from "@/components/SectionHeading";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 import portfolioHotel from "@/assets/portfolio-hotel.jpg";
 import portfolioApartment from "@/assets/portfolio-apartment.jpg";
@@ -77,6 +83,7 @@ const projects = [
 
 const Portfolio = () => {
   const [activeCategory, setActiveCategory] = useState("Tous");
+  const [selectedProject, setSelectedProject] = useState<typeof projects[0] | null>(null);
 
   const filteredProjects = activeCategory === "Tous"
     ? projects
@@ -151,7 +158,8 @@ const Portfolio = () => {
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: index * 0.1 }}
                 layout
-                className="group rounded-2xl overflow-hidden bg-card shadow-soft hover:shadow-elevated transition-all duration-500"
+                className="group rounded-2xl overflow-hidden bg-card shadow-soft hover:shadow-elevated transition-all duration-500 cursor-pointer"
+                onClick={() => setSelectedProject(project)}
               >
                 <div className="relative aspect-[4/3] overflow-hidden">
                   <img
@@ -164,9 +172,6 @@ const Portfolio = () => {
                       <Button variant="hero" size="sm" className="flex items-center gap-2">
                         <Play className="w-4 h-4" />
                         Explorer
-                      </Button>
-                      <Button variant="hero-outline" size="sm">
-                        <ExternalLink className="w-4 h-4" />
                       </Button>
                     </div>
                   </div>
@@ -186,10 +191,10 @@ const Portfolio = () => {
                     <span className="text-sm text-secondary font-medium">
                       {project.size}
                     </span>
-                    <button className="text-sm text-foreground hover:text-secondary transition-colors flex items-center gap-1">
-                      Voir détails
-                      <ArrowRight className="w-4 h-4" />
-                    </button>
+                    <span className="text-sm text-foreground hover:text-secondary transition-colors flex items-center gap-1">
+                      Voir la visite
+                      <Play className="w-4 h-4" />
+                    </span>
                   </div>
                 </div>
               </motion.div>
@@ -286,6 +291,28 @@ const Portfolio = () => {
           </div>
         </div>
       </section>
+
+      {/* Matterport Tour Modal */}
+      <Dialog open={!!selectedProject} onOpenChange={(open) => !open && setSelectedProject(null)}>
+        <DialogContent className="max-w-5xl w-[95vw] p-0 gap-0 overflow-hidden">
+          <DialogHeader className="p-4 pb-2">
+            <DialogTitle className="font-display">
+              {selectedProject?.title}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="aspect-video w-full">
+            <iframe
+              src="https://my.matterport.com/show/?m=t84zwhnXjvJ"
+              width="100%"
+              height="100%"
+              frameBorder="0"
+              allowFullScreen
+              allow="xr-spatial-tracking"
+              className="w-full h-full"
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 };
