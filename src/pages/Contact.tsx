@@ -29,7 +29,7 @@ const contactInfo = [
     icon: Mail,
     title: "Email",
     value: "contact@visite3d.tn",
-    link: "mailto:contact@visite3d.tn",
+    link: "mailto:info@primespace.studio",
   },
   {
     icon: MapPin,
@@ -40,7 +40,7 @@ const contactInfo = [
   {
     icon: Clock,
     title: "Horaires",
-    value: "Lun-Sam: 9h-18h",
+    value: "Lun-Sam: 8h-18h",
     link: null,
   },
 ];
@@ -76,7 +76,7 @@ const Contact = () => {
 
     toast({
       title: "Message envoyé! ✅",
-      description: "Nous vous répondrons dans les plus brefs délais.",
+      description: "Nous vous répondrons dans cccccccles plus brefs délais.",
     });
 
     setFormData({
@@ -179,7 +179,7 @@ const Contact = () => {
                 </p>
                 <Button variant="secondary" className="w-full" asChild>
                   <a
-                    href="https://wa.me/21612345678"
+                    href="https://wa.me/00353894985067?text=Bonjour%2C%20je%20souhaite%20avoir%20plus%20d'informations%20sur%20vos%20services%20de%20visites%20virtuelles%203D."
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center justify-center gap-2"
@@ -316,7 +316,7 @@ const Contact = () => {
         <div className="container mx-auto px-4 lg:px-8">
           <SectionHeading
             badge="Localisation"
-            title="Basés à Tunis, Nous Intervenons Partout"
+            title="Basés à Sousse, Nous Intervenons Partout"
             description="Notre équipe se déplace sur tout le territoire tunisien pour vos projets"
           />
 
