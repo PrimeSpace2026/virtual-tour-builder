@@ -47,7 +47,7 @@ const projects = [
     category: "Immobilier",
     description: "Appartement de luxe avec vue panoramique sur le lac. Visite 3D avec plans interactifs.",
     size: "280 m²",
-    tourUrl: "https://my.matterport.com/show/?m=t84zwhnXjvJ",
+    tourUrl: "https://my.matterport.com/show/?m=1aWQXDdxWnG",
   },
   {
     id: 3,
@@ -222,7 +222,7 @@ const Portfolio = () => {
         </div>
       </section>
 
-      {/* Embedded Tour Demo */}
+      {/* Embedded Tour Demo 
       <section className="py-24 bg-muted/50">
         <div className="container mx-auto px-4 lg:px-8">
           <SectionHeading
@@ -257,7 +257,7 @@ const Portfolio = () => {
             </p>
           </motion.div>
         </div>
-      </section>
+      </section>*/}
 
       {/* CTA */}
       <section className="py-24 bg-gradient-hero">

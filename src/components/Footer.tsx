@@ -37,22 +37,22 @@ export const Footer = () => {
           <div className="lg:col-span-2">
             <Link to="/" className="flex items-center gap-2 mb-6">
               <div className="w-10 h-10 rounded-xl bg-gradient-accent flex items-center justify-center">
-                <span className="text-secondary-foreground font-display font-bold text-lg">V3</span>
+                <span className="text-secondary-foreground font-display font-bold text-lg">PS</span>
               </div>
-              <span className="font-display font-bold text-xl">Visite3D</span>
+              <span className="font-display font-bold text-xl">PrimeSpace</span>
             </Link>
             <p className="text-primary-foreground/70 mb-6 max-w-sm">
-              Transformez vos espaces en expériences immersives avec la technologie Matterport Pro 3. 
+              Transformez vos espaces en expériences immersives. 
               Visites virtuelles 3D professionnelles en Tunisie.
             </p>
             <div className="space-y-3">
-              <a href="tel:+21612345678" className="flex items-center gap-3 text-primary-foreground/70 hover:text-secondary transition-colors">
+              <a href="tel:+353894985067" className="flex items-center gap-3 text-primary-foreground/70 hover:text-secondary transition-colors">
                 <Phone className="w-5 h-5" />
                 +216 12 345 678
               </a>
-              <a href="mailto:contact@visite3d.tn" className="flex items-center gap-3 text-primary-foreground/70 hover:text-secondary transition-colors">
+              <a href="mailto:info@primespace.studio" className="flex items-center gap-3 text-primary-foreground/70 hover:text-secondary transition-colors">
                 <Mail className="w-5 h-5" />
-                contact@visite3d.tn
+                info@primespace.studio
               </a>
               <div className="flex items-center gap-3 text-primary-foreground/70">
                 <MapPin className="w-5 h-5" />

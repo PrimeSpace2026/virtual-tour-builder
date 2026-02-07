@@ -47,13 +47,13 @@ export const Navbar = () => {
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2">
             <div className="w-10 h-10 rounded-xl bg-gradient-accent flex items-center justify-center">
-              <span className="text-secondary-foreground font-display font-bold text-lg">V3</span>
+              <span className="text-secondary-foreground font-display font-bold text-lg">PS</span>
             </div>
             <span className={cn(
               "font-display font-bold text-xl transition-colors",
               scrolled ? "text-foreground" : "text-primary-foreground"
             )}>
-              Visite3D
+              PrimeSpace
             </span>
           </Link>
 
