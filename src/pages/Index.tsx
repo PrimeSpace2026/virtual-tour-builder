@@ -21,7 +21,7 @@ const features = [
   {
     icon: Scan,
     title: "Capture 3D Précise",
-    description: "Technologie Matterport Pro 3 pour une reproduction fidèle de chaque détail de votre espace.",
+    description: "Technologie intelligente pour une reproduction fidèle de chaque détail de votre espace.",
   },
   {
     icon: Eye,
