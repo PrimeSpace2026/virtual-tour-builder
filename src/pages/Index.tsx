@@ -58,10 +58,10 @@ const features = [
 ];
 
 const projects = [
-  { image: portfolioHotel, title: "Hôtel The Residence", category: "Hôtellerie", tourUrl: "https://my.matterport.com/show/?m=t84zwhnXjvJ" },
-  { image: portfolioApartment, title: "Penthouse Lac 2", category: "Immobilier", tourUrl: "https://my.matterport.com/show/?m=1aWQXDdxWnG" },
-  { image: portfolioRetail, title: "Boutique Mode", category: "Commerce", tourUrl: "https://my.matterport.com/show/?m=t84zwhnXjvJ" },
-  { image: portfolioMuseum, title: "Musée du Bardo", category: "Culture", tourUrl: "https://my.matterport.com/show/?m=t84zwhnXjvJ" },
+  { image: portfolioHotel, title: "Clayton hotel Belfast", category: "Hôtellerie", tourUrl: "https://my.matterport.com/show/?m=1aWQXDdxWnG" },
+  { image: portfolioApartment, title: "Villa Ireland", category: "Immobilier", tourUrl: "https://my.matterport.com/show/?m=t84zwhnXjvJ" },
+  { image: portfolioRetail, title: "hard rock cafe", category: "Restaurant", tourUrl: "https://my.matterport.com/show/?m=RMhsBq27hzy" },
+  { image: portfolioMuseum, title: "Westwood Gym", category: "Gym", tourUrl: "https://my.matterport.com/show/?m=8VnahNUYHfX" },
 ];
 
 const testimonials = [
