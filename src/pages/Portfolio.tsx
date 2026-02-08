@@ -47,7 +47,7 @@ const projects = [
     category: "Immobilier",
     description: "Appartement de luxe avec vue panoramique sur le lac. Visite 3D avec plans interactifs.",
     size: "280 m²",
-    tourUrl: "https://my.matterport.com/show/?m=1aWQXDdxWnG",
+    tourUrl: "https://my.matterport.com/show/?m=t84zwhnXjvJ",
   },
   {
     id: 3,
@@ -222,42 +222,7 @@ const Portfolio = () => {
         </div>
       </section>
 
-      {/* Embedded Tour Demo 
-      <section className="py-24 bg-muted/50">
-        <div className="container mx-auto px-4 lg:px-8">
-          <SectionHeading
-            badge="Démo Interactive"
-            title="Essayez Une Visite Virtuelle"
-            description="Découvrez l'expérience immersive Matterport directement depuis cette page"
-          />
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="max-w-5xl mx-auto"
-          >
-            <div className="aspect-video rounded-2xl overflow-hidden shadow-elevated bg-primary/10 flex items-center justify-center">
-              <div className="text-center">
-                <Play className="w-16 h-16 text-secondary mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-foreground mb-2">
-                  Visite Virtuelle Interactive
-                </h3>
-                <p className="text-muted-foreground mb-6">
-                  Cliquez pour charger une démonstration Matterport
-                </p>
-                <Button variant="secondary">
-                  Charger la Visite
-                </Button>
-              </div>
-            </div>
-            <p className="text-center text-sm text-muted-foreground mt-4">
-              💡 Astuce: Utilisez votre souris pour naviguer, la molette pour zoomer, 
-              et cliquez sur les cercles pour vous déplacer.
-            </p>
-          </motion.div>
-        </div>
-      </section>*/}
+     
 
       {/* CTA */}
       <section className="py-24 bg-gradient-hero">
