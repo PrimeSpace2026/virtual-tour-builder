@@ -25,90 +25,90 @@ import { WhatsAppButton } from "@/components/WhatsAppButton";
 const benefits = [
   {
     icon: Globe,
-    title: "Explore Anytime, Anywhere",
+    title: "Explorez à Tout Moment, Où Que Vous Soyez",
     description:
-      "Visit the space remotely without travel or scheduling. Whether it's midnight or midday, the digital twin is always open for you.",
+      "Visitez l'espace à distance sans déplacement ni prise de rendez-vous. Que ce soit en pleine nuit ou en plein jour, le jumeau numérique est toujours accessible.",
   },
   {
     icon: Ruler,
-    title: "True Understanding of the Space",
+    title: "Compréhension Réelle de l'Espace",
     description:
-      "Get accurate layouts, room sizes, and spatial flow — not just curated photos that hide the real picture.",
+      "Obtenez des agencements précis, les dimensions des pièces et la circulation — pas seulement des photos sélectionnées qui cachent la réalité.",
   },
   {
     icon: ShieldCheck,
-    title: "More Confidence, Fewer Surprises",
+    title: "Plus de Confiance, Moins de Surprises",
     description:
-      "What you see online closely matches the real space. Walk through every corner before you commit.",
+      "Ce que vous voyez en ligne correspond fidèlement à l'espace réel. Parcourez chaque recoin avant de vous engager.",
   },
   {
     icon: Clock,
-    title: "Save Time & Effort",
+    title: "Gagnez du Temps et de l'Énergie",
     description:
-      "Shortlist faster and eliminate unnecessary physical visits. Focus only on spaces that truly match your needs.",
+      "Présélectionnez plus vite et éliminez les visites physiques inutiles. Concentrez-vous uniquement sur les espaces qui correspondent à vos besoins.",
   },
   {
     icon: Eye,
-    title: "Build Trust Through Transparency",
+    title: "Confiance Grâce à la Transparence",
     description:
-      "Nothing is hidden. Inspect every detail freely and feel confident that you're seeing the full picture.",
+      "Rien n'est caché. Inspectez chaque détail librement et soyez certain de voir l'ensemble du tableau.",
   },
   {
     icon: Heart,
-    title: "Stronger Emotional Connection",
+    title: "Connexion Émotionnelle Renforcée",
     description:
-      "The immersive experience helps you imagine yourself in the space — picture your furniture, your life, your business there.",
+      "L'expérience immersive vous aide à vous projeter dans l'espace — imaginez vos meubles, votre vie, votre activité sur place.",
   },
   {
     icon: Brain,
-    title: "Better Decisions, Lower Risk",
+    title: "Meilleures Décisions, Moins de Risques",
     description:
-      "Make informed choices with less uncertainty. Reduce the chance of regret by exploring thoroughly before deciding.",
+      "Faites des choix éclairés avec moins d'incertitude. Réduisez les regrets en explorant minutieusement avant de décider.",
   },
   {
     icon: Share2,
-    title: "Easy to Share & Collaborate",
+    title: "Partage et Collaboration Faciles",
     description:
-      "Share the digital twin instantly with family, partners, or stakeholders. Everyone can explore independently.",
+      "Partagez le jumeau numérique instantanément avec votre famille, partenaires ou collaborateurs. Chacun peut explorer indépendamment.",
   },
   {
     icon: LayoutIcon,
-    title: "Plan & Visualize Ahead of Time",
+    title: "Planifiez et Visualisez à l'Avance",
     description:
-      "Use measurements and detailed views to plan furniture placement, layouts, or renovations before moving in.",
+      "Utilisez les mesures et vues détaillées pour planifier l'aménagement, les agencements ou les rénovations avant d'emménager.",
   },
   {
     icon: Accessibility,
-    title: "Accessible for Everyone",
+    title: "Accessible à Tous",
     description:
-      "Evaluate spaces without physical barriers or mobility limitations. Everyone gets equal access to explore.",
+      "Évaluez les espaces sans barrières physiques ni limitations de mobilité. Tout le monde a un accès égal pour explorer.",
   },
 ];
 
 const industries = [
   {
     icon: Building2,
-    title: "Real Estate",
+    title: "Immobilier",
     description:
-      "Buyers and tenants can tour properties remotely, shortlist with confidence, and make faster decisions without multiple site visits.",
+      "Les acheteurs et locataires peuvent visiter les biens à distance, présélectionner avec confiance et prendre des décisions plus rapides sans multiplier les visites.",
   },
   {
     icon: Hotel,
-    title: "Hospitality",
+    title: "Hôtellerie",
     description:
-      "Travelers can explore hotel rooms, lobbies, and amenities before booking, leading to higher satisfaction and fewer complaints.",
+      "Les voyageurs peuvent explorer les chambres, halls et équipements avant de réserver, pour une satisfaction accrue et moins de déceptions.",
   },
   {
     icon: Store,
-    title: "Retail",
+    title: "Commerce",
     description:
-      "Retail decision-makers can evaluate store layouts, foot traffic flow, and space potential without being on-site.",
+      "Les décideurs peuvent évaluer les agencements de magasins, les flux de circulation et le potentiel de l'espace sans se déplacer.",
   },
   {
     icon: Briefcase,
-    title: "Commercial & Office",
+    title: "Bureaux & Espaces Commerciaux",
     description:
-      "Teams can assess office spaces collaboratively, measure areas for fit-out planning, and align stakeholders remotely.",
+      "Les équipes peuvent évaluer les espaces de travail ensemble, mesurer les surfaces pour l'aménagement et aligner les parties prenantes à distance.",
   },
 ];
 
@@ -144,7 +144,7 @@ const Benefits = () => {
               transition={{ duration: 0.5 }}
               className="inline-block px-4 py-1.5 rounded-full bg-primary-foreground/10 text-primary-foreground text-sm font-medium mb-6 backdrop-blur-sm border border-primary-foreground/20"
             >
-              Customer Benefits
+              Avantages Clients
             </motion.span>
 
             <motion.h1
@@ -153,8 +153,8 @@ const Benefits = () => {
               transition={{ duration: 0.6, delay: 0.1 }}
               className="text-4xl md:text-5xl lg:text-6xl font-display font-bold text-primary-foreground mb-6 leading-tight"
             >
-              See It. Feel It.{" "}
-              <span className="text-gradient-accent">Decide with Confidence.</span>
+              Voyez. Ressentez.{" "}
+              <span className="text-gradient-accent">Décidez en Toute Confiance.</span>
             </motion.h1>
 
             <motion.p
@@ -163,7 +163,7 @@ const Benefits = () => {
               transition={{ duration: 0.6, delay: 0.2 }}
               className="text-lg md:text-xl text-primary-foreground/80 max-w-2xl mx-auto"
             >
-              Matterport digital twins let you explore any space remotely with full spatial accuracy — so you can make smarter decisions without stepping foot inside.
+              Les jumeaux numériques Matterport vous permettent d'explorer n'importe quel espace à distance avec une précision spatiale totale — pour prendre de meilleures décisions sans vous déplacer.
             </motion.p>
           </div>
         </div>
@@ -173,9 +173,9 @@ const Benefits = () => {
       <section className="py-24 bg-background">
         <div className="container mx-auto px-4 lg:px-8">
           <SectionHeading
-            badge="Why Customers Love It"
-            title="Benefits That Make a Real Difference"
-            description="Every benefit is designed around what matters most to you — clarity, confidence, and convenience."
+            badge="Pourquoi Nos Clients l'Adorent"
+            title="Des Avantages Qui Font la Différence"
+            description="Chaque avantage est conçu autour de ce qui compte le plus pour vous — clarté, confiance et commodité."
           />
 
           <motion.div
@@ -210,9 +210,9 @@ const Benefits = () => {
       <section className="py-24 bg-muted/50">
         <div className="container mx-auto px-4 lg:px-8">
           <SectionHeading
-            badge="Industry Examples"
-            title="How Customers Benefit Across Industries"
-            description="From real estate to hospitality, digital twins empower customers in every sector."
+            badge="Exemples par Secteur"
+            title="Comment les Clients en Profitent dans Chaque Secteur"
+            description="De l'immobilier à l'hôtellerie, les jumeaux numériques renforcent l'expérience client dans tous les domaines."
           />
 
           <div className="grid sm:grid-cols-2 gap-6 max-w-4xl mx-auto">
@@ -252,7 +252,7 @@ const Benefits = () => {
               viewport={{ once: true }}
               className="text-3xl md:text-4xl lg:text-5xl font-display font-bold text-primary-foreground mb-6"
             >
-              Feel Informed. Feel Confident. Feel in Control.
+              Informé. Confiant. Maître de Vos Décisions.
             </motion.h2>
             <motion.p
               initial={{ opacity: 0, y: 20 }}
@@ -261,7 +261,7 @@ const Benefits = () => {
               transition={{ delay: 0.1 }}
               className="text-lg text-primary-foreground/70 mb-10"
             >
-              Matterport digital twins give you everything you need to evaluate, compare, and decide — all before your first physical visit.
+              Les jumeaux numériques Matterport vous offrent tout ce dont vous avez besoin pour évaluer, comparer et décider — avant même votre première visite physique.
             </motion.p>
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -272,12 +272,12 @@ const Benefits = () => {
             >
               <Button variant="hero" size="lg" asChild>
                 <Link to="/contact" className="flex items-center gap-2">
-                  Get Started Today
+                  Commencer Aujourd'hui
                   <ArrowRight className="w-5 h-5" />
                 </Link>
               </Button>
               <Button variant="hero-outline" size="lg" asChild>
-                <Link to="/portfolio">Explore Our Portfolio</Link>
+                <Link to="/portfolio">Découvrir Notre Portfolio</Link>
               </Button>
             </motion.div>
           </div>
