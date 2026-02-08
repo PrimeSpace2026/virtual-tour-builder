@@ -178,33 +178,7 @@ const Index = () => {
         </motion.div>
       </section>
 
-      {/* Features Section */}
-      <section className="py-24 bg-background">
-        <div className="container mx-auto px-4 lg:px-8">
-          <SectionHeading
-            badge="Nos Avantages"
-            title="Pourquoi Choisir PrimeSpace ?"
-            description="Notre technologie offre une qualité inégalée pour vos visites virtuelles"
-          />
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {features.map((feature, index) => (
-              <FeatureCard
-                key={feature.title}
-                icon={feature.icon}
-                title={feature.title}
-                description={feature.description}
-                delay={index * 0.1}
-              />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Stats Section */}
-      <StatsSection />
-
-      {/* Portfolio Preview */}
+ {/* Portfolio Preview */}
       <section className="py-24 bg-background">
         <div className="container mx-auto px-4 lg:px-8">
           <SectionHeading
@@ -242,6 +216,33 @@ const Index = () => {
           </motion.div>
         </div>
       </section>
+      {/* Features Section */}
+      <section className="py-24 bg-background">
+        <div className="container mx-auto px-4 lg:px-8">
+          <SectionHeading
+            badge="Nos Avantages"
+            title="Pourquoi Choisir PrimeSpace ?"
+            description="Notre technologie offre une qualité inégalée pour vos visites virtuelles"
+          />
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {features.map((feature, index) => (
+              <FeatureCard
+                key={feature.title}
+                icon={feature.icon}
+                title={feature.title}
+                description={feature.description}
+                delay={index * 0.1}
+              />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Stats Section */}
+      <StatsSection />
+
+     
 
       {/* Testimonials */}
       <section className="py-24 bg-muted/50">
