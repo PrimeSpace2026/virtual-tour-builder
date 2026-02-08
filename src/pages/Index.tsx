@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { ArrowRight, Play, Scan, Eye, Smartphone, Globe, Zap, Shield } from "lucide-react";
@@ -10,6 +11,12 @@ import { TestimonialCard } from "@/components/TestimonialCard";
 import { StatsSection } from "@/components/StatsSection";
 import { FAQSection } from "@/components/FAQSection";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 import heroImage from "@/assets/hero-villa.jpg";
 import portfolioHotel from "@/assets/portfolio-hotel.jpg";
@@ -51,10 +58,10 @@ const features = [
 ];
 
 const projects = [
-  { image: portfolioHotel, title: "Hôtel The Residence", category: "Hôtellerie" },
-  { image: portfolioApartment, title: "Penthouse Lac 2", category: "Immobilier" },
-  { image: portfolioRetail, title: "Boutique Mode", category: "Commerce" },
-  { image: portfolioMuseum, title: "Musée du Bardo", category: "Culture" },
+  { image: portfolioHotel, title: "Hôtel The Residence", category: "Hôtellerie", tourUrl: "https://my.matterport.com/show/?m=t84zwhnXjvJ" },
+  { image: portfolioApartment, title: "Penthouse Lac 2", category: "Immobilier", tourUrl: "https://my.matterport.com/show/?m=1aWQXDdxWnG" },
+  { image: portfolioRetail, title: "Boutique Mode", category: "Commerce", tourUrl: "https://my.matterport.com/show/?m=t84zwhnXjvJ" },
+  { image: portfolioMuseum, title: "Musée du Bardo", category: "Culture", tourUrl: "https://my.matterport.com/show/?m=t84zwhnXjvJ" },
 ];
 
 const testimonials = [
@@ -82,6 +89,8 @@ const testimonials = [
 ];
 
 const Index = () => {
+  const [selectedProject, setSelectedProject] = useState<typeof projects[0] | null>(null);
+
   return (
     <Layout>
       <WhatsAppButton />
@@ -205,13 +214,14 @@ const Index = () => {
 
           <div className="grid md:grid-cols-2 gap-6">
             {projects.map((project, index) => (
-              <ProjectCard
-                key={project.title}
-                image={project.image}
-                title={project.title}
-                category={project.category}
-                delay={index * 0.1}
-              />
+              <div key={project.title} onClick={() => setSelectedProject(project)} className="cursor-pointer">
+                <ProjectCard
+                  image={project.image}
+                  title={project.title}
+                  category={project.category}
+                  delay={index * 0.1}
+                />
+              </div>
             ))}
           </div>
 
@@ -298,6 +308,27 @@ const Index = () => {
           </div>
         </div>
       </section>
+      {/* Matterport Tour Modal */}
+      <Dialog open={!!selectedProject} onOpenChange={(open) => !open && setSelectedProject(null)}>
+        <DialogContent className="max-w-5xl w-[95vw] p-0 gap-0 overflow-hidden">
+          <DialogHeader className="p-4 pb-2">
+            <DialogTitle className="font-display">
+              {selectedProject?.title}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="aspect-video w-full">
+            <iframe
+              src={selectedProject?.tourUrl}
+              width="100%"
+              height="100%"
+              frameBorder="0"
+              allowFullScreen
+              allow="xr-spatial-tracking"
+              className="w-full h-full"
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 };
