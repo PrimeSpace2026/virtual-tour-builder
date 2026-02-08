@@ -21,7 +21,7 @@ import {
 import heroImage from "@/assets/hero-villa.jpg";
 import portfolioHotel from "@/assets/portfolio-hotel.jpg";
 import portfolioApartment from "@/assets/portfolio-apartment.jpg";
-import portfolioRetail from "@/assets/portfolio-retail.jpg";
+import portfolioCoffee from "@/assets/hard-rock.jpg";
 import portfolioMuseum from "@/assets/portfolio-museum.jpg";
 import westwoodGym from "@/assets/westwood-gym-sandymount-1.jpg.webp";
 
@@ -61,7 +61,7 @@ const features = [
 const projects = [
   { image: portfolioHotel, title: "Clayton hotel Belfast", category: "Hôtellerie", tourUrl: "https://my.matterport.com/show/?m=1aWQXDdxWnG" },
   { image: portfolioApartment, title: "Villa Ireland", category: "Immobilier", tourUrl: "https://my.matterport.com/show/?m=t84zwhnXjvJ" },
-  { image: portfolioRetail, title: "hard rock cafe", category: "Restaurant", tourUrl: "https://my.matterport.com/show/?m=RMhsBq27hzy" },
+  { image: portfolioCoffee, title: "hard rock cafe", category: "Restaurant", tourUrl: "https://my.matterport.com/show/?m=RMhsBq27hzy" },
   { image: westwoodGym, title: "Westwood Gym", category: "Gym", tourUrl: "https://my.matterport.com/show/?m=8VnahNUYHfX" },
 ];
 
