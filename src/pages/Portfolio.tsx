@@ -17,14 +17,16 @@ import portfolioHotel from "@/assets/portfolio-hotel.jpg";
 import portfolioApartment from "@/assets/portfolio-apartment.jpg";
 import portfolioRetail from "@/assets/portfolio-retail.jpg";
 import portfolioMuseum from "@/assets/portfolio-museum.jpg";
-import portfolioRestaurant from "@/assets/portfolio-restaurant.jpg";
+import portfolioRestaurant from "@/assets/portfolio-restaurant1.png";
 import portfolioOffice from "@/assets/portfolio-office.jpg";
+import portfolioWedding from "@/assets/wedding-venue.png";
 
 const categories = [
   "Tous",
   "Immobilier",
   "Hôtellerie",
   "Commerce",
+  "Wedding venue",
   "Culture",
   "Restaurant",
   "Entreprise",
@@ -34,18 +36,18 @@ const projects = [
   {
     id: 1,
     image: portfolioHotel,
-    title: "Hôtel The Residence Tunis",
+    title: "Clayton Hotel Belfast",
     category: "Hôtellerie",
     description: "Visite virtuelle complète de l'hôtel 5 étoiles avec chambres, lobby et espaces communs.",
     size: "2500 m²",
-    tourUrl: "https://my.matterport.com/show/?m=t84zwhnXjvJ",
+    tourUrl: "https://my.matterport.com/show/?m=1aWQXDdxWnG",
   },
   {
     id: 2,
     image: portfolioApartment,
-    title: "Penthouse Lac 2",
+    title: "Villa ireland",
     category: "Immobilier",
-    description: "Appartement de luxe avec vue panoramique sur le lac. Visite 3D avec plans interactifs.",
+    description: "Villa de luxe. Visite 3D avec plans interactifs.",
     size: "280 m²",
     tourUrl: "https://my.matterport.com/show/?m=t84zwhnXjvJ",
   },
@@ -55,26 +57,26 @@ const projects = [
     title: "Boutique Mode Avenue",
     category: "Commerce",
     description: "Showroom de mode haut de gamme capturé pour expérience shopping virtuel.",
-    size: "450 m²",
-    tourUrl: "https://my.matterport.com/show/?m=t84zwhnXjvJ",
+    size: "150 m²",
+    tourUrl: "https://my.matterport.com/show?play=1&lang=en-US&m=i4XHNhtSSYx",
   },
   {
     id: 4,
-    image: portfolioMuseum,
-    title: "Galerie d'Art Contemporain",
-    category: "Culture",
+    image: portfolioWedding,
+    title: "The Ivory Pavillon",
+    category: "Wedding venue",
     description: "Exposition permanente digitalisée pour visites à distance et archives numériques.",
     size: "800 m²",
-    tourUrl: "https://my.matterport.com/show/?m=t84zwhnXjvJ",
+    tourUrl: "https://my.matterport.com/show?play=1&lang=en-US&m=nwzR6S7LzMD",
   },
   {
     id: 5,
     image: portfolioRestaurant,
-    title: "Restaurant Le Méditerranéen",
+    title: "Oro Restaurant O2 Barbados",
     category: "Restaurant",
     description: "Capture de l'ambiance unique du restaurant pour prévisualisation et événements.",
     size: "320 m²",
-    tourUrl: "https://my.matterport.com/show/?m=t84zwhnXjvJ",
+    tourUrl: "https://my.matterport.com/show?play=1&lang=en-US&m=hUiuMVtqB7F",
   },
   {
     id: 6,
@@ -83,7 +85,7 @@ const projects = [
     category: "Entreprise",
     description: "Bureaux modernes capturés pour recrutement virtuel et visite clients.",
     size: "1200 m²",
-    tourUrl: "https://my.matterport.com/show/?m=t84zwhnXjvJ",
+    tourUrl: "https://my.matterport.com/show?play=1&lang=en-US&m=3kVVQfg1wSy",
   },
 ];
 
