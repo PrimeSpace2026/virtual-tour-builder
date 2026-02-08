@@ -59,7 +59,7 @@ const features = [
 ];
 
 const projects = [
-  { image: portfolioHotel, title: "Clayton hotel Belfast", category: "Hôtellerie", tourUrl: "https://my..com/show/?m=1aWQXDdxWnG" },
+  { image: portfolioHotel, title: "Clayton hotel Belfast", category: "Hôtellerie", tourUrl: "https://my.matterport.com/show/?m=1aWQXDdxWnG" },
   { image: portfolioApartment, title: "Villa Ireland", category: "Immobilier", tourUrl: "https://my.matterport.com/show/?m=t84zwhnXjvJ" },
   { image: portfolioCoffee, title: "hard rock cafe", category: "Restaurant", tourUrl: "https://my.matterport.com/show/?m=RMhsBq27hzy" },
   { image: westwoodGym, title: "Westwood Gym", category: "Gym", tourUrl: "https://my.matterport.com/show/?m=8VnahNUYHfX" },
