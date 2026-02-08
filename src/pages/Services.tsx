@@ -117,7 +117,7 @@ const processSteps = [
   {
     step: "02",
     title: "Capture",
-    description: "Notre équipe se déplace avec le Matterport Pro 3 pour scanner votre espace. Rapide et non-intrusif.",
+    description: "Notre équipe se déplace avec le  Pro 3 pour scanner votre espace. Rapide et non-intrusif.",
   },
   {
     step: "03",

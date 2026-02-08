@@ -9,8 +9,8 @@ import { SectionHeading } from "./SectionHeading";
 
 const faqs = [
   {
-    question: "Qu'est-ce qu'une visite virtuelle 3D Matterport?",
-    answer: "Une visite virtuelle Matterport est une expérience immersive qui permet aux visiteurs d'explorer un espace en 3D depuis n'importe quel appareil. Notre technologie capture chaque détail avec une précision exceptionnelle, créant une réplique numérique parfaite de votre espace.",
+    question: "Qu'est-ce qu'une visite virtuelle 3D ?",
+    answer: "Une visite virtuelle  est une expérience immersive qui permet aux visiteurs d'explorer un espace en 3D depuis n'importe quel appareil. Notre technologie capture chaque détail avec une précision exceptionnelle, créant une réplique numérique parfaite de votre espace.",
   },
   {
     question: "Combien de temps prend la réalisation d'une visite virtuelle?",
@@ -18,7 +18,7 @@ const faqs = [
   },
   {
     question: "Quels types d'espaces pouvez-vous scanner?",
-    answer: "Nous pouvons scanner tout type d'espace : appartements, villas, hôtels, restaurants, bureaux, commerces, musées, sites historiques, et bien plus. La technologie Matterport Pro 3 s'adapte à tous les environnements.",
+    answer: "Nous pouvons scanner tout type d'espace : appartements, villas, hôtels, restaurants, bureaux, commerces, musées, sites historiques, et bien plus. Notre technologie s'adapte à tous les environnements.",
   },
   {
     question: "Comment les visiteurs accèdent-ils à la visite virtuelle?",
