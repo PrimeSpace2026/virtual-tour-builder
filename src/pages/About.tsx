@@ -185,7 +185,7 @@ const About = () => {
         </div>
       </section>
 
-      {/* Timeline */}
+      {/* Timeline 
       <section className="py-24 bg-background">
         <div className="container mx-auto px-4 lg:px-8">
           <SectionHeading
@@ -216,7 +216,7 @@ const About = () => {
             ))}
           </div>
         </div>
-      </section>
+      </section>*/}
 
       {/* Matterport */}
       <section className="py-24 bg-gradient-hero">
