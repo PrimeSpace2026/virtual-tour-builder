@@ -127,8 +127,8 @@ const Index = () => {
               transition={{ duration: 0.6, delay: 0.1 }}
               className="text-4xl md:text-5xl lg:text-7xl font-display font-bold text-primary-foreground mb-6 leading-tight"
             >
-              Transformez Vos Espaces en{" "}
-              <span className="text-gradient-accent">Expériences Immersives</span>
+              Offrez la visite avant  {"\n"} 
+              <span className="text-gradient-accent"> la réservation</span>
             </motion.h1>
 
             <motion.p
@@ -137,8 +137,7 @@ const Index = () => {
               transition={{ duration: 0.6, delay: 0.2 }}
               className="text-lg md:text-xl text-primary-foreground/80 mb-10 max-w-2xl mx-auto"
             >
-              Visites virtuelles 3D professionnelles en Tunisie. Offrez à vos clients une 
-              expérience unique avec notre technologie de pointe.
+             Augmentez vos réservations et facilitez les visites grâce à nos visites virtuelles 3D.
             </motion.p>
 
             <motion.div
