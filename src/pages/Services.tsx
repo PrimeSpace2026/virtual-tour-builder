@@ -204,10 +204,10 @@ const Services = () => {
                 Technologie de Pointe
               </span>
               <h2 className="text-3xl md:text-4xl font-display font-bold text-foreground mb-6">
-                Matterport Pro 3: La Référence Mondiale
+                Matter port Pro 3: La Référence Mondiale
               </h2>
               <p className="text-muted-foreground mb-6">
-                Le Matterport Pro 3 est le scanner 3D le plus avancé du marché. Grâce à ses capteurs 
+                Notre scanner 3D le plus avancé du marché. Grâce à ses capteurs 
                 LiDAR et ses caméras haute résolution, il capture chaque espace avec une précision 
                 millimétrique et une qualité d'image exceptionnelle.
               </p>
