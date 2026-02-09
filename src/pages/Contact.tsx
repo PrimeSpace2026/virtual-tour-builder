@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { useTranslation } from "@/hooks/useTranslation";
 import {
   Select,
   SelectContent,
@@ -57,6 +58,7 @@ const projectTypes = [
 ];
 
 const Contact = () => {
+  const t = useTranslation();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
@@ -75,8 +77,8 @@ const Contact = () => {
     await new Promise((resolve) => setTimeout(resolve, 1500));
 
     toast({
-      title: "Message envoyé! ✅",
-      description: "Nous vous répondrons dans cccccccles plus brefs délais.",
+      title: t("contact.form.success"),
+      description: t("contact.form.successDesc"),
     });
 
     setFormData({
@@ -108,7 +110,7 @@ const Contact = () => {
               animate={{ opacity: 1, y: 0 }}
               className="inline-block px-4 py-2 rounded-full bg-primary-foreground/10 text-primary-foreground text-sm font-medium mb-6 backdrop-blur-sm border border-primary-foreground/20"
             >
-              Contactez-Nous
+              {t("contact.hero.badge")}
             </motion.span>
             <motion.h1
               initial={{ opacity: 0, y: 20 }}
@@ -116,7 +118,7 @@ const Contact = () => {
               transition={{ delay: 0.1 }}
               className="text-4xl md:text-5xl lg:text-6xl font-display font-bold text-primary-foreground mb-6"
             >
-              Parlons de Votre Projet
+              {t("contact.hero.title")}
             </motion.h1>
             <motion.p
               initial={{ opacity: 0, y: 20 }}
@@ -124,8 +126,7 @@ const Contact = () => {
               transition={{ delay: 0.2 }}
               className="text-lg text-primary-foreground/70"
             >
-              Demandez un devis gratuit ou posez-nous vos questions. 
-              Notre équipe vous répond sous 24 heures.
+              {t("contact.hero.description")}
             </motion.p>
           </div>
         </div>
@@ -315,9 +316,9 @@ const Contact = () => {
       <section className="py-24 bg-muted/50">
         <div className="container mx-auto px-4 lg:px-8">
           <SectionHeading
-            badge="Localisation"
-            title="Basés à Tunis, Nous Intervenons Partout"
-            description="Notre équipe se déplace sur tout le territoire tunisien pour vos projets"
+            badge={t("contact.location.badge")}
+            title={t("contact.location.title")}
+            description={t("contact.location.description")}
           />
 
         

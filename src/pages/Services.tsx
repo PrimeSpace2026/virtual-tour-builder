@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { SectionHeading } from "@/components/SectionHeading";
 import { FeatureCard } from "@/components/FeatureCard";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
+import { useTranslation } from "@/hooks/useTranslation";
 
 const services = [
   {
@@ -132,6 +133,73 @@ const processSteps = [
 ];
 
 const Services = () => {
+  const t = useTranslation();
+
+  const services = [
+    { icon: Camera, title: t("services.items.0.title"), description: t("services.items.0.description") },
+    { icon: Move3d, title: t("services.items.1.title"), description: t("services.items.1.description") },
+    { icon: Layout, title: t("services.items.2.title"), description: t("services.items.2.description") },
+    { icon: Image, title: t("services.items.3.title"), description: t("services.items.3.description") },
+    { icon: Video, title: t("services.items.4.title"), description: t("services.items.4.description") },
+    { icon: FileText, title: t("services.items.5.title"), description: t("services.items.5.description") },
+  ];
+
+  const packages = [
+    {
+      name: t("services.pricing.packages.0.name"),
+      description: t("services.pricing.packages.0.description"),
+      price: t("services.pricing.packages.0.price"),
+      features: t("services.pricing.packages.0.features") as string[],
+      recommended: false,
+    },
+    {
+      name: t("services.pricing.packages.1.name"),
+      description: t("services.pricing.packages.1.description"),
+      price: t("services.pricing.packages.1.price"),
+      features: t("services.pricing.packages.1.features") as string[],
+      recommended: true,
+    },
+    {
+      name: t("services.pricing.packages.2.name"),
+      description: t("services.pricing.packages.2.description"),
+      price: t("services.pricing.packages.2.price"),
+      features: t("services.pricing.packages.2.features") as string[],
+      recommended: false,
+    },
+  ];
+
+  const industries = [
+    { icon: Building2, name: t("services.industries.items.0.name"), description: t("services.industries.items.0.description") },
+    { icon: Hotel, name: t("services.industries.items.1.name"), description: t("services.industries.items.1.description") },
+    { icon: Store, name: t("services.industries.items.2.name"), description: t("services.industries.items.2.description") },
+    { icon: Landmark, name: t("services.industries.items.3.name"), description: t("services.industries.items.3.description") },
+    { icon: Building, name: t("services.industries.items.4.name"), description: t("services.industries.items.4.description") },
+    { icon: Utensils, name: t("services.industries.items.5.name"), description: t("services.industries.items.5.description") },
+  ];
+
+  const processSteps = [
+    {
+      step: t("services.process.steps.0.step"),
+      title: t("services.process.steps.0.title"),
+      description: t("services.process.steps.0.description"),
+    },
+    {
+      step: t("services.process.steps.1.step"),
+      title: t("services.process.steps.1.title"),
+      description: t("services.process.steps.1.description"),
+    },
+    {
+      step: t("services.process.steps.2.step"),
+      title: t("services.process.steps.2.title"),
+      description: t("services.process.steps.2.description"),
+    },
+    {
+      step: t("services.process.steps.3.step"),
+      title: t("services.process.steps.3.title"),
+      description: t("services.process.steps.3.description"),
+    },
+  ];
+
   return (
     <PageLayout>
       <WhatsAppButton />
@@ -145,7 +213,7 @@ const Services = () => {
               animate={{ opacity: 1, y: 0 }}
               className="inline-block px-4 py-2 rounded-full bg-primary-foreground/10 text-primary-foreground text-sm font-medium mb-6 backdrop-blur-sm border border-primary-foreground/20"
             >
-              Nos Services
+              {t("services.hero.badge")}
             </motion.span>
             <motion.h1
               initial={{ opacity: 0, y: 20 }}
@@ -153,7 +221,7 @@ const Services = () => {
               transition={{ delay: 0.1 }}
               className="text-4xl md:text-5xl lg:text-6xl font-display font-bold text-primary-foreground mb-6"
             >
-              Solutions de Visites Virtuelles 3D
+              {t("services.hero.title")}
             </motion.h1>
             <motion.p
               initial={{ opacity: 0, y: 20 }}
@@ -161,8 +229,7 @@ const Services = () => {
               transition={{ delay: 0.2 }}
               className="text-lg text-primary-foreground/70"
             >
-              Des solutions adaptées à tous vos besoins, de la simple visite virtuelle 
-              aux projets de documentation technique les plus complexes.
+              {t("services.hero.description")}
             </motion.p>
           </div>
         </div>
@@ -173,8 +240,8 @@ const Services = () => {
         <div className="container mx-auto px-4 lg:px-8">
           <SectionHeading
             badge="Ce que nous offrons"
-            title="Services Complets"
-            description="Une gamme complète de services pour digitaliser vos espaces"
+            title={t("services.hero.title")}
+            description={t("services.hero.description")}
           />
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -324,9 +391,9 @@ const Services = () => {
       <section className="py-24 bg-muted/50">
         <div className="container mx-auto px-4 lg:px-8">
           <SectionHeading
-            badge="Secteurs d'Activité"
-            title="Solutions Pour Tous Les Secteurs"
-            description="Nos visites virtuelles s'adaptent à tous les types d'espaces et d'industries"
+            badge={t("services.industries.badge")}
+            title={t("services.industries.title")}
+            description={t("services.industries.description")}
           />
 
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
@@ -352,9 +419,9 @@ const Services = () => {
       <section className="py-24 bg-background">
         <div className="container mx-auto px-4 lg:px-8">
           <SectionHeading
-            badge="Notre Processus"
-            title="Comment Ça Marche?"
-            description="Un processus simple et efficace de la prise de contact à la livraison"
+            badge={t("services.process.badge")}
+            title={t("services.process.title")}
+            description={t("services.process.description")}
           />
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -394,7 +461,7 @@ const Services = () => {
               viewport={{ once: true }}
               className="text-3xl md:text-4xl font-display font-bold text-primary-foreground mb-6"
             >
-              Prêt à Digitaliser Votre Espace?
+              {t("services.cta.title")}
             </motion.h2>
             <motion.p
               initial={{ opacity: 0, y: 20 }}
@@ -403,8 +470,7 @@ const Services = () => {
               transition={{ delay: 0.1 }}
               className="text-lg text-primary-foreground/70 mb-10"
             >
-              Contactez-nous pour un devis personnalisé gratuit. Notre équipe vous 
-              accompagne de A à Z dans votre projet.
+              {t("services.cta.description")}
             </motion.p>
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -414,7 +480,7 @@ const Services = () => {
             >
               <Button variant="hero" size="lg" asChild>
                 <Link to="/contact" className="flex items-center gap-2">
-                  Obtenir un Devis Gratuit
+                  {t("services.cta.button")}
                   <ArrowRight className="w-5 h-5" />
                 </Link>
               </Button>

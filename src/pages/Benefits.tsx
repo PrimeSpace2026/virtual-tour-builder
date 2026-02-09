@@ -163,7 +163,7 @@ const Benefits = () => {
               transition={{ duration: 0.6, delay: 0.2 }}
               className="text-lg md:text-xl text-primary-foreground/80 max-w-2xl mx-auto"
             >
-              Les jumeaux numériques Matterport vous permettent d'explorer n'importe quel espace à distance avec une précision spatiale totale — pour prendre de meilleures décisions sans vous déplacer.
+              Les jumeaux numériques vous permettent d'explorer n'importe quel espace à distance avec une précision spatiale totale — pour prendre de meilleures décisions sans vous déplacer.
             </motion.p>
           </div>
         </div>
