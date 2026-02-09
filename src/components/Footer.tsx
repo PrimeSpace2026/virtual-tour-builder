@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { MapPin, Phone, Mail, Facebook, Instagram, Linkedin, Youtube } from "lucide-react";
-import { useLanguage } from "@/contexts/LanguageContext";
+
 
 const socialLinks = [
   { icon: Facebook, href: "#", label: "Facebook" },

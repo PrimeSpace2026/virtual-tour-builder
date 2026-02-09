@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { SectionHeading } from "@/components/SectionHeading";
 import { FeatureCard } from "@/components/FeatureCard";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
-import { useLanguage } from "@/contexts/LanguageContext";
+
 
 const About = () => {
   const { t } = useLanguage();

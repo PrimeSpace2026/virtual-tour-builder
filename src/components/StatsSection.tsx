@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { useInView } from "framer-motion";
 import { useRef, useEffect, useState } from "react";
-import { useLanguage } from "@/contexts/LanguageContext";
+
 
 interface StatItemProps {
   value: number;

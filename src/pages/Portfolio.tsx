@@ -6,7 +6,7 @@ import { Layout } from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { SectionHeading } from "@/components/SectionHeading";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
-import { useLanguage } from "@/contexts/LanguageContext";
+
 import {
   Dialog,
   DialogContent,
