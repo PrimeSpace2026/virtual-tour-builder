@@ -1,9 +1,16 @@
 import { motion } from "framer-motion";
 import { MessageCircle } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export const WhatsAppButton = () => {
+  const { t } = useLanguage();
   const phoneNumber = "+353894985067";
-  const message = encodeURIComponent("Bonjour, je souhaite avoir plus d'informations sur vos services de visites virtuelles 3D.");
+  const message = encodeURIComponent(
+    t(
+      "Bonjour, je souhaite avoir plus d'informations sur vos services de visites virtuelles 3D.",
+      "Hello, I would like more information about your 3D virtual tour services."
+    )
+  );
   const whatsappUrl = `https://wa.me/${phoneNumber}?text=${message}`;
 
   return (
@@ -15,7 +22,7 @@ export const WhatsAppButton = () => {
       animate={{ scale: 1 }}
       transition={{ delay: 1, type: "spring", stiffness: 200 }}
       className="fixed bottom-6 right-6 z-50 w-14 h-14 bg-[#25D366] rounded-full flex items-center justify-center shadow-elevated hover:scale-110 transition-transform duration-300"
-      aria-label="Contacter via WhatsApp"
+      aria-label={t("Contacter via WhatsApp", "Contact via WhatsApp")}
     >
       <MessageCircle className="w-7 h-7 text-white" />
       <span className="absolute -top-1 -right-1 w-4 h-4 bg-secondary rounded-full animate-ping" />

@@ -11,6 +11,7 @@ import { TestimonialCard } from "@/components/TestimonialCard";
 import { StatsSection } from "@/components/StatsSection";
 import { FAQSection } from "@/components/FAQSection";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
+import { useLanguage } from "@/contexts/LanguageContext";
 import {
   Dialog,
   DialogContent,
@@ -25,72 +26,82 @@ import portfolioCoffee from "@/assets/hard-rock.jpg";
 import portfolioMuseum from "@/assets/portfolio-museum.jpg";
 import westwoodGym from "@/assets/westwood-gym-sandymount-1.jpg.webp";
 
-const features = [
-  {
-    icon: Scan,
-    title: "Capture 3D Précise",
-    description: "Technologie intelligente pour une reproduction fidèle de chaque détail de votre espace.",
-  },
-  {
-    icon: Eye,
-    title: "Immersion Totale",
-    description: "Expérience de visite fluide et interactive permettant une exploration libre en 360°.",
-  },
-  {
-    icon: Smartphone,
-    title: "Compatible Tous Appareils",
-    description: "Accès depuis n'importe quel navigateur, smartphone, tablette ou casque VR.",
-  },
-  {
-    icon: Globe,
-    title: "Partage Facile",
-    description: "Intégration simple sur votre site web et partage via un lien unique.",
-  },
-  {
-    icon: Zap,
-    title: "Livraison Rapide",
-    description: "Traitement professionnel et livraison de votre visite virtuelle sous 24-48h.",
-  },
-  {
-    icon: Shield,
-    title: "Qualité Garantie",
-    description: "Résolution 4K, mesures précises et rendu photoréaliste de haute qualité.",
-  },
-];
-
-const projects = [
-  { image: portfolioHotel, title: "Clayton hotel Belfast", category: "Hôtellerie", tourUrl: "https://my.matterport.com/show/?m=1aWQXDdxWnG" },
-  { image: portfolioApartment, title: "Villa Ireland", category: "Immobilier", tourUrl: "https://my.matterport.com/show/?m=t84zwhnXjvJ" },
-  { image: portfolioCoffee, title: "hard rock cafe", category: "Restaurant", tourUrl: "https://my.matterport.com/show/?m=RMhsBq27hzy" },
-  { image: westwoodGym, title: "Westwood Gym", category: "Gym", tourUrl: "https://my.matterport.com/show/?m=8VnahNUYHfX" },
-];
-
-const testimonials = [
-  {
-    content: "La visite virtuelle a transformé notre façon de vendre. Nos clients peuvent explorer les propriétés depuis chez eux, ce qui a augmenté nos ventes de 40%.",
-    author: "Ahmed Ben Ali",
-    role: "Directeur",
-    company: "Immobilière Tunisia",
-    rating: 5,
-  },
-  {
-    content: "Un service exceptionnel et un rendu professionnel. Notre hôtel reçoit maintenant des réservations de clients qui ont 'visité' virtuellement nos chambres.",
-    author: "Sarah Mansouri",
-    role: "Responsable Marketing",
-    company: "Hôtel Majestic",
-    rating: 5,
-  },
-  {
-    content: "L'équipe est réactive et professionnelle. La qualité de la visite virtuelle a impressionné tous nos visiteurs et partenaires.",
-    author: "Mohamed Gharbi",
-    role: "Conservateur",
-    company: "Galerie d'Art Contemporain",
-    rating: 5,
-  },
-];
-
 const Index = () => {
-  const [selectedProject, setSelectedProject] = useState<typeof projects[0] | null>(null);
+  const [selectedProject, setSelectedProject] = useState<any>(null);
+  const { t } = useLanguage();
+
+  const features = [
+    {
+      icon: Scan,
+      title: t("Capture 3D Précise", "Precise 3D Capture"),
+      description: t("Technologie intelligente pour une reproduction fidèle de chaque détail de votre espace.", "Smart technology for a faithful reproduction of every detail of your space."),
+    },
+    {
+      icon: Eye,
+      title: t("Immersion Totale", "Total Immersion"),
+      description: t("Expérience de visite fluide et interactive permettant une exploration libre en 360°.", "Smooth and interactive tour experience allowing free 360° exploration."),
+    },
+    {
+      icon: Smartphone,
+      title: t("Compatible Tous Appareils", "All Devices Compatible"),
+      description: t("Accès depuis n'importe quel navigateur, smartphone, tablette ou casque VR.", "Access from any browser, smartphone, tablet or VR headset."),
+    },
+    {
+      icon: Globe,
+      title: t("Partage Facile", "Easy Sharing"),
+      description: t("Intégration simple sur votre site web et partage via un lien unique.", "Simple integration on your website and sharing via a unique link."),
+    },
+    {
+      icon: Zap,
+      title: t("Livraison Rapide", "Fast Delivery"),
+      description: t("Traitement professionnel et livraison de votre visite virtuelle sous 24-48h.", "Professional processing and delivery of your virtual tour within 24-48h."),
+    },
+    {
+      icon: Shield,
+      title: t("Qualité Garantie", "Guaranteed Quality"),
+      description: t("Résolution 4K, mesures précises et rendu photoréaliste de haute qualité.", "4K resolution, precise measurements and high quality photorealistic rendering."),
+    },
+  ];
+
+  const projects = [
+    { image: portfolioHotel, title: "Clayton Hotel Belfast", category: t("Hôtellerie", "Hospitality"), tourUrl: "https://my.matterport.com/show/?m=1aWQXDdxWnG" },
+    { image: portfolioApartment, title: "Villa Ireland", category: t("Immobilier", "Real Estate"), tourUrl: "https://my.matterport.com/show/?m=t84zwhnXjvJ" },
+    { image: portfolioCoffee, title: "Hard Rock Cafe", category: t("Restaurant", "Restaurant"), tourUrl: "https://my.matterport.com/show/?m=RMhsBq27hzy" },
+    { image: westwoodGym, title: "Westwood Gym", category: t("Gym", "Gym"), tourUrl: "https://my.matterport.com/show/?m=8VnahNUYHfX" },
+  ];
+
+  const testimonials = [
+    {
+      content: t(
+        "La visite virtuelle a transformé notre façon de vendre. Nos clients peuvent explorer les propriétés depuis chez eux, ce qui a augmenté nos ventes de 40%.",
+        "The virtual tour has transformed the way we sell. Our clients can explore properties from home, which has increased our sales by 40%."
+      ),
+      author: "Ahmed Ben Ali",
+      role: t("Directeur", "Director"),
+      company: "Immobilière Tunisia",
+      rating: 5,
+    },
+    {
+      content: t(
+        "Un service exceptionnel et un rendu professionnel. Notre hôtel reçoit maintenant des réservations de clients qui ont 'visité' virtuellement nos chambres.",
+        "Exceptional service and professional rendering. Our hotel now receives bookings from clients who have virtually 'visited' our rooms."
+      ),
+      author: "Sarah Mansouri",
+      role: t("Responsable Marketing", "Marketing Manager"),
+      company: "Hôtel Majestic",
+      rating: 5,
+    },
+    {
+      content: t(
+        "L'équipe est réactive et professionnelle. La qualité de la visite virtuelle a impressionné tous nos visiteurs et partenaires.",
+        "The team is responsive and professional. The quality of the virtual tour has impressed all our visitors and partners."
+      ),
+      author: "Mohamed Gharbi",
+      role: t("Conservateur", "Curator"),
+      company: t("Galerie d'Art Contemporain", "Contemporary Art Gallery"),
+      rating: 5,
+    },
+  ];
 
   return (
     <Layout>
@@ -98,17 +109,15 @@ const Index = () => {
       
       {/* Hero Section */}
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-        {/* Background Image */}
         <div className="absolute inset-0">
           <img
             src={heroImage}
-            alt="Villa de luxe avec visite virtuelle 3D"
+            alt={t("Villa de luxe avec visite virtuelle 3D", "Luxury villa with 3D virtual tour")}
             className="w-full h-full object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-b from-primary/80 via-primary/60 to-primary/90" />
         </div>
 
-        {/* Hero Content */}
         <div className="relative z-10 container mx-auto px-4 lg:px-8 pt-24 pb-12">
           <div className="max-w-4xl mx-auto text-center">
             <motion.div
@@ -127,8 +136,8 @@ const Index = () => {
               transition={{ duration: 0.6, delay: 0.1 }}
               className="text-4xl md:text-5xl lg:text-7xl font-display font-bold text-primary-foreground mb-6 leading-tight"
             >
-              Offrez la visite   {""} 
-              <span className="text-gradient-accent"> avant la réservation</span>
+              {t("Offrez la visite", "Offer the tour")}{" "}
+              <span className="text-gradient-accent">{t("avant la réservation", "before the booking")}</span>
             </motion.h1>
 
             <motion.p
@@ -137,7 +146,10 @@ const Index = () => {
               transition={{ duration: 0.6, delay: 0.2 }}
               className="text-lg md:text-xl text-primary-foreground/80 mb-10 max-w-2xl mx-auto"
             >
-             Augmentez vos réservations et facilitez les visites grâce à nos visites virtuelles 3D.
+              {t(
+                "Augmentez vos réservations et facilitez les visites grâce à nos visites virtuelles 3D.",
+                "Increase your bookings and simplify visits with our 3D virtual tours."
+              )}
             </motion.p>
 
             <motion.div
@@ -148,19 +160,14 @@ const Index = () => {
             >
               <Button variant="hero" size="lg" asChild>
                 <Link to="/contact" className="flex items-center gap-2">
-                  Demander un Devis
+                  {t("Demander un Devis", "Get a Quote")}
                   <ArrowRight className="w-5 h-5" />
                 </Link>
               </Button>
-             {/* <Button variant="hero-outline" size="lg" className="flex items-center gap-2">
-                <Play className="w-5 h-5" />
-                Voir une Démo
-              </Button>  */}
             </motion.div>
           </div>
         </div>
 
-        {/* Scroll indicator */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -177,13 +184,13 @@ const Index = () => {
         </motion.div>
       </section>
 
- {/* Portfolio Preview */}
+      {/* Portfolio Preview */}
       <section className="py-24 bg-background">
         <div className="container mx-auto px-4 lg:px-8">
           <SectionHeading
             badge="Portfolio"
-            title="Nos Dernières Réalisations"
-            description="Découvrez quelques-unes de nos visites virtuelles les plus récentes"
+            title={t("Nos Dernières Réalisations", "Our Latest Projects")}
+            description={t("Découvrez quelques-unes de nos visites virtuelles les plus récentes", "Discover some of our most recent virtual tours")}
           />
 
           <div className="grid md:grid-cols-2 gap-6">
@@ -208,20 +215,21 @@ const Index = () => {
           >
             <Button variant="outline" size="lg" asChild>
               <Link to="/portfolio" className="flex items-center gap-2">
-                Voir Tout le Portfolio
+                {t("Voir Tout le Portfolio", "View Full Portfolio")}
                 <ArrowRight className="w-5 h-5" />
               </Link>
             </Button>
           </motion.div>
         </div>
       </section>
+
       {/* Features Section */}
       <section className="py-24 bg-background">
         <div className="container mx-auto px-4 lg:px-8">
           <SectionHeading
-            badge="Nos Avantages"
-            title="Pourquoi Choisir PrimeSpace ?"
-            description="Notre technologie offre une qualité inégalée pour vos visites virtuelles"
+            badge={t("Nos Avantages", "Our Advantages")}
+            title={t("Pourquoi Choisir PrimeSpace ?", "Why Choose PrimeSpace?")}
+            description={t("Notre technologie offre une qualité inégalée pour vos visites virtuelles", "Our technology offers unmatched quality for your virtual tours")}
           />
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -238,18 +246,15 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Stats Section */}
       <StatsSection />
-
-     
 
       {/* Testimonials */}
       <section className="py-24 bg-muted/50">
         <div className="container mx-auto px-4 lg:px-8">
           <SectionHeading
-            badge="Témoignages"
-            title="Ce Que Disent Nos Clients"
-            description="Découvrez l'impact de nos visites virtuelles sur leur activité"
+            badge={t("Témoignages", "Testimonials")}
+            title={t("Ce Que Disent Nos Clients", "What Our Clients Say")}
+            description={t("Découvrez l'impact de nos visites virtuelles sur leur activité", "Discover the impact of our virtual tours on their business")}
           />
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -264,7 +269,6 @@ const Index = () => {
         </div>
       </section>
 
-      {/* FAQ Section */}
       <FAQSection />
 
       {/* CTA Section */}
@@ -277,7 +281,7 @@ const Index = () => {
               viewport={{ once: true }}
               className="text-3xl md:text-4xl lg:text-5xl font-display font-bold text-primary-foreground mb-6"
             >
-              Prêt à Transformer Votre Espace?
+              {t("Prêt à Transformer Votre Espace?", "Ready to Transform Your Space?")}
             </motion.h2>
             <motion.p
               initial={{ opacity: 0, y: 20 }}
@@ -286,8 +290,10 @@ const Index = () => {
               transition={{ delay: 0.1 }}
               className="text-lg text-primary-foreground/70 mb-10"
             >
-              Contactez-nous dès aujourd'hui pour un devis gratuit et découvrez 
-              comment nos visites virtuelles peuvent booster votre activité.
+              {t(
+                "Contactez-nous dès aujourd'hui pour un devis gratuit et découvrez comment nos visites virtuelles peuvent booster votre activité.",
+                "Contact us today for a free quote and discover how our virtual tours can boost your business."
+              )}
             </motion.p>
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -298,18 +304,18 @@ const Index = () => {
             >
               <Button variant="hero" size="lg" asChild>
                 <Link to="/contact" className="flex items-center gap-2">
-                  Demander un Devis Gratuit
+                  {t("Demander un Devis Gratuit", "Get a Free Quote")}
                   <ArrowRight className="w-5 h-5" />
                 </Link>
               </Button>
               <Button variant="hero-outline" size="lg" asChild>
-                <Link to="/services">Découvrir Nos Services</Link>
+                <Link to="/services">{t("Découvrir Nos Services", "Discover Our Services")}</Link>
               </Button>
             </motion.div>
           </div>
         </div>
       </section>
-      {/* Matterport Tour Modal */}
+
       <Dialog open={!!selectedProject} onOpenChange={(open) => !open && setSelectedProject(null)}>
         <DialogContent className="max-w-5xl w-[95vw] p-0 gap-0 overflow-hidden">
           <DialogHeader className="p-4 pb-2">
