@@ -48,7 +48,7 @@ export const Footer = () => {
             <div className="space-y-3">
               <a href="tel:+353894985067" className="flex items-center gap-3 text-primary-foreground/70 hover:text-secondary transition-colors">
                 <Phone className="w-5 h-5" />
-                +216 12 345 678
+                +353 89 49 85 067
               </a>
               <a href="mailto:info@primespace.studio" className="flex items-center gap-3 text-primary-foreground/70 hover:text-secondary transition-colors">
                 <Mail className="w-5 h-5" />
@@ -116,7 +116,7 @@ export const Footer = () => {
         {/* Bottom Bar */}
         <div className="mt-12 pt-8 border-t border-primary-foreground/10 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-primary-foreground/50 text-sm">
-            © {new Date().getFullYear()} Visite3D. Tous droits réservés. Propulsé par Matterport Pro 3.
+            © {new Date().getFullYear()} Visite3D. Tous droits réservés.
           </p>
           <div className="flex items-center gap-4">
             {socialLinks.map((social) => (
