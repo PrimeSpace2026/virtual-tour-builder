@@ -127,8 +127,8 @@ const Index = () => {
               transition={{ duration: 0.6, delay: 0.1 }}
               className="text-4xl md:text-5xl lg:text-7xl font-display font-bold text-primary-foreground mb-6 leading-tight"
             >
-              Offrez la visite avant  {"\n"} 
-              <span className="text-gradient-accent"> la réservation</span>
+              Offrez la visite   {""} 
+              <span className="text-gradient-accent"> avant la réservation</span>
             </motion.h1>
 
             <motion.p
