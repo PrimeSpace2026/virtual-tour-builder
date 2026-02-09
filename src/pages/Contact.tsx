@@ -18,6 +18,44 @@ import { SectionHeading } from "@/components/SectionHeading";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
 import { useToast } from "@/hooks/use-toast";
 
+const contactInfo = [
+  {
+    icon: Phone,
+    title: "Téléphone",
+    value: "+353 89 498 5067",
+    link: "tel:+353 89 498 5067",
+  },
+  {
+    icon: Mail,
+    title: "Email",
+    value: "info@primespace.studio",
+    link: "mailto:info@primespace.studio",
+  },
+  {
+    icon: MapPin,
+    title: "Adresse",
+    value: "Tunis, Tunisie",
+    link: null,
+  },
+  {
+    icon: Clock,
+    title: "Horaires",
+    value: "Lun-Sam: 8h-18h",
+    link: null,
+  },
+];
+
+const projectTypes = [
+  "Immobilier résidentiel",
+  "Immobilier commercial",
+  "Hôtellerie & Tourisme",
+  "Commerce & Retail",
+  "Culture & Musées",
+  "Entreprise & Bureaux",
+  "Restaurant & Événementiel",
+  "Autre",
+];
+
 const Contact = () => {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -29,57 +67,31 @@ const Contact = () => {
     message: "",
   });
 
-  const contactInfo = [
-    {
-      icon: Phone,
-      title: "Téléphone",
-      value: "+353 89 498 5067",
-      link: "tel:+353 89 498 5067",
-    },
-    {
-      icon: Mail,
-      title: "Email",
-      value: "info@primespace.studio",
-      link: "mailto:info@primespace.studio",
-    },
-    {
-      icon: MapPin,
-      title: "Adresse",
-      value: "Tunis, Tunisie",
-      link: null,
-    },
-    {
-      icon: Clock,
-      title: "Horaires",
-      value: "Lun-Sam: 8h-18h",
-      link: null,
-    },
-  ];
-
-  const projectTypes = [
-    "Immobilier résidentiel",
-    "Immobilier commercial",
-    "Hôtellerie & Tourisme",
-    "Commerce & Retail",
-    "Culture & Musées",
-    "Entreprise & Bureaux",
-    "Restaurant & Événementiel",
-    "Autre",
-  ];
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+
+    // Simulate form submission
     await new Promise((resolve) => setTimeout(resolve, 1500));
+
     toast({
       title: "Message envoyé! ✅",
-      description: "Nous vous répondrons dans les plus brefs délais.",
+      description: "Nous vous répondrons dans cccccccles plus brefs délais.",
     });
-    setFormData({ name: "", email: "", phone: "", projectType: "", message: "" });
+
+    setFormData({
+      name: "",
+      email: "",
+      phone: "",
+      projectType: "",
+      message: "",
+    });
     setIsSubmitting(false);
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
@@ -112,7 +124,8 @@ const Contact = () => {
               transition={{ delay: 0.2 }}
               className="text-lg text-primary-foreground/70"
             >
-              Demandez un devis gratuit ou posez-nous vos questions. Notre équipe vous répond sous 24 heures.
+              Demandez un devis gratuit ou posez-nous vos questions. 
+              Notre équipe vous répond sous 24 heures.
             </motion.p>
           </div>
         </div>
@@ -122,6 +135,7 @@ const Contact = () => {
       <section className="py-24 bg-background">
         <div className="container mx-auto px-4 lg:px-8">
           <div className="grid lg:grid-cols-3 gap-12">
+            {/* Contact Info */}
             <motion.div
               initial={{ opacity: 0, x: -30 }}
               whileInView={{ opacity: 1, x: 0 }}
@@ -141,7 +155,10 @@ const Contact = () => {
                     <div>
                       <h3 className="font-medium text-foreground">{info.title}</h3>
                       {info.link ? (
-                        <a href={info.link} className="text-muted-foreground hover:text-secondary transition-colors">
+                        <a
+                          href={info.link}
+                          className="text-muted-foreground hover:text-secondary transition-colors"
+                        >
                           {info.value}
                         </a>
                       ) : (
@@ -152,6 +169,7 @@ const Contact = () => {
                 ))}
               </div>
 
+              {/* Quick Actions */}
               <div className="bg-muted/50 rounded-2xl p-6">
                 <h3 className="font-display font-semibold text-foreground mb-4">
                   Réponse Rapide
@@ -166,13 +184,14 @@ const Contact = () => {
                     rel="noopener noreferrer"
                     className="flex items-center justify-center gap-2"
                   >
-                    {t("Ouvrir WhatsApp", "Open WhatsApp")}
+                    Ouvrir WhatsApp
                     <ArrowRight className="w-4 h-4" />
                   </a>
                 </Button>
               </div>
             </motion.div>
 
+            {/* Contact Form */}
             <motion.div
               initial={{ opacity: 0, x: 30 }}
               whileInView={{ opacity: 1, x: 0 }}
@@ -181,35 +200,68 @@ const Contact = () => {
             >
               <div className="bg-card rounded-2xl p-8 shadow-soft">
                 <h2 className="font-display font-bold text-2xl text-foreground mb-6">
-                  {t("Demande de Devis Gratuit", "Free Quote Request")}
+                  Demande de Devis Gratuit
                 </h2>
 
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div className="grid md:grid-cols-2 gap-6">
                     <div className="space-y-2">
-                      <Label htmlFor="name">{t("Nom Complet *", "Full Name *")}</Label>
-                      <Input id="name" name="name" value={formData.name} onChange={handleChange} placeholder={t("Votre nom", "Your name")} required className="h-12" />
+                      <Label htmlFor="name">Nom Complet *</Label>
+                      <Input
+                        id="name"
+                        name="name"
+                        value={formData.name}
+                        onChange={handleChange}
+                        placeholder="Votre nom"
+                        required
+                        className="h-12"
+                      />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="email">Email *</Label>
-                      <Input id="email" name="email" type="email" value={formData.email} onChange={handleChange} placeholder={t("votre@email.com", "your@email.com")} required className="h-12" />
+                      <Input
+                        id="email"
+                        name="email"
+                        type="email"
+                        value={formData.email}
+                        onChange={handleChange}
+                        placeholder="votre@email.com"
+                        required
+                        className="h-12"
+                      />
                     </div>
                   </div>
 
                   <div className="grid md:grid-cols-2 gap-6">
                     <div className="space-y-2">
-                      <Label htmlFor="phone">{t("Téléphone", "Phone")}</Label>
-                      <Input id="phone" name="phone" type="tel" value={formData.phone} onChange={handleChange} placeholder="+216 XX XXX XXX" className="h-12" />
+                      <Label htmlFor="phone">Téléphone</Label>
+                      <Input
+                        id="phone"
+                        name="phone"
+                        type="tel"
+                        value={formData.phone}
+                        onChange={handleChange}
+                        placeholder="+216 XX XXX XXX"
+                        className="h-12"
+                      />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="projectType">{t("Type de Projet *", "Project Type *")}</Label>
-                      <Select value={formData.projectType} onValueChange={(value) => setFormData({ ...formData, projectType: value })} required>
+                      <Label htmlFor="projectType">Type de Projet *</Label>
+                      <Select
+                        value={formData.projectType}
+                        onValueChange={(value) =>
+                          setFormData({ ...formData, projectType: value })
+                        }
+                        required
+                      >
                         <SelectTrigger className="h-12">
-                          <SelectValue placeholder={t("Sélectionnez un type", "Select a type")} />
+                          <SelectValue placeholder="Sélectionnez un type" />
                         </SelectTrigger>
                         <SelectContent>
                           {projectTypes.map((type) => (
-                            <SelectItem key={type} value={type}>{type}</SelectItem>
+                            <SelectItem key={type} value={type}>
+                              {type}
+                            </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -217,35 +269,41 @@ const Contact = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="message">{t("Décrivez votre projet *", "Describe your project *")}</Label>
+                    <Label htmlFor="message">Décrivez votre projet *</Label>
                     <Textarea
                       id="message"
                       name="message"
                       value={formData.message}
                       onChange={handleChange}
-                      placeholder={t("Décrivez votre espace, sa superficie approximative, et vos besoins spécifiques...", "Describe your space, its approximate area, and your specific needs...")}
+                      placeholder="Décrivez votre espace, sa superficie approximative, et vos besoins spécifiques..."
                       required
                       className="min-h-[150px] resize-none"
                     />
                   </div>
 
-                  <Button type="submit" variant="secondary" size="lg" className="w-full" disabled={isSubmitting}>
+                  <Button
+                    type="submit"
+                    variant="secondary"
+                    size="lg"
+                    className="w-full"
+                    disabled={isSubmitting}
+                  >
                     {isSubmitting ? (
                       <>
                         <span className="animate-spin mr-2">⏳</span>
-                        {t("Envoi en cours...", "Sending...")}
+                        Envoi en cours...
                       </>
                     ) : (
                       <>
                         <Send className="w-5 h-5 mr-2" />
-                        {t("Envoyer Ma Demande", "Send My Request")}
+                        Envoyer Ma Demande
                       </>
                     )}
                   </Button>
                 </form>
 
                 <p className="text-sm text-muted-foreground mt-6 text-center">
-                  {t("En soumettant ce formulaire, vous acceptez d'être contacté par notre équipe.", "By submitting this form, you agree to be contacted by our team.")}
+                  En soumettant ce formulaire, vous acceptez d'être contacté par notre équipe.
                 </p>
               </div>
             </motion.div>
@@ -261,6 +319,8 @@ const Contact = () => {
             title="Basés à Tunis, Nous Intervenons Partout"
             description="Notre équipe se déplace sur tout le territoire tunisien pour vos projets"
           />
+
+        
         </div>
       </section>
 
@@ -274,7 +334,7 @@ const Contact = () => {
               viewport={{ once: true }}
               className="text-2xl md:text-3xl font-display font-bold text-primary-foreground mb-4"
             >
-              {t("Des Questions Fréquentes?", "Frequently Asked Questions?")}
+              Des Questions Fréquentes?
             </motion.h2>
             <motion.p
               initial={{ opacity: 0, y: 20 }}
@@ -283,7 +343,7 @@ const Contact = () => {
               transition={{ delay: 0.1 }}
               className="text-primary-foreground/70 mb-6"
             >
-              {t("Consultez notre FAQ pour trouver rapidement des réponses à vos questions", "Check our FAQ to quickly find answers to your questions")}
+              Consultez notre FAQ pour trouver rapidement des réponses à vos questions
             </motion.p>
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -293,7 +353,7 @@ const Contact = () => {
             >
               <Button variant="hero" asChild>
                 <Link to="/#faq" className="flex items-center gap-2">
-                  {t("Voir la FAQ", "View FAQ")}
+                  Voir la FAQ
                   <ArrowRight className="w-4 h-4" />
                 </Link>
               </Button>

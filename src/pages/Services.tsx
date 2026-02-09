@@ -117,7 +117,7 @@ const processSteps = [
   {
     step: "02",
     title: "Capture",
-    description: "Notre équipe se déplace avec le Pro 3 pour scanner votre espace. Rapide et non-intrusif.",
+    description: "Notre équipe se déplace avec le  Pro 3 pour scanner votre espace. Rapide et non-intrusif.",
   },
   {
     step: "03",
@@ -161,7 +161,8 @@ const Services = () => {
               transition={{ delay: 0.2 }}
               className="text-lg text-primary-foreground/70"
             >
-              Des solutions adaptées à tous vos besoins, de la simple visite virtuelle aux projets de documentation technique les plus complexes.
+              Des solutions adaptées à tous vos besoins, de la simple visite virtuelle 
+              aux projets de documentation technique les plus complexes.
             </motion.p>
           </div>
         </div>
@@ -203,32 +204,26 @@ const Services = () => {
                 Technologie de Pointe
               </span>
               <h2 className="text-3xl md:text-4xl font-display font-bold text-foreground mb-6">
-                Scanner 3D Matterport Pro 3
+                
               </h2>
               <p className="text-muted-foreground mb-6">
-                Notre scanner 3D le plus avancé du marché. Grâce à ses capteurs LiDAR et ses caméras haute résolution, il capture chaque espace avec une précision millimétrique et une qualité d'image exceptionnelle.
+                Notre scanner 3D le plus avancé du marché. Grâce à ses capteurs 
+                LiDAR et ses caméras haute résolution, il capture chaque espace avec une précision 
+                millimétrique et une qualité d'image exceptionnelle.
               </p>
               <ul className="space-y-3">
-                <li className="flex items-start gap-3">
-                  <Check className="w-5 h-5 text-secondary mt-0.5 flex-shrink-0" />
-                  <span className="text-foreground">Résolution 4K pour des images d'une netteté parfaite</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <Check className="w-5 h-5 text-secondary mt-0.5 flex-shrink-0" />
-                  <span className="text-foreground">Capteur LiDAR pour des mesures ultra-précises</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <Check className="w-5 h-5 text-secondary mt-0.5 flex-shrink-0" />
-                  <span className="text-foreground">Capture rapide: jusqu'à 300m²/heure</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <Check className="w-5 h-5 text-secondary mt-0.5 flex-shrink-0" />
-                  <span className="text-foreground">Compatible réalité virtuelle et augmentée</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <Check className="w-5 h-5 text-secondary mt-0.5 flex-shrink-0" />
-                  <span className="text-foreground">Format universel exportable vers CAO/BIM</span>
-                </li>
+                {[
+                  "Résolution 4K pour des images d'une netteté parfaite",
+                  "Capteur LiDAR pour des mesures ultra-précises",
+                  "Capture rapide: jusqu'à 300m²/heure",
+                  "Compatible réalité virtuelle et augmentée",
+                  "Format universel exportable vers CAO/BIM",
+                ].map((item) => (
+                  <li key={item} className="flex items-start gap-3">
+                    <Check className="w-5 h-5 text-secondary mt-0.5 flex-shrink-0" />
+                    <span className="text-foreground">{item}</span>
+                  </li>
+                ))}
               </ul>
             </motion.div>
 
@@ -253,6 +248,77 @@ const Services = () => {
           </div>
         </div>
       </section>
+
+      {/* Pricing 
+      {/* <section className="py-24 bg-background">
+        <div className="container mx-auto px-4 lg:px-8">
+          <SectionHeading
+            badge="Tarifs"
+            title="Nos Forfaits"
+            description="Des offres transparentes adaptées à chaque besoin et budget"
+          />
+
+          <div className="grid md:grid-cols-3 gap-6">
+            {packages.map((pkg, index) => (
+              <motion.div
+                key={pkg.name}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.1 }}
+                className={`relative rounded-2xl p-8 ${
+                  pkg.recommended
+                    ? "bg-gradient-hero text-primary-foreground ring-2 ring-secondary"
+                    : "bg-card shadow-soft"
+                }`}
+              >
+                {pkg.recommended && (
+                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-secondary text-secondary-foreground text-sm font-medium rounded-full">
+                    Recommandé
+                  </span>
+                )}
+                
+                <h3 className={`font-display font-bold text-2xl mb-2 ${
+                  pkg.recommended ? "text-primary-foreground" : "text-foreground"
+                }`}>
+                  {pkg.name}
+                </h3>
+                <p className={`text-sm mb-4 ${
+                  pkg.recommended ? "text-primary-foreground/70" : "text-muted-foreground"
+                }`}>
+                  {pkg.description}
+                </p>
+                <div className={`text-3xl font-display font-bold mb-6 ${
+                  pkg.recommended ? "text-secondary" : "text-foreground"
+                }`}>
+                  {pkg.price}
+                </div>
+                
+                <ul className="space-y-3 mb-8">
+                  {pkg.features.map((feature) => (
+                    <li key={feature} className="flex items-start gap-3">
+                      <Check className={`w-5 h-5 mt-0.5 flex-shrink-0 ${
+                        pkg.recommended ? "text-secondary" : "text-secondary"
+                      }`} />
+                      <span className={pkg.recommended ? "text-primary-foreground/90" : "text-foreground"}>
+                        {feature}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+
+                <Button
+                  variant={pkg.recommended ? "hero" : "outline"}
+                  className="w-full"
+                  asChild
+                >
+                  <Link to="/contact">Choisir ce forfait</Link>
+                </Button>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>*/}
 
       {/* Industries */}
       <section className="py-24 bg-muted/50">
@@ -337,7 +403,8 @@ const Services = () => {
               transition={{ delay: 0.1 }}
               className="text-lg text-primary-foreground/70 mb-10"
             >
-              Contactez-nous pour un devis personnalisé gratuit. Notre équipe vous accompagne de A à Z dans votre projet.
+              Contactez-nous pour un devis personnalisé gratuit. Notre équipe vous 
+              accompagne de A à Z dans votre projet.
             </motion.p>
             <motion.div
               initial={{ opacity: 0, y: 20 }}

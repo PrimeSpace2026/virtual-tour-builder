@@ -2,7 +2,6 @@ import { motion } from "framer-motion";
 import { useInView } from "framer-motion";
 import { useRef, useEffect, useState } from "react";
 
-
 interface StatItemProps {
   value: number;
   suffix: string;
@@ -54,16 +53,14 @@ const StatItem = ({ value, suffix, label, delay }: StatItemProps) => {
   );
 };
 
+const stats = [
+  { value: 250, suffix: "+", label: "Projets Réalisés" },
+  { value: 98, suffix: "%", label: "Clients Satisfaits" },
+  { value: 10, suffix: "+", label: "Années d'Expérience" },
+  { value: 48, suffix: "h", label: "Délai de Livraison" },
+];
+
 export const StatsSection = () => {
-  const { t } = useLanguage();
-
-  const stats = [
-    { value: 250, suffix: "+", label: t("Projets Réalisés", "Completed Projects") },
-    { value: 98, suffix: "%", label: t("Clients Satisfaits", "Satisfied Clients") },
-    { value: 10, suffix: "+", label: t("Années d'Expérience", "Years of Experience") },
-    { value: 48, suffix: "h", label: t("Délai de Livraison", "Delivery Time") },
-  ];
-
   return (
     <section className="bg-gradient-hero py-20">
       <div className="container mx-auto px-4 lg:px-8">

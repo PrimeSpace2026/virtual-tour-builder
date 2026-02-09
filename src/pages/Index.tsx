@@ -25,6 +25,39 @@ import portfolioCoffee from "@/assets/hard-rock.jpg";
 import portfolioMuseum from "@/assets/portfolio-museum.jpg";
 import westwoodGym from "@/assets/westwood-gym-sandymount-1.jpg.webp";
 
+const features = [
+  {
+    icon: Scan,
+    title: "Capture 3D Précise",
+    description: "Technologie intelligente pour une reproduction fidèle de chaque détail de votre espace.",
+  },
+  {
+    icon: Eye,
+    title: "Immersion Totale",
+    description: "Expérience de visite fluide et interactive permettant une exploration libre en 360°.",
+  },
+  {
+    icon: Smartphone,
+    title: "Compatible Tous Appareils",
+    description: "Accès depuis n'importe quel navigateur, smartphone, tablette ou casque VR.",
+  },
+  {
+    icon: Globe,
+    title: "Partage Facile",
+    description: "Intégration simple sur votre site web et partage via un lien unique.",
+  },
+  {
+    icon: Zap,
+    title: "Livraison Rapide",
+    description: "Traitement professionnel et livraison de votre visite virtuelle sous 24-48h.",
+  },
+  {
+    icon: Shield,
+    title: "Qualité Garantie",
+    description: "Résolution 4K, mesures précises et rendu photoréaliste de haute qualité.",
+  },
+];
+
 const projects = [
   { image: portfolioHotel, title: "Clayton hotel Belfast", category: "Hôtellerie", tourUrl: "https://my.matterport.com/show/?m=1aWQXDdxWnG" },
   { image: portfolioApartment, title: "Villa Ireland", category: "Immobilier", tourUrl: "https://my.matterport.com/show/?m=t84zwhnXjvJ" },
@@ -59,21 +92,13 @@ const testimonials = [
 const Index = () => {
   const [selectedProject, setSelectedProject] = useState<typeof projects[0] | null>(null);
 
-  const features = [
-    { icon: Scan, title: "Capture 3D Précise", description: "Technologie intelligente pour une reproduction fidèle de chaque détail de votre espace." },
-    { icon: Eye, title: "Immersion Totale", description: "Expérience de visite fluide et interactive permettant une exploration libre en 360°." },
-    { icon: Smartphone, title: "Compatible Tous Appareils", description: "Accès depuis n'importe quel navigateur, smartphone, tablette ou casque VR." },
-    { icon: Globe, title: "Partage Facile", description: "Intégration simple sur votre site web et partage via un lien unique." },
-    { icon: Zap, title: "Livraison Rapide", description: "Traitement professionnel et livraison de votre visite virtuelle sous 24-48h." },
-    { icon: Shield, title: "Qualité Garantie", description: "Résolution 4K, mesures précises et rendu photoréaliste de haute qualité." },
-  ];
-
   return (
     <Layout>
       <WhatsAppButton />
       
       {/* Hero Section */}
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
+        {/* Background Image */}
         <div className="absolute inset-0">
           <img
             src={heroImage}
@@ -83,6 +108,7 @@ const Index = () => {
           <div className="absolute inset-0 bg-gradient-to-b from-primary/80 via-primary/60 to-primary/90" />
         </div>
 
+        {/* Hero Content */}
         <div className="relative z-10 container mx-auto px-4 lg:px-8 pt-24 pb-12">
           <div className="max-w-4xl mx-auto text-center">
             <motion.div
@@ -91,7 +117,7 @@ const Index = () => {
               transition={{ duration: 0.6 }}
             >
               <span className="inline-block px-4 py-2 rounded-full bg-primary-foreground/10 text-primary-foreground text-sm font-medium mb-6 backdrop-blur-sm border border-primary-foreground/20">
-                Visite Virtuelle 3D Immersive
+                ✨ 
               </span>
             </motion.div>
 
@@ -101,8 +127,8 @@ const Index = () => {
               transition={{ duration: 0.6, delay: 0.1 }}
               className="text-4xl md:text-5xl lg:text-7xl font-display font-bold text-primary-foreground mb-6 leading-tight"
             >
-              Offrez la visite{" "}
-              <span className="text-gradient-accent">avant la réservation</span>
+              Offrez la visite   {""} 
+              <span className="text-gradient-accent"> avant la réservation</span>
             </motion.h1>
 
             <motion.p
@@ -111,7 +137,7 @@ const Index = () => {
               transition={{ duration: 0.6, delay: 0.2 }}
               className="text-lg md:text-xl text-primary-foreground/80 mb-10 max-w-2xl mx-auto"
             >
-              Augmentez vos réservations et facilitez les visites grâce à nos visites virtuelles 3D.
+             Augmentez vos réservations et facilitez les visites grâce à nos visites virtuelles 3D.
             </motion.p>
 
             <motion.div
@@ -126,10 +152,15 @@ const Index = () => {
                   <ArrowRight className="w-5 h-5" />
                 </Link>
               </Button>
+             {/* <Button variant="hero-outline" size="lg" className="flex items-center gap-2">
+                <Play className="w-5 h-5" />
+                Voir une Démo
+              </Button>  */}
             </motion.div>
           </div>
         </div>
 
+        {/* Scroll indicator */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -146,7 +177,7 @@ const Index = () => {
         </motion.div>
       </section>
 
-      {/* Portfolio Preview */}
+ {/* Portfolio Preview */}
       <section className="py-24 bg-background">
         <div className="container mx-auto px-4 lg:px-8">
           <SectionHeading
@@ -184,7 +215,6 @@ const Index = () => {
           </motion.div>
         </div>
       </section>
-
       {/* Features Section */}
       <section className="py-24 bg-background">
         <div className="container mx-auto px-4 lg:px-8">
@@ -208,7 +238,10 @@ const Index = () => {
         </div>
       </section>
 
+      {/* Stats Section */}
       <StatsSection />
+
+     
 
       {/* Testimonials */}
       <section className="py-24 bg-muted/50">
@@ -231,6 +264,7 @@ const Index = () => {
         </div>
       </section>
 
+      {/* FAQ Section */}
       <FAQSection />
 
       {/* CTA Section */}
@@ -252,7 +286,8 @@ const Index = () => {
               transition={{ delay: 0.1 }}
               className="text-lg text-primary-foreground/70 mb-10"
             >
-              Contactez-nous dès aujourd'hui pour un devis gratuit et découvrez comment nos visites virtuelles peuvent booster votre activité.
+              Contactez-nous dès aujourd'hui pour un devis gratuit et découvrez 
+              comment nos visites virtuelles peuvent booster votre activité.
             </motion.p>
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -274,7 +309,7 @@ const Index = () => {
           </div>
         </div>
       </section>
-
+      {/* Matterport Tour Modal */}
       <Dialog open={!!selectedProject} onOpenChange={(open) => !open && setSelectedProject(null)}>
         <DialogContent className="max-w-5xl w-[95vw] p-0 gap-0 overflow-hidden">
           <DialogHeader className="p-4 pb-2">
