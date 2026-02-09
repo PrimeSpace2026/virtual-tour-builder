@@ -3,21 +3,18 @@ import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, Phone } from "lucide-react";
 import { Button } from "./ui/button";
-import { LanguageSwitcher } from "./LanguageSwitcher";
-import { useTranslation } from "@/hooks/useTranslation";
 import { cn } from "@/lib/utils";
 
 const navLinks = [
-  { href: "/", iconKey: "nav.home" },
-  { href: "/services", iconKey: "nav.services" },
-  { href: "/portfolio", iconKey: "nav.portfolio" },
-  { href: "/benefits", iconKey: "nav.benefits" },
-  { href: "/about", iconKey: "nav.about" },
-  { href: "/contact", iconKey: "nav.contact" },
+  { href: "/", label: "Accueil" },
+  { href: "/services", label: "Services" },
+  { href: "/portfolio", label: "Portfolio" },
+  { href: "/benefits", label: "Avantages" },
+  { href: "/about", label: "À Propos" },
+  { href: "/contact", label: "Contact" },
 ];
 
 export const Navbar = () => {
-  const t = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
@@ -73,7 +70,7 @@ export const Navbar = () => {
                   location.pathname === link.href && "text-secondary"
                 )}
               >
-                {t(link.iconKey)}
+                {link.label}
                 <span className={cn(
                   "absolute -bottom-1 left-0 h-0.5 bg-secondary transition-all duration-300",
                   location.pathname === link.href ? "w-full" : "w-0 group-hover:w-full"
@@ -84,11 +81,10 @@ export const Navbar = () => {
 
           {/* CTA Button */}
           <div className="hidden lg:flex items-center gap-4">
-            <LanguageSwitcher />
             <Button variant={scrolled ? "secondary" : "hero"} size="default" asChild>
               <Link to="/contact" className="flex items-center gap-2">
                 <Phone className="w-4 h-4" />
-                {t("nav.quote")}
+                Demander un Devis
               </Link>
             </Button>
           </div>
@@ -128,16 +124,13 @@ export const Navbar = () => {
                       : "text-foreground hover:text-secondary"
                   )}
                 >
-                  {t(link.iconKey)}
+                  {link.label}
                 </Link>
               ))}
-              <div className="pt-4 border-t border-border">
-                <LanguageSwitcher mobile />
-              </div>
               <Button variant="secondary" className="mt-4 w-full" asChild>
                 <Link to="/contact" className="flex items-center gap-2">
                   <Phone className="w-4 h-4" />
-                  {t("nav.quote")}
+                  Demander un Devis
                 </Link>
               </Button>
             </div>

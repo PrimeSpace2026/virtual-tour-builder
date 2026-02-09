@@ -21,7 +21,6 @@ import { Button } from "@/components/ui/button";
 import { SectionHeading } from "@/components/SectionHeading";
 import { FeatureCard } from "@/components/FeatureCard";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
-import { useTranslation } from "@/hooks/useTranslation";
 
 const services = [
   {
@@ -118,7 +117,7 @@ const processSteps = [
   {
     step: "02",
     title: "Capture",
-    description: "Notre équipe se déplace avec le  Pro 3 pour scanner votre espace. Rapide et non-intrusif.",
+    description: "Notre équipe se déplace avec le Pro 3 pour scanner votre espace. Rapide et non-intrusif.",
   },
   {
     step: "03",
@@ -133,73 +132,6 @@ const processSteps = [
 ];
 
 const Services = () => {
-  const t = useTranslation();
-
-  const services = [
-    { icon: Camera, title: t("services.items.0.title"), description: t("services.items.0.description") },
-    { icon: Move3d, title: t("services.items.1.title"), description: t("services.items.1.description") },
-    { icon: Layout, title: t("services.items.2.title"), description: t("services.items.2.description") },
-    { icon: Image, title: t("services.items.3.title"), description: t("services.items.3.description") },
-    { icon: Video, title: t("services.items.4.title"), description: t("services.items.4.description") },
-    { icon: FileText, title: t("services.items.5.title"), description: t("services.items.5.description") },
-  ];
-
-  const packages = [
-    {
-      name: t("services.pricing.packages.0.name"),
-      description: t("services.pricing.packages.0.description"),
-      price: t("services.pricing.packages.0.price"),
-      features: t("services.pricing.packages.0.features") as string[],
-      recommended: false,
-    },
-    {
-      name: t("services.pricing.packages.1.name"),
-      description: t("services.pricing.packages.1.description"),
-      price: t("services.pricing.packages.1.price"),
-      features: t("services.pricing.packages.1.features") as string[],
-      recommended: true,
-    },
-    {
-      name: t("services.pricing.packages.2.name"),
-      description: t("services.pricing.packages.2.description"),
-      price: t("services.pricing.packages.2.price"),
-      features: t("services.pricing.packages.2.features") as string[],
-      recommended: false,
-    },
-  ];
-
-  const industries = [
-    { icon: Building2, name: t("services.industries.items.0.name"), description: t("services.industries.items.0.description") },
-    { icon: Hotel, name: t("services.industries.items.1.name"), description: t("services.industries.items.1.description") },
-    { icon: Store, name: t("services.industries.items.2.name"), description: t("services.industries.items.2.description") },
-    { icon: Landmark, name: t("services.industries.items.3.name"), description: t("services.industries.items.3.description") },
-    { icon: Building, name: t("services.industries.items.4.name"), description: t("services.industries.items.4.description") },
-    { icon: Utensils, name: t("services.industries.items.5.name"), description: t("services.industries.items.5.description") },
-  ];
-
-  const processSteps = [
-    {
-      step: t("services.process.steps.0.step"),
-      title: t("services.process.steps.0.title"),
-      description: t("services.process.steps.0.description"),
-    },
-    {
-      step: t("services.process.steps.1.step"),
-      title: t("services.process.steps.1.title"),
-      description: t("services.process.steps.1.description"),
-    },
-    {
-      step: t("services.process.steps.2.step"),
-      title: t("services.process.steps.2.title"),
-      description: t("services.process.steps.2.description"),
-    },
-    {
-      step: t("services.process.steps.3.step"),
-      title: t("services.process.steps.3.title"),
-      description: t("services.process.steps.3.description"),
-    },
-  ];
-
   return (
     <PageLayout>
       <WhatsAppButton />
@@ -213,7 +145,7 @@ const Services = () => {
               animate={{ opacity: 1, y: 0 }}
               className="inline-block px-4 py-2 rounded-full bg-primary-foreground/10 text-primary-foreground text-sm font-medium mb-6 backdrop-blur-sm border border-primary-foreground/20"
             >
-              {t("services.hero.badge")}
+              Nos Services
             </motion.span>
             <motion.h1
               initial={{ opacity: 0, y: 20 }}
@@ -221,7 +153,7 @@ const Services = () => {
               transition={{ delay: 0.1 }}
               className="text-4xl md:text-5xl lg:text-6xl font-display font-bold text-primary-foreground mb-6"
             >
-              {t("services.hero.title")}
+              Solutions de Visites Virtuelles 3D
             </motion.h1>
             <motion.p
               initial={{ opacity: 0, y: 20 }}
@@ -229,7 +161,7 @@ const Services = () => {
               transition={{ delay: 0.2 }}
               className="text-lg text-primary-foreground/70"
             >
-              {t("services.hero.description")}
+              Des solutions adaptées à tous vos besoins, de la simple visite virtuelle aux projets de documentation technique les plus complexes.
             </motion.p>
           </div>
         </div>
@@ -240,8 +172,8 @@ const Services = () => {
         <div className="container mx-auto px-4 lg:px-8">
           <SectionHeading
             badge="Ce que nous offrons"
-            title={t("services.hero.title")}
-            description={t("services.hero.description")}
+            title="Services Complets"
+            description="Une gamme complète de services pour digitaliser vos espaces"
           />
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -271,26 +203,32 @@ const Services = () => {
                 Technologie de Pointe
               </span>
               <h2 className="text-3xl md:text-4xl font-display font-bold text-foreground mb-6">
-                
+                Scanner 3D Matterport Pro 3
               </h2>
               <p className="text-muted-foreground mb-6">
-                Notre scanner 3D le plus avancé du marché. Grâce à ses capteurs 
-                LiDAR et ses caméras haute résolution, il capture chaque espace avec une précision 
-                millimétrique et une qualité d'image exceptionnelle.
+                Notre scanner 3D le plus avancé du marché. Grâce à ses capteurs LiDAR et ses caméras haute résolution, il capture chaque espace avec une précision millimétrique et une qualité d'image exceptionnelle.
               </p>
               <ul className="space-y-3">
-                {[
-                  "Résolution 4K pour des images d'une netteté parfaite",
-                  "Capteur LiDAR pour des mesures ultra-précises",
-                  "Capture rapide: jusqu'à 300m²/heure",
-                  "Compatible réalité virtuelle et augmentée",
-                  "Format universel exportable vers CAO/BIM",
-                ].map((item) => (
-                  <li key={item} className="flex items-start gap-3">
-                    <Check className="w-5 h-5 text-secondary mt-0.5 flex-shrink-0" />
-                    <span className="text-foreground">{item}</span>
-                  </li>
-                ))}
+                <li className="flex items-start gap-3">
+                  <Check className="w-5 h-5 text-secondary mt-0.5 flex-shrink-0" />
+                  <span className="text-foreground">Résolution 4K pour des images d'une netteté parfaite</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <Check className="w-5 h-5 text-secondary mt-0.5 flex-shrink-0" />
+                  <span className="text-foreground">Capteur LiDAR pour des mesures ultra-précises</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <Check className="w-5 h-5 text-secondary mt-0.5 flex-shrink-0" />
+                  <span className="text-foreground">Capture rapide: jusqu'à 300m²/heure</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <Check className="w-5 h-5 text-secondary mt-0.5 flex-shrink-0" />
+                  <span className="text-foreground">Compatible réalité virtuelle et augmentée</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <Check className="w-5 h-5 text-secondary mt-0.5 flex-shrink-0" />
+                  <span className="text-foreground">Format universel exportable vers CAO/BIM</span>
+                </li>
               </ul>
             </motion.div>
 
@@ -316,84 +254,13 @@ const Services = () => {
         </div>
       </section>
 
-      {/* Pricing 
-      {/* <section className="py-24 bg-background">
-        <div className="container mx-auto px-4 lg:px-8">
-          <SectionHeading
-            badge="Tarifs"
-            title="Nos Forfaits"
-            description="Des offres transparentes adaptées à chaque besoin et budget"
-          />
-
-          <div className="grid md:grid-cols-3 gap-6">
-            {packages.map((pkg, index) => (
-              <motion.div
-                key={pkg.name}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.1 }}
-                className={`relative rounded-2xl p-8 ${
-                  pkg.recommended
-                    ? "bg-gradient-hero text-primary-foreground ring-2 ring-secondary"
-                    : "bg-card shadow-soft"
-                }`}
-              >
-                {pkg.recommended && (
-                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-secondary text-secondary-foreground text-sm font-medium rounded-full">
-                    Recommandé
-                  </span>
-                )}
-                
-                <h3 className={`font-display font-bold text-2xl mb-2 ${
-                  pkg.recommended ? "text-primary-foreground" : "text-foreground"
-                }`}>
-                  {pkg.name}
-                </h3>
-                <p className={`text-sm mb-4 ${
-                  pkg.recommended ? "text-primary-foreground/70" : "text-muted-foreground"
-                }`}>
-                  {pkg.description}
-                </p>
-                <div className={`text-3xl font-display font-bold mb-6 ${
-                  pkg.recommended ? "text-secondary" : "text-foreground"
-                }`}>
-                  {pkg.price}
-                </div>
-                
-                <ul className="space-y-3 mb-8">
-                  {pkg.features.map((feature) => (
-                    <li key={feature} className="flex items-start gap-3">
-                      <Check className={`w-5 h-5 mt-0.5 flex-shrink-0 ${
-                        pkg.recommended ? "text-secondary" : "text-secondary"
-                      }`} />
-                      <span className={pkg.recommended ? "text-primary-foreground/90" : "text-foreground"}>
-                        {feature}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-
-                <Button
-                  variant={pkg.recommended ? "hero" : "outline"}
-                  className="w-full"
-                  asChild
-                >
-                  <Link to="/contact">Choisir ce forfait</Link>
-                </Button>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>*/}
-
       {/* Industries */}
       <section className="py-24 bg-muted/50">
         <div className="container mx-auto px-4 lg:px-8">
           <SectionHeading
-            badge={t("services.industries.badge")}
-            title={t("services.industries.title")}
-            description={t("services.industries.description")}
+            badge="Secteurs d'Activité"
+            title="Solutions Pour Tous Les Secteurs"
+            description="Nos visites virtuelles s'adaptent à tous les types d'espaces et d'industries"
           />
 
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
@@ -419,9 +286,9 @@ const Services = () => {
       <section className="py-24 bg-background">
         <div className="container mx-auto px-4 lg:px-8">
           <SectionHeading
-            badge={t("services.process.badge")}
-            title={t("services.process.title")}
-            description={t("services.process.description")}
+            badge="Notre Processus"
+            title="Comment Ça Marche?"
+            description="Un processus simple et efficace de la prise de contact à la livraison"
           />
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -461,7 +328,7 @@ const Services = () => {
               viewport={{ once: true }}
               className="text-3xl md:text-4xl font-display font-bold text-primary-foreground mb-6"
             >
-              {t("services.cta.title")}
+              Prêt à Digitaliser Votre Espace?
             </motion.h2>
             <motion.p
               initial={{ opacity: 0, y: 20 }}
@@ -470,7 +337,7 @@ const Services = () => {
               transition={{ delay: 0.1 }}
               className="text-lg text-primary-foreground/70 mb-10"
             >
-              {t("services.cta.description")}
+              Contactez-nous pour un devis personnalisé gratuit. Notre équipe vous accompagne de A à Z dans votre projet.
             </motion.p>
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -480,7 +347,7 @@ const Services = () => {
             >
               <Button variant="hero" size="lg" asChild>
                 <Link to="/contact" className="flex items-center gap-2">
-                  {t("services.cta.button")}
+                  Obtenir un Devis Gratuit
                   <ArrowRight className="w-5 h-5" />
                 </Link>
               </Button>

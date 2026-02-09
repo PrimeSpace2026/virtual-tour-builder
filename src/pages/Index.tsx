@@ -11,7 +11,6 @@ import { TestimonialCard } from "@/components/TestimonialCard";
 import { StatsSection } from "@/components/StatsSection";
 import { FAQSection } from "@/components/FAQSection";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
-import { useTranslation } from "@/hooks/useTranslation";
 import {
   Dialog,
   DialogContent,
@@ -58,16 +57,15 @@ const testimonials = [
 ];
 
 const Index = () => {
-  const t = useTranslation();
   const [selectedProject, setSelectedProject] = useState<typeof projects[0] | null>(null);
 
   const features = [
-    { icon: Scan, title: t("index.features.items.0.title"), description: t("index.features.items.0.description") },
-    { icon: Eye, title: t("index.features.items.1.title"), description: t("index.features.items.1.description") },
-    { icon: Smartphone, title: t("index.features.items.2.title"), description: t("index.features.items.2.description") },
-    { icon: Globe, title: t("index.features.items.3.title"), description: t("index.features.items.3.description") },
-    { icon: Zap, title: t("index.features.items.4.title"), description: t("index.features.items.4.description") },
-    { icon: Shield, title: t("index.features.items.5.title"), description: t("index.features.items.5.description") },
+    { icon: Scan, title: "Capture 3D Précise", description: "Technologie intelligente pour une reproduction fidèle de chaque détail de votre espace." },
+    { icon: Eye, title: "Immersion Totale", description: "Expérience de visite fluide et interactive permettant une exploration libre en 360°." },
+    { icon: Smartphone, title: "Compatible Tous Appareils", description: "Accès depuis n'importe quel navigateur, smartphone, tablette ou casque VR." },
+    { icon: Globe, title: "Partage Facile", description: "Intégration simple sur votre site web et partage via un lien unique." },
+    { icon: Zap, title: "Livraison Rapide", description: "Traitement professionnel et livraison de votre visite virtuelle sous 24-48h." },
+    { icon: Shield, title: "Qualité Garantie", description: "Résolution 4K, mesures précises et rendu photoréaliste de haute qualité." },
   ];
 
   return (
@@ -76,7 +74,6 @@ const Index = () => {
       
       {/* Hero Section */}
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-        {/* Background Image */}
         <div className="absolute inset-0">
           <img
             src={heroImage}
@@ -86,7 +83,6 @@ const Index = () => {
           <div className="absolute inset-0 bg-gradient-to-b from-primary/80 via-primary/60 to-primary/90" />
         </div>
 
-        {/* Hero Content */}
         <div className="relative z-10 container mx-auto px-4 lg:px-8 pt-24 pb-12">
           <div className="max-w-4xl mx-auto text-center">
             <motion.div
@@ -95,7 +91,7 @@ const Index = () => {
               transition={{ duration: 0.6 }}
             >
               <span className="inline-block px-4 py-2 rounded-full bg-primary-foreground/10 text-primary-foreground text-sm font-medium mb-6 backdrop-blur-sm border border-primary-foreground/20">
-                {t("index.hero.badge")}
+                Visite Virtuelle 3D Immersive
               </span>
             </motion.div>
 
@@ -105,8 +101,8 @@ const Index = () => {
               transition={{ duration: 0.6, delay: 0.1 }}
               className="text-4xl md:text-5xl lg:text-7xl font-display font-bold text-primary-foreground mb-6 leading-tight"
             >
-              {t("index.hero.title")}   {""} 
-              <span className="text-gradient-accent"> {t("index.hero.titleHighlight")}</span>
+              Offrez la visite{" "}
+              <span className="text-gradient-accent">avant la réservation</span>
             </motion.h1>
 
             <motion.p
@@ -115,7 +111,7 @@ const Index = () => {
               transition={{ duration: 0.6, delay: 0.2 }}
               className="text-lg md:text-xl text-primary-foreground/80 mb-10 max-w-2xl mx-auto"
             >
-             {t("index.hero.description")}
+              Augmentez vos réservations et facilitez les visites grâce à nos visites virtuelles 3D.
             </motion.p>
 
             <motion.div
@@ -126,19 +122,14 @@ const Index = () => {
             >
               <Button variant="hero" size="lg" asChild>
                 <Link to="/contact" className="flex items-center gap-2">
-                  {t("index.hero.cta1")}
+                  Demander un Devis
                   <ArrowRight className="w-5 h-5" />
                 </Link>
               </Button>
-             {/* <Button variant="hero-outline" size="lg" className="flex items-center gap-2">
-                <Play className="w-5 h-5" />
-                Voir une Démo
-              </Button>  */}
             </motion.div>
           </div>
         </div>
 
-        {/* Scroll indicator */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -155,7 +146,7 @@ const Index = () => {
         </motion.div>
       </section>
 
- {/* Portfolio Preview */}
+      {/* Portfolio Preview */}
       <section className="py-24 bg-background">
         <div className="container mx-auto px-4 lg:px-8">
           <SectionHeading
@@ -193,13 +184,14 @@ const Index = () => {
           </motion.div>
         </div>
       </section>
+
       {/* Features Section */}
       <section className="py-24 bg-background">
         <div className="container mx-auto px-4 lg:px-8">
           <SectionHeading
-            badge={t("index.features.badge")}
-            title={t("index.features.title")}
-            description={t("index.features.description")}
+            badge="Nos Avantages"
+            title="Pourquoi Choisir PrimeSpace ?"
+            description="Notre technologie offre une qualité inégalée pour vos visites virtuelles"
           />
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -216,18 +208,15 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Stats Section */}
       <StatsSection />
-
-     
 
       {/* Testimonials */}
       <section className="py-24 bg-muted/50">
         <div className="container mx-auto px-4 lg:px-8">
           <SectionHeading
-            badge={t("index.testimonials.badge")}
-            title={t("index.testimonials.title")}
-            description={t("index.testimonials.description")}
+            badge="Témoignages"
+            title="Ce Que Disent Nos Clients"
+            description="Découvrez l'impact de nos visites virtuelles sur leur activité"
           />
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -242,7 +231,6 @@ const Index = () => {
         </div>
       </section>
 
-      {/* FAQ Section */}
       <FAQSection />
 
       {/* CTA Section */}
@@ -255,7 +243,7 @@ const Index = () => {
               viewport={{ once: true }}
               className="text-3xl md:text-4xl lg:text-5xl font-display font-bold text-primary-foreground mb-6"
             >
-              {t("index.cta.title")}
+              Prêt à Transformer Votre Espace?
             </motion.h2>
             <motion.p
               initial={{ opacity: 0, y: 20 }}
@@ -264,7 +252,7 @@ const Index = () => {
               transition={{ delay: 0.1 }}
               className="text-lg text-primary-foreground/70 mb-10"
             >
-              {t("index.cta.description")}
+              Contactez-nous dès aujourd'hui pour un devis gratuit et découvrez comment nos visites virtuelles peuvent booster votre activité.
             </motion.p>
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -275,18 +263,18 @@ const Index = () => {
             >
               <Button variant="hero" size="lg" asChild>
                 <Link to="/contact" className="flex items-center gap-2">
-                  {t("index.cta.button")}
+                  Demander un Devis Gratuit
                   <ArrowRight className="w-5 h-5" />
                 </Link>
               </Button>
               <Button variant="hero-outline" size="lg" asChild>
-                <Link to="/services">{t("index.hero.cta2")}</Link>
+                <Link to="/services">Découvrir Nos Services</Link>
               </Button>
             </motion.div>
           </div>
         </div>
       </section>
-      {/* Matterport Tour Modal */}
+
       <Dialog open={!!selectedProject} onOpenChange={(open) => !open && setSelectedProject(null)}>
         <DialogContent className="max-w-5xl w-[95vw] p-0 gap-0 overflow-hidden">
           <DialogHeader className="p-4 pb-2">
