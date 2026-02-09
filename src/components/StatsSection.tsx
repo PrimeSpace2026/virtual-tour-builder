@@ -56,8 +56,8 @@ const StatItem = ({ value, suffix, label, delay }: StatItemProps) => {
 const stats = [
   { value: 250, suffix: "+", label: "Projets Réalisés" },
   { value: 98, suffix: "%", label: "Clients Satisfaits" },
-  { value: 15, suffix: "+", label: "Années d'Expérience" },
-  { value: 24, suffix: "h", label: "Délai de Livraison" },
+  { value: 10, suffix: "+", label: "Années d'Expérience" },
+  { value: 48, suffix: "h", label: "Délai de Livraison" },
 ];
 
 export const StatsSection = () => {
