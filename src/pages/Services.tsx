@@ -25,7 +25,7 @@ import { WhatsAppButton } from "@/components/WhatsAppButton";
 const services = [
   {
     icon: Camera,
-    title: "Capture Matterport Pro 3",
+    title: "Scan 3D Haute Précision",
     description: "Scanner haute précision capturant chaque détail de votre espace avec une résolution 4K et des mesures exactes.",
   },
   {
@@ -204,7 +204,7 @@ const Services = () => {
                 Technologie de Pointe
               </span>
               <h2 className="text-3xl md:text-4xl font-display font-bold text-foreground mb-6">
-                Matter port Pro 3: La Référence Mondiale
+                
               </h2>
               <p className="text-muted-foreground mb-6">
                 Notre scanner 3D le plus avancé du marché. Grâce à ses capteurs 
