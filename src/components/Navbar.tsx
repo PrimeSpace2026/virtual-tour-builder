@@ -1,23 +1,25 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, Phone } from "lucide-react";
+import { Menu, X, Phone, Globe } from "lucide-react";
 import { Button } from "./ui/button";
 import { cn } from "@/lib/utils";
-
-const navLinks = [
-  { href: "/", label: "Accueil" },
-  { href: "/services", label: "Services" },
-  { href: "/portfolio", label: "Portfolio" },
-  { href: "/benefits", label: "Avantages" },
-  { href: "/about", label: "À Propos" },
-  { href: "/contact", label: "Contact" },
-];
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
+  const { language, setLanguage, t } = useLanguage();
+
+  const navLinks = [
+    { href: "/", label: t("Accueil", "Home") },
+    { href: "/services", label: "Services" },
+    { href: "/portfolio", label: "Portfolio" },
+    { href: "/benefits", label: t("Avantages", "Benefits") },
+    { href: "/about", label: t("À Propos", "About") },
+    { href: "/contact", label: "Contact" },
+  ];
 
   useEffect(() => {
     const handleScroll = () => {
@@ -79,12 +81,22 @@ export const Navbar = () => {
             ))}
           </div>
 
-          {/* CTA Button */}
-          <div className="hidden lg:flex items-center gap-4">
+          {/* Language Toggle + CTA Button */}
+          <div className="hidden lg:flex items-center gap-3">
+            <button
+              onClick={() => setLanguage(language === "fr" ? "en" : "fr")}
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-2 rounded-lg font-medium text-sm transition-colors",
+                scrolled ? "text-foreground hover:bg-muted" : "text-primary-foreground hover:bg-primary-foreground/10"
+              )}
+            >
+              <Globe className="w-4 h-4" />
+              {language === "fr" ? "EN" : "FR"}
+            </button>
             <Button variant={scrolled ? "secondary" : "hero"} size="default" asChild>
               <Link to="/contact" className="flex items-center gap-2">
                 <Phone className="w-4 h-4" />
-                Demander un Devis
+                {t("Demander un Devis", "Get a Quote")}
               </Link>
             </Button>
           </div>
@@ -127,10 +139,17 @@ export const Navbar = () => {
                   {link.label}
                 </Link>
               ))}
+              <button
+                onClick={() => setLanguage(language === "fr" ? "en" : "fr")}
+                className="flex items-center gap-2 font-medium py-2 text-foreground hover:text-secondary transition-colors"
+              >
+                <Globe className="w-4 h-4" />
+                {language === "fr" ? "English" : "Français"}
+              </button>
               <Button variant="secondary" className="mt-4 w-full" asChild>
                 <Link to="/contact" className="flex items-center gap-2">
                   <Phone className="w-4 h-4" />
-                  Demander un Devis
+                  {t("Demander un Devis", "Get a Quote")}
                 </Link>
               </Button>
             </div>
