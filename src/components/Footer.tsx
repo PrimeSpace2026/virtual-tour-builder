@@ -46,9 +46,9 @@ export const Footer = () => {
               Visites virtuelles 3D professionnelles en Tunisie.
             </p>
             <div className="space-y-3">
-              <a href="tel:+353894985067" className="flex items-center gap-3 text-primary-foreground/70 hover:text-secondary transition-colors">
+              <a href="tel:+21652664495" className="flex items-center gap-3 text-primary-foreground/70 hover:text-secondary transition-colors">
                 <Phone className="w-5 h-5" />
-                +353 89 49 85 067
+                +216 52 664 495
               </a>
               <a href="mailto:info@primespace.studio" className="flex items-center gap-3 text-primary-foreground/70 hover:text-secondary transition-colors">
                 <Mail className="w-5 h-5" />
