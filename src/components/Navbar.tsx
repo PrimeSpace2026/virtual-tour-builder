@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, Phone } from "lucide-react";
+import { Menu, X, Phone, ChevronDown, Building2, HardHat, Factory, ShieldCheck, Home, Plane, ShoppingCart, Building, Zap, Fuel, User } from "lucide-react";
 import { Button } from "./ui/button";
 import { cn } from "@/lib/utils";
 
@@ -9,14 +9,41 @@ const navLinks = [
   { href: "/", label: "Accueil" },
   { href: "/services", label: "Services" },
   { href: "/portfolio", label: "Portfolio" },
-  { href: "/benefits", label: "Avantages" },
+  { href: "/benefits", label: "Solutions", hasMega: true },
   { href: "/about", label: "À Propos" },
   { href: "/contact", label: "Contact" },
+];
+
+const megaIndustries = [
+  { icon: Building2, label: "Immobilier Commercial", href: "/industries/commercial-real-estate" },
+  { icon: HardHat, label: "Architecture & Construction" },
+  { icon: Factory, label: "Industrie" },
+  { icon: ShieldCheck, label: "Assurance" },
+  { icon: Home, label: "Construction Résidentielle" },
+  { icon: Plane, label: "Tourisme & Hôtellerie" },
+  { icon: ShoppingCart, label: "Commerce & Retail" },
+  { icon: Home, label: "Immobilier Résidentiel" },
+  { icon: Building, label: "Gouvernement" },
+  { icon: Zap, label: "Énergie & Utilités" },
+  { icon: Fuel, label: "Pétrole & Gaz" },
+];
+
+const megaRoles = [
+  "Propriétaire",
+  "Occupant Commercial",
+  "Gestionnaire Immobilier",
+  "Architecte",
+  "Designer",
+  "Professionnel Construction",
+  "Facility Manager",
+  "Agent Immobilier",
 ];
 
 export const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [megaOpen, setMegaOpen] = useState(false);
+  const megaRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
 
   useEffect(() => {
@@ -29,7 +56,18 @@ export const Navbar = () => {
 
   useEffect(() => {
     setIsOpen(false);
+    setMegaOpen(false);
   }, [location]);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (megaRef.current && !megaRef.current.contains(e.target as Node)) {
+        setMegaOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   return (
     <motion.nav
@@ -58,24 +96,95 @@ export const Navbar = () => {
 
           {/* Desktop Navigation */}
           <div className="hidden lg:flex items-center gap-8">
-            {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                to={link.href}
-                className={cn(
-                  "font-medium transition-colors relative group",
-                  scrolled ? "text-foreground" : "text-primary-foreground",
-                  location.pathname === link.href && (scrolled ? "text-[#2c0a71]" : "text-[#b088f9]")
-                )}
-              >
-                {link.label}
-                <span className={cn(
-                  "absolute -bottom-1 left-0 h-0.5 transition-all duration-300",
-                  scrolled ? "bg-[#2c0a71]" : "bg-[#b088f9]",
-                  location.pathname === link.href ? "w-full" : "w-0 group-hover:w-full"
-                )} />
-              </Link>
-            ))}
+            {navLinks.map((link) =>
+              link.hasMega ? (
+                <div key={link.href} className="relative" ref={megaRef}>
+                  <button
+                    onClick={() => setMegaOpen(!megaOpen)}
+                    className={cn(
+                      "font-medium transition-colors relative group flex items-center gap-1",
+                      scrolled ? "text-foreground" : "text-primary-foreground",
+                      location.pathname === link.href && (scrolled ? "text-[#2c0a71]" : "text-[#b088f9]")
+                    )}
+                  >
+                    {link.label}
+                    <ChevronDown className={cn("w-4 h-4 transition-transform", megaOpen && "rotate-180")} />
+                    <span className={cn(
+                      "absolute -bottom-1 left-0 h-0.5 transition-all duration-300",
+                      scrolled ? "bg-[#2c0a71]" : "bg-[#b088f9]",
+                      location.pathname === link.href ? "w-full" : "w-0 group-hover:w-full"
+                    )} />
+                  </button>
+
+                  <AnimatePresence>
+                    {megaOpen && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 10 }}
+                        transition={{ duration: 0.2 }}
+                        className="absolute top-full left-1/2 -translate-x-1/2 mt-4 w-[560px] bg-card rounded-2xl shadow-elevated border border-border p-8 z-50"
+                      >
+                        <div className="grid grid-cols-2 gap-8">
+                          {/* For Your Industry */}
+                          <div>
+                            <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-4">Pour Votre Secteur</h4>
+                            <div className="space-y-3">
+                              {megaIndustries.map((item) => (
+                                <Link
+                                  key={item.label}
+                                  to={item.href || "/benefits"}
+                                  className="flex items-center gap-3 group/item"
+                                  onClick={() => setMegaOpen(false)}
+                                >
+                                  <item.icon className="w-4 h-4 text-muted-foreground group-hover/item:text-[#2c0a71] transition-colors" />
+                                  <span className="text-sm text-foreground group-hover/item:text-[#2c0a71] transition-colors">{item.label}</span>
+                                </Link>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* For Your Role */}
+                          <div>
+                            <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-4">Pour Votre Rôle</h4>
+                            <div className="space-y-3">
+                              {megaRoles.map((role) => (
+                                <Link
+                                  key={role}
+                                  to="/benefits"
+                                  className="flex items-center gap-3 group/item"
+                                  onClick={() => setMegaOpen(false)}
+                                >
+                                  <User className="w-4 h-4 text-muted-foreground group-hover/item:text-[#2c0a71] transition-colors" />
+                                  <span className="text-sm text-foreground group-hover/item:text-[#2c0a71] transition-colors">{role}</span>
+                                </Link>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              ) : (
+                <Link
+                  key={link.href}
+                  to={link.href}
+                  className={cn(
+                    "font-medium transition-colors relative group",
+                    scrolled ? "text-foreground" : "text-primary-foreground",
+                    location.pathname === link.href && (scrolled ? "text-[#2c0a71]" : "text-[#b088f9]")
+                  )}
+                >
+                  {link.label}
+                  <span className={cn(
+                    "absolute -bottom-1 left-0 h-0.5 transition-all duration-300",
+                    scrolled ? "bg-[#2c0a71]" : "bg-[#b088f9]",
+                    location.pathname === link.href ? "w-full" : "w-0 group-hover:w-full"
+                  )} />
+                </Link>
+              )
+            )}
           </div>
 
           {/* CTA Button */}

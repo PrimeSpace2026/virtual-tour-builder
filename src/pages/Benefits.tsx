@@ -16,6 +16,22 @@ import {
   Store,
   Briefcase,
   ArrowRight,
+  Landmark,
+  PenTool,
+  Settings,
+  Megaphone,
+  Users,
+  Factory,
+  ShieldCheck as Insurance,
+  HardHat,
+  Plane,
+  ShoppingCart,
+  Home,
+  Building,
+  Zap,
+  Fuel,
+  User,
+  Handshake,
 } from "lucide-react";
 import { Layout } from "@/components/Layout";
 import { Button } from "@/components/ui/button";
@@ -124,6 +140,39 @@ const itemVariants = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
 };
 
+const solutionsList = [
+  { icon: Landmark, title: "Immobilier Commercial", subtitle: "Gérez des portefeuilles entiers" },
+  { icon: PenTool, title: "Design & Construction", subtitle: "Accélérez vos projets AEC" },
+  { icon: Settings, title: "Gestion des Installations", subtitle: "Gérez et visitez à distance" },
+  { icon: Megaphone, title: "Marketing Immobilier", subtitle: "Commercialisez vos espaces" },
+  { icon: Users, title: "Entreprise", subtitle: "Collaborez à grande échelle" },
+];
+
+const industriesList = [
+  { icon: Building2, title: "Immobilier Commercial" },
+  { icon: HardHat, title: "Architecture & Construction" },
+  { icon: Factory, title: "Industrie" },
+  { icon: Insurance, title: "Assurance" },
+  { icon: Home, title: "Construction Résidentielle" },
+  { icon: Plane, title: "Tourisme & Hôtellerie" },
+  { icon: ShoppingCart, title: "Commerce & Retail" },
+  { icon: Home, title: "Immobilier Résidentiel" },
+  { icon: Building, title: "Gouvernement" },
+  { icon: Zap, title: "Énergie & Utilités" },
+  { icon: Fuel, title: "Pétrole & Gaz" },
+];
+
+const rolesList = [
+  "Propriétaire",
+  "Occupant Commercial",
+  "Gestionnaire Immobilier",
+  "Architecte",
+  "Designer",
+  "Professionnel Construction",
+  "Facility Manager",
+  "Agent Immobilier",
+];
+
 const Benefits = () => {
   return (
     <Layout>
@@ -202,6 +251,75 @@ const Benefits = () => {
                 </p>
               </motion.div>
             ))}
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Solutions Section - Matterport Style */}
+      <section className="py-24 bg-muted/30">
+        <div className="container mx-auto px-4 lg:px-8">
+          <SectionHeading
+            badge="Nos Solutions"
+            title="Tout Ce Dont Vous Avez Besoin"
+            description="Solutions, secteurs d'activité et rôles professionnels couverts par nos visites virtuelles 3D."
+          />
+
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="grid grid-cols-1 md:grid-cols-3 gap-10 lg:gap-16"
+          >
+            {/* Column 1: Solutions */}
+            <div>
+              <h3 className="font-display font-semibold text-lg text-muted-foreground mb-6 uppercase tracking-wider text-sm">
+                Solutions
+              </h3>
+              <div className="space-y-5">
+                {solutionsList.map((item) => (
+                  <div key={item.title} className="flex items-start gap-4 group cursor-default">
+                    <div className="w-10 h-10 rounded-lg flex-shrink-0 flex items-center justify-center bg-secondary/10 text-secondary group-hover:bg-secondary group-hover:text-secondary-foreground transition-colors duration-300">
+                      <item.icon className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-foreground group-hover:text-secondary transition-colors">{item.title}</p>
+                      <p className="text-sm text-muted-foreground">{item.subtitle}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Column 2: For Your Industry */}
+            <div>
+              <h3 className="font-display font-semibold text-lg text-muted-foreground mb-6 uppercase tracking-wider text-sm">
+                Pour Votre Secteur
+              </h3>
+              <div className="space-y-4">
+                {industriesList.map((item) => (
+                  <div key={item.title} className="flex items-center gap-3 group cursor-default">
+                    <item.icon className="w-5 h-5 text-muted-foreground group-hover:text-secondary transition-colors flex-shrink-0" />
+                    <p className="font-medium text-foreground group-hover:text-secondary transition-colors">{item.title}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Column 3: For Your Role */}
+            <div>
+              <h3 className="font-display font-semibold text-lg text-muted-foreground mb-6 uppercase tracking-wider text-sm">
+                Pour Votre Rôle
+              </h3>
+              <div className="space-y-4">
+                {rolesList.map((role) => (
+                  <div key={role} className="flex items-center gap-3 group cursor-default">
+                    <User className="w-5 h-5 text-muted-foreground group-hover:text-secondary transition-colors flex-shrink-0" />
+                    <p className="font-medium text-foreground group-hover:text-secondary transition-colors">{role}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
           </motion.div>
         </div>
       </section>
