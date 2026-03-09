@@ -47,9 +47,7 @@ export const Navbar = () => {
         <div className="flex items-center justify-between">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2">
-            <div className="w-10 h-10 rounded-xl bg-gradient-accent flex items-center justify-center">
-              <span className="text-secondary-foreground font-display font-bold text-lg">PS</span>
-            </div>
+            <img src="/logo.jpg" alt="PrimeSpace" className="w-10 h-10 rounded-xl object-contain" />
             <span className={cn(
               "font-display font-bold text-xl transition-colors",
               scrolled ? "text-foreground" : "text-primary-foreground"
@@ -67,12 +65,13 @@ export const Navbar = () => {
                 className={cn(
                   "font-medium transition-colors relative group",
                   scrolled ? "text-foreground" : "text-primary-foreground",
-                  location.pathname === link.href && "text-secondary"
+                  location.pathname === link.href && (scrolled ? "text-[#2c0a71]" : "text-[#b088f9]")
                 )}
               >
                 {link.label}
                 <span className={cn(
-                  "absolute -bottom-1 left-0 h-0.5 bg-secondary transition-all duration-300",
+                  "absolute -bottom-1 left-0 h-0.5 transition-all duration-300",
+                  scrolled ? "bg-[#2c0a71]" : "bg-[#b088f9]",
                   location.pathname === link.href ? "w-full" : "w-0 group-hover:w-full"
                 )} />
               </Link>
@@ -120,8 +119,8 @@ export const Navbar = () => {
                   className={cn(
                     "font-medium py-2 transition-colors",
                     location.pathname === link.href
-                      ? "text-secondary"
-                      : "text-foreground hover:text-secondary"
+                      ? "text-[#2c0a71] font-semibold"
+                      : "text-foreground hover:text-[#2c0a71]"
                   )}
                 >
                   {link.label}

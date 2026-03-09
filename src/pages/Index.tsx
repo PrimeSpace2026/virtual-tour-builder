@@ -18,7 +18,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-import heroImage from "@/assets/hero-villa.jpg";
 import portfolioHotel from "@/assets/portfolio-hotel.jpg";
 import portfolioApartment from "@/assets/portfolio-apartment.jpg";
 import portfolioCoffee from "@/assets/hard-rock.jpg";
@@ -101,8 +100,8 @@ const Index = () => {
         {/* Background Image */}
         <div className="absolute inset-0">
           <img
-            src={heroImage}
-            alt="Villa de luxe avec visite virtuelle 3D"
+            src="/Boost_Buyer_Engagement.gif"
+            alt="Visite virtuelle 3D Matterport"
             className="w-full h-full object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-b from-primary/80 via-primary/60 to-primary/90" />
@@ -127,15 +126,15 @@ const Index = () => {
               transition={{ duration: 0.6, delay: 0.1 }}
               className="text-4xl md:text-5xl lg:text-7xl font-display font-bold text-primary-foreground mb-6 leading-tight"
             >
-              Offrez la visite   {""} 
-              <span className="text-gradient-accent"> avant la réservation</span>
+              Offrez la visite{" "}
+              <span className="text-gradient-accent">avant la réservation</span>
             </motion.h1>
 
             <motion.p
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
-              className="text-lg md:text-xl text-primary-foreground/80 mb-10 max-w-2xl mx-auto"
+              className="text-lg md:text-xl text-white/90 mb-10 max-w-2xl mx-auto"
             >
              Augmentez vos réservations et facilitez les visites grâce à nos visites virtuelles 3D.
             </motion.p>

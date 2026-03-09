@@ -36,9 +36,7 @@ export const Footer = () => {
           {/* Brand Column */}
           <div className="lg:col-span-2">
             <Link to="/" className="flex items-center gap-2 mb-6">
-              <div className="w-10 h-10 rounded-xl bg-gradient-accent flex items-center justify-center">
-                <span className="text-secondary-foreground font-display font-bold text-lg">PS</span>
-              </div>
+              <img src="/logo.jpg" alt="PrimeSpace" className="w-10 h-10 rounded-xl object-contain" />
               <span className="font-display font-bold text-xl">PrimeSpace</span>
             </Link>
             <p className="text-primary-foreground/70 mb-6 max-w-sm">
