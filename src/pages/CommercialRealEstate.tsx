@@ -119,78 +119,43 @@ const CommercialRealEstate = () => {
     <Layout>
       <WhatsAppButton />
 
-      {/* Hero Section */}
-      <section className="relative min-h-[70vh] md:min-h-[85vh] flex items-center justify-center overflow-hidden">
-        <div className="absolute inset-0">
+      {/* Hero Text */}
+      <section className="bg-white pt-20 md:pt-28 pb-6 md:pb-10">
+        <div className="container mx-auto px-4 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="text-center max-w-4xl mx-auto"
+          >
+            <h2 className="text-2xl md:text-4xl lg:text-5xl font-display font-bold text-[#2c0a71] mb-3 md:mb-4">
+              Générez des revenus grâce aux{" "}
+              <span className="text-[#2c0a71]/80">visites virtuelles</span>{" "}
+              de vos biens commerciaux
+            </h2>
+            <p className="text-foreground/70 text-sm md:text-lg max-w-3xl mx-auto">
+              Mettez l'ensemble de votre portefeuille immobilier en ligne avec
+              la plateforme de jumeaux numériques 3D. Optimisez la gestion,
+              réduisez la vacance et transformez chaque aspect de votre activité.
+            </p>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Hero GIF */}
+      <section className="relative overflow-hidden">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.6 }}
+          className="w-full aspect-[3/1]"
+        >
           <img
             src="/Boost_Buyer_Engagement.gif"
             alt="Visite virtuelle immobilier commercial"
             className="w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-primary/85 via-primary/65 to-primary/90" />
-        </div>
-
-        <div className="relative z-10 container mx-auto px-4 lg:px-8 pt-20 md:pt-24 pb-10 md:pb-16">
-          <div className="max-w-4xl mx-auto text-center">
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-            >
-              <span className="inline-block px-4 py-2 rounded-full bg-primary-foreground/10 text-primary-foreground text-sm font-medium mb-6 backdrop-blur-sm border border-primary-foreground/20">
-                <Building2 className="w-4 h-4 inline mr-2" />
-                Immobilier Commercial
-              </span>
-            </motion.div>
-
-            <motion.h1
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.1 }}
-              className="text-3xl md:text-5xl lg:text-6xl font-display font-bold text-primary-foreground leading-tight mb-4 md:mb-6"
-            >
-              Générez des revenus grâce aux{" "}
-              <span className="text-gradient-accent">visites virtuelles</span>{" "}
-              de vos biens commerciaux
-            </motion.h1>
-
-            <motion.p
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              className="text-base md:text-xl text-white/90 mb-8 md:mb-10 max-w-3xl mx-auto px-2 md:px-0"
-            >
-              Mettez l'ensemble de votre portefeuille immobilier en ligne avec
-              la plateforme de jumeaux numériques 3D. Optimisez la gestion,
-              réduisez la vacance et transformez chaque aspect de votre activité.
-            </motion.p>
-
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.3 }}
-              className="flex flex-col sm:flex-row gap-4 justify-center"
-            >
-              <Button variant="hero" size="lg" asChild>
-                <Link to="/contact" className="flex items-center gap-2">
-                  Demander un Devis
-                  <ArrowRight className="w-5 h-5" />
-                </Link>
-              </Button>
-              <Button
-                variant="outline"
-                size="lg"
-                className="border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10"
-                asChild
-              >
-                <Link to="/portfolio" className="flex items-center gap-2">
-                  <Play className="w-5 h-5" />
-                  Voir des Exemples
-                </Link>
-              </Button>
-            </motion.div>
-          </div>
-        </div>
+        </motion.div>
       </section>
 
       {/* Stats Section */}

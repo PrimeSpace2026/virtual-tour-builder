@@ -47,6 +47,8 @@ export const Navbar = () => {
   const megaRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
 
+  const lightHero = location.pathname === "/industries/architecture-construction" || location.pathname === "/industries/commercial-real-estate";
+
   useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 20);
@@ -80,7 +82,9 @@ export const Navbar = () => {
         "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
         scrolled
           ? "bg-card/95 backdrop-blur-lg shadow-elevated py-3"
-          : "bg-transparent py-5"
+          : lightHero
+            ? "bg-transparent py-5"
+            : "bg-transparent py-5"
       )}
     >
       <div className="container mx-auto px-4 lg:px-8">
@@ -90,7 +94,7 @@ export const Navbar = () => {
             <img src="/logo.jpg" alt="PrimeSpace" className="w-10 h-10 rounded-xl object-contain" />
             <span className={cn(
               "font-display font-bold text-xl transition-colors",
-              scrolled ? "text-foreground" : "text-primary-foreground"
+              scrolled ? "text-foreground" : lightHero ? "text-foreground" : "text-primary-foreground"
             )}>
               PrimeSpace
             </span>
@@ -105,15 +109,15 @@ export const Navbar = () => {
                     onClick={() => setMegaOpen(!megaOpen)}
                     className={cn(
                       "font-medium transition-colors relative group flex items-center gap-1",
-                      scrolled ? "text-foreground" : "text-primary-foreground",
-                      location.pathname === link.href && (scrolled ? "text-[#2c0a71]" : "text-[#b088f9]")
+                      scrolled ? "text-foreground" : lightHero ? "text-foreground" : "text-primary-foreground",
+                      location.pathname === link.href && (scrolled || lightHero ? "text-[#2c0a71]" : "text-[#b088f9]")
                     )}
                   >
                     {link.label}
                     <ChevronDown className={cn("w-4 h-4 transition-transform", megaOpen && "rotate-180")} />
                     <span className={cn(
                       "absolute -bottom-1 left-0 h-0.5 transition-all duration-300",
-                      scrolled ? "bg-[#2c0a71]" : "bg-[#b088f9]",
+                      scrolled || lightHero ? "bg-[#2c0a71]" : "bg-[#b088f9]",
                       location.pathname === link.href ? "w-full" : "w-0 group-hover:w-full"
                     )} />
                   </button>
@@ -174,14 +178,14 @@ export const Navbar = () => {
                   to={link.href}
                   className={cn(
                     "font-medium transition-colors relative group",
-                    scrolled ? "text-foreground" : "text-primary-foreground",
-                    location.pathname === link.href && (scrolled ? "text-[#2c0a71]" : "text-[#b088f9]")
+                    scrolled ? "text-foreground" : lightHero ? "text-foreground" : "text-primary-foreground",
+                    location.pathname === link.href && (scrolled || lightHero ? "text-[#2c0a71]" : "text-[#b088f9]")
                   )}
                 >
                   {link.label}
                   <span className={cn(
                     "absolute -bottom-1 left-0 h-0.5 transition-all duration-300",
-                    scrolled ? "bg-[#2c0a71]" : "bg-[#b088f9]",
+                    scrolled || lightHero ? "bg-[#2c0a71]" : "bg-[#b088f9]",
                     location.pathname === link.href ? "w-full" : "w-0 group-hover:w-full"
                   )} />
                 </Link>
@@ -191,7 +195,7 @@ export const Navbar = () => {
 
           {/* CTA Button */}
           <div className="hidden lg:flex items-center gap-4">
-            <Button variant={scrolled ? "secondary" : "hero"} size="default" asChild>
+            <Button variant={scrolled ? "secondary" : lightHero ? "secondary" : "hero"} size="default" asChild>
               <Link to="/contact" className="flex items-center gap-2">
                 <Phone className="w-4 h-4" />
                 Demander un Devis
@@ -204,7 +208,7 @@ export const Navbar = () => {
             onClick={() => setIsOpen(!isOpen)}
             className={cn(
               "lg:hidden p-2 rounded-lg transition-colors",
-              scrolled ? "text-foreground hover:bg-muted" : "text-primary-foreground hover:bg-primary-foreground/10"
+              scrolled ? "text-foreground hover:bg-muted" : lightHero ? "text-foreground hover:bg-muted" : "text-primary-foreground hover:bg-primary-foreground/10"
             )}
           >
             {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}

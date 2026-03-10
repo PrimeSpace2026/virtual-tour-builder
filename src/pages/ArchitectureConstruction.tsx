@@ -1,18 +1,10 @@
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import {
-  HardHat,
   Ruler,
   ArrowRight,
-  Play,
   Hammer,
   BadgeCheck,
-  ScanLine,
-  Layers,
-  Eye,
-  ClipboardCheck,
-  Shield,
-  RefreshCw,
   Users,
   Camera,
   Lock,
@@ -21,7 +13,6 @@ import {
 } from "lucide-react";
 import { Layout } from "@/components/Layout";
 import { Button } from "@/components/ui/button";
-import { SectionHeading } from "@/components/SectionHeading";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
 
 const stats = [
@@ -92,45 +83,6 @@ const fadeUpStagger = {
   }),
 };
 
-const keyBenefits = [
-  {
-    icon: ScanLine,
-    title: "Capture 3D Haute Précision",
-    description:
-      "Numérisez n'importe quel espace avec une précision dimensionnelle de 99%. Obtenez des relevés fiables pour vos projets de conception et de rénovation.",
-  },
-  {
-    icon: Layers,
-    title: "Intégration BIM & CAD",
-    description:
-      "Exportez vos captures en formats compatibles Revit, AutoCAD et autres outils BIM. Accélérez la modélisation et réduisez les erreurs de saisie.",
-  },
-  {
-    icon: Eye,
-    title: "Suivi Visuel de Chantier",
-    description:
-      "Comparez l'avancement réel avec les plans. Détectez les écarts, documentez les problèmes et partagez l'état du chantier avec toutes les parties prenantes.",
-  },
-  {
-    icon: ClipboardCheck,
-    title: "Contrôle Qualité Simplifié",
-    description:
-      "Effectuez des inspections QA/QC à distance. Annotez directement sur le jumeau numérique et suivez la résolution des non-conformités.",
-  },
-  {
-    icon: Shield,
-    title: "Réduction des Risques",
-    description:
-      "Identifiez les conflits et problèmes potentiels avant qu'ils ne surviennent sur le chantier. Évitez les retouches coûteuses et les retards.",
-  },
-  {
-    icon: RefreshCw,
-    title: "Collaboration en Temps Réel",
-    description:
-      "Partagez un jumeau numérique accessible par tous les intervenants. Architectes, ingénieurs et constructeurs travaillent sur une source de vérité unique.",
-  },
-];
-
 
 
 const ArchitectureConstruction = () => {
@@ -138,124 +90,49 @@ const ArchitectureConstruction = () => {
     <Layout>
       <WhatsAppButton />
 
-      {/* Hero Section */}
-      <section className="relative min-h-[70vh] md:min-h-[85vh] flex items-center justify-center overflow-hidden">
-        <div className="absolute inset-0">
-          <iframe
-            src="https://my.matterport.com/show/?m=DyGfVrBRybc&log=0&help=0&nt=0&play=1&qs=0&brand=0&dh=0&tour=1&gt=1&hr=0&mls=2&mt=0&tagNav=0&pin=0&portal=1&f=0&fp=0&nozoom=1&search=0&wh=0&kb=0&lp=0&title=0&tourcta=0&vr=0"
-            title="Visite virtuelle architecture et construction"
-            className="w-full h-full object-cover border-0"
-            style={{ pointerEvents: "none" }}
-            allow="fullscreen; autoplay"
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-primary/85 via-primary/65 to-primary/90" />
-        </div>
-
-        <div className="relative z-10 container mx-auto px-4 lg:px-8 pt-20 md:pt-24 pb-10 md:pb-16">
-          <div className="max-w-4xl mx-auto text-center">
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-            >
-              <span className="inline-block px-4 py-2 rounded-full bg-primary-foreground/10 text-primary-foreground text-sm font-medium mb-6 backdrop-blur-sm border border-primary-foreground/20">
-                <HardHat className="w-4 h-4 inline mr-2" />
-                Architecture & Construction
-              </span>
-            </motion.div>
-
-            <motion.h1
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.1 }}
-              className="text-3xl md:text-5xl lg:text-6xl font-display font-bold text-primary-foreground leading-tight mb-4 md:mb-6"
-            >
-              Détectez les problèmes{" "}
-              <span className="text-gradient-accent">
-                avant qu'ils ne surviennent
-              </span>
-            </motion.h1>
-
-            <motion.p
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              className="text-base md:text-xl text-white/90 mb-8 md:mb-10 max-w-3xl mx-auto px-2 md:px-0"
-            >
+      {/* Hero Text */}
+      <section className="bg-white pt-20 md:pt-28 pb-6 md:pb-10">
+        <div className="container mx-auto px-4 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="text-center max-w-4xl mx-auto"
+          >
+            <h2 className="text-2xl md:text-4xl lg:text-5xl font-display font-bold text-[#2c0a71] mb-3 md:mb-4">
+              Détectez les problèmes avant{" "}
+              qu'ils ne surviennent.
+            </h2>
+            <p className="text-foreground/70 text-sm md:text-lg max-w-2xl mx-auto">
               Intégrez la plateforme de jumeaux numériques 3D dans vos flux de
               conception et de construction pour améliorer la communication,
               gagner du temps et réduire les risques.
-            </motion.p>
-
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.3 }}
-              className="flex flex-col sm:flex-row gap-4 justify-center"
-            >
-              <Button variant="hero" size="lg" asChild>
-                <Link to="/contact" className="flex items-center gap-2">
-                  Demander un Devis
-                  <ArrowRight className="w-5 h-5" />
-                </Link>
-              </Button>
-              <Button
-                variant="outline"
-                size="lg"
-                className="border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10"
-                asChild
-              >
-                <Link to="/portfolio" className="flex items-center gap-2">
-                  <Play className="w-5 h-5" />
-                  Voir des Exemples
-                </Link>
-              </Button>
-            </motion.div>
-          </div>
+            </p>
+          </motion.div>
         </div>
       </section>
 
-      {/* Embedded 3D Model Viewer */}
-      <section className="bg-card border-b border-border">
-        <div className="container mx-auto px-4 lg:px-8 py-14 md:py-20">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="rounded-2xl overflow-hidden shadow-elevated border border-border aspect-video max-w-5xl mx-auto"
-          >
-            <iframe
-              src="https://my.matterport.com/show/?m=DyGfVrBRybc&log=0&help=0&nt=0&play=0&qs=0&brand=0&dh=1&tour=1&gt=1&hr=1&mls=1&mt=1&tagNav=1&pin=1&portal=1&f=1&fp=1&nozoom=1&search=1&wh=1&kb=1&lp=0&title=0&tourcta=1&vr=1"
-              title="Visite virtuelle - Architecture & Construction"
-              className="w-full h-full"
-              allow="fullscreen"
-              allowFullScreen
-            />
-          </motion.div>
-        </div>
+      {/* Hero 3D Viewer */}
+      <section className="relative overflow-hidden">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.6 }}
+          className="w-full aspect-[3/1]"
+        >
+          <iframe
+            src="https://my.matterport.com/show/?m=DyGfVrBRybc&log=0&help=0&nt=0&play=0&qs=0&brand=0&dh=1&tour=1&gt=1&hr=1&mls=1&mt=1&tagNav=1&pin=1&portal=1&f=1&fp=1&nozoom=1&search=1&wh=1&kb=1&lp=0&title=0&tourcta=1&vr=1"
+            title="Visite virtuelle - Architecture & Construction"
+            className="w-full h-full"
+            allow="fullscreen"
+            allowFullScreen
+          />
+        </motion.div>
       </section>
 
       {/* Explore Two Stages Section */}
       <section className="py-16 md:py-24">
         <div className="container mx-auto px-4 lg:px-8">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={fadeUp}
-            className="text-center mb-10 md:mb-16"
-          >
-            <h2 className="text-2xl md:text-4xl lg:text-5xl font-display font-bold mb-4 md:mb-6">
-              Explorez deux étapes d'un{" "}
-              <span className="text-[#2c0a71]">même chantier</span>
-            </h2>
-            <p className="text-muted-foreground text-base md:text-lg max-w-2xl mx-auto">
-              Comparez la progression du projet en naviguant entre la phase de
-              structure et la phase d'aménagement intérieur.
-            </p>
-          </motion.div>
-
           <div className="grid md:grid-cols-2 gap-6 md:gap-10 max-w-6xl mx-auto">
             {/* Framing */}
             <motion.div
@@ -739,60 +616,6 @@ const ArchitectureConstruction = () => {
         </div>
       </section>
 
-      {/* Webinar Section */}
-      <section className="py-16 md:py-24">
-        <div className="container mx-auto px-4 lg:px-8">
-          <div className="grid lg:grid-cols-2 gap-10 md:gap-16 items-center">
-            <motion.div
-              initial={{ opacity: 0, x: -30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-              className="rounded-2xl overflow-hidden"
-            >
-              <img
-                src="https://images.ctfassets.net/icnj41gkyohw/1KC6gTyCPxNDsl3xGTO2Lt/0f6b90bad4778c57e77dbe3a7d5ad313/1__1_.png"
-                alt="Webinaire PrimeSpace – Efficacité en architecture et construction"
-                className="w-full h-auto rounded-2xl"
-                loading="lazy"
-              />
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, x: 30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-            >
-              <span className="inline-block text-sm font-bold uppercase tracking-widest text-red-600 mb-4">
-                Webinaire
-              </span>
-              <h2 className="text-2xl md:text-4xl lg:text-5xl font-display font-bold mb-4 md:mb-6">
-                Comment améliorer l'efficacité de vos projets.
-              </h2>
-              <p className="text-muted-foreground text-base md:text-lg leading-relaxed mb-4">
-                Les informations critiques sur un bâtiment sont indispensables
-                pour tout architecte, ingénieur ou professionnel de la
-                construction afin de lancer efficacement un projet. La
-                documentation des conditions existantes est essentielle, mais
-                souvent obsolète.
-              </p>
-              <p className="text-muted-foreground text-base md:text-lg leading-relaxed mb-8">
-                Découvrez comment les jumeaux numériques transforment la
-                documentation de projet. En réduisant les visites sur site et les
-                coûts tout au long du cycle de vie du projet, PrimeSpace établit
-                une nouvelle norme d'efficacité.
-              </p>
-              <Button size="lg" className="bg-black hover:bg-black/90 text-white" asChild>
-                <Link to="/contact" className="flex items-center gap-2">
-                  Regarder maintenant
-                </Link>
-              </Button>
-            </motion.div>
-          </div>
-        </div>
-      </section>
-
       {/* Testimonial */}
       <section className="py-16 md:py-24">
         <div className="container mx-auto px-4 lg:px-8">
@@ -822,40 +645,6 @@ const ArchitectureConstruction = () => {
                 </div>
               </div>
             </motion.div>
-          </div>
-        </div>
-      </section>
-
-      {/* Key Benefits Grid */}
-      <section className="py-16 md:py-24">
-        <div className="container mx-auto px-4 lg:px-8">
-          <SectionHeading
-            title="Pourquoi adopter les jumeaux numériques 3D"
-            description="Améliorez chaque aspect de vos projets AEC avec la technologie de capture et de modélisation 3D."
-          />
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-8 mt-10 md:mt-16">
-            {keyBenefits.map((benefit, i) => (
-              <motion.div
-                key={benefit.title}
-                custom={i}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true }}
-                variants={fadeUpStagger}
-                className="group p-6 md:p-8 rounded-2xl bg-card border border-border shadow-soft hover:shadow-elevated transition-all duration-300"
-              >
-                <div className="w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-[#2c0a71]/10 flex items-center justify-center mb-4 md:mb-6 group-hover:bg-[#2c0a71]/20 transition-colors">
-                  <benefit.icon className="w-6 h-6 md:w-7 md:h-7 text-[#2c0a71]" />
-                </div>
-                <h3 className="text-xl font-display font-semibold mb-3">
-                  {benefit.title}
-                </h3>
-                <p className="text-muted-foreground leading-relaxed">
-                  {benefit.description}
-                </p>
-              </motion.div>
-            ))}
           </div>
         </div>
       </section>
