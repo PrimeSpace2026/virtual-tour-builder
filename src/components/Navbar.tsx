@@ -16,7 +16,7 @@ const navLinks = [
 
 const megaIndustries = [
   { icon: Building2, label: "Immobilier Commercial", href: "/industries/commercial-real-estate" },
-  { icon: HardHat, label: "Architecture & Construction" },
+  { icon: HardHat, label: "Architecture & Construction", href: "/industries/architecture-construction" },
   { icon: Factory, label: "Industrie" },
   { icon: ShieldCheck, label: "Assurance" },
   { icon: Home, label: "Construction Résidentielle" },
