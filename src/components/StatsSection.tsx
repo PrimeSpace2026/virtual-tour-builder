@@ -44,7 +44,7 @@ const StatItem = ({ value, suffix, label, delay }: StatItemProps) => {
       transition={{ duration: 0.5, delay }}
       className="text-center"
     >
-      <div className="text-4xl md:text-5xl lg:text-6xl font-display font-bold text-primary-foreground mb-2">
+      <div className="text-3xl md:text-5xl lg:text-6xl font-display font-bold text-primary-foreground mb-1 md:mb-2">
         {count}
         <span className="text-secondary">{suffix}</span>
       </div>
@@ -62,9 +62,9 @@ const stats = [
 
 export const StatsSection = () => {
   return (
-    <section className="bg-gradient-hero py-20">
+    <section className="bg-gradient-hero py-12 md:py-20">
       <div className="container mx-auto px-4 lg:px-8">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8 lg:gap-12">
           {stats.map((stat, index) => (
             <StatItem
               key={stat.label}

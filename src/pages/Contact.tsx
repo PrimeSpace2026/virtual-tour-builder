@@ -100,7 +100,7 @@ const Contact = () => {
       <WhatsAppButton />
       
       {/* Hero */}
-      <section className="pt-32 pb-20 bg-gradient-hero">
+      <section className="pt-24 md:pt-32 pb-12 md:pb-20 bg-gradient-hero">
         <div className="container mx-auto px-4 lg:px-8">
           <div className="max-w-3xl mx-auto text-center">
             <motion.span
@@ -114,7 +114,7 @@ const Contact = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className="text-4xl md:text-5xl lg:text-6xl font-display font-bold text-primary-foreground mb-6"
+              className="text-3xl md:text-5xl lg:text-6xl font-display font-bold text-primary-foreground mb-4 md:mb-6"
             >
               Parlons de Votre Projet
             </motion.h1>
@@ -122,7 +122,7 @@ const Contact = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="text-lg text-primary-foreground/70"
+              className="text-base md:text-lg text-primary-foreground/70"
             >
               Demandez un devis gratuit ou posez-nous vos questions. 
               Notre équipe vous répond sous 24 heures.
@@ -132,9 +132,9 @@ const Contact = () => {
       </section>
 
       {/* Contact Form & Info */}
-      <section className="py-24 bg-background">
+      <section className="py-12 md:py-24 bg-background">
         <div className="container mx-auto px-4 lg:px-8">
-          <div className="grid lg:grid-cols-3 gap-12">
+          <div className="grid lg:grid-cols-3 gap-8 md:gap-12">
             {/* Contact Info */}
             <motion.div
               initial={{ opacity: 0, x: -30 }}
@@ -198,7 +198,7 @@ const Contact = () => {
               viewport={{ once: true }}
               className="lg:col-span-2"
             >
-              <div className="bg-card rounded-2xl p-8 shadow-soft">
+              <div className="bg-card rounded-2xl p-5 md:p-8 shadow-soft">
                 <h2 className="font-display font-bold text-2xl text-foreground mb-6">
                   Demande de Devis Gratuit
                 </h2>
@@ -312,7 +312,7 @@ const Contact = () => {
       </section>
 
       {/* Map Section */}
-      <section className="py-24 bg-muted/50">
+      <section className="py-12 md:py-24 bg-muted/50">
         <div className="container mx-auto px-4 lg:px-8">
           <SectionHeading
             badge="Localisation"
@@ -325,14 +325,14 @@ const Contact = () => {
       </section>
 
       {/* FAQ CTA */}
-      <section className="py-16 bg-background">
+      <section className="py-10 md:py-16 bg-background">
         <div className="container mx-auto px-4 lg:px-8">
-          <div className="bg-gradient-hero rounded-3xl p-8 md:p-12 text-center">
+          <div className="bg-gradient-hero rounded-2xl md:rounded-3xl p-6 md:p-12 text-center">
             <motion.h2
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="text-2xl md:text-3xl font-display font-bold text-primary-foreground mb-4"
+              className="text-xl md:text-3xl font-display font-bold text-primary-foreground mb-3 md:mb-4"
             >
               Des Questions Fréquentes?
             </motion.h2>

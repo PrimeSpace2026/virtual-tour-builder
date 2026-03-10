@@ -43,6 +43,7 @@ export const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [megaOpen, setMegaOpen] = useState(false);
+  const [mobileSolutionsOpen, setMobileSolutionsOpen] = useState(false);
   const megaRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
 
@@ -57,6 +58,7 @@ export const Navbar = () => {
   useEffect(() => {
     setIsOpen(false);
     setMegaOpen(false);
+    setMobileSolutionsOpen(false);
   }, [location]);
 
   useEffect(() => {
@@ -220,22 +222,85 @@ export const Navbar = () => {
             transition={{ duration: 0.3 }}
             className="lg:hidden bg-card border-t border-border"
           >
-            <div className="container mx-auto px-4 py-6 flex flex-col gap-4">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.href}
-                  to={link.href}
-                  className={cn(
-                    "font-medium py-2 transition-colors",
-                    location.pathname === link.href
-                      ? "text-[#2c0a71] font-semibold"
-                      : "text-foreground hover:text-[#2c0a71]"
-                  )}
-                >
-                  {link.label}
-                </Link>
-              ))}
-              <Button variant="secondary" className="mt-4 w-full" asChild>
+            <div className="container mx-auto px-4 py-4 flex flex-col gap-2 max-h-[80vh] overflow-y-auto">
+              {navLinks.map((link) =>
+                link.hasMega ? (
+                  <div key={link.href}>
+                    <button
+                      onClick={() => setMobileSolutionsOpen(!mobileSolutionsOpen)}
+                      className={cn(
+                        "w-full flex items-center justify-between font-medium py-2 transition-colors",
+                        location.pathname === link.href
+                          ? "text-[#2c0a71] font-semibold"
+                          : "text-foreground hover:text-[#2c0a71]"
+                      )}
+                    >
+                      {link.label}
+                      <ChevronDown className={cn("w-4 h-4 transition-transform", mobileSolutionsOpen && "rotate-180")} />
+                    </button>
+                    <AnimatePresence>
+                      {mobileSolutionsOpen && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: "auto", opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.2 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="pl-2 pt-2 pb-3 space-y-4">
+                            <div>
+                              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Pour Votre Secteur</p>
+                              <div className="space-y-2">
+                                {megaIndustries.map((item) => (
+                                  <Link
+                                    key={item.label}
+                                    to={item.href || "/benefits"}
+                                    className="flex items-center gap-2 py-1 text-sm text-foreground hover:text-[#2c0a71] transition-colors"
+                                    onClick={() => setIsOpen(false)}
+                                  >
+                                    <item.icon className="w-4 h-4 text-muted-foreground" />
+                                    {item.label}
+                                  </Link>
+                                ))}
+                              </div>
+                            </div>
+                            <div>
+                              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Pour Votre Rôle</p>
+                              <div className="space-y-2">
+                                {megaRoles.map((role) => (
+                                  <Link
+                                    key={role}
+                                    to="/benefits"
+                                    className="flex items-center gap-2 py-1 text-sm text-foreground hover:text-[#2c0a71] transition-colors"
+                                    onClick={() => setIsOpen(false)}
+                                  >
+                                    <User className="w-4 h-4 text-muted-foreground" />
+                                    {role}
+                                  </Link>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                ) : (
+                  <Link
+                    key={link.href}
+                    to={link.href}
+                    className={cn(
+                      "font-medium py-2 transition-colors",
+                      location.pathname === link.href
+                        ? "text-[#2c0a71] font-semibold"
+                        : "text-foreground hover:text-[#2c0a71]"
+                    )}
+                  >
+                    {link.label}
+                  </Link>
+                )
+              )}
+              <Button variant="secondary" className="mt-2 w-full" asChild>
                 <Link to="/contact" className="flex items-center gap-2">
                   <Phone className="w-4 h-4" />
                   Demander un Devis

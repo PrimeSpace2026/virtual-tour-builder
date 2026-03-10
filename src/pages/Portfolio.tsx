@@ -102,7 +102,7 @@ const Portfolio = () => {
       <WhatsAppButton />
       
       {/* Hero */}
-      <section className="pt-32 pb-20 bg-gradient-hero">
+      <section className="pt-24 md:pt-32 pb-12 md:pb-20 bg-gradient-hero">
         <div className="container mx-auto px-4 lg:px-8">
           <div className="max-w-3xl mx-auto text-center">
             <motion.span
@@ -116,7 +116,7 @@ const Portfolio = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className="text-4xl md:text-5xl lg:text-6xl font-display font-bold text-primary-foreground mb-6"
+              className="text-3xl md:text-5xl lg:text-6xl font-display font-bold text-primary-foreground mb-4 md:mb-6"
             >
               Portfolio
             </motion.h1>
@@ -124,7 +124,7 @@ const Portfolio = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="text-lg text-primary-foreground/70"
+              className="text-base md:text-lg text-primary-foreground/70"
             >
               Explorez nos visites virtuelles 3D réalisées pour des clients 
               dans toute la Tunisie et découvrez la qualité de notre travail.
@@ -134,19 +134,19 @@ const Portfolio = () => {
       </section>
 
       {/* Filter & Projects */}
-      <section className="py-24 bg-background">
+      <section className="py-12 md:py-24 bg-background">
         <div className="container mx-auto px-4 lg:px-8">
           {/* Category Filter */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="flex flex-wrap justify-center gap-3 mb-12"
+            className="flex flex-wrap justify-center gap-2 md:gap-3 mb-8 md:mb-12"
           >
             {categories.map((category) => (
               <button
                 key={category}
                 onClick={() => setActiveCategory(category)}
-                className={`px-5 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
+                className={`px-4 md:px-5 py-1.5 md:py-2 rounded-full text-xs md:text-sm font-medium transition-all duration-300 ${
                   activeCategory === category
                     ? "bg-secondary text-secondary-foreground"
                     : "bg-muted text-muted-foreground hover:bg-muted/80"
@@ -158,7 +158,7 @@ const Portfolio = () => {
           </motion.div>
 
           {/* Projects Grid */}
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-8">
             {filteredProjects.map((project, index) => (
               <motion.div
                 key={project.id}
@@ -188,8 +188,8 @@ const Portfolio = () => {
                   </span>
                 </div>
                 
-                <div className="p-6">
-                  <h3 className="font-display font-semibold text-xl text-foreground mb-2">
+                <div className="p-4 md:p-6">
+                  <h3 className="font-display font-semibold text-lg md:text-xl text-foreground mb-2">
                     {project.title}
                   </h3>
                   <p className="text-muted-foreground text-sm mb-4">
@@ -227,14 +227,14 @@ const Portfolio = () => {
      
 
       {/* CTA */}
-      <section className="py-24 bg-gradient-hero">
+      <section className="py-12 md:py-24 bg-gradient-hero">
         <div className="container mx-auto px-4 lg:px-8">
           <div className="max-w-3xl mx-auto text-center">
             <motion.h2
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="text-3xl md:text-4xl font-display font-bold text-primary-foreground mb-6"
+              className="text-2xl md:text-4xl font-display font-bold text-primary-foreground mb-4 md:mb-6"
             >
               Votre Espace Mérite D'être Vu
             </motion.h2>
@@ -243,7 +243,7 @@ const Portfolio = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: 0.1 }}
-              className="text-lg text-primary-foreground/70 mb-10"
+              className="text-base md:text-lg text-primary-foreground/70 mb-8 md:mb-10"
             >
               Rejoignez nos clients satisfaits et offrez une expérience unique 
               à vos visiteurs avec une visite virtuelle professionnelle.

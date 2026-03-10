@@ -179,7 +179,7 @@ const Benefits = () => {
       <WhatsAppButton />
 
       {/* Hero Section */}
-      <section className="relative pt-32 pb-20 bg-gradient-hero overflow-hidden">
+      <section className="relative pt-24 md:pt-32 pb-12 md:pb-20 bg-gradient-hero overflow-hidden">
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-20 right-20 w-96 h-96 rounded-full bg-secondary/30 blur-3xl" />
           <div className="absolute bottom-10 left-10 w-72 h-72 rounded-full bg-accent/20 blur-3xl" />
@@ -200,7 +200,7 @@ const Benefits = () => {
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.1 }}
-              className="text-4xl md:text-5xl lg:text-6xl font-display font-bold text-primary-foreground mb-6 leading-tight"
+              className="text-3xl md:text-5xl lg:text-6xl font-display font-bold text-primary-foreground mb-4 md:mb-6 leading-tight"
             >
               Voyez. Ressentez.{" "}
               <span className="text-gradient-accent">Décidez en Toute Confiance.</span>
@@ -210,7 +210,7 @@ const Benefits = () => {
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
-              className="text-lg md:text-xl text-white/90 max-w-2xl mx-auto"
+              className="text-base md:text-xl text-white/90 max-w-2xl mx-auto"
             >
               Les jumeaux numériques Matterport vous permettent d'explorer n'importe quel espace à distance avec une précision spatiale totale — pour prendre de meilleures décisions sans vous déplacer.
             </motion.p>
@@ -219,7 +219,7 @@ const Benefits = () => {
       </section>
 
       {/* Core Benefits */}
-      <section className="py-24 bg-background">
+      <section className="py-12 md:py-24 bg-background">
         <div className="container mx-auto px-4 lg:px-8">
           <SectionHeading
             badge="Pourquoi Nos Clients l'Adorent"
@@ -232,18 +232,18 @@ const Benefits = () => {
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, margin: "-80px" }}
-            className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6"
+            className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6"
           >
             {benefits.map((benefit) => (
               <motion.div
                 key={benefit.title}
                 variants={itemVariants}
-                className="group p-6 rounded-2xl bg-card shadow-soft hover:shadow-elevated hover:-translate-y-1 transition-all duration-300"
+                className="group p-5 md:p-6 rounded-2xl bg-card shadow-soft hover:shadow-elevated hover:-translate-y-1 transition-all duration-300"
               >
-                <div className="w-14 h-14 rounded-xl flex items-center justify-center mb-5 bg-secondary/10 text-secondary group-hover:bg-secondary group-hover:text-secondary-foreground transition-colors duration-300">
-                  <benefit.icon className="w-7 h-7" />
+                <div className="w-12 h-12 md:w-14 md:h-14 rounded-xl flex items-center justify-center mb-4 md:mb-5 bg-secondary/10 text-secondary group-hover:bg-secondary group-hover:text-secondary-foreground transition-colors duration-300">
+                  <benefit.icon className="w-6 h-6 md:w-7 md:h-7" />
                 </div>
-                <h3 className="font-display font-semibold text-xl mb-2 text-foreground">
+                <h3 className="font-display font-semibold text-lg md:text-xl mb-2 text-foreground">
                   {benefit.title}
                 </h3>
                 <p className="text-muted-foreground leading-relaxed">
@@ -256,7 +256,7 @@ const Benefits = () => {
       </section>
 
       {/* Solutions Section - Matterport Style */}
-      <section className="py-24 bg-muted/30">
+      <section className="py-12 md:py-24 bg-muted/30">
         <div className="container mx-auto px-4 lg:px-8">
           <SectionHeading
             badge="Nos Solutions"
@@ -269,7 +269,7 @@ const Benefits = () => {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
-            className="grid grid-cols-1 md:grid-cols-3 gap-10 lg:gap-16"
+            className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-10 lg:gap-16"
           >
             {/* Column 1: Solutions */}
             <div>
@@ -325,7 +325,7 @@ const Benefits = () => {
       </section>
 
       {/* Industry Use Cases */}
-      <section className="py-24 bg-muted/50">
+      <section className="py-12 md:py-24 bg-muted/50">
         <div className="container mx-auto px-4 lg:px-8">
           <SectionHeading
             badge="Exemples par Secteur"
@@ -333,7 +333,7 @@ const Benefits = () => {
             description="De l'immobilier à l'hôtellerie, les jumeaux numériques renforcent l'expérience client dans tous les domaines."
           />
 
-          <div className="grid sm:grid-cols-2 gap-6 max-w-4xl mx-auto">
+            <div className="grid sm:grid-cols-2 gap-4 md:gap-6 max-w-4xl mx-auto">
             {industries.map((industry, index) => (
               <motion.div
                 key={industry.title}
@@ -341,7 +341,7 @@ const Benefits = () => {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
-                className="p-8 rounded-2xl bg-card shadow-soft hover:shadow-elevated transition-all duration-300 flex gap-5"
+                className="p-5 md:p-8 rounded-2xl bg-card shadow-soft hover:shadow-elevated transition-all duration-300 flex gap-4 md:gap-5"
               >
                 <div className="w-12 h-12 rounded-xl flex-shrink-0 flex items-center justify-center bg-accent/10 text-accent">
                   <industry.icon className="w-6 h-6" />
@@ -361,14 +361,14 @@ const Benefits = () => {
       </section>
 
       {/* Closing CTA */}
-      <section className="py-24 bg-gradient-hero">
+      <section className="py-12 md:py-24 bg-gradient-hero">
         <div className="container mx-auto px-4 lg:px-8">
           <div className="max-w-3xl mx-auto text-center">
             <motion.h2
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="text-3xl md:text-4xl lg:text-5xl font-display font-bold text-primary-foreground mb-6"
+              className="text-2xl md:text-4xl lg:text-5xl font-display font-bold text-primary-foreground mb-4 md:mb-6"
             >
               Informé. Confiant. Maître de Vos Décisions.
             </motion.h2>
@@ -377,7 +377,7 @@ const Benefits = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: 0.1 }}
-              className="text-lg text-primary-foreground/70 mb-10"
+              className="text-base md:text-lg text-primary-foreground/70 mb-8 md:mb-10"
             >
               Les jumeaux numériques Matterport vous offrent tout ce dont vous avez besoin pour évaluer, comparer et décider — avant même votre première visite physique.
             </motion.p>
