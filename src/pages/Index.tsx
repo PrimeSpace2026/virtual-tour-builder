@@ -101,7 +101,7 @@ const Index = () => {
         <div className="absolute inset-0">
           <img
             src="/Boost_Buyer_Engagement.gif"
-            alt="Visite virtuelle 3D Matterport"
+            alt="Visite virtuelle 3D PrimeSpace"
             className="w-full h-full object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-b from-primary/80 via-primary/60 to-primary/90" />

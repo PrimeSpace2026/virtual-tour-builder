@@ -33,8 +33,8 @@ const timeline = [
   },
   {
     year: "2019",
-    title: "Premier Partenariat Matterport",
-    description: "Devenu partenaire officiel Matterport, nous acquérons notre premier scanner professionnel.",
+    title: "Premier Partenariat PrimeSpace",
+    description: "Devenu partenaire officiel PrimeSpace, nous acquérons notre premier scanner professionnel.",
   },
   {
     year: "2021",
@@ -43,8 +43,8 @@ const timeline = [
   },
   {
     year: "2023",
-    title: "Matterport Pro 3",
-    description: "Acquisition du Matterport Pro 3, le scanner le plus avancé pour une qualité inégalée.",
+    title: "PrimeSpace Pro 3",
+    description: "Acquisition du PrimeSpace Pro 3, le scanner le plus avancé pour une qualité inégalée.",
   },
   {
     year: "2024",
@@ -231,10 +231,10 @@ const About = () => {
                 Notre Technologie
               </span>
               <h2 className="text-2xl md:text-4xl lg:text-5xl font-display font-bold text-primary-foreground mb-4 md:mb-6">
-                Pourquoi Matterport Pro 3?
+                Pourquoi PrimeSpace Pro 3?
               </h2>
               <p className="text-base md:text-lg text-primary-foreground/70 mb-8 md:mb-12">
-                Le Matterport Pro 3 représente le summum de la technologie de capture 3D. 
+                Le PrimeSpace Pro 3 représente le summum de la technologie de capture 3D. 
                 C'est le choix des professionnels les plus exigeants dans le monde entier.
               </p>
             </motion.div>

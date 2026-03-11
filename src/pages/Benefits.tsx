@@ -149,12 +149,12 @@ const solutionsList = [
 ];
 
 const industriesList = [
-  { icon: Building2, title: "Immobilier Commercial" },
-  { icon: HardHat, title: "Architecture & Construction" },
-  { icon: Factory, title: "Industrie" },
+  { icon: Building2, title: "Immobilier Commercial", href: "/industries/commercial-real-estate" },
+  { icon: HardHat, title: "Architecture & Construction", href: "/industries/architecture-construction" },
+  { icon: Factory, title: "Industrie", href: "/industries/manufacturing" },
   { icon: Insurance, title: "Assurance" },
   { icon: Home, title: "Construction Résidentielle" },
-  { icon: Plane, title: "Tourisme & Hôtellerie" },
+  { icon: Plane, title: "Tourisme & Hôtellerie", href: "/industries/travel-hospitality" },
   { icon: ShoppingCart, title: "Commerce & Retail" },
   { icon: Home, title: "Immobilier Résidentiel" },
   { icon: Building, title: "Gouvernement" },
@@ -212,7 +212,7 @@ const Benefits = () => {
               transition={{ duration: 0.6, delay: 0.2 }}
               className="text-base md:text-xl text-white/90 max-w-2xl mx-auto"
             >
-              Les jumeaux numériques Matterport vous permettent d'explorer n'importe quel espace à distance avec une précision spatiale totale — pour prendre de meilleures décisions sans vous déplacer.
+              Les jumeaux numériques PrimeSpace vous permettent d'explorer n'importe quel espace à distance avec une précision spatiale totale — pour prendre de meilleures décisions sans vous déplacer.
             </motion.p>
           </div>
         </div>
@@ -297,12 +297,24 @@ const Benefits = () => {
                 Pour Votre Secteur
               </h3>
               <div className="space-y-4">
-                {industriesList.map((item) => (
-                  <div key={item.title} className="flex items-center gap-3 group cursor-default">
-                    <item.icon className="w-5 h-5 text-muted-foreground group-hover:text-secondary transition-colors flex-shrink-0" />
-                    <p className="font-medium text-foreground group-hover:text-secondary transition-colors">{item.title}</p>
-                  </div>
-                ))}
+                {industriesList.map((item) => {
+                  const content = (
+                    <>
+                      <item.icon className="w-5 h-5 text-muted-foreground group-hover:text-secondary transition-colors flex-shrink-0" />
+                      <p className="font-medium text-foreground group-hover:text-secondary transition-colors">{item.title}</p>
+                      {"href" in item && item.href && <ArrowRight className="w-4 h-4 ml-auto text-muted-foreground/0 group-hover:text-secondary group-hover:translate-x-1 transition-all flex-shrink-0" />}
+                    </>
+                  );
+                  return "href" in item && item.href ? (
+                    <Link key={item.title} to={item.href} className="flex items-center gap-3 group">
+                      {content}
+                    </Link>
+                  ) : (
+                    <div key={item.title} className="flex items-center gap-3 group cursor-default">
+                      {content}
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
@@ -379,7 +391,7 @@ const Benefits = () => {
               transition={{ delay: 0.1 }}
               className="text-base md:text-lg text-primary-foreground/70 mb-8 md:mb-10"
             >
-              Les jumeaux numériques Matterport vous offrent tout ce dont vous avez besoin pour évaluer, comparer et décider — avant même votre première visite physique.
+              Les jumeaux numériques PrimeSpace vous offrent tout ce dont vous avez besoin pour évaluer, comparer et décider — avant même votre première visite physique.
             </motion.p>
             <motion.div
               initial={{ opacity: 0, y: 20 }}

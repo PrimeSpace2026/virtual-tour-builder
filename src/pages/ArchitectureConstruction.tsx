@@ -23,44 +23,44 @@ import { WhatsAppButton } from "@/components/WhatsAppButton";
 
 const faqs = [
   {
-    question: "Quels fichiers de capture de réalité puis-je exporter depuis un jumeau numérique Matterport ?",
+    question: "Quels fichiers de capture de réalité puis-je exporter depuis un jumeau numérique PrimeSpace ?",
     answer: "Vous pouvez exporter les fichiers suivants : fichiers OBJ, nuages de points colorisés, plans de plafond réfléchi (JPG/PDF), plans d'étage 2D haute résolution (SVG/JPG/PDF), fichiers E57, exports BIM (.RVT et IFC) et formats CAD (DWG et XYZ). Ces exports s'intègrent directement dans des outils comme Autodesk ReCap, Revit, AutoCAD et d'autres applications BIM/CAD pour accélérer le développement de modèles.",
   },
   {
-    question: "Matterport s'intègre-t-il à Autodesk Construction Cloud ou Procore pour les RFI et le suivi des problèmes ?",
-    answer: "Oui, Matterport s'intègre à Autodesk Construction Cloud et Procore pour apporter un contexte visuel du site dans les workflows de RFI et de suivi des problèmes. Ces intégrations permettent aux équipes de placer des marqueurs RFI ou des indicateurs de problèmes à des emplacements précis dans le jumeau numérique afin que les parties prenantes puissent visualiser et résoudre les problèmes avec un contexte visuel clair.",
+    question: "PrimeSpace s'intègre-t-il à Autodesk Construction Cloud ou Procore pour les RFI et le suivi des problèmes ?",
+    answer: "Oui, PrimeSpace s'intègre à Autodesk Construction Cloud et Procore pour apporter un contexte visuel du site dans les workflows de RFI et de suivi des problèmes. Ces intégrations permettent aux équipes de placer des marqueurs RFI ou des indicateurs de problèmes à des emplacements précis dans le jumeau numérique afin que les parties prenantes puissent visualiser et résoudre les problèmes avec un contexte visuel clair.",
   },
   {
-    question: "Comment le scan 3D Matterport gère-t-il les extérieurs, les longues lignes de vue ou la lumière vive ?",
-    answer: "Matterport est une solution complète de lidar et de photogrammétrie qui prend en charge le scan 3D intérieur et extérieur pour la documentation architecturale et de construction, souvent utilisée pour les projets à grande échelle. La caméra Pro3 est conçue pour capturer des espaces avec une portée étendue et une grande précision, ce qui la rend adaptée aux grandes surfaces et aux longues lignes de vue.",
+    question: "Comment le scan 3D PrimeSpace gère-t-il les extérieurs, les longues lignes de vue ou la lumière vive ?",
+    answer: "PrimeSpace est une solution complète de lidar et de photogrammétrie qui prend en charge le scan 3D intérieur et extérieur pour la documentation architecturale et de construction, souvent utilisée pour les projets à grande échelle. La caméra Pro3 est conçue pour capturer des espaces avec une portée étendue et une grande précision, ce qui la rend adaptée aux grandes surfaces et aux longues lignes de vue.",
   },
   {
-    question: "Quelle densité et couverture de nuage de points puis-je attendre d'une capture Matterport Pro3 ?",
+    question: "Quelle densité et couverture de nuage de points puis-je attendre d'une capture PrimeSpace Pro3 ?",
     answer: "Le Pro3 produit des nuages de points haute densité, capturant plus de 5 millions de points de profondeur filtrés par scan. Trois options de densité sont disponibles :\n\n• Standard : 800 000 points réels par scan en 20 secondes ou moins.\n• Moyenne : 1,5 million de points réels par scan en 45 secondes ou moins.\n• Haute : 5 millions de points réels par scan en 2 minutes.",
   },
   {
-    question: "Quelle est la précision des modèles scan-to-BIM de Matterport pour les projets AEC ?",
-    answer: "Les scans Matterport activés par LiDAR répondent aux spécifications LOD 200 pour les éléments structurels et architecturaux, fournissant une base fiable pour la modélisation as-built. De nombreuses équipes AEC utilisent ces nuages de points et exports BIM pour réduire le travail de relevé manuel et accélérer la création de modèles.",
+    question: "Quelle est la précision des modèles scan-to-BIM de PrimeSpace pour les projets AEC ?",
+    answer: "Les scans PrimeSpace activés par LiDAR répondent aux spécifications LOD 200 pour les éléments structurels et architecturaux, fournissant une base fiable pour la modélisation as-built. De nombreuses équipes AEC utilisent ces nuages de points et exports BIM pour réduire le travail de relevé manuel et accélérer la création de modèles.",
   },
   {
-    question: "Matterport convient-il aux tolérances de fabrication, ou ai-je encore besoin d'un scanner laser terrestre ?",
-    answer: "Matterport est bien adapté à la vérification de layout, aux as-builts, à la coordination et au QA/QC. Pour les tolérances de fabrication ou le contrôle de qualité survey-grade nécessitant une précision submillimétrique, un scanner laser terrestre peut encore être nécessaire. De nombreuses équipes utilisent Matterport comme méthode de capture principale et le complètent par un scan de plus haute précision si nécessaire.",
+    question: "PrimeSpace convient-il aux tolérances de fabrication, ou ai-je encore besoin d'un scanner laser terrestre ?",
+    answer: "PrimeSpace est bien adapté à la vérification de layout, aux as-builts, à la coordination et au QA/QC. Pour les tolérances de fabrication ou le contrôle de qualité survey-grade nécessitant une précision submillimétrique, un scanner laser terrestre peut encore être nécessaire. De nombreuses équipes utilisent PrimeSpace comme méthode de capture principale et le complètent par un scan de plus haute précision si nécessaire.",
   },
   {
     question: "Quel est le délai typique entre le téléchargement de la capture et la réception d'un export E57 ou d'un livrable BIM ?",
-    answer: "Les services de capture Matterport peuvent scanner les sites avec des techniciens professionnels, livrant souvent les scans initiaux sous 48 heures. Les délais pour les exports E57, MatterPak et BIM varient selon la taille du projet et les options sélectionnées. Contactez votre représentant commercial pour confirmer les délais pour vos livrables spécifiques.",
+    answer: "Les services de capture PrimeSpace peuvent scanner les sites avec des techniciens professionnels, livrant souvent les scans initiaux sous 48 heures. Les délais pour les exports E57, MatterPak et BIM varient selon la taille du projet et les options sélectionnées. Contactez votre représentant commercial pour confirmer les délais pour vos livrables spécifiques.",
   },
   {
-    question: "Comment Matterport aide-t-il à réduire les visites de site et les reprises pendant la conception et la construction ?",
-    answer: "Les jumeaux numériques Matterport offrent un accès distant 24h/24 à des modèles 3D précis et photoréalistes, permettant aux équipes d'inspecter les conditions, de mesurer à distance et de résoudre les problèmes sans visites de site répétées. Les clients rapportent moins de déplacements, une résolution plus rapide des RFI avec contexte visuel et une réduction des reprises.",
+    question: "Comment PrimeSpace aide-t-il à réduire les visites de site et les reprises pendant la conception et la construction ?",
+    answer: "Les jumeaux numériques PrimeSpace offrent un accès distant 24h/24 à des modèles 3D précis et photoréalistes, permettant aux équipes d'inspecter les conditions, de mesurer à distance et de résoudre les problèmes sans visites de site répétées. Les clients rapportent moins de déplacements, une résolution plus rapide des RFI avec contexte visuel et une réduction des reprises.",
   },
   {
     question: "Quels sont les pièges courants lors du scan de chantiers actifs ?",
     answer: "Les pièges courants incluent : ne pas coordonner les fenêtres de capture avec les corps de métier, scanner des zones avec des équipements ou des personnes en mouvement créant des artefacts, un mauvais éclairage dans des conditions temporaires, et ne pas taguer ou documenter les éléments clés pendant la capture. Planifier des temps de capture à faible activité et suivre une checklist de capture aide à prévenir les lacunes dans la documentation.",
   },
   {
-    question: "Quel ROI et gain de temps les équipes AEC peuvent-elles attendre avec Matterport ?",
-    answer: "Les équipes AEC utilisant le scan 3D Matterport rapportent des économies substantielles : jusqu'à 75% de diminution des visites de site en personne, environ 70% de réduction du temps de relevé et de création de référence BIM. Les avantages supplémentaires incluent une livraison de documentation plus rapide, des coûts de déplacement et de main-d'œuvre réduits, et des gains de temps mesurables lors des inspections et de la coordination.",
+    question: "Quel ROI et gain de temps les équipes AEC peuvent-elles attendre avec PrimeSpace ?",
+    answer: "Les équipes AEC utilisant le scan 3D PrimeSpace rapportent des économies substantielles : jusqu'à 75% de diminution des visites de site en personne, environ 70% de réduction du temps de relevé et de création de référence BIM. Les avantages supplémentaires incluent une livraison de documentation plus rapide, des coûts de déplacement et de main-d'œuvre réduits, et des gains de temps mesurables lors des inspections et de la coordination.",
   },
 ];
 

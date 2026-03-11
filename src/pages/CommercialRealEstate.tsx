@@ -128,9 +128,9 @@ const features = [
 const faqs = [
   {
     question:
-      "Matterport peut-il offrir une visibilité sur des portefeuilles multi-bâtiments et de grandes propriétés commerciales dans un seul compte ?",
+      "PrimeSpace peut-il offrir une visibilité sur des portefeuilles multi-bâtiments et de grandes propriétés commerciales dans un seul compte ?",
     answer:
-      "Oui, Matterport s'adapte facilement aux portefeuilles multi-bâtiments, permettant aux équipes immobilières d'organiser et de naviguer parmi des centaines de visites virtuelles depuis un tableau de bord unique. Même pour les actifs très importants, l'infrastructure cloud assure un chargement rapide et une visualisation fluide sans latence.",
+      "Oui, PrimeSpace s'adapte facilement aux portefeuilles multi-bâtiments, permettant aux équipes immobilières d'organiser et de naviguer parmi des centaines de visites virtuelles depuis un tableau de bord unique. Même pour les actifs très importants, l'infrastructure cloud assure un chargement rapide et une visualisation fluide sans latence.",
   },
   {
     question:
@@ -140,39 +140,39 @@ const faqs = [
   },
   {
     question:
-      "Matterport peut-il gérer la capture extérieure et longue portée pour les entrepôts commerciaux, usines ou campus ?",
+      "PrimeSpace peut-il gérer la capture extérieure et longue portée pour les entrepôts commerciaux, usines ou campus ?",
     answer:
-      "Oui, Matterport prend en charge la capture intérieure et extérieure et est optimisé pour une grande variété d'appareils. La caméra Pro3 est couramment utilisée pour les scans à grande échelle de bâtiments commerciaux, d'entrepôts et de campus.",
+      "Oui, PrimeSpace prend en charge la capture intérieure et extérieure et est optimisé pour une grande variété d'appareils. La caméra Pro3 est couramment utilisée pour les scans à grande échelle de bâtiments commerciaux, d'entrepôts et de campus.",
   },
   {
     question:
-      "Matterport peut-il capturer la propriété pour nous, et quels sont les délais de livraison ?",
+      "PrimeSpace peut-il capturer la propriété pour nous, et quels sont les délais de livraison ?",
     answer:
-      "Matterport Capture Services met à disposition des techniciens certifiés dans des centaines de villes pour scanner vos propriétés, avec une livraison possible en 48 heures dans de nombreuses localisations populaires.",
+      "PrimeSpace Capture Services met à disposition des techniciens certifiés dans des centaines de villes pour scanner vos propriétés, avec une livraison possible en 48 heures dans de nombreuses localisations populaires.",
   },
   {
     question:
       "Comment les modèles 3D / visites virtuelles sont-ils hébergés et sécurisés, et peut-on contrôler l'accès avec SSO et des permissions ?",
     answer:
-      "Les modèles sont hébergés sur la plateforme cloud sécurisée de Matterport avec des contrôles entreprise comme le SSO SAML 2.0, les permissions basées sur les rôles, la conformité SOC 2 Type II et l'alignement RGPD/CCPA. Les administrateurs peuvent gérer les utilisateurs, auditer l'activité, contrôler le partage et intégrer des visites privées dans des portails sécurisés.",
+      "Les modèles sont hébergés sur la plateforme cloud sécurisée de PrimeSpace avec des contrôles entreprise comme le SSO SAML 2.0, les permissions basées sur les rôles, la conformité SOC 2 Type II et l'alignement RGPD/CCPA. Les administrateurs peuvent gérer les utilisateurs, auditer l'activité, contrôler le partage et intégrer des visites privées dans des portails sécurisés.",
   },
   {
     question:
-      "Peut-on intégrer les visites virtuelles Matterport sur notre site web et nos portails d'annonces, ou partager des liens privés pour la due diligence ?",
+      "Peut-on intégrer les visites virtuelles PrimeSpace sur notre site web et nos portails d'annonces, ou partager des liens privés pour la due diligence ?",
     answer:
-      "Les visites virtuelles Matterport peuvent être intégrées sur les sites web immobiliers commerciaux, ajoutées aux portails d'annonces, partagées sur les réseaux sociaux, importées sur Google Street View ou distribuées via des liens privés pour une due diligence confidentielle. Les vues et les permissions permettent d'adapter l'accès pour différents publics.",
+      "Les visites virtuelles PrimeSpace peuvent être intégrées sur les sites web immobiliers commerciaux, ajoutées aux portails d'annonces, partagées sur les réseaux sociaux, importées sur Google Street View ou distribuées via des liens privés pour une due diligence confidentielle. Les vues et les permissions permettent d'adapter l'accès pour différents publics.",
   },
   {
     question:
       "Quelles options d'abonnement et tarifs entreprise sont disponibles pour les portefeuilles commerciaux ?",
     answer:
-      "Chaque portefeuille commercial étant unique, Matterport propose des plans Entreprise personnalisés qui s'adaptent selon les Espaces Actifs, les utilisateurs, les fonctionnalités et les intégrations. Les clients entreprise peuvent travailler avec l'équipe commerciale pour adapter les tarifs et les capacités.\n\nContactez-nous pour discuter de vos besoins.",
+      "Chaque portefeuille commercial étant unique, PrimeSpace propose des plans Entreprise personnalisés qui s'adaptent selon les Espaces Actifs, les utilisateurs, les fonctionnalités et les intégrations. Les clients entreprise peuvent travailler avec l'équipe commerciale pour adapter les tarifs et les capacités.\n\nContactez-nous pour discuter de vos besoins.",
   },
   {
     question:
       "Quel accompagnement, formation et support proposez-vous pour les déploiements immobiliers commerciaux ?",
     answer:
-      "Matterport propose un accompagnement pour les utilisateurs commerciaux et entreprise avec un Customer Success Manager dédié et un support technique mondial. Les services de capture, les ressources de formation et la documentation aident les équipes à standardiser leurs flux de travail et à monter en compétence rapidement.",
+      "PrimeSpace propose un accompagnement pour les utilisateurs commerciaux et entreprise avec un Customer Success Manager dédié et un support technique mondial. Les services de capture, les ressources de formation et la documentation aident les équipes à standardiser leurs flux de travail et à monter en compétence rapidement.",
   },
 ];
 
@@ -305,7 +305,7 @@ const CommercialRealEstate = () => {
             className="text-center mb-10 md:mb-16"
           >
             <h2 className="text-2xl md:text-4xl lg:text-5xl font-display font-bold text-[#2c0a71]">
-              Prenez l'avantage sur le marché avec Matterport.
+              Prenez l'avantage sur le marché avec PrimeSpace.
             </h2>
           </motion.div>
 
