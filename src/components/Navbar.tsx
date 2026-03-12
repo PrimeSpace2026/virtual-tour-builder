@@ -18,7 +18,7 @@ const megaIndustries = [
   { icon: Building2, label: "Immobilier Commercial", href: "/industries/commercial-real-estate" },
   { icon: HardHat, label: "Architecture & Construction", href: "/industries/architecture-construction" },
   { icon: Factory, label: "Industrie", href: "/industries/manufacturing" },
-  { icon: ShieldCheck, label: "Assurance" },
+  { icon: ShieldCheck, label: "Assurance", href: "/industries/insurance" },
   { icon: Home, label: "Construction Résidentielle" },
   { icon: Plane, label: "Tourisme & Hôtellerie", href: "/industries/travel-hospitality" },
   { icon: ShoppingCart, label: "Commerce & Retail" },
@@ -47,7 +47,7 @@ export const Navbar = () => {
   const megaRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
 
-  const lightHero = location.pathname === "/industries/architecture-construction" || location.pathname === "/industries/commercial-real-estate" || location.pathname === "/industries/manufacturing";
+  const lightHero = location.pathname === "/industries/architecture-construction" || location.pathname === "/industries/commercial-real-estate" || location.pathname === "/industries/manufacturing" || location.pathname === "/industries/insurance";
 
   useEffect(() => {
     const handleScroll = () => {

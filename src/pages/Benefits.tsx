@@ -152,7 +152,7 @@ const industriesList = [
   { icon: Building2, title: "Immobilier Commercial", href: "/industries/commercial-real-estate" },
   { icon: HardHat, title: "Architecture & Construction", href: "/industries/architecture-construction" },
   { icon: Factory, title: "Industrie", href: "/industries/manufacturing" },
-  { icon: Insurance, title: "Assurance" },
+  { icon: Insurance, title: "Assurance", href: "/industries/insurance" },
   { icon: Home, title: "Construction Résidentielle" },
   { icon: Plane, title: "Tourisme & Hôtellerie", href: "/industries/travel-hospitality" },
   { icon: ShoppingCart, title: "Commerce & Retail" },
