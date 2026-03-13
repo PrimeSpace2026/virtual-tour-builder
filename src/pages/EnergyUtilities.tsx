@@ -24,52 +24,34 @@ const fadeUp = {
 
 const faqs = [
   {
-    question:
-      "Comment les visites virtuelles influencent-elles la conversion des réservations pour les hôtels et attractions ?",
-    answer:
-      "Les visites virtuelles 3D permettent aux voyageurs de découvrir l'espace avant de réserver, ce qui renforce la confiance et réduit les hésitations. Les établissements constatent en moyenne 25% d'engagement en ligne supplémentaire et une hausse significative des réservations directes.",
+    question: "Comment les jumeaux numériques améliorent-ils la gestion des installations énergétiques ?",
+    answer: "Les jumeaux numériques PrimeSpace permettent de documenter avec précision chaque infrastructure, d'effectuer des inspections visuelles à distance, de planifier la maintenance préventive et de former les équipes dans des environnements virtuels fidèles — réduisant les temps d'arrêt et les coûts opérationnels.",
   },
   {
-    question:
-      "Puis-je intégrer une visite virtuelle sur mon site web ou mes pages de réservation sans développement personnalisé ?",
-    answer:
-      "Oui. Les visites virtuelles PrimeSpace s'intègrent facilement via un simple code d'intégration iframe. Aucune compétence technique avancée n'est requise — copiez-collez le code sur votre site, Booking.com, Airbnb ou toute autre plateforme.",
+    question: "Quel niveau de précision dimensionnelle les scans 3D offrent-ils pour les installations énergétiques ?",
+    answer: "Les scans PrimeSpace offrent une précision de ±1% sur les dimensions. Cette précision est suffisante pour la documentation des actifs, la planification de maintenance et la coordination des interventions dans les installations énergétiques.",
   },
   {
-    question:
-      "Proposez-vous des services de capture professionnelle si nous n'avons pas d'équipement ?",
-    answer:
-      "Absolument. PrimeSpace Capture Services met à votre disposition des techniciens certifiés qui se déplacent dans votre établissement pour créer des jumeaux numériques de haute qualité, généralement livrés en 48 heures.",
+    question: "Les jumeaux numériques peuvent-ils être utilisés pour la formation à la sécurité ?",
+    answer: "Oui. Les jumeaux numériques permettent de créer des parcours de formation virtuels immersifs pour familiariser les employés avec les procédures de sécurité, les issues de secours et l'emplacement des équipements critiques — sans interrompre les opérations.",
   },
   {
-    question:
-      "Combien de temps faut-il pour créer une visite virtuelle du scan à la publication ?",
-    answer:
-      "Le temps varie selon la taille de l'établissement :\n\n• Chambre standard : 15-20 minutes de scan\n• Suite / espace commun : 30-60 minutes\n• Hôtel complet (100 chambres) : 2-3 jours\n\nLe traitement et la publication sont généralement réalisés sous 24-48 heures après le scan.",
+    question: "Comment PrimeSpace aide-t-il à la conformité réglementaire ?",
+    answer: "Les jumeaux numériques fournissent une documentation visuelle horodatée de l'état des installations, facilitant les audits de conformité, les inspections réglementaires et la traçabilité des modifications apportées aux infrastructures.",
   },
   {
-    question:
-      "Les visites virtuelles peuvent-elles soutenir l'entretien et la maintenance ?",
-    answer:
-      "Oui. Les jumeaux numériques permettent aux équipes de maintenance d'inspecter les espaces à distance, de planifier les interventions, de documenter l'état des installations et de coordonner les rénovations sans multiplier les déplacements sur site.",
+    question: "Peut-on intégrer les données 3D avec nos systèmes de gestion d'actifs existants ?",
+    answer: "Oui. PrimeSpace permet l'export en formats standard (E57, CAO, BIM) et offre des API pour l'intégration avec vos plateformes de gestion d'actifs, GMAO et systèmes de supervision.",
   },
   {
-    question:
-      "Quelles options d'abonnement et d'hébergement proposez-vous pour les portefeuilles multi-établissements ?",
-    answer:
-      "PrimeSpace propose des plans adaptés à toutes les tailles de portefeuille, du plan gratuit pour commencer jusqu'aux plans entreprise personnalisés. Gérez facilement plusieurs propriétés, utilisateurs et équipes depuis un seul tableau de bord.",
-  },
-  {
-    question:
-      "Quelles bonnes pratiques d'accessibilité suivre pour les visites virtuelles ?",
-    answer:
-      "Les visites virtuelles PrimeSpace sont accessibles sur tous les appareils (desktop, mobile, tablette) et peuvent être partagées via un simple lien. Pour l'accessibilité avancée, des descriptions textuelles et des parcours guidés peuvent être ajoutés pour accompagner tous les utilisateurs.",
+    question: "PrimeSpace peut-il scanner des installations en zones à accès restreint ?",
+    answer: "Oui. Nos techniciens PrimeSpace Capture Services sont formés pour intervenir dans des environnements à accès contrôlé et respectent les protocoles de sécurité spécifiques à chaque site industriel.",
   },
 ];
 
 /* ─── Page ────────────────────────────────────────────────────── */
 
-const TravelHospitality = () => {
+const EnergyUtilities = () => {
   return (
     <Layout>
       <WhatsAppButton />
@@ -84,17 +66,13 @@ const TravelHospitality = () => {
             className="text-center max-w-4xl mx-auto"
           >
             <p className="text-xs md:text-sm uppercase tracking-widest text-foreground/40 font-semibold mb-3">
-              Tourisme & Hôtellerie
+              Énergie & Utilités
             </p>
             <h1 className="text-2xl md:text-4xl lg:text-5xl font-display font-bold text-[#2c0a71] mb-3 md:mb-4 leading-tight">
-              Boostez vos réservations avec les visites virtuelles 3D pour le
-              tourisme & l'hôtellerie.
+              Numérisez vos infrastructures énergétiques avec la 3D.
             </h1>
             <p className="text-foreground/70 text-sm md:text-lg max-w-3xl mx-auto">
-              Découvrez comment les visites virtuelles 3D et les jumeaux
-              numériques PrimeSpace révolutionnent le marketing et les
-              opérations dans l'ensemble du secteur du tourisme et de
-              l'hôtellerie.
+              Des centrales aux réseaux de distribution, les jumeaux numériques PrimeSpace transforment la gestion, la maintenance et la formation dans le secteur de l'énergie et des utilités.
             </p>
           </motion.div>
         </div>
@@ -110,8 +88,8 @@ const TravelHospitality = () => {
             className="rounded-2xl overflow-hidden shadow-elevated border border-border aspect-video"
           >
             <iframe
-              src="https://my.matterport.com/show/?m=Hx7t1MsKi3W&log=0&help=0&nt=0&play=0&qs=0&brand=1&dh=1&tour=1&gt=1&hr=1&mls=0&mt=1&tagNav=1&pin=1&portal=1&f=1&fp=1&nozoom=0&search=1&wh=1&kb=1&lp=0&title=1&tourcta=1&vr=1"
-              title="Visite virtuelle – Tourisme & Hôtellerie"
+              src="https://my.matterport.com/show/?m=EnNcG7iXQQx&log=0&help=0&nt=0&play=1&qs=0&brand=0&dh=1&tour=1&gt=1&hr=1&mls=1&mt=1&tagNav=1&pin=1&portal=1&f=1&fp=1&nozoom=1&search=1&wh=1&kb=1&lp=0&title=0&tourcta=1&vr=1"
+              title="Visite virtuelle – Installations Énergétiques"
               className="w-full h-full"
               allow="fullscreen"
               allowFullScreen
@@ -120,7 +98,7 @@ const TravelHospitality = () => {
         </div>
       </section>
 
-      {/* ── 3. Enhance guest experiences — 3 cards ───────────── */}
+      {/* ── 3. Solutions — 3 cards ───────────────────────────── */}
       <section className="py-16 md:py-24 bg-white">
         <div className="container mx-auto px-4 lg:px-8 max-w-6xl">
           <motion.div
@@ -131,12 +109,12 @@ const TravelHospitality = () => {
             className="text-center mb-10 md:mb-16"
           >
             <h2 className="text-2xl md:text-4xl lg:text-5xl font-display font-bold text-foreground mb-3 md:mb-5 leading-tight">
-              Améliorez l'expérience client.
+              Solutions complètes pour le secteur énergétique.
             </h2>
           </motion.div>
 
           <div className="grid md:grid-cols-3 gap-6 md:gap-8">
-            {/* Immersive Property Marketing */}
+            {/* Asset Documentation */}
             <motion.div
               initial={{ opacity: 0, y: 24 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -146,28 +124,24 @@ const TravelHospitality = () => {
             >
               <div className="rounded-2xl overflow-hidden mb-5">
                 <img
-                  src="https://images.ctfassets.net/icnj41gkyohw/1nSRMvT38oeGnZMwZUXQaP/40f5db39e8727a7f74c36d4452d44577/Group_1.png"
-                  alt="Marketing immersif des propriétés"
+                  src="https://images.ctfassets.net/icnj41gkyohw/4Jci4ShPvyNOhFU5cfLB1d/f710364c697221bdfcd68dea8317e4d1/Frame_7708__17_.png"
+                  alt="Documentation des actifs"
                   className="w-full h-auto group-hover:scale-105 transition-transform duration-500"
                   loading="lazy"
                 />
               </div>
               <span className="text-xs font-semibold uppercase tracking-widest text-[#2c0a71]">
-                Marketing Immersif
+                Documentation des Actifs
               </span>
               <h3 className="text-xl md:text-2xl font-display font-bold text-foreground mt-2 mb-3">
-                L'expérience la plus proche de la réalité.
+                Documentez chaque installation avec précision.
               </h3>
               <p className="text-foreground/60 text-sm md:text-base leading-relaxed">
-                Donnez vie aux hôtels, resorts et lieux événementiels avec des
-                visites virtuelles 3D immersives et des contenus médias riches
-                pour atteindre 300% d'engagement supplémentaire en permettant aux
-                clients d'explorer, de s'inspirer et de réserver en toute
-                confiance — depuis n'importe où.
+                Créez des relevés 3D détaillés de vos centrales, sous-stations et infrastructures de distribution pour une gestion d'actifs complète et à jour.
               </p>
             </motion.div>
 
-            {/* Guest Experience Touchpoints */}
+            {/* Remote Inspections */}
             <motion.div
               initial={{ opacity: 0, y: 24 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -177,27 +151,24 @@ const TravelHospitality = () => {
             >
               <div className="rounded-2xl overflow-hidden mb-5">
                 <img
-                  src="https://images.ctfassets.net/icnj41gkyohw/4ruz5aQtJjOukHwdI2NGtu/24bbc4d11fe847b0e8d28c96f38b2b17/Group_632589.png"
-                  alt="Points de contact de l'expérience client"
+                  src="https://images.ctfassets.net/icnj41gkyohw/EMqdkNZSnyLDiOP08p6VE/02f0d6afe63c03a5d1c91d7d2b9b3ef0/Frame_7708__18_.png"
+                  alt="Inspections à distance"
                   className="w-full h-auto group-hover:scale-105 transition-transform duration-500"
                   loading="lazy"
                 />
               </div>
               <span className="text-xs font-semibold uppercase tracking-widest text-[#2c0a71]">
-                Points de Contact Client
+                Inspections à Distance
               </span>
               <h3 className="text-xl md:text-2xl font-display font-bold text-foreground mt-2 mb-3">
-                Le confort à chaque étape.
+                Inspectez vos sites sans vous déplacer.
               </h3>
               <p className="text-foreground/60 text-sm md:text-base leading-relaxed">
-                Utilisez les jumeaux numériques pour guider les clients,
-                prévisualiser les espaces et mettre en valeur les équipements,
-                garantissant des expériences cohérentes et de haute qualité dans
-                l'ensemble de votre portefeuille hôtelier.
+                Effectuez des inspections visuelles détaillées à distance, vérifiez l'état des équipements et coordonnez les interventions de maintenance depuis votre bureau.
               </p>
             </motion.div>
 
-            {/* Remote Training */}
+            {/* Safety & Training */}
             <motion.div
               initial={{ opacity: 0, y: 24 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -208,31 +179,26 @@ const TravelHospitality = () => {
               <div className="rounded-2xl overflow-hidden mb-5">
                 <img
                   src="https://images.ctfassets.net/icnj41gkyohw/3entXHvQBnBYvUVGdqhCAu/a4e2f985cece685dfaa07a5a672dcd96/Frame_7708.png"
-                  alt="Formation et intégration à distance"
+                  alt="Sécurité & Formation"
                   className="w-full h-auto group-hover:scale-105 transition-transform duration-500"
                   loading="lazy"
                 />
               </div>
               <span className="text-xs font-semibold uppercase tracking-widest text-[#2c0a71]">
-                Formation & Intégration à Distance
+                Sécurité & Formation
               </span>
               <h3 className="text-xl md:text-2xl font-display font-bold text-foreground mt-2 mb-3">
-                Formez votre personnel plus vite.
+                Formez vos équipes en toute sécurité.
               </h3>
               <p className="text-foreground/60 text-sm md:text-base leading-relaxed">
-                Standardisez la formation à travers vos propriétés en plongeant
-                les nouveaux employés dans des parcours 3D fidèles des espaces
-                clients, des zones de service et des environnements
-                opérationnels. Réduisez le temps de formation et aidez le
-                personnel à contextualiser rapidement le matériel
-                d'apprentissage.
+                Utilisez les jumeaux numériques pour former les employés aux procédures de sécurité, simuler des scénarios d'urgence et familiariser les nouvelles recrues avec les installations — sans risque.
               </p>
             </motion.div>
           </div>
         </div>
       </section>
 
-      {/* ── 4. Optimize venue & facility operations ──────────── */}
+      {/* ── 4. Reduce downtime ───────────────────────────────── */}
       <section className="py-16 md:py-24 bg-muted/30">
         <div className="container mx-auto px-4 lg:px-8 max-w-6xl">
           <div className="grid lg:grid-cols-2 gap-8 md:gap-16 items-center">
@@ -244,7 +210,7 @@ const TravelHospitality = () => {
             >
               <img
                 src="https://images.ctfassets.net/icnj41gkyohw/24L0M7n6ZVrxDoxNVdbM3/554ed44bf32ed4f1cde5d91acf06f8c2/Frame_7708__5_.png"
-                alt="Gestion des installations et maintenance"
+                alt="Réduction des temps d'arrêt"
                 className="w-full h-auto rounded-2xl"
                 loading="lazy"
               />
@@ -257,23 +223,20 @@ const TravelHospitality = () => {
               transition={{ duration: 0.6, delay: 0.15 }}
             >
               <span className="text-xs font-semibold uppercase tracking-widest text-[#2c0a71]">
-                Gestion des Installations & Maintenance
+                Maintenance Préventive
               </span>
               <h2 className="text-2xl md:text-4xl lg:text-5xl font-display font-bold text-foreground mt-2 mb-4 md:mb-6">
-                Optimisez les opérations de vos lieux et installations.
+                Réduisez les temps d'arrêt et les coûts de maintenance.
               </h2>
               <p className="text-foreground/60 text-sm md:text-lg leading-relaxed max-w-lg">
-                Documentez chaque étage, chambre et espace technique avec un
-                jumeau numérique complet. Facilitez la maintenance, les
-                rénovations et la coordination des équipes sans multiplier les
-                déplacements sur site.
+                Planifiez les interventions de maintenance avec une documentation visuelle complète. Identifiez les problèmes potentiels avant qu'ils ne deviennent critiques et coordonnez les équipes de maintenance avec des informations précises et actualisées sur l'état des installations.
               </p>
             </motion.div>
           </div>
         </div>
       </section>
 
-      {/* ── 5. Manage repairs in real time ───────────────────── */}
+      {/* ── 5. Ensure compliance ─────────────────────────────── */}
       <section className="py-16 md:py-24 bg-white">
         <div className="container mx-auto px-4 lg:px-8 max-w-6xl">
           <div className="grid lg:grid-cols-2 gap-8 md:gap-16 items-center">
@@ -284,14 +247,10 @@ const TravelHospitality = () => {
               transition={{ duration: 0.6 }}
             >
               <h2 className="text-2xl md:text-4xl lg:text-5xl font-display font-bold text-foreground mb-4 md:mb-6">
-                Gérez les réparations et améliorations en temps réel.
+                Assurez la conformité réglementaire.
               </h2>
               <p className="text-foreground/60 text-sm md:text-lg leading-relaxed max-w-lg">
-                Évaluez les conditions en temps réel à travers votre portefeuille
-                hôtelier et planifiez des projets d'amélioration sans
-                déplacements coûteux et chronophages. Surveillez l'état de vos
-                hôtels à distance via vos visites virtuelles 3D et exploitez des
-                analyses automatisées pour optimiser la maintenance.
+                Maintenez une documentation horodatée de l'état de vos installations pour faciliter les audits réglementaires. Les jumeaux numériques fournissent des preuves visuelles irréfutables de la conformité aux normes de sécurité et environnementales.
               </p>
             </motion.div>
 
@@ -303,7 +262,7 @@ const TravelHospitality = () => {
             >
               <img
                 src="https://images.ctfassets.net/icnj41gkyohw/2PNWLenvyYtFr9t6oSsfza/5155ea190351b9043022924d2dff0a6e/Frame_7712__1_.png"
-                alt="Gérez les réparations en temps réel"
+                alt="Conformité réglementaire"
                 className="w-full h-auto rounded-2xl"
                 loading="lazy"
               />
@@ -312,7 +271,7 @@ const TravelHospitality = () => {
         </div>
       </section>
 
-      {/* ── 6. Stay on schedule and on budget ────────────────── */}
+      {/* ── 6. Scale across portfolio ────────────────────────── */}
       <section className="py-16 md:py-24 bg-muted/30">
         <div className="container mx-auto px-4 lg:px-8 max-w-6xl">
           <div className="grid lg:grid-cols-2 gap-8 md:gap-16 items-center">
@@ -324,7 +283,7 @@ const TravelHospitality = () => {
             >
               <img
                 src="https://images.ctfassets.net/icnj41gkyohw/FYApruI5l8wcLY5RoKyWv/2ffda28b1219eb5b98ff3c07eaf3376a/Frame_7715__2_.png"
-                alt="Suivi des rénovations et construction"
+                alt="Gestion du portefeuille à grande échelle"
                 className="w-full h-auto rounded-2xl"
                 loading="lazy"
               />
@@ -337,67 +296,28 @@ const TravelHospitality = () => {
               transition={{ duration: 0.6, delay: 0.15 }}
             >
               <span className="text-xs font-semibold uppercase tracking-widest text-[#2c0a71]">
-                Suivi des Rénovations & Construction
+                Gestion à Grande Échelle
               </span>
               <h2 className="text-2xl md:text-4xl lg:text-5xl font-display font-bold text-foreground mt-2 mb-4 md:mb-6">
-                Respectez les délais et le budget.
+                Gérez l'ensemble de votre portefeuille d'infrastructures.
               </h2>
-              <p className="text-foreground/60 text-sm md:text-lg leading-relaxed max-w-lg">
-                Capturez, documentez et collaborez sur les rénovations d'hôtels
-                et de resorts avec une clarté 3D. Alignez les équipes, suivez les
-                jalons et évitez les reprises en partageant des informations
-                visuelles précises avec les entrepreneurs et les parties
-                prenantes.
+              <p className="text-foreground/60 text-sm md:text-lg leading-relaxed max-w-lg mb-6 md:mb-8">
+                Centralisez la gestion de toutes vos installations énergétiques sur une seule plateforme. Comparez les sites, suivez les modifications et optimisez la allocation des ressources à travers votre réseau.
               </p>
+              <Button
+                size="lg"
+                className="bg-foreground text-background hover:bg-foreground/90 rounded-full"
+                asChild
+              >
+                <Link to="/contact">En Savoir Plus</Link>
+              </Button>
             </motion.div>
           </div>
         </div>
       </section>
 
-      {/* ── 7. Consistent standards across portfolio ─────────── */}
+      {/* ── 7. Testimonial ───────────────────────────────────── */}
       <section className="py-16 md:py-24 bg-white">
-        <div className="container mx-auto px-4 lg:px-8 max-w-6xl">
-          <div className="grid lg:grid-cols-2 gap-8 md:gap-16 items-center">
-            <motion.div
-              initial={{ opacity: 0, x: -30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-            >
-              <span className="text-xs font-semibold uppercase tracking-widest text-[#2c0a71]">
-                Conformité & Standards
-              </span>
-              <h2 className="text-2xl md:text-4xl lg:text-5xl font-display font-bold text-foreground mt-2 mb-4 md:mb-6">
-                Assurez des standards cohérents dans tout votre portefeuille.
-              </h2>
-              <p className="text-foreground/60 text-sm md:text-lg leading-relaxed max-w-lg">
-                Maintenez la conformité et les standards de marque dans vos
-                établissements hôteliers grâce aux jumeaux numériques. Suivez les
-                plans d'amélioration, partagez les priorités, documentez les
-                progrès et réduisez les rapports manuels pour maintenir votre
-                portefeuille au meilleur niveau.
-              </p>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, x: 30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: 0.15 }}
-            >
-              <img
-                src="https://images.ctfassets.net/icnj41gkyohw/110i9yvRmDcH1Qs04fvfW3/a6fcfe2c90152dc878c79dc657391a47/Group_632590__1_.png"
-                alt="Standards cohérents à travers le portefeuille"
-                className="w-full h-auto rounded-2xl"
-                loading="lazy"
-              />
-            </motion.div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── 8. Testimonial – You'll be in good company ───────── */}
-      <section className="py-16 md:py-24 bg-muted/30">
         <div className="container mx-auto px-4 lg:px-8 max-w-5xl">
           <motion.h2
             initial={{ opacity: 0, y: 20 }}
@@ -406,7 +326,7 @@ const TravelHospitality = () => {
             transition={{ duration: 0.5 }}
             className="text-2xl md:text-4xl lg:text-5xl font-display font-bold text-foreground text-center mb-10 md:mb-16"
           >
-            Accélérez les décisions à travers votre équipe.
+            Vous serez en bonne compagnie.
           </motion.h2>
 
           <motion.div
@@ -417,24 +337,18 @@ const TravelHospitality = () => {
             className="max-w-3xl mx-auto p-6 md:p-10 rounded-2xl bg-card border border-border shadow-soft"
           >
             <blockquote className="text-base md:text-lg text-foreground leading-relaxed mb-6">
-              « Nous voulons offrir aux clients potentiels des détails encore
-              plus riches sur notre propriété que nos clients trouvent
-              passionnants. Nous voulons qu'ils vivent l'expérience de nos
-              hôtels bien avant d'y mettre les pieds. »
+              « Les jumeaux numériques ont révolutionné notre approche de la maintenance des installations. Nous pouvons maintenant planifier les interventions à distance, former nos techniciens de manière sécurisée et documenter l'état de chaque équipement avec une précision inégalée. »
             </blockquote>
             <div className="flex items-center gap-3">
-              <img
-                src="https://images.ctfassets.net/icnj41gkyohw/2HGc8wnLvHgdCQWH9Dq0NQ/2fc6c3c88225990401573c8994c71fa0/oliver-stotz.png"
-                alt="Oliver Stotz"
-                className="w-12 h-12 rounded-full object-cover"
-                loading="lazy"
-              />
+              <div className="w-12 h-12 rounded-full bg-[#2c0a71] flex items-center justify-center">
+                <span className="text-white font-bold text-lg">D</span>
+              </div>
               <div>
                 <div className="font-semibold text-foreground text-sm">
-                  Oliver Stotz
+                  Directeur Maintenance
                 </div>
                 <div className="text-xs text-muted-foreground">
-                  Directeur Marketing & Distribution | Lindner Hotels
+                  Entreprise Énergétique Nationale
                 </div>
               </div>
             </div>
@@ -451,17 +365,17 @@ const TravelHospitality = () => {
               Les clients PrimeSpace ont constaté :
             </p>
             <p className="text-3xl md:text-5xl font-display font-bold text-[#2c0a71]">
-              25%
+              50%
             </p>
             <p className="text-sm md:text-base text-foreground/60 max-w-md mx-auto mt-2">
-              d'engagement en ligne supplémentaire grâce aux visites virtuelles.
+              de réduction des déplacements sur site grâce aux inspections virtuelles.
             </p>
           </motion.div>
         </div>
       </section>
 
-      {/* ── 9. Everything you need — Accordion ───────────────── */}
-      <section className="py-16 md:py-24 bg-white">
+      {/* ── 8. Features — 3 columns ──────────────────────────── */}
+      <section className="py-16 md:py-24 bg-muted/30">
         <div className="container mx-auto px-4 lg:px-8 max-w-5xl">
           <motion.h2
             initial={{ opacity: 0, y: 20 }}
@@ -470,68 +384,57 @@ const TravelHospitality = () => {
             transition={{ duration: 0.5 }}
             className="text-2xl md:text-4xl lg:text-5xl font-display font-bold text-foreground text-center mb-10 md:mb-16"
           >
-            Tout ce dont vous avez besoin pour améliorer vos opérations.
+            Vos infrastructures, maîtrisées en 3D.
           </motion.h2>
 
-          <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-            className="max-w-3xl mx-auto"
-          >
-            <Accordion
-              type="single"
-              collapsible
-              defaultValue="item-0"
-              className="w-full"
-            >
-              {[
-                {
-                  title: "Fichiers CAO",
-                  description:
-                    "Améliorez l'efficacité et la qualité lors de la planification de rénovations, de rafraîchissements de marque ou de mises à niveau de maintenance dans vos propriétés hôtelières avec notre module complémentaire CAO en un clic.",
-                },
-                {
-                  title: "Intégration AWS",
-                  description:
-                    "Connectez vos jumeaux numériques à AWS IoT TwinMaker pour surveiller les conditions en temps réel, automatiser les analyses et optimiser la gestion de vos installations hôtelières à grande échelle.",
-                },
-                {
-                  title: "Intégration Autodesk",
-                  description:
-                    "Exportez directement vers Autodesk Revit et AutoCAD pour intégrer les données de vos jumeaux numériques dans vos workflows BIM existants de conception et de rénovation hôtelière.",
-                },
-                {
-                  title: "Intégration Procore",
-                  description:
-                    "Synchronisez vos jumeaux numériques avec Procore pour gérer la documentation de construction, suivre l'avancement des projets et collaborer avec les entrepreneurs directement depuis votre plateforme de gestion de projet.",
-                },
-                {
-                  title: "Fichiers CAO, BIM & E57",
-                  description:
-                    "Exportez vos jumeaux numériques en fichiers CAO, BIM et nuages de points E57 pour la planification, la conception et la coordination de vos projets d'amélioration hôtelière.",
-                },
-              ].map((item, i) => (
-                <AccordionItem
-                  key={i}
-                  value={`item-${i}`}
-                  className="border-border"
-                >
-                  <AccordionTrigger className="text-left text-base md:text-lg font-display font-semibold hover:text-[#2c0a71] transition-colors py-5">
-                    {item.title}
-                  </AccordionTrigger>
-                  <AccordionContent className="text-muted-foreground text-sm md:text-base leading-relaxed pb-5">
-                    {item.description}
-                  </AccordionContent>
-                </AccordionItem>
-              ))}
-            </Accordion>
-          </motion.div>
+          <div className="grid md:grid-cols-3 gap-5 md:gap-6">
+            {[
+              {
+                icon: "https://images.ctfassets.net/icnj41gkyohw/7vTKl80BLgHyc2reCEjGm0/3d4e22b4d4e02b23d341acf97ece23ef/Digital_Twins_RRE_W.svg",
+                title: "Jumeaux numériques industriels",
+                description: "Capturez chaque détail de vos installations avec une précision dimensionnelle pour la documentation, la planification et la maintenance.",
+              },
+              {
+                icon: "https://images.ctfassets.net/icnj41gkyohw/2hTnyk44H7YflV2aTiyHlO/f9646bcfe8ae48011146ff34b77debbe/Video_360_W.svg",
+                title: "Export & Intégrations",
+                description: "Exportez en formats E57, CAO et BIM. Intégrez avec vos systèmes GMAO et plateformes de gestion d'actifs existants.",
+              },
+              {
+                icon: "https://images.ctfassets.net/icnj41gkyohw/7DwMg4iwzkLNRgwh5nUrXd/cec55a431f3f9160a919996efb96bcea/Teamwork_W.svg",
+                title: "Collaboration sécurisée",
+                description: "Partagez l'accès aux jumeaux numériques avec les équipes internes, les sous-traitants et les auditeurs grâce à des contrôles d'accès granulaires.",
+              },
+            ].map((feature, i) => (
+              <motion.div
+                key={feature.title}
+                custom={i}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true }}
+                variants={fadeUp}
+                className="p-6 md:p-8 rounded-2xl bg-card border border-border text-center"
+              >
+                <div className="w-20 h-20 md:w-24 md:h-24 mx-auto mb-4 md:mb-6">
+                  <img
+                    src={feature.icon}
+                    alt={feature.title}
+                    className="w-full h-full object-contain"
+                    loading="lazy"
+                  />
+                </div>
+                <h3 className="text-lg md:text-xl font-display font-bold mb-3">
+                  {feature.title}
+                </h3>
+                <p className="text-muted-foreground text-sm leading-relaxed">
+                  {feature.description}
+                </p>
+              </motion.div>
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* ── 11. CTA ──────────────────────────────────────────── */}
+      {/* ── 9. CTA ───────────────────────────────────────────── */}
       <section className="py-16 md:py-24 bg-white">
         <div className="container mx-auto px-4 lg:px-8">
           <motion.div
@@ -544,13 +447,10 @@ const TravelHospitality = () => {
             <div className="absolute inset-0 bg-gradient-accent" />
             <div className="relative z-10 py-12 md:py-20 px-5 md:px-8 text-center">
               <h2 className="text-2xl md:text-4xl font-display font-bold text-primary-foreground mb-4 md:mb-6">
-                Découvrez ce que les visites virtuelles peuvent faire pour votre
-                établissement.
+                Prêt à numériser vos infrastructures énergétiques ?
               </h2>
               <p className="text-base md:text-lg text-primary-foreground/80 max-w-2xl mx-auto mb-8 md:mb-10">
-                Rejoignez les hôtels, resorts et lieux touristiques qui utilisent
-                déjà les jumeaux numériques 3D pour augmenter leurs réservations
-                et optimiser leurs opérations.
+                Rejoignez les entreprises du secteur énergétique qui utilisent déjà les jumeaux numériques 3D pour optimiser leur maintenance, renforcer la sécurité et réduire les coûts opérationnels.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Button
@@ -577,7 +477,7 @@ const TravelHospitality = () => {
         </div>
       </section>
 
-      {/* ── 12. Capture Services ──────────────────────────────── */}
+      {/* ── 10. Capture Services ──────────────────────────────── */}
       <section className="py-16 md:py-24 bg-muted/30">
         <div className="container mx-auto px-4 lg:px-8 max-w-6xl">
           <div className="grid lg:grid-cols-2 gap-8 md:gap-16 items-center">
@@ -591,13 +491,10 @@ const TravelHospitality = () => {
                 Service de Capture
               </span>
               <h2 className="text-2xl md:text-4xl lg:text-5xl font-display font-bold text-foreground mt-2 mb-4 md:mb-6">
-                Laissez-nous créer votre jumeau numérique pour vous.
+                Laissez-nous numériser vos installations.
               </h2>
               <p className="text-foreground/60 text-sm md:text-lg leading-relaxed max-w-lg mb-6 md:mb-8">
-                Pour tout type d'établissement hôtelier, quelle que soit sa
-                taille, les professionnels PrimeSpace Capture Services sont prêts
-                à créer vos jumeaux numériques, pour que vous puissiez vous
-                concentrer sur votre activité. C'est rapide et simple.
+                Les techniciens PrimeSpace Capture Services peuvent scanner professionnellement vos installations énergétiques en respectant les protocoles de sécurité les plus stricts. Livraison rapide et qualité garantie.
               </p>
               <Button
                 size="lg"
@@ -616,7 +513,7 @@ const TravelHospitality = () => {
             >
               <img
                 src="https://images.ctfassets.net/icnj41gkyohw/2oIiE1XQk7hcP2N4hEI5yW/2516d5eb5f5532c24956033da2f01fd8/Zaya_Spin_Alpha_0098_1.png"
-                alt="Service de capture PrimeSpace"
+                alt="Service de capture PrimeSpace pour l'énergie"
                 className="w-full h-auto rounded-2xl"
                 loading="lazy"
               />
@@ -625,7 +522,7 @@ const TravelHospitality = () => {
         </div>
       </section>
 
-      {/* ── 13. FAQ ───────────────────────────────────────────── */}
+      {/* ── 11. FAQ ───────────────────────────────────────────── */}
       <section className="py-16 md:py-24 bg-[#2c0a71]">
         <div className="container mx-auto px-4 lg:px-8 max-w-3xl">
           <motion.h2
@@ -635,7 +532,7 @@ const TravelHospitality = () => {
             transition={{ duration: 0.5 }}
             className="text-2xl md:text-4xl lg:text-5xl font-display font-bold text-white text-center mb-10 md:mb-16"
           >
-            FAQ — Visites Virtuelles Tourisme & Hôtellerie
+            FAQ — Scan 3D pour l'Énergie & les Utilités
           </motion.h2>
 
           <Accordion type="single" collapsible className="w-full">
@@ -660,4 +557,4 @@ const TravelHospitality = () => {
   );
 };
 
-export default TravelHospitality;
+export default EnergyUtilities;

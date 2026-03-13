@@ -153,13 +153,13 @@ const industriesList = [
   { icon: HardHat, title: "Architecture & Construction", href: "/industries/architecture-construction" },
   { icon: Factory, title: "Industrie", href: "/industries/manufacturing" },
   { icon: Insurance, title: "Assurance", href: "/industries/insurance" },
-  { icon: Home, title: "Construction Résidentielle" },
+  { icon: Home, title: "Construction Résidentielle", href: "/industries/residential-construction" },
   { icon: Plane, title: "Tourisme & Hôtellerie", href: "/industries/travel-hospitality" },
-  { icon: ShoppingCart, title: "Commerce & Retail" },
-  { icon: Home, title: "Immobilier Résidentiel" },
-  { icon: Building, title: "Gouvernement" },
-  { icon: Zap, title: "Énergie & Utilités" },
-  { icon: Fuel, title: "Pétrole & Gaz" },
+  { icon: ShoppingCart, title: "Commerce & Retail", href: "/industries/commerce-retail" },
+  { icon: Home, title: "Immobilier Résidentiel", href: "/industries/residential-real-estate" },
+  { icon: Building, title: "Gouvernement", href: "/industries/government" },
+  { icon: Zap, title: "Énergie & Utilités", href: "/industries/energy-utilities" },
+  { icon: Fuel, title: "Pétrole & Gaz", href: "/industries/oil-gas" },
 ];
 
 const rolesList = [

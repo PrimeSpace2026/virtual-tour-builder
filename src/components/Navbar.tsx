@@ -19,13 +19,13 @@ const megaIndustries = [
   { icon: HardHat, label: "Architecture & Construction", href: "/industries/architecture-construction" },
   { icon: Factory, label: "Industrie", href: "/industries/manufacturing" },
   { icon: ShieldCheck, label: "Assurance", href: "/industries/insurance" },
-  { icon: Home, label: "Construction Résidentielle" },
+  { icon: Home, label: "Construction Résidentielle", href: "/industries/residential-construction" },
   { icon: Plane, label: "Tourisme & Hôtellerie", href: "/industries/travel-hospitality" },
-  { icon: ShoppingCart, label: "Commerce & Retail" },
-  { icon: Home, label: "Immobilier Résidentiel" },
-  { icon: Building, label: "Gouvernement" },
-  { icon: Zap, label: "Énergie & Utilités" },
-  { icon: Fuel, label: "Pétrole & Gaz" },
+  { icon: ShoppingCart, label: "Commerce & Retail", href: "/industries/commerce-retail" },
+  { icon: Home, label: "Immobilier Résidentiel", href: "/industries/residential-real-estate" },
+  { icon: Building, label: "Gouvernement", href: "/industries/government" },
+  { icon: Zap, label: "Énergie & Utilités", href: "/industries/energy-utilities" },
+  { icon: Fuel, label: "Pétrole & Gaz", href: "/industries/oil-gas" },
 ];
 
 const megaRoles = [
@@ -47,7 +47,7 @@ export const Navbar = () => {
   const megaRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
 
-  const lightHero = location.pathname === "/industries/architecture-construction" || location.pathname === "/industries/commercial-real-estate" || location.pathname === "/industries/manufacturing" || location.pathname === "/industries/insurance";
+  const lightHero = location.pathname === "/industries/architecture-construction" || location.pathname === "/industries/commercial-real-estate" || location.pathname === "/industries/manufacturing" || location.pathname === "/industries/insurance" || location.pathname === "/industries/residential-construction" || location.pathname === "/industries/travel-hospitality" || location.pathname === "/industries/commerce-retail" || location.pathname === "/industries/residential-real-estate" || location.pathname === "/industries/government" || location.pathname === "/industries/energy-utilities" || location.pathname === "/industries/oil-gas";
 
   useEffect(() => {
     const handleScroll = () => {

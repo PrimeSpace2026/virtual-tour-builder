@@ -14,6 +14,12 @@ import ArchitectureConstruction from "./pages/ArchitectureConstruction";
 import TravelHospitality from "./pages/Industries";
 import Manufacturing from "./pages/Manufacturing";
 import Insurance from "./pages/Insurance";
+import ResidentialConstruction from "./pages/ResidentialConstruction";
+import CommerceRetail from "./pages/CommerceRetail";
+import ResidentialRealEstate from "./pages/ResidentialRealEstate";
+import Government from "./pages/Government";
+import EnergyUtilities from "./pages/EnergyUtilities";
+import OilGas from "./pages/OilGas";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -36,6 +42,12 @@ const App = () => (
           <Route path="/industries/travel-hospitality" element={<TravelHospitality />} />
           <Route path="/industries/manufacturing" element={<Manufacturing />} />
           <Route path="/industries/insurance" element={<Insurance />} />
+          <Route path="/industries/residential-construction" element={<ResidentialConstruction />} />
+          <Route path="/industries/commerce-retail" element={<CommerceRetail />} />
+          <Route path="/industries/residential-real-estate" element={<ResidentialRealEstate />} />
+          <Route path="/industries/government" element={<Government />} />
+          <Route path="/industries/energy-utilities" element={<EnergyUtilities />} />
+          <Route path="/industries/oil-gas" element={<OilGas />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
