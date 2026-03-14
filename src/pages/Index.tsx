@@ -100,7 +100,7 @@ const Index = () => {
         {/* Background Image */}
         <div className="absolute inset-0">
           <img
-            src="/Boost_Buyer_Engagement.gif"
+            src="/Boost_Buyer_Engagement_slow.gif"
             alt="Visite virtuelle 3D PrimeSpace"
             className="w-full h-full object-cover"
           />

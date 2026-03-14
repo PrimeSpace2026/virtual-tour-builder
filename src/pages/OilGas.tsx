@@ -124,7 +124,7 @@ const OilGas = () => {
             >
               <div className="rounded-2xl overflow-hidden mb-5">
                 <img
-                  src="https://images.ctfassets.net/icnj41gkyohw/4Jci4ShPvyNOhFU5cfLB1d/f710364c697221bdfcd68dea8317e4d1/Frame_7708__17_.png"
+                  src="https://images.ctfassets.net/icnj41gkyohw/1Yj3oBsj4eGkbmDovc5jak/207a3187a0a9438d06e37f0e93c03ab7/Frame_2608871.png"
                   alt="Installations offshore & onshore"
                   className="w-full h-auto group-hover:scale-105 transition-transform duration-500"
                   loading="lazy"
@@ -151,7 +151,7 @@ const OilGas = () => {
             >
               <div className="rounded-2xl overflow-hidden mb-5">
                 <img
-                  src="https://images.ctfassets.net/icnj41gkyohw/EMqdkNZSnyLDiOP08p6VE/02f0d6afe63c03a5d1c91d7d2b9b3ef0/Frame_7708__18_.png"
+                  src="https://images.ctfassets.net/icnj41gkyohw/2lsYuiDnL6JSd8dwRGKwiS/17e3b5f08eb57c9bfa0b6e22b9ea20dc/Frame_2608869.png"
                   alt="Inspections de sécurité"
                   className="w-full h-auto group-hover:scale-105 transition-transform duration-500"
                   loading="lazy"
@@ -178,7 +178,7 @@ const OilGas = () => {
             >
               <div className="rounded-2xl overflow-hidden mb-5">
                 <img
-                  src="https://images.ctfassets.net/icnj41gkyohw/3entXHvQBnBYvUVGdqhCAu/a4e2f985cece685dfaa07a5a672dcd96/Frame_7708.png"
+                  src="https://images.ctfassets.net/icnj41gkyohw/4zrABnaIK6xoVjmNDVS5wj/041498f7f178b5a267ff3e9c82e26c40/Frame_2608870.png"
                   alt="Planification des arrêts techniques"
                   className="w-full h-auto group-hover:scale-105 transition-transform duration-500"
                   loading="lazy"
@@ -192,6 +192,119 @@ const OilGas = () => {
               </h3>
               <p className="text-foreground/60 text-sm md:text-base leading-relaxed">
                 Planifiez et coordonnez les arrêts techniques avec une visualisation 3D complète. Réduisez la durée des interventions et minimisez les temps d'arrêt coûteux.
+              </p>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── 3b. Do more with digital twins — 4 cards ─────────── */}
+      <section className="py-16 md:py-24 bg-muted/30">
+        <div className="container mx-auto px-4 lg:px-8 max-w-6xl">
+          <motion.h2
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+            className="text-2xl md:text-4xl lg:text-5xl font-display font-bold text-foreground text-center mb-10 md:mb-16"
+          >
+            Faites plus avec les jumeaux numériques.
+          </motion.h2>
+
+          <div className="grid md:grid-cols-2 gap-6 md:gap-8">
+            {/* Plan with precision */}
+            <motion.div
+              initial={{ opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5 }}
+              className="group"
+            >
+              <div className="rounded-2xl overflow-hidden mb-5">
+                <img
+                  src="https://images.ctfassets.net/icnj41gkyohw/6x92auWQutFzRB6peBMGvy/b42bee8a84e71a00045b5f68fd9b304e/Frame_7708__9_.png"
+                  alt="Planifiez avec précision"
+                  className="w-full h-auto group-hover:scale-105 transition-transform duration-500"
+                  loading="lazy"
+                />
+              </div>
+              <h3 className="text-xl md:text-2xl font-display font-bold text-foreground mb-3">
+                Planifiez avec précision.
+              </h3>
+              <p className="text-foreground/60 text-sm md:text-base leading-relaxed">
+                Utilisez des modèles 3D précis pour mesurer les dégagements d'équipements en quelques clics, planifier les structures d'échafaudage et coordonner plus de 500 sous-traitants avant le début d'un arrêt technique.
+              </p>
+            </motion.div>
+
+            {/* Access sites 24/7 */}
+            <motion.div
+              initial={{ opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+              className="group"
+            >
+              <div className="rounded-2xl overflow-hidden mb-5">
+                <img
+                  src="https://images.ctfassets.net/icnj41gkyohw/6wCxfbwH8Xq2KRno5aREEB/2d20de56f25aa3a2e8128bc29157c973/Frame_7709__11_.png"
+                  alt="Accédez aux sites 24/7"
+                  className="w-full h-auto group-hover:scale-105 transition-transform duration-500"
+                  loading="lazy"
+                />
+              </div>
+              <h3 className="text-xl md:text-2xl font-display font-bold text-foreground mb-3">
+                Accédez aux sites 24/7.
+              </h3>
+              <p className="text-foreground/60 text-sm md:text-base leading-relaxed">
+                Offrez aux parties prenantes un accès 3D immersif à tout moment pour inspecter les plateformes offshore, les raffineries et les installations de pipeline sans coûts de déplacement ni exposition aux risques.
+              </p>
+            </motion.div>
+
+            {/* Eliminate the guesswork */}
+            <motion.div
+              initial={{ opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+              className="group"
+            >
+              <div className="rounded-2xl overflow-hidden mb-5">
+                <img
+                  src="https://images.ctfassets.net/icnj41gkyohw/3607iPzr0O9jQeAt7tmiCj/f47367438879de3d1c65dc91bf573a63/Eliminate_Gesswork.png"
+                  alt="Éliminez les incertitudes"
+                  className="w-full h-auto group-hover:scale-105 transition-transform duration-500"
+                  loading="lazy"
+                />
+              </div>
+              <h3 className="text-xl md:text-2xl font-display font-bold text-foreground mb-3">
+                Éliminez les incertitudes.
+              </h3>
+              <p className="text-foreground/60 text-sm md:text-base leading-relaxed">
+                Rationalisez les workflows en communiquant et en collaborant au sein d'une source unique de vérité dimensionnellement précise pour livrer les projets d'investissement dans les délais et le budget.
+              </p>
+            </motion.div>
+
+            {/* Make safety training even safer */}
+            <motion.div
+              initial={{ opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+              className="group"
+            >
+              <div className="rounded-2xl overflow-hidden mb-5">
+                <img
+                  src="https://images.ctfassets.net/icnj41gkyohw/58GtXG05xFWRpYWgsPWJuK/3044eac9e973a9b0f4cf7708bf7b4692/Frame_7710.png"
+                  alt="Formation sécurité renforcée"
+                  className="w-full h-auto group-hover:scale-105 transition-transform duration-500"
+                  loading="lazy"
+                />
+              </div>
+              <h3 className="text-xl md:text-2xl font-display font-bold text-foreground mb-3">
+                Rendez la formation sécurité encore plus sûre.
+              </h3>
+              <p className="text-foreground/60 text-sm md:text-base leading-relaxed">
+                Plongez les intervenants dans des répliques fidèles d'installations où ils peuvent s'entraîner sur des scénarios, apprendre les agencements et se préparer aux urgences à distance, sans les risques de la formation sur site.
               </p>
             </motion.div>
           </div>

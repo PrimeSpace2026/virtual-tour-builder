@@ -22,8 +22,8 @@ const contactInfo = [
   {
     icon: Phone,
     title: "Téléphone",
-    value: "+353 89 498 5067",
-    link: "tel:+353 89 498 5067",
+    value: "+216 52 664 495",
+    link: "tel:+21652664495",
   },
   {
     icon: Mail,

@@ -124,7 +124,7 @@ const EnergyUtilities = () => {
             >
               <div className="rounded-2xl overflow-hidden mb-5">
                 <img
-                  src="https://images.ctfassets.net/icnj41gkyohw/4Jci4ShPvyNOhFU5cfLB1d/f710364c697221bdfcd68dea8317e4d1/Frame_7708__17_.png"
+                  src="https://images.ctfassets.net/icnj41gkyohw/vKbrxAWjLpOuoVFrhkrlj/05513f96b5534f374ca87b0641e2d501/Frame_2608871__1_.png"
                   alt="Documentation des actifs"
                   className="w-full h-auto group-hover:scale-105 transition-transform duration-500"
                   loading="lazy"
@@ -151,7 +151,7 @@ const EnergyUtilities = () => {
             >
               <div className="rounded-2xl overflow-hidden mb-5">
                 <img
-                  src="https://images.ctfassets.net/icnj41gkyohw/EMqdkNZSnyLDiOP08p6VE/02f0d6afe63c03a5d1c91d7d2b9b3ef0/Frame_7708__18_.png"
+                  src="https://images.ctfassets.net/icnj41gkyohw/7cOVo6jCbCsZ1Bg7DbqgGF/354484a4d04e33fc736ade8691621cdf/Frame_2608872.png"
                   alt="Inspections à distance"
                   className="w-full h-auto group-hover:scale-105 transition-transform duration-500"
                   loading="lazy"
@@ -178,7 +178,7 @@ const EnergyUtilities = () => {
             >
               <div className="rounded-2xl overflow-hidden mb-5">
                 <img
-                  src="https://images.ctfassets.net/icnj41gkyohw/3entXHvQBnBYvUVGdqhCAu/a4e2f985cece685dfaa07a5a672dcd96/Frame_7708.png"
+                  src="https://images.ctfassets.net/icnj41gkyohw/1KVVNkpGdqT7bBrBlicBze/deff7d8ef5685f9c2215e459b4c35dab/Frame_2608870__1_.png"
                   alt="Sécurité & Formation"
                   className="w-full h-auto group-hover:scale-105 transition-transform duration-500"
                   loading="lazy"
@@ -192,6 +192,126 @@ const EnergyUtilities = () => {
               </h3>
               <p className="text-foreground/60 text-sm md:text-base leading-relaxed">
                 Utilisez les jumeaux numériques pour former les employés aux procédures de sécurité, simuler des scénarios d'urgence et familiariser les nouvelles recrues avec les installations — sans risque.
+              </p>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── 3b. Do more with digital twins — 2 cards ─────────── */}
+      <section className="py-16 md:py-24 bg-muted/30">
+        <div className="container mx-auto px-4 lg:px-8 max-w-6xl">
+          <motion.h2
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+            className="text-2xl md:text-4xl lg:text-5xl font-display font-bold text-foreground text-center mb-10 md:mb-16"
+          >
+            Faites plus avec les jumeaux numériques.
+          </motion.h2>
+
+          <div className="grid md:grid-cols-2 gap-6 md:gap-8">
+            {/* Maximize plant uptime */}
+            <motion.div
+              initial={{ opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5 }}
+              className="group"
+            >
+              <div className="rounded-2xl overflow-hidden mb-5">
+                <img
+                  src="https://images.ctfassets.net/icnj41gkyohw/59RSWl9M39PziKqny6NL1J/24a20d85637a28168adc749c8e938d92/Frame_7708__11_.png"
+                  alt="Maximisez le temps de fonctionnement"
+                  className="w-full h-auto group-hover:scale-105 transition-transform duration-500"
+                  loading="lazy"
+                />
+              </div>
+              <h3 className="text-xl md:text-2xl font-display font-bold text-foreground mb-3">
+                Maximisez le temps de fonctionnement.
+              </h3>
+              <p className="text-foreground/60 text-sm md:text-base leading-relaxed">
+                Éliminez les incertitudes avant les arrêts techniques. Utilisez des jumeaux numériques dimensionnellement précis pour vérifier les dégagements de turbines, planifier l'accès aux chaudières et valider les séquences de travail afin de réduire les reprises et raccourcir les arrêts.
+              </p>
+            </motion.div>
+
+            {/* Plan with precision */}
+            <motion.div
+              initial={{ opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+              className="group"
+            >
+              <div className="rounded-2xl overflow-hidden mb-5">
+                <img
+                  src="https://images.ctfassets.net/icnj41gkyohw/2DOqAy9dkj5sAFjlktHbP4/6b8dbdaa2957551fbc32f81304bb96b8/Frame_7709__12_.png"
+                  alt="Planifiez avec précision"
+                  className="w-full h-auto group-hover:scale-105 transition-transform duration-500"
+                  loading="lazy"
+                />
+              </div>
+              <h3 className="text-xl md:text-2xl font-display font-bold text-foreground mb-3">
+                Planifiez avec précision.
+              </h3>
+              <p className="text-foreground/60 text-sm md:text-base leading-relaxed">
+                Offrez aux développeurs et aux ingénieurs une source unique de vérité spatiale. Les jumeaux numériques précis accélèrent les études d'interconnexion pour les centres de données, le solaire et le stockage, réduisant les retards et les reconceptions.
+              </p>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── 3c. Training & Visualization — 2 cards ───────────── */}
+      <section className="py-16 md:py-24 bg-white">
+        <div className="container mx-auto px-4 lg:px-8 max-w-6xl">
+          <div className="grid md:grid-cols-2 gap-6 md:gap-8">
+            {/* Provide true-to-life training */}
+            <motion.div
+              initial={{ opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5 }}
+              className="group"
+            >
+              <div className="rounded-2xl overflow-hidden mb-5">
+                <img
+                  src="https://images.ctfassets.net/icnj41gkyohw/69dboYCD81HX3Hk3VZHv9L/40cfaea46b5088b7ad89ddc73a5b4f10/Training.png"
+                  alt="Formation réaliste"
+                  className="w-full h-auto group-hover:scale-105 transition-transform duration-500"
+                  loading="lazy"
+                />
+              </div>
+              <h3 className="text-xl md:text-2xl font-display font-bold text-foreground mb-3">
+                Offrez une formation réaliste.
+              </h3>
+              <p className="text-foreground/60 text-sm md:text-base leading-relaxed">
+                Préparez les équipes avant leur arrivée sur site. Formez les opérateurs dans des répliques virtuelles réalistes des sous-stations et des installations de production pour améliorer la sécurité et réduire les erreurs.
+              </p>
+            </motion.div>
+
+            {/* Visualize before you invest */}
+            <motion.div
+              initial={{ opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+              className="group"
+            >
+              <div className="rounded-2xl overflow-hidden mb-5">
+                <img
+                  src="https://images.ctfassets.net/icnj41gkyohw/alHinORmuQ0dFXFH3hNyF/e27d50d946542dc03d2c163693db985a/Visualize.png"
+                  alt="Visualisez avant d'investir"
+                  className="w-full h-auto group-hover:scale-105 transition-transform duration-500"
+                  loading="lazy"
+                />
+              </div>
+              <h3 className="text-xl md:text-2xl font-display font-bold text-foreground mb-3">
+                Visualisez avant d'investir.
+              </h3>
+              <p className="text-foreground/60 text-sm md:text-base leading-relaxed">
+                Capturez un relevé visuel complet des sous-stations et des actifs du réseau. Prenez des décisions éclairées concernant les mises à niveau, les extensions et les nouvelles technologies avec un contexte complet du site.
               </p>
             </motion.div>
           </div>
@@ -374,9 +494,9 @@ const EnergyUtilities = () => {
         </div>
       </section>
 
-      {/* ── 8. Features — 3 columns ──────────────────────────── */}
+      {/* ── 8. Features — 4 columns ──────────────────────────── */}
       <section className="py-16 md:py-24 bg-muted/30">
-        <div className="container mx-auto px-4 lg:px-8 max-w-5xl">
+        <div className="container mx-auto px-4 lg:px-8 max-w-6xl">
           <motion.h2
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -384,25 +504,30 @@ const EnergyUtilities = () => {
             transition={{ duration: 0.5 }}
             className="text-2xl md:text-4xl lg:text-5xl font-display font-bold text-foreground text-center mb-10 md:mb-16"
           >
-            Vos infrastructures, maîtrisées en 3D.
+            Une suite de fonctionnalités puissantes.
           </motion.h2>
 
-          <div className="grid md:grid-cols-3 gap-5 md:gap-6">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 md:gap-6">
             {[
               {
-                icon: "https://images.ctfassets.net/icnj41gkyohw/7vTKl80BLgHyc2reCEjGm0/3d4e22b4d4e02b23d341acf97ece23ef/Digital_Twins_RRE_W.svg",
-                title: "Jumeaux numériques industriels",
-                description: "Capturez chaque détail de vos installations avec une précision dimensionnelle pour la documentation, la planification et la maintenance.",
+                icon: "https://images.ctfassets.net/icnj41gkyohw/7gjCfnPhgHkfaKlSnH8KU9/0127c7458eec99dd01b3b6c33bb04e5e/Enterprise_Security_W.svg",
+                title: "Protégez vos données.",
+                description: "Ajoutez différents niveaux d'autorisations utilisateur pour préserver la confidentialité et la sécurité de vos données.",
               },
               {
-                icon: "https://images.ctfassets.net/icnj41gkyohw/2hTnyk44H7YflV2aTiyHlO/f9646bcfe8ae48011146ff34b77debbe/Video_360_W.svg",
-                title: "Export & Intégrations",
-                description: "Exportez en formats E57, CAO et BIM. Intégrez avec vos systèmes GMAO et plateformes de gestion d'actifs existants.",
+                icon: "https://images.ctfassets.net/icnj41gkyohw/3whzXGGKUK4la4hZifhAUe/dd6ecaf4e31ff442587469d5b1f1ab01/ACC_Simple_W_1.png",
+                title: "Commander des plans de niveau et des fichiers BIM.",
+                description: "Obtenez des fichiers et des données précis sur les biens pour la planification, la gestion et le marketing de l'espace.",
               },
               {
-                icon: "https://images.ctfassets.net/icnj41gkyohw/7DwMg4iwzkLNRgwh5nUrXd/cec55a431f3f9160a919996efb96bcea/Teamwork_W.svg",
-                title: "Collaboration sécurisée",
-                description: "Partagez l'accès aux jumeaux numériques avec les équipes internes, les sous-traitants et les auditeurs grâce à des contrôles d'accès granulaires.",
+                icon: "https://images.ctfassets.net/icnj41gkyohw/4qvYWm4EYPVWJEajTtYLpZ/4ebba13dc61eee9132af536f817daf62/MFG_Collab_W.svg",
+                title: "Collaborez en toute efficacité.",
+                description: "Accédez à des outils conviviaux pour collaborer, planifier et partager avec votre équipe, vos fournisseurs et vos locataires potentiels.",
+              },
+              {
+                icon: "https://images.ctfassets.net/icnj41gkyohw/3wDimHkJbmUkjuEb1u4KI6/17362a119c18d6047bf6fa6af7111422/Partners_W_1.png",
+                title: "Connectez-vous aux systèmes existants.",
+                description: "Améliorez et personnalisez vos flux de travail existants grâce aux intégrations de partenaires.",
               },
             ].map((feature, i) => (
               <motion.div
@@ -412,9 +537,9 @@ const EnergyUtilities = () => {
                 whileInView="visible"
                 viewport={{ once: true }}
                 variants={fadeUp}
-                className="p-6 md:p-8 rounded-2xl bg-card border border-border text-center"
+                className="p-6 md:p-8 rounded-2xl bg-card border border-border flex flex-col"
               >
-                <div className="w-20 h-20 md:w-24 md:h-24 mx-auto mb-4 md:mb-6">
+                <div className="w-20 h-20 md:w-24 md:h-24 mb-5">
                   <img
                     src={feature.icon}
                     alt={feature.title}
@@ -425,9 +550,16 @@ const EnergyUtilities = () => {
                 <h3 className="text-lg md:text-xl font-display font-bold mb-3">
                   {feature.title}
                 </h3>
-                <p className="text-muted-foreground text-sm leading-relaxed">
+                <p className="text-muted-foreground text-sm leading-relaxed mb-5 flex-1">
                   {feature.description}
                 </p>
+                <Link
+                  to="/contact"
+                  className="inline-flex items-center gap-2 text-sm font-semibold text-foreground hover:text-[#2c0a71] transition-colors"
+                >
+                  En savoir plus
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
               </motion.div>
             ))}
           </div>
@@ -477,52 +609,80 @@ const EnergyUtilities = () => {
         </div>
       </section>
 
-      {/* ── 10. Capture Services ──────────────────────────────── */}
-      <section className="py-16 md:py-24 bg-muted/30">
+      {/* ── 10. Getting started — 3 steps ─────────────────────── */}
+      <section className="py-16 md:py-24 bg-white">
         <div className="container mx-auto px-4 lg:px-8 max-w-6xl">
-          <div className="grid lg:grid-cols-2 gap-8 md:gap-16 items-center">
-            <motion.div
-              initial={{ opacity: 0, x: -30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-            >
-              <span className="text-xs font-semibold uppercase tracking-widest text-[#2c0a71]">
-                Service de Capture
-              </span>
-              <h2 className="text-2xl md:text-4xl lg:text-5xl font-display font-bold text-foreground mt-2 mb-4 md:mb-6">
-                Laissez-nous numériser vos installations.
-              </h2>
-              <p className="text-foreground/60 text-sm md:text-lg leading-relaxed max-w-lg mb-6 md:mb-8">
-                Les techniciens PrimeSpace Capture Services peuvent scanner professionnellement vos installations énergétiques en respectant les protocoles de sécurité les plus stricts. Livraison rapide et qualité garantie.
-              </p>
-              <Button
-                size="lg"
-                className="bg-foreground text-background hover:bg-foreground/90 rounded-full"
-                asChild
-              >
-                <Link to="/contact">En Savoir Plus</Link>
-              </Button>
-            </motion.div>
+          <motion.h2
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+            className="text-2xl md:text-4xl lg:text-5xl font-display font-bold text-foreground text-center mb-10 md:mb-16"
+          >
+            Commencez avec PrimeSpace.
+          </motion.h2>
 
-            <motion.div
-              initial={{ opacity: 0, x: 30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-            >
-              <img
-                src="https://images.ctfassets.net/icnj41gkyohw/2oIiE1XQk7hcP2N4hEI5yW/2516d5eb5f5532c24956033da2f01fd8/Zaya_Spin_Alpha_0098_1.png"
-                alt="Service de capture PrimeSpace pour l'énergie"
-                className="w-full h-auto rounded-2xl"
-                loading="lazy"
-              />
-            </motion.div>
+          <div className="grid md:grid-cols-3 gap-6 md:gap-8">
+            {[
+              {
+                icon: "https://images.ctfassets.net/icnj41gkyohw/7vTKl80BLgHyc2reCEjGm0/3d4e22b4d4e02b23d341acf97ece23ef/Digital_Twins_RRE_W.svg",
+                title: "Créez votre jumeau numérique.",
+                description: "Utilisez n'importe quelle caméra compatible, de votre téléphone à notre caméra emblématique Pro3, pour numériser votre espace en 3D. Vous pouvez également faire appel à l'un de nos techniciens Capture Services.",
+                link: "/services",
+                linkText: "Explorer les méthodes de capture",
+              },
+              {
+                icon: "https://images.ctfassets.net/icnj41gkyohw/2hTnyk44H7YflV2aTiyHlO/f9646bcfe8ae48011146ff34b77debbe/Video_360_W.svg",
+                title: "Choisissez votre forfait.",
+                description: "Trouvez un forfait adapté à vos besoins, votre budget et vos objectifs. Du forfait gratuit au forfait Enterprise sur mesure, nous vous offrons une grande flexibilité en termes d'espaces, d'utilisateurs et d'outils.",
+                link: "/contact",
+                linkText: "Parcourez les forfaits",
+              },
+              {
+                icon: "https://images.ctfassets.net/icnj41gkyohw/7DwMg4iwzkLNRgwh5nUrXd/cec55a431f3f9160a919996efb96bcea/Teamwork_W.svg",
+                title: "Personnalisez votre expérience.",
+                description: "Accédez à des outils intégrés, à des modules complémentaires précieux et à des intégrations puissantes comme Procore, Autodesk et AWS IoT TwinMaker pour adapter votre expérience aux besoins de votre entreprise.",
+                link: "/services",
+                linkText: "Découvrir les intégrations",
+              },
+            ].map((step, i) => (
+              <motion.div
+                key={step.title}
+                custom={i}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true }}
+                variants={fadeUp}
+                className="p-6 md:p-8 rounded-2xl bg-card border border-border"
+              >
+                <div className="w-20 h-20 md:w-24 md:h-24 mb-5">
+                  <img
+                    src={step.icon}
+                    alt={step.title}
+                    className="w-full h-full object-contain"
+                    loading="lazy"
+                  />
+                </div>
+                <h3 className="text-lg md:text-xl font-display font-bold text-foreground mb-3">
+                  {step.title}
+                </h3>
+                <p className="text-foreground/60 text-sm leading-relaxed mb-5">
+                  {step.description}
+                </p>
+                <Link
+                  to={step.link}
+                  className="inline-flex items-center gap-2 text-sm font-semibold text-foreground hover:text-[#2c0a71] transition-colors"
+                >
+                  {step.linkText}
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+              </motion.div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* ── 11. FAQ ───────────────────────────────────────────── */}
+      {/* ── 12. FAQ ───────────────────────────────────────────── */}
       <section className="py-16 md:py-24 bg-[#2c0a71]">
         <div className="container mx-auto px-4 lg:px-8 max-w-3xl">
           <motion.h2
