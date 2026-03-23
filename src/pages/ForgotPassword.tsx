@@ -26,9 +26,14 @@ const ForgotPassword = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
       });
-      await res.json();
-      toast({ title: "Vérifiez votre email", description: "Si ce compte existe, un code de réinitialisation a été généré." });
-      setStep("reset");
+      const data = await res.json();
+      if (res.ok && data.resetCode) {
+        setResetToken(data.resetCode);
+        toast({ title: "Code généré", description: `Votre code de réinitialisation : ${data.resetCode}` });
+        setStep("reset");
+      } else {
+        toast({ title: "Erreur", description: data.error || "Aucun compte trouvé", variant: "destructive" });
+      }
     } catch {
       toast({ title: "Erreur", description: "Impossible de se connecter au serveur", variant: "destructive" });
     } finally {
