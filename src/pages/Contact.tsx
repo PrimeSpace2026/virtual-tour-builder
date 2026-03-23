@@ -71,22 +71,42 @@ const Contact = () => {
     e.preventDefault();
     setIsSubmitting(true);
 
-    // Simulate form submission
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+      const data = await res.json();
 
-    toast({
-      title: "Message envoyé! ✅",
-      description: "Nous vous répondrons dans cccccccles plus brefs délais.",
-    });
-
-    setFormData({
-      name: "",
-      email: "",
-      phone: "",
-      projectType: "",
-      message: "",
-    });
-    setIsSubmitting(false);
+      if (res.ok) {
+        toast({
+          title: "Message envoyé! ✅",
+          description: "Nous vous répondrons dans les plus brefs délais.",
+        });
+        setFormData({
+          name: "",
+          email: "",
+          phone: "",
+          projectType: "",
+          message: "",
+        });
+      } else {
+        toast({
+          title: "Erreur",
+          description: data.error || "Échec de l'envoi",
+          variant: "destructive",
+        });
+      }
+    } catch {
+      toast({
+        title: "Erreur",
+        description: "Échec de l'envoi, veuillez réessayer.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleChange = (
