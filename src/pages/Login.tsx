@@ -95,14 +95,7 @@ const Login = () => {
               </Button>
             </form>
 
-            <div className="mt-6 text-center">
-              <p className="text-sm text-muted-foreground">
-                Pas encore de compte ?{" "}
-                <Link to="/register" className="text-secondary font-medium hover:underline">
-                  Créer un compte
-                </Link>
-              </p>
-            </div>
+
           </motion.div>
         </div>
       </section>
