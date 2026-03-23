@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { API_URL } from "@/config/api";
 import { Layout } from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -64,20 +63,20 @@ const Admin = () => {
   useEffect(() => {
     const token = sessionStorage.getItem("admin_token");
     if (!token) { navigate("/login"); return; }
-    fetch(`${API_URL}/api/auth/verify`, { headers: { Authorization: `Bearer ${token}` } })
+    fetch("/api/auth/verify", { headers: { Authorization: `Bearer ${token}` } })
       .then((r) => { if (!r.ok) throw new Error(); setAuthed(true); })
       .catch(() => { sessionStorage.removeItem("admin_token"); navigate("/login"); });
   }, [navigate]);
 
   const handleLogout = () => {
     const token = sessionStorage.getItem("admin_token");
-    if (token) fetch(`${API_URL}/api/auth/logout`, { method: "POST", headers: { Authorization: `Bearer ${token}` } });
+    if (token) fetch("/api/auth/logout", { method: "POST", headers: { Authorization: `Bearer ${token}` } });
     sessionStorage.removeItem("admin_token");
     navigate("/login");
   };
 
   const fetchTours = () => {
-    fetch(`${API_URL}/api/tours`)
+    fetch("/api/tours")
       .then((res) => res.json())
       .then(setTours)
       .catch(() => toast({ title: "Erreur", description: "Impossible de charger les visites", variant: "destructive" }));
@@ -96,7 +95,7 @@ const Admin = () => {
     try {
       const formData = new FormData();
       formData.append("file", file);
-      const res = await fetch(`${API_URL}/api/upload`, { method: "POST", body: formData });
+      const res = await fetch("/api/upload", { method: "POST", body: formData });
       const data = await res.json();
       if (data.url) {
         setEditTour((prev) => ({ ...prev, imageUrl: data.url }));
@@ -148,7 +147,7 @@ const Admin = () => {
       return;
     }
     const method = isEditing ? "PUT" : "POST";
-    const url = isEditing ? `${API_URL}/api/tours/${editTour.id}` : `${API_URL}/api/tours`;
+    const url = isEditing ? `/api/tours/${editTour.id}` : "/api/tours";
     const res = await fetch(url, {
       method,
       headers: { "Content-Type": "application/json" },
@@ -165,7 +164,7 @@ const Admin = () => {
 
   const handleDelete = async (id: number) => {
     if (!confirm("Supprimer cette visite ?")) return;
-    const res = await fetch(`${API_URL}/api/tours/${id}`, { method: "DELETE" });
+    const res = await fetch(`/api/tours/${id}`, { method: "DELETE" });
     if (res.ok) {
       toast({ title: "Visite supprimée" });
       fetchTours();
