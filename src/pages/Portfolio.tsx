@@ -13,6 +13,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
+import { API_URL } from "@/config/api";
 import portfolioHotel from "@/assets/portfolio-hotel.jpg";
 import portfolioApartment from "@/assets/portfolio-apartment.jpg";
 import portfolioRetail from "@/assets/portfolio-retail.jpg";
@@ -49,7 +50,7 @@ const Portfolio = () => {
   const [loading, setLoading] = useState(true);
 
   const fetchTours = () => {
-    fetch("/api/tours")
+    fetch(`${API_URL}/api/tours`)
       .then((res) => res.json())
       .then((tours) => {
         const mapped = tours.map((t: any) => ({
