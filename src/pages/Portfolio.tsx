@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { ArrowRight, Play, ExternalLink, Filter, Loader2 } from "lucide-react";
+import { ArrowRight, Play, ExternalLink, Filter, Loader2, MapPin, LayoutGrid } from "lucide-react";
 import { Layout } from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { SectionHeading } from "@/components/SectionHeading";
@@ -12,6 +12,20 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+
+// Fix default marker icons
+import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
+import markerIcon from "leaflet/dist/images/marker-icon.png";
+import markerShadow from "leaflet/dist/images/marker-shadow.png";
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: markerIcon2x,
+  iconUrl: markerIcon,
+  shadowUrl: markerShadow,
+});
 
 import portfolioHotel from "@/assets/portfolio-hotel.jpg";
 import portfolioApartment from "@/assets/portfolio-apartment.jpg";
@@ -40,6 +54,8 @@ interface Project {
   description: string;
   size: string;
   tourUrl: string;
+  latitude: number | null;
+  longitude: number | null;
 }
 
 const Portfolio = () => {
@@ -47,6 +63,7 @@ const Portfolio = () => {
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
+  const [viewMode, setViewMode] = useState<"grid" | "map">("grid");
 
   const fetchTours = () => {
     fetch("/api/tours")
@@ -60,6 +77,8 @@ const Portfolio = () => {
           description: t.description,
           size: t.surface ? `${t.surface} m²` : "",
           tourUrl: t.tourUrl || "",
+          latitude: t.latitude,
+          longitude: t.longitude,
         }));
         setProjects(mapped);
       })
@@ -118,12 +137,40 @@ const Portfolio = () => {
       {/* Filter & Projects */}
       <section className="py-12 md:py-24 bg-background">
         <div className="container mx-auto px-4 lg:px-8">
-          {/* Category Filter */}
+          {/* View Toggle + Category Filter */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="flex flex-wrap justify-center gap-2 md:gap-3 mb-8 md:mb-12"
+            className="flex flex-col items-center gap-4 mb-8 md:mb-12"
           >
+            {/* View Toggle */}
+            <div className="flex gap-2 bg-muted rounded-full p-1">
+              <button
+                onClick={() => setViewMode("grid")}
+                className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
+                  viewMode === "grid"
+                    ? "bg-secondary text-secondary-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <LayoutGrid className="w-4 h-4" />
+                Grille
+              </button>
+              <button
+                onClick={() => setViewMode("map")}
+                className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
+                  viewMode === "map"
+                    ? "bg-secondary text-secondary-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <MapPin className="w-4 h-4" />
+                Carte
+              </button>
+            </div>
+
+            {/* Category Filter */}
+            <div className="flex flex-wrap justify-center gap-2 md:gap-3">
             {allCategories.map((category) => (
               <button
                 key={category}
@@ -137,13 +184,75 @@ const Portfolio = () => {
                 {category}
               </button>
             ))}
+            </div>
           </motion.div>
 
-          {/* Projects Grid */}
+          {/* Projects Grid or Map */}
           {loading ? (
             <div className="flex justify-center py-20">
               <Loader2 className="w-8 h-8 animate-spin text-secondary" />
             </div>
+          ) : viewMode === "map" ? (
+            /* Map View */
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="space-y-6"
+            >
+              <div className="relative rounded-2xl overflow-hidden shadow-soft" style={{ height: "500px" }}>
+                <MapContainer
+                  center={[34.5, 9.5]}
+                  zoom={7}
+                  style={{ height: "100%", width: "100%" }}
+                  scrollWheelZoom={true}
+                >
+                  <TileLayer
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  />
+                  {filteredProjects
+                    .filter((p) => p.latitude && p.longitude)
+                    .map((project) => (
+                      <Marker
+                        key={project.id}
+                        position={[project.latitude!, project.longitude!]}
+                        eventHandlers={{ click: () => setSelectedProject(project) }}
+                      >
+                        <Popup>
+                          <div className="text-center">
+                            <img src={project.image} alt={project.title} className="w-32 h-20 object-cover rounded mb-2" />
+                            <strong>{project.title}</strong>
+                            <br />
+                            <span className="text-xs">{project.category} • {project.size}</span>
+                          </div>
+                        </Popup>
+                      </Marker>
+                    ))}
+                </MapContainer>
+              </div>
+              {/* Tour cards below map */}
+              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {filteredProjects.map((project) => (
+                  <motion.div
+                    key={project.id}
+                    layout
+                    className="flex items-center gap-3 p-3 rounded-xl bg-card shadow-soft cursor-pointer hover:shadow-elevated transition-all"
+                    onClick={() => setSelectedProject(project)}
+                  >
+                    <img
+                      src={project.image}
+                      alt={project.title}
+                      className="w-16 h-16 rounded-lg object-cover flex-shrink-0"
+                    />
+                    <div className="min-w-0">
+                      <h4 className="font-semibold text-sm text-foreground truncate">{project.title}</h4>
+                      <p className="text-xs text-muted-foreground">{project.category}</p>
+                      <p className="text-xs text-secondary font-medium">{project.size}</p>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </motion.div>
           ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-8">
             {filteredProjects.map((project, index) => (

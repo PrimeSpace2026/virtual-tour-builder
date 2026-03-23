@@ -29,6 +29,8 @@ interface Tour {
   imageUrl: string;
   surface: number | null;
   tourUrl: string;
+  latitude: number | null;
+  longitude: number | null;
 }
 
 const CATEGORIES = [
@@ -47,6 +49,8 @@ const emptyTour: Tour = {
   imageUrl: "",
   surface: null,
   tourUrl: "",
+  latitude: null,
+  longitude: null,
 };
 
 const Admin = () => {
@@ -309,6 +313,28 @@ const Admin = () => {
             <div>
               <label className="text-sm font-medium mb-1 block">URL de la visite virtuelle</label>
               <Input value={editTour.tourUrl} onChange={(e) => setEditTour({ ...editTour, tourUrl: e.target.value })} placeholder="https://my.matterport.com/show/..." />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium mb-1 block">Latitude</label>
+                <Input
+                  type="number"
+                  step="any"
+                  value={editTour.latitude ?? ""}
+                  onChange={(e) => setEditTour({ ...editTour, latitude: e.target.value ? Number(e.target.value) : null })}
+                  placeholder="36.8065"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block">Longitude</label>
+                <Input
+                  type="number"
+                  step="any"
+                  value={editTour.longitude ?? ""}
+                  onChange={(e) => setEditTour({ ...editTour, longitude: e.target.value ? Number(e.target.value) : null })}
+                  placeholder="10.1815"
+                />
+              </div>
             </div>
             <div className="flex justify-end gap-3 pt-2">
               <Button variant="outline" onClick={() => setDialogOpen(false)}>Annuler</Button>
