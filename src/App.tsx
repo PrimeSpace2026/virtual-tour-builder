@@ -23,6 +23,8 @@ import OilGas from "./pages/OilGas";
 import NotFound from "./pages/NotFound";
 import Admin from "./pages/Admin";
 import Login from "./pages/Login";
+import Register from "./pages/Register";
+import ForgotPassword from "./pages/ForgotPassword";
 
 const queryClient = new QueryClient();
 
@@ -52,6 +54,8 @@ const App = () => (
           <Route path="/industries/oil-gas" element={<OilGas />} />
           <Route path="/admin" element={<Admin />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

@@ -4,31 +4,45 @@ import { motion } from "framer-motion";
 import { Layout } from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Lock, Mail } from "lucide-react";
+import { Lock, Mail, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
-const Login = () => {
+const Register = () => {
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (password !== confirmPassword) {
+      toast({ title: "Erreur", description: "Les mots de passe ne correspondent pas", variant: "destructive" });
+      return;
+    }
+
+    if (password.length < 6) {
+      toast({ title: "Erreur", description: "Le mot de passe doit contenir au moins 6 caractères", variant: "destructive" });
+      return;
+    }
+
     setLoading(true);
     try {
-      const res = await fetch("/api/auth/login", {
+      const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ name, email, password }),
       });
       const data = await res.json();
       if (res.ok && data.token) {
         sessionStorage.setItem("admin_token", data.token);
+        toast({ title: "Succès", description: "Compte créé avec succès !" });
         navigate("/admin");
       } else {
-        toast({ title: "Erreur", description: data.error || "Identifiants incorrects", variant: "destructive" });
+        toast({ title: "Erreur", description: data.error || "Erreur lors de l'inscription", variant: "destructive" });
       }
     } catch {
       toast({ title: "Erreur", description: "Impossible de se connecter au serveur", variant: "destructive" });
@@ -48,13 +62,27 @@ const Login = () => {
           >
             <div className="text-center mb-8">
               <div className="w-16 h-16 bg-secondary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Lock className="w-8 h-8 text-secondary" />
+                <User className="w-8 h-8 text-secondary" />
               </div>
-              <h1 className="text-2xl font-display font-bold text-foreground">Connexion</h1>
-              <p className="text-muted-foreground mt-2">Connectez-vous pour gérer les visites</p>
+              <h1 className="text-2xl font-display font-bold text-foreground">Créer un compte</h1>
+              <p className="text-muted-foreground mt-2">Inscrivez-vous pour accéder à l'administration</p>
             </div>
 
-            <form onSubmit={handleLogin} className="space-y-4">
+            <form onSubmit={handleRegister} className="space-y-4">
+              <div>
+                <label className="text-sm font-medium mb-1 block">Nom complet</label>
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Votre nom"
+                    className="pl-10"
+                    required
+                  />
+                </div>
+              </div>
               <div>
                 <label className="text-sm font-medium mb-1 block">Email</label>
                 <div className="relative">
@@ -77,29 +105,36 @@ const Login = () => {
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Minimum 6 caractères"
+                    className="pl-10"
+                    required
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block">Confirmer le mot de passe</label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder="••••••••"
                     className="pl-10"
                     required
                   />
                 </div>
               </div>
-
-              <div className="flex justify-end">
-                <Link to="/forgot-password" className="text-sm text-secondary hover:underline">
-                  Mot de passe oublié ?
-                </Link>
-              </div>
-
               <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? "Connexion..." : "Se connecter"}
+                {loading ? "Création..." : "Créer mon compte"}
               </Button>
             </form>
 
             <div className="mt-6 text-center">
               <p className="text-sm text-muted-foreground">
-                Pas encore de compte ?{" "}
-                <Link to="/register" className="text-secondary font-medium hover:underline">
-                  Créer un compte
+                Déjà un compte ?{" "}
+                <Link to="/login" className="text-secondary font-medium hover:underline">
+                  Se connecter
                 </Link>
               </p>
             </div>
@@ -110,4 +145,4 @@ const Login = () => {
   );
 };
 
-export default Login;
+export default Register;
