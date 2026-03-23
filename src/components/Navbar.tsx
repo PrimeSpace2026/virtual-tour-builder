@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, Phone, ChevronDown, Building2, HardHat, Factory, ShieldCheck, Home, Plane, ShoppingCart, Building, Zap, Fuel, User } from "lucide-react";
+import { Menu, X, Phone, ChevronDown, Building2, HardHat, Factory, ShieldCheck, Home, Plane, ShoppingCart, Building, Zap, Fuel } from "lucide-react";
 import { Button } from "./ui/button";
 import { cn } from "@/lib/utils";
 
@@ -28,16 +28,7 @@ const megaIndustries = [
   { icon: Fuel, label: "Pétrole & Gaz", href: "/industries/oil-gas" },
 ];
 
-const megaRoles = [
-  "Propriétaire",
-  "Occupant Commercial",
-  "Gestionnaire Immobilier",
-  "Architecte",
-  "Designer",
-  "Professionnel Construction",
-  "Facility Manager",
-  "Agent Immobilier",
-];
+
 
 export const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -129,43 +120,22 @@ export const Navbar = () => {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: 10 }}
                         transition={{ duration: 0.2 }}
-                        className="absolute top-full left-1/2 -translate-x-1/2 mt-4 w-[560px] bg-card rounded-2xl shadow-elevated border border-border p-8 z-50"
+                        className="absolute top-full left-1/2 -translate-x-1/2 mt-4 w-[340px] bg-card rounded-2xl shadow-elevated border border-border p-8 z-50"
                       >
-                        <div className="grid grid-cols-2 gap-8">
-                          {/* For Your Industry */}
-                          <div>
-                            <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-4">Pour Votre Secteur</h4>
-                            <div className="space-y-3">
-                              {megaIndustries.map((item) => (
-                                <Link
-                                  key={item.label}
-                                  to={item.href || "/benefits"}
-                                  className="flex items-center gap-3 group/item"
-                                  onClick={() => setMegaOpen(false)}
-                                >
-                                  <item.icon className="w-4 h-4 text-muted-foreground group-hover/item:text-[#2c0a71] transition-colors" />
-                                  <span className="text-sm text-foreground group-hover/item:text-[#2c0a71] transition-colors">{item.label}</span>
-                                </Link>
-                              ))}
-                            </div>
-                          </div>
-
-                          {/* For Your Role */}
-                          <div>
-                            <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-4">Pour Votre Rôle</h4>
-                            <div className="space-y-3">
-                              {megaRoles.map((role) => (
-                                <Link
-                                  key={role}
-                                  to="/benefits"
-                                  className="flex items-center gap-3 group/item"
-                                  onClick={() => setMegaOpen(false)}
-                                >
-                                  <User className="w-4 h-4 text-muted-foreground group-hover/item:text-[#2c0a71] transition-colors" />
-                                  <span className="text-sm text-foreground group-hover/item:text-[#2c0a71] transition-colors">{role}</span>
-                                </Link>
-                              ))}
-                            </div>
+                        <div>
+                          <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-4">Pour Votre Secteur</h4>
+                          <div className="space-y-3">
+                            {megaIndustries.map((item) => (
+                              <Link
+                                key={item.label}
+                                to={item.href || "/benefits"}
+                                className="flex items-center gap-3 group/item"
+                                onClick={() => setMegaOpen(false)}
+                              >
+                                <item.icon className="w-4 h-4 text-muted-foreground group-hover/item:text-[#2c0a71] transition-colors" />
+                                <span className="text-sm text-foreground group-hover/item:text-[#2c0a71] transition-colors">{item.label}</span>
+                              </Link>
+                            ))}
                           </div>
                         </div>
                       </motion.div>
@@ -268,22 +238,7 @@ export const Navbar = () => {
                                 ))}
                               </div>
                             </div>
-                            <div>
-                              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Pour Votre Rôle</p>
-                              <div className="space-y-2">
-                                {megaRoles.map((role) => (
-                                  <Link
-                                    key={role}
-                                    to="/benefits"
-                                    className="flex items-center gap-2 py-1 text-sm text-foreground hover:text-[#2c0a71] transition-colors"
-                                    onClick={() => setIsOpen(false)}
-                                  >
-                                    <User className="w-4 h-4 text-muted-foreground" />
-                                    {role}
-                                  </Link>
-                                ))}
-                              </div>
-                            </div>
+
                           </div>
                         </motion.div>
                       )}
