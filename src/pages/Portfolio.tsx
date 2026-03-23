@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { ArrowRight, Play, ExternalLink, Filter } from "lucide-react";
+import { ArrowRight, Play, ExternalLink, Filter, Loader2 } from "lucide-react";
 import { Layout } from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { SectionHeading } from "@/components/SectionHeading";
@@ -21,77 +21,59 @@ import portfolioRestaurant from "@/assets/portfolio-restaurant1.png";
 import portfolioOffice from "@/assets/portfolio-office.jpg";
 import portfolioWedding from "@/assets/wedding-venue.png";
 
-const categories = [
-  "Tous",
-  "Immobilier",
-  "Hôtellerie",
-  "Commerce",
-  "Wedding venue",
-  "Culture",
-  "Restaurant",
-  "Entreprise",
-];
+// Fallback images by category
+const fallbackImages: Record<string, string> = {
+  "Hôtellerie": portfolioHotel,
+  "Immobilier": portfolioApartment,
+  "Commerce": portfolioRetail,
+  "Culture": portfolioMuseum,
+  "Restaurant": portfolioRestaurant,
+  "Entreprise": portfolioOffice,
+  "Wedding venue": portfolioWedding,
+};
 
-const projects = [
-  {
-    id: 1,
-    image: portfolioHotel,
-    title: "Clayton Hotel Belfast",
-    category: "Hôtellerie",
-    description: "Visite virtuelle complète de l'hôtel 5 étoiles avec chambres, lobby et espaces communs.",
-    size: "2500 m²",
-    tourUrl: "https://my.matterport.com/show/?m=1aWQXDdxWnG",
-  },
-  {
-    id: 2,
-    image: portfolioApartment,
-    title: "Villa ireland",
-    category: "Immobilier",
-    description: "Villa de luxe. Visite 3D avec plans interactifs.",
-    size: "280 m²",
-    tourUrl: "https://my.matterport.com/show/?m=t84zwhnXjvJ",
-  },
-  {
-    id: 3,
-    image: portfolioRetail,
-    title: "Boutique Mode Avenue",
-    category: "Commerce",
-    description: "Showroom de mode haut de gamme capturé pour expérience shopping virtuel.",
-    size: "150 m²",
-    tourUrl: "https://my.matterport.com/show?play=1&lang=en-US&m=i4XHNhtSSYx",
-  },
-  {
-    id: 4,
-    image: portfolioWedding,
-    title: "The Ivory Pavillon",
-    category: "Wedding venue",
-    description: "Exposition permanente digitalisée pour visites à distance et archives numériques.",
-    size: "800 m²",
-    tourUrl: "https://my.matterport.com/show?play=1&lang=en-US&m=nwzR6S7LzMD",
-  },
-  {
-    id: 5,
-    image: portfolioRestaurant,
-    title: "Oro Restaurant O2 Barbados",
-    category: "Restaurant",
-    description: "Capture de l'ambiance unique du restaurant pour prévisualisation et événements.",
-    size: "320 m²",
-    tourUrl: "https://my.matterport.com/show?play=1&lang=en-US&m=hUiuMVtqB7F",
-  },
-  {
-    id: 6,
-    image: portfolioOffice,
-    title: "Siège Social TechCorp",
-    category: "Entreprise",
-    description: "Bureaux modernes capturés pour recrutement virtuel et visite clients.",
-    size: "1200 m²",
-    tourUrl: "https://my.matterport.com/show?play=1&lang=en-US&m=3kVVQfg1wSy",
-  },
-];
+interface Project {
+  id: number;
+  image: string;
+  title: string;
+  category: string;
+  description: string;
+  size: string;
+  tourUrl: string;
+}
 
 const Portfolio = () => {
   const [activeCategory, setActiveCategory] = useState("Tous");
-  const [selectedProject, setSelectedProject] = useState<typeof projects[0] | null>(null);
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchTours = () => {
+    fetch("/api/tours")
+      .then((res) => res.json())
+      .then((tours) => {
+        const mapped = tours.map((t: any) => ({
+          id: t.id,
+          image: t.imageUrl || fallbackImages[t.category] || portfolioHotel,
+          title: t.name,
+          category: t.category,
+          description: t.description,
+          size: t.surface ? `${t.surface} m²` : "",
+          tourUrl: t.tourUrl || "",
+        }));
+        setProjects(mapped);
+      })
+      .catch((err) => console.error("Failed to fetch tours:", err))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    fetchTours();
+    const interval = setInterval(fetchTours, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const allCategories = ["Tous", ...Array.from(new Set(projects.map((p) => p.category)))];
 
   const filteredProjects = activeCategory === "Tous"
     ? projects
@@ -142,7 +124,7 @@ const Portfolio = () => {
             animate={{ opacity: 1, y: 0 }}
             className="flex flex-wrap justify-center gap-2 md:gap-3 mb-8 md:mb-12"
           >
-            {categories.map((category) => (
+            {allCategories.map((category) => (
               <button
                 key={category}
                 onClick={() => setActiveCategory(category)}
@@ -158,6 +140,11 @@ const Portfolio = () => {
           </motion.div>
 
           {/* Projects Grid */}
+          {loading ? (
+            <div className="flex justify-center py-20">
+              <Loader2 className="w-8 h-8 animate-spin text-secondary" />
+            </div>
+          ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-8">
             {filteredProjects.map((project, index) => (
               <motion.div
@@ -208,9 +195,10 @@ const Portfolio = () => {
               </motion.div>
             ))}
           </div>
+          )}
 
           {/* Empty State */}
-          {filteredProjects.length === 0 && (
+          {!loading && filteredProjects.length === 0 && (
             <div className="text-center py-20">
               <Filter className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-xl font-semibold text-foreground mb-2">

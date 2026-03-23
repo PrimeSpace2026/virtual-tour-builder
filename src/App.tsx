@@ -21,6 +21,8 @@ import Government from "./pages/Government";
 import EnergyUtilities from "./pages/EnergyUtilities";
 import OilGas from "./pages/OilGas";
 import NotFound from "./pages/NotFound";
+import Admin from "./pages/Admin";
+import Login from "./pages/Login";
 
 const queryClient = new QueryClient();
 
@@ -48,6 +50,8 @@ const App = () => (
           <Route path="/industries/government" element={<Government />} />
           <Route path="/industries/energy-utilities" element={<EnergyUtilities />} />
           <Route path="/industries/oil-gas" element={<OilGas />} />
+          <Route path="/admin" element={<Admin />} />
+          <Route path="/login" element={<Login />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
