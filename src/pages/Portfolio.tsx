@@ -189,7 +189,8 @@ const Portfolio = () => {
               </button>
             </div>
 
-            {/* Category Filter */}
+            {/* Category Filter - only in grid mode */}
+            {viewMode === "grid" && (
             <div className="flex flex-wrap justify-center gap-2 md:gap-3">
             {allCategories.map((category) => (
               <button
@@ -205,6 +206,7 @@ const Portfolio = () => {
               </button>
             ))}
             </div>
+            )}
           </motion.div>
 
           {/* Projects Grid or Map */}
