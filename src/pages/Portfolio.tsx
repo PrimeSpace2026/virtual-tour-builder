@@ -238,8 +238,8 @@ const Portfolio = () => {
                 >
                   <MapRef mapRef={mapRef} />
                   <TileLayer
-                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    attribution='&copy; Esri &mdash; Esri, DeLorme, NAVTEQ'
+                    url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
                   />
                   {filteredProjects
                     .filter((p) => p.latitude && p.longitude)

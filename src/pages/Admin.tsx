@@ -469,8 +469,8 @@ const Admin = () => {
                   scrollWheelZoom={true}
                 >
                   <TileLayer
-                    attribution='&copy; OpenStreetMap'
-                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    attribution='&copy; Esri'
+                    url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
                   />
                   <MapClickHandler onMapClick={handleMapClick} />
                   <FlyToMarker lat={editTour.latitude} lng={editTour.longitude} />
