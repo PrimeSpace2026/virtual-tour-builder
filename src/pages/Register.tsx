@@ -58,7 +58,7 @@ const Register = () => {
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            className="max-w-md mx-auto bg-card rounded-2xl shadow-elevated p-8"
+            className="max-w-md mx-auto bg-card rounded-2xl shadow-elevated p-5 md:p-8"
           >
             <div className="text-center mb-8">
               <div className="w-16 h-16 bg-secondary/10 rounded-full flex items-center justify-center mx-auto mb-4">

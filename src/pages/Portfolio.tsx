@@ -229,7 +229,7 @@ const Portfolio = () => {
               animate={{ opacity: 1 }}
               className="space-y-6"
             >
-              <div className="relative rounded-2xl overflow-hidden shadow-soft" style={{ height: "500px" }}>
+              <div className="relative rounded-2xl overflow-hidden shadow-soft h-[300px] md:h-[500px]">
                 <MapContainer
                   center={[34.5, 9.5]}
                   zoom={7}
@@ -414,7 +414,7 @@ const Portfolio = () => {
 
       {/* Matterport Tour Modal */}
       <Dialog open={!!selectedProject} onOpenChange={(open) => !open && setSelectedProject(null)}>
-        <DialogContent className="max-w-5xl w-[95vw] p-0 gap-0 overflow-hidden">
+        <DialogContent className="max-w-5xl w-[95vw] md:w-[95vw] p-0 gap-0 overflow-hidden max-h-[90vh]">
           <DialogHeader className="p-4 pb-2">
             <DialogTitle className="font-display">
               {selectedProject?.title}
