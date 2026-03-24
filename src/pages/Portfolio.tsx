@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { ArrowRight, Play, ExternalLink, Filter, Loader2, MapPin, LayoutGrid } from "lucide-react";
@@ -12,7 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
@@ -64,6 +64,13 @@ const fallbackImages: Record<string, string> = {
   "Wedding venue": portfolioWedding,
 };
 
+// Component to expose map instance
+const MapRef = ({ mapRef }: { mapRef: React.MutableRefObject<L.Map | null> }) => {
+  const map = useMap();
+  mapRef.current = map;
+  return null;
+};
+
 interface Project {
   id: number;
   image: string;
@@ -83,6 +90,7 @@ const Portfolio = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<"grid" | "map">("grid");
+  const mapRef = useRef<L.Map | null>(null);
 
   const fetchTours = () => {
     fetch("/api/tours")
@@ -228,6 +236,7 @@ const Portfolio = () => {
                   style={{ height: "100%", width: "100%" }}
                   scrollWheelZoom={true}
                 >
+                  <MapRef mapRef={mapRef} />
                   <TileLayer
                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -263,7 +272,11 @@ const Portfolio = () => {
                     key={project.id}
                     layout
                     className="flex items-center gap-3 p-3 rounded-xl bg-card shadow-soft cursor-pointer hover:shadow-elevated transition-all"
-                    onClick={() => setSelectedProject(project)}
+                    onClick={() => {
+                      if (project.latitude && project.longitude && mapRef.current) {
+                        mapRef.current.flyTo([project.latitude, project.longitude], 15, { duration: 1.5 });
+                      }
+                    }}
                   >
                     <img
                       src={project.image}
