@@ -31,6 +31,7 @@ interface Tour {
   tourUrl: string;
   latitude: number | null;
   longitude: number | null;
+  location: string;
 }
 
 const CATEGORIES = [
@@ -51,6 +52,7 @@ const emptyTour: Tour = {
   tourUrl: "",
   latitude: null,
   longitude: null,
+  location: "",
 };
 
 const Admin = () => {
@@ -335,6 +337,14 @@ const Admin = () => {
                   placeholder="10.1815"
                 />
               </div>
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1 block">Emplacement</label>
+              <Input
+                value={editTour.location}
+                onChange={(e) => setEditTour({ ...editTour, location: e.target.value })}
+                placeholder="Ex: Tunis, La Marsa, Sousse..."
+              />
             </div>
             <div className="flex justify-end gap-3 pt-2">
               <Button variant="outline" onClick={() => setDialogOpen(false)}>Annuler</Button>

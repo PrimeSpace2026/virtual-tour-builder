@@ -56,6 +56,7 @@ interface Project {
   tourUrl: string;
   latitude: number | null;
   longitude: number | null;
+  location: string;
 }
 
 const Portfolio = () => {
@@ -79,6 +80,7 @@ const Portfolio = () => {
           tourUrl: t.tourUrl || "",
           latitude: t.latitude,
           longitude: t.longitude,
+          location: t.location || "",
         }));
         setProjects(mapped);
       })
@@ -223,6 +225,9 @@ const Portfolio = () => {
                             <img src={project.image} alt={project.title} className="w-32 h-20 object-cover rounded mb-2" />
                             <strong>{project.title}</strong>
                             <br />
+                            {project.location && (
+                              <><span className="text-xs text-gray-600">{project.location}</span><br /></>
+                            )}
                             <span className="text-xs">{project.category} • {project.size}</span>
                           </div>
                         </Popup>
@@ -246,6 +251,12 @@ const Portfolio = () => {
                     />
                     <div className="min-w-0">
                       <h4 className="font-semibold text-sm text-foreground truncate">{project.title}</h4>
+                      {project.location && (
+                        <p className="text-xs text-secondary flex items-center gap-0.5 truncate">
+                          <MapPin className="w-3 h-3 flex-shrink-0" />
+                          {project.location}
+                        </p>
+                      )}
                       <p className="text-xs text-muted-foreground">{project.category}</p>
                       <p className="text-xs text-secondary font-medium">{project.size}</p>
                     </div>
@@ -288,6 +299,12 @@ const Portfolio = () => {
                   <h3 className="font-display font-semibold text-lg md:text-xl text-foreground mb-2">
                     {project.title}
                   </h3>
+                  {project.location && (
+                    <p className="text-secondary text-sm mb-2 flex items-center gap-1">
+                      <MapPin className="w-3.5 h-3.5" />
+                      {project.location}
+                    </p>
+                  )}
                   <p className="text-muted-foreground text-sm mb-4">
                     {project.description}
                   </p>
