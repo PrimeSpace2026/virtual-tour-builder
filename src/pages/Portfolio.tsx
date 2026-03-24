@@ -248,7 +248,6 @@ const Portfolio = () => {
                         key={project.id}
                         position={[project.latitude!, project.longitude!]}
                         icon={createFlagIcon(project.image)}
-                        eventHandlers={{ click: () => setSelectedProject(project) }}
                       >
                         <Popup>
                           <div className="text-center">

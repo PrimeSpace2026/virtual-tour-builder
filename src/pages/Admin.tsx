@@ -20,6 +20,39 @@ import {
 } from "@/components/ui/dialog";
 import { Plus, Pencil, Trash2, Upload, X, Image as ImageIcon, LogOut, Search, MapPin, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from "react-leaflet";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+
+// Fix default marker icons
+import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
+import markerIcon from "leaflet/dist/images/marker-icon.png";
+import markerShadow from "leaflet/dist/images/marker-shadow.png";
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: markerIcon2x,
+  iconUrl: markerIcon,
+  shadowUrl: markerShadow,
+});
+
+// Click handler component for the mini map
+const MapClickHandler = ({ onMapClick }: { onMapClick: (lat: number, lng: number) => void }) => {
+  useMapEvents({
+    click(e) {
+      onMapClick(e.latlng.lat, e.latlng.lng);
+    },
+  });
+  return null;
+};
+
+// Fly to position when marker changes
+const FlyToMarker = ({ lat, lng }: { lat: number | null; lng: number | null }) => {
+  const map = useMap();
+  useEffect(() => {
+    if (lat && lng) map.flyTo([lat, lng], 13, { duration: 0.8 });
+  }, [lat, lng, map]);
+  return null;
+};
 
 interface Tour {
   id?: number;
@@ -120,6 +153,22 @@ const Admin = () => {
     });
     setLocationQuery(place.display_name);
     setLocationResults([]);
+  };
+
+  // Reverse geocoding: click on map → get address
+  const handleMapClick = (lat: number, lng: number) => {
+    setEditTour((prev) => ({ ...prev, latitude: lat, longitude: lng }));
+    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`, {
+      headers: { "Accept-Language": "fr" },
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.display_name) {
+          setEditTour((prev) => ({ ...prev, location: data.display_name }));
+          setLocationQuery(data.display_name);
+        }
+      })
+      .catch(() => {});
   };
 
   const handleImageUpload = async (file: File) => {
@@ -382,7 +431,7 @@ const Admin = () => {
                   value={locationQuery}
                   onChange={(e) => { setLocationQuery(e.target.value); }}
                   onFocus={() => { if (editTour.location && !locationQuery) setLocationQuery(editTour.location); }}
-                  placeholder="Rechercher un lieu en Tunisie..."
+                  placeholder="Rechercher un lieu..."
                   className="pl-9"
                 />
                 {searchingLocation && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-muted-foreground" />}
@@ -408,6 +457,28 @@ const Admin = () => {
                   {editTour.location}
                 </p>
               )}
+            </div>
+            {/* Mini map - click to place marker */}
+            <div>
+              <label className="text-sm font-medium mb-1 block">Ou cliquez sur la carte</label>
+              <div className="rounded-xl overflow-hidden border border-border" style={{ height: "220px" }}>
+                <MapContainer
+                  center={[editTour.latitude || 34.5, editTour.longitude || 9.5]}
+                  zoom={editTour.latitude ? 13 : 3}
+                  style={{ height: "100%", width: "100%" }}
+                  scrollWheelZoom={true}
+                >
+                  <TileLayer
+                    attribution='&copy; OpenStreetMap'
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  />
+                  <MapClickHandler onMapClick={handleMapClick} />
+                  <FlyToMarker lat={editTour.latitude} lng={editTour.longitude} />
+                  {editTour.latitude && editTour.longitude && (
+                    <Marker position={[editTour.latitude, editTour.longitude]} />
+                  )}
+                </MapContainer>
+              </div>
             </div>
             <div className="flex justify-end gap-3 pt-2">
               <Button variant="outline" onClick={() => setDialogOpen(false)}>Annuler</Button>
