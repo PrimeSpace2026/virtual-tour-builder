@@ -27,6 +27,24 @@ L.Icon.Default.mergeOptions({
   shadowUrl: markerShadow,
 });
 
+// Custom flag marker
+const createFlagIcon = (imageUrl: string) => {
+  return L.divIcon({
+    className: "custom-flag-marker",
+    html: `
+      <div style="position:relative;width:48px;height:62px;">
+        <div style="width:44px;height:44px;border-radius:8px;overflow:hidden;border:3px solid #D4A853;box-shadow:0 2px 8px rgba(0,0,0,0.3);background:#fff;">
+          <img src="${imageUrl}" style="width:100%;height:100%;object-fit:cover;" />
+        </div>
+        <div style="width:3px;height:18px;background:#1a1a2e;margin:0 auto;border-radius:0 0 2px 2px;"></div>
+      </div>
+    `,
+    iconSize: [48, 62],
+    iconAnchor: [24, 62],
+    popupAnchor: [0, -62],
+  });
+};
+
 import portfolioHotel from "@/assets/portfolio-hotel.jpg";
 import portfolioApartment from "@/assets/portfolio-apartment.jpg";
 import portfolioRetail from "@/assets/portfolio-retail.jpg";
@@ -218,6 +236,7 @@ const Portfolio = () => {
                       <Marker
                         key={project.id}
                         position={[project.latitude!, project.longitude!]}
+                        icon={createFlagIcon(project.image)}
                         eventHandlers={{ click: () => setSelectedProject(project) }}
                       >
                         <Popup>
