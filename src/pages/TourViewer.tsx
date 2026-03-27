@@ -1129,90 +1129,69 @@ const TourViewer = () => {
         )}
       </AnimatePresence>
 
-      {/* ===== FLOATING PRODUCT STRIP (bottom of screen) ===== */}
+      {/* ===== FLOATING PRODUCT CARDS (bottom of screen) ===== */}
       <AnimatePresence>
         {tourItems.length > 0 && !showProducts && !selectedItem && !showCart && (
           <motion.div
-            initial={{ opacity: 0, y: 40 }}
+            initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 40 }}
-            transition={{ delay: 1, type: "spring", damping: 22 }}
-            className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 pointer-events-auto flex items-center gap-2"
+            exit={{ opacity: 0, y: 50 }}
+            transition={{ delay: 0.8, type: "spring", damping: 22 }}
+            className="absolute bottom-3 left-0 right-0 z-30 pointer-events-auto px-3"
           >
-            {/* Product thumbnails */}
-            <div className="flex items-center gap-1.5 p-1.5 rounded-2xl bg-black/60 backdrop-blur-xl border border-white/10 shadow-2xl">
-              {tourItems.slice(0, 5).map((item) => (
-                <div key={item.id} className="relative group">
-                  <button
+            <div className="max-w-3xl mx-auto">
+              <div className="flex items-end gap-2 overflow-x-auto pb-1 scrollbar-hide justify-center">
+                {tourItems.filter(i => i.tagSid).map((item, idx) => (
+                  <motion.button
+                    key={item.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 1 + idx * 0.1 }}
                     onClick={() => navigateToProduct(item)}
-                    className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl overflow-hidden border-2 border-transparent hover:border-purple-400 transition-all hover:scale-110 relative"
+                    className="flex-shrink-0 w-[140px] sm:w-[160px] bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.25)] overflow-hidden hover:shadow-[0_8px_30px_rgba(0,0,0,0.35)] hover:-translate-y-1 transition-all duration-200 group"
                   >
-                    {item.imageUrl ? (
-                      <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover bg-white" />
-                    ) : (
-                      <div className="w-full h-full bg-white/10 flex items-center justify-center">
-                        <ShoppingBag className="w-4 h-4 text-white/40" />
-                      </div>
-                    )}
-                  </button>
-                  {/* Hover tooltip */}
-                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 opacity-0 group-hover:opacity-100 scale-95 group-hover:scale-100 transition-all duration-200 pointer-events-none group-hover:pointer-events-auto z-50 w-56">
-                    <div className="bg-white rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.25)] overflow-hidden">
-                      {/* Mini image */}
-                      {item.imageUrl && (
-                        <div className="h-28 bg-gray-50 flex items-center justify-center">
-                          <img src={item.imageUrl} alt={item.name} className="h-full w-full object-contain p-3" />
-                        </div>
+                    {/* Product image */}
+                    <div className="h-20 sm:h-24 bg-gray-50 flex items-center justify-center relative overflow-hidden">
+                      {item.imageUrl ? (
+                        <img src={item.imageUrl} alt={item.name} className="w-full h-full object-contain p-2" />
+                      ) : (
+                        <ShoppingBag className="w-8 h-8 text-gray-200" />
                       )}
-                      <div className="p-3">
-                        <p className="text-gray-900 text-xs font-bold truncate">{item.name}</p>
-                        {item.brand && <p className="text-gray-400 text-[10px] font-medium uppercase tracking-wider mt-0.5">{item.brand}</p>}
-                        {item.price != null && (
-                          <p className="text-gray-900 text-sm font-extrabold mt-1">{item.price} <span className="text-gray-400 text-xs font-medium">{CURRENCY_SYMBOLS[item.currency] || item.currency}</span></p>
-                        )}
-                        <div className="flex gap-1.5 mt-2.5">
-                          <button
-                            onClick={(e) => { e.stopPropagation(); addToCart(item); }}
-                            className="flex-1 py-2 bg-gray-900 hover:bg-gray-800 text-white text-[11px] font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5"
-                          >
-                            <ShoppingCart className="w-3 h-3" />
-                            Ajouter
-                          </button>
-                          {item.externalUrl && (
-                            <a
-                              href={item.externalUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              onClick={(e) => e.stopPropagation()}
-                              className="py-2 px-2.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg transition-all flex items-center justify-center"
-                            >
-                              <ExternalLink className="w-3 h-3" />
-                            </a>
-                          )}
+                      {/* Quick add overlay on hover */}
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center">
+                        <div className="flex items-center gap-1 text-white text-[10px] font-bold uppercase tracking-wider">
+                          <ShoppingCart className="w-3 h-3" />
+                          Voir
                         </div>
+                      </div>
+                      {/* Tag indicator */}
+                      <div className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-purple-600 flex items-center justify-center shadow-sm">
+                        <Tag className="w-2.5 h-2.5 text-white" />
                       </div>
                     </div>
-                    <div className="w-3 h-3 bg-white shadow-md rotate-45 mx-auto -mt-1.5" />
-                  </div>
-                </div>
-              ))}
-              {tourItems.length > 5 && (
-                <button
-                  onClick={() => setShowProducts(true)}
-                  className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/60 hover:text-white transition-all border-2 border-transparent hover:border-white/20"
-                >
-                  <span className="text-xs font-bold">+{tourItems.length - 5}</span>
-                </button>
-              )}
+                    {/* Info */}
+                    <div className="px-2.5 py-2">
+                      <p className="text-gray-900 text-[11px] font-bold truncate leading-tight">{item.name}</p>
+                      {item.price != null && (
+                        <p className="text-gray-900 text-xs font-extrabold mt-0.5">
+                          {item.price} <span className="text-gray-400 text-[10px] font-medium">{CURRENCY_SYMBOLS[item.currency] || item.currency}</span>
+                        </p>
+                      )}
+                    </div>
+                  </motion.button>
+                ))}
+                {/* Items without tags — show as small thumbnails */}
+                {tourItems.filter(i => !i.tagSid).length > 0 && (
+                  <button
+                    onClick={() => setShowProducts(true)}
+                    className="flex-shrink-0 w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-black/50 backdrop-blur-xl border border-white/15 flex items-center justify-center text-white/60 hover:text-white hover:bg-black/70 transition-all self-center"
+                    title="Voir tous les produits"
+                  >
+                    <span className="text-[10px] font-bold">+{tourItems.filter(i => !i.tagSid).length}</span>
+                  </button>
+                )}
+              </div>
             </div>
-            {/* "Voir tout" button */}
-            <button
-              onClick={() => setShowProducts(true)}
-              className="px-3 py-3 rounded-xl bg-black/60 backdrop-blur-xl border border-white/10 text-white/60 hover:text-white hover:bg-black/80 transition-all"
-              title="Voir tous les produits"
-            >
-              <ShoppingBag className="w-4 h-4" />
-            </button>
           </motion.div>
         )}
       </AnimatePresence>
