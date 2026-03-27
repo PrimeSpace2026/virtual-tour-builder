@@ -80,7 +80,7 @@ const CURRENCY_SYMBOLS: Record<string, string> = { EUR: "€", USD: "$", TND: "T
 function buildEmbedUrl(tourUrl: string): string {
   const modelId = extractModelId(tourUrl);
   if (!modelId) return tourUrl;
-  return `https://my.matterport.com/show/?m=${modelId}&play=1&qs=1&applicationKey=${SDK_KEY}&brand=0&title=0&mls=2&vr=1&dh=1&gt=0&hr=0&help=0`;
+  return `https://my.matterport.com/show/?m=${modelId}&play=1&qs=1&brand=0&title=0&mls=2&vr=1&dh=1&gt=0&hr=0&help=0`;
 }
 
 const TourViewer = () => {
