@@ -694,7 +694,19 @@ const Admin = () => {
               <div>
                 <label className="text-sm font-medium mb-1 block">Tag Matterport (optionnel)</label>
                 <Input value={editItem.tagSid} onChange={(e) => setEditItem({ ...editItem, tagSid: e.target.value })} placeholder="SID du tag Matterport" />
-                <p className="text-xs text-muted-foreground mt-1">Liez ce produit à un tag dans la visite 3D pour qu'il apparaisse au clic</p>
+                <div className="flex items-center gap-2 mt-1">
+                  <p className="text-xs text-muted-foreground flex-1">Liez ce produit à un tag dans la visite 3D pour qu'il apparaisse au clic</p>
+                  {itemsTourId && (
+                    <a
+                      href={`/admin/tags?tourUrl=${encodeURIComponent(tours.find(t => t.id === itemsTourId)?.tourUrl || '')}&tourId=${itemsTourId}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-purple-600 hover:text-purple-500 font-medium whitespace-nowrap underline"
+                    >
+                      Trouver les Tags →
+                    </a>
+                  )}
+                </div>
               </div>
               <div className="flex justify-end gap-3 pt-2">
                 <Button variant="outline" onClick={() => setItemFormOpen(false)}>Annuler</Button>
