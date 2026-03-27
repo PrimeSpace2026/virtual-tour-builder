@@ -873,7 +873,7 @@ const TourViewer = () => {
         )}
       </AnimatePresence>
 
-      {/* ===== ITEM/TAG POPUP (OpenHaus style) ===== */}
+      {/* ===== ITEM/TAG POPUP ===== */}
       <AnimatePresence>
         {(selectedTag || selectedItem) && (
           <>
@@ -882,67 +882,70 @@ const TourViewer = () => {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => { setSelectedTag(null); setSelectedItem(null); }}
-              className="absolute inset-0 bg-black/50 backdrop-blur-sm z-40"
+              className="absolute inset-0 bg-black/60 backdrop-blur-md z-40"
             />
             <motion.div
-              initial={{ opacity: 0, scale: 0.92, y: 20 }}
+              initial={{ opacity: 0, scale: 0.9, y: 30 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.92, y: 20 }}
-              transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="absolute inset-2 sm:inset-4 md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-[700px] md:max-h-[500px] z-50 pointer-events-auto"
+              exit={{ opacity: 0, scale: 0.9, y: 30 }}
+              transition={{ type: "spring", damping: 28, stiffness: 350 }}
+              className="absolute inset-3 sm:inset-6 md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-[680px] md:max-h-[480px] z-50 pointer-events-auto"
             >
-              <div className="bg-white rounded-2xl overflow-hidden shadow-2xl flex flex-col md:flex-row h-full md:h-auto max-h-[calc(100vh-1rem)] sm:max-h-[calc(100vh-2rem)] md:max-h-[500px]">
+              <div className="bg-white rounded-3xl overflow-hidden shadow-[0_25px_60px_rgba(0,0,0,0.3)] flex flex-col md:flex-row h-full md:h-auto max-h-[calc(100vh-1.5rem)] sm:max-h-[calc(100vh-3rem)] md:max-h-[480px]">
                 <button
                   onClick={() => { setSelectedTag(null); setSelectedItem(null); }}
-                  className="absolute top-3 right-3 z-10 w-8 h-8 rounded-full bg-[#1a5c4f] hover:bg-[#144a40] flex items-center justify-center text-white transition-colors shadow-lg"
+                  className="absolute top-4 right-4 z-10 w-9 h-9 rounded-full bg-black/10 hover:bg-black/20 flex items-center justify-center text-gray-600 hover:text-gray-900 transition-all"
                 >
                   <X className="w-4 h-4" />
                 </button>
 
                 {/* Image */}
-                <div className="md:w-[45%] h-36 sm:h-48 md:h-auto bg-gray-100 shrink-0 flex items-center justify-center">
+                <div className="md:w-[48%] h-44 sm:h-56 md:h-auto bg-gradient-to-br from-gray-50 to-gray-100 shrink-0 flex items-center justify-center relative overflow-hidden">
+                  {selectedItem?.brand && (
+                    <span className="absolute top-4 left-4 px-3 py-1 rounded-full bg-white/90 backdrop-blur-sm text-[10px] font-bold uppercase tracking-widest text-gray-500 shadow-sm">
+                      {selectedItem.brand}
+                    </span>
+                  )}
                   {(selectedItem?.imageUrl || selectedTag?.mediaSrc || selectedTag?.mediaUrl) ? (
                     <img
                       src={selectedItem?.imageUrl || selectedTag?.mediaSrc || selectedTag?.mediaUrl}
                       alt={selectedItem?.name || selectedTag?.label}
-                      className="w-full h-full object-contain p-6"
+                      className="w-full h-full object-contain p-8 md:p-10"
                     />
                   ) : (
-                    <ShoppingBag className="w-16 h-16 text-gray-300" />
+                    <ShoppingBag className="w-20 h-20 text-gray-200" />
                   )}
                 </div>
 
                 {/* Info */}
-                <div className="flex-1 p-4 sm:p-6 flex flex-col overflow-y-auto">
+                <div className="flex-1 p-5 sm:p-7 flex flex-col overflow-y-auto">
                   <div className="flex-1">
-                    {(selectedItem?.brand || tour.category) && (
-                      <p className="text-[#1a5c4f] text-xs font-bold uppercase tracking-wider mb-1">
-                        {selectedItem?.brand || tour.category}
+                    {!selectedItem?.brand && (selectedItem?.brand || tour.category) && (
+                      <p className="text-purple-600 text-[11px] font-bold uppercase tracking-widest mb-2">
+                        {tour.category}
                       </p>
                     )}
-                    <h3 className="text-gray-900 font-bold text-xl md:text-2xl leading-tight mb-1">
+                    <h3 className="text-gray-900 font-bold text-2xl md:text-3xl leading-tight">
                       {selectedItem?.name || selectedTag?.label}
                     </h3>
                     {selectedItem?.price != null && (
-                      <p className="text-2xl font-bold text-[#1a5c4f] mb-3">
-                        {selectedItem.price} {CURRENCY_SYMBOLS[selectedItem.currency] || selectedItem.currency}
+                      <p className="text-3xl font-extrabold text-gray-900 mt-2">
+                        {selectedItem.price} <span className="text-lg font-semibold text-gray-400">{CURRENCY_SYMBOLS[selectedItem.currency] || selectedItem.currency}</span>
                       </p>
                     )}
 
                     {(selectedItem?.description || selectedTag?.description) && (
-                      <div className="max-h-[180px] overflow-y-auto pr-2 border border-gray-200 rounded-lg p-3 mt-2">
-                        <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-wrap">
-                          {selectedItem?.description || selectedTag?.description}
-                        </p>
-                      </div>
+                      <p className="text-gray-500 text-sm leading-relaxed mt-4 line-clamp-4">
+                        {selectedItem?.description || selectedTag?.description}
+                      </p>
                     )}
                   </div>
 
-                  <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mt-4 shrink-0">
+                  <div className="flex gap-3 mt-6 shrink-0">
                     {selectedItem && (
                       <button
                         onClick={() => { addToCart(selectedItem); setSelectedItem(null); setSelectedTag(null); }}
-                        className="flex-1 py-3.5 bg-[#1a5c4f] hover:bg-[#144a40] text-white font-semibold rounded-lg transition-colors flex items-center justify-center gap-2 text-sm"
+                        className="flex-1 py-3.5 bg-gray-900 hover:bg-gray-800 text-white font-semibold rounded-xl transition-all hover:shadow-lg flex items-center justify-center gap-2 text-sm"
                       >
                         <ShoppingCart className="w-4 h-4" />
                         AJOUTER AU PANIER
@@ -953,14 +956,14 @@ const TourViewer = () => {
                         href={selectedItem.externalUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className={`${selectedItem ? "" : "flex-1"} py-3.5 px-6 border-2 border-[#1a5c4f] text-[#1a5c4f] hover:bg-[#1a5c4f] hover:text-white font-semibold rounded-lg transition-colors flex items-center justify-center gap-2 text-sm`}
+                        className="py-3.5 px-5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition-all flex items-center justify-center gap-2 text-sm"
                       >
                         ACHETER
                         <ExternalLink className="w-4 h-4" />
                       </a>
                     )}
                     {!selectedItem && (
-                      <button className="flex-1 py-3.5 bg-[#1a5c4f] hover:bg-[#144a40] text-white font-semibold rounded-lg transition-colors flex items-center justify-center gap-2 text-sm">
+                      <button className="flex-1 py-3.5 bg-gray-900 hover:bg-gray-800 text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2 text-sm">
                         EN SAVOIR PLUS
                         <ExternalLink className="w-4 h-4" />
                       </button>
@@ -1153,22 +1156,43 @@ const TourViewer = () => {
                     )}
                   </button>
                   {/* Hover tooltip */}
-                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 transition-all pointer-events-none group-hover:pointer-events-auto z-50 w-48">
-                    <div className="bg-black/90 backdrop-blur-xl rounded-xl border border-white/10 p-3 shadow-2xl">
-                      <p className="text-white text-xs font-semibold truncate">{item.name}</p>
-                      {item.brand && <p className="text-white/40 text-[10px] mt-0.5">{item.brand}</p>}
-                      {item.price != null && (
-                        <p className="text-purple-300 text-sm font-bold mt-1">{item.price} {CURRENCY_SYMBOLS[item.currency] || item.currency}</p>
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 opacity-0 group-hover:opacity-100 scale-95 group-hover:scale-100 transition-all duration-200 pointer-events-none group-hover:pointer-events-auto z-50 w-56">
+                    <div className="bg-white rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.25)] overflow-hidden">
+                      {/* Mini image */}
+                      {item.imageUrl && (
+                        <div className="h-28 bg-gray-50 flex items-center justify-center">
+                          <img src={item.imageUrl} alt={item.name} className="h-full w-full object-contain p-3" />
+                        </div>
                       )}
-                      <button
-                        onClick={(e) => { e.stopPropagation(); addToCart(item); }}
-                        className="w-full mt-2 py-1.5 bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold rounded-lg transition-colors flex items-center justify-center gap-1.5"
-                      >
-                        <ShoppingCart className="w-3 h-3" />
-                        Ajouter au panier
-                      </button>
+                      <div className="p-3">
+                        <p className="text-gray-900 text-xs font-bold truncate">{item.name}</p>
+                        {item.brand && <p className="text-gray-400 text-[10px] font-medium uppercase tracking-wider mt-0.5">{item.brand}</p>}
+                        {item.price != null && (
+                          <p className="text-gray-900 text-sm font-extrabold mt-1">{item.price} <span className="text-gray-400 text-xs font-medium">{CURRENCY_SYMBOLS[item.currency] || item.currency}</span></p>
+                        )}
+                        <div className="flex gap-1.5 mt-2.5">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); addToCart(item); }}
+                            className="flex-1 py-2 bg-gray-900 hover:bg-gray-800 text-white text-[11px] font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5"
+                          >
+                            <ShoppingCart className="w-3 h-3" />
+                            Ajouter
+                          </button>
+                          {item.externalUrl && (
+                            <a
+                              href={item.externalUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="py-2 px-2.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg transition-all flex items-center justify-center"
+                            >
+                              <ExternalLink className="w-3 h-3" />
+                            </a>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                    <div className="w-3 h-3 bg-black/90 border-r border-b border-white/10 rotate-45 mx-auto -mt-1.5" />
+                    <div className="w-3 h-3 bg-white shadow-md rotate-45 mx-auto -mt-1.5" />
                   </div>
                 </div>
               ))}

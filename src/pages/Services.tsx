@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { SectionHeading } from "@/components/SectionHeading";
 import { FeatureCard } from "@/components/FeatureCard";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
+import { ProductBannerPopup } from "@/components/ProductBannerPopup";
 
 const services = [
   {
@@ -135,6 +136,7 @@ const Services = () => {
   return (
     <PageLayout>
       <WhatsAppButton />
+      <ProductBannerPopup />
       
       {/* Hero */}
       <section className="pt-24 md:pt-32 pb-12 md:pb-20 bg-gradient-hero">
