@@ -80,7 +80,7 @@ const CURRENCY_SYMBOLS: Record<string, string> = { EUR: "€", USD: "$", TND: "T
 function buildEmbedUrl(tourUrl: string): string {
   const modelId = extractModelId(tourUrl);
   if (!modelId) return tourUrl;
-  return `https://my.matterport.com/show/?m=${modelId}&play=1&qs=1&brand=0&title=0&mls=2&vr=1&dh=1&gt=0&hr=0`;
+  return `https://my.matterport.com/show/?m=${modelId}&play=1&qs=1&applicationKey=${SDK_KEY}&brand=0&title=0&mls=2&vr=1&dh=1&gt=0&hr=0&help=0`;
 }
 
 const TourViewer = () => {
@@ -264,6 +264,38 @@ const TourViewer = () => {
       cancelled = true;
     };
   }, [iframeLoaded, tour?.tourUrl]);
+
+  // Fallback: listen for postMessage from Matterport iframe (works without SDK whitelisting)
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (!event.data || typeof event.data !== "object") return;
+
+      // Matterport Showcase sends various message types
+      const data = event.data;
+      const type = data.type || data.eventType || "";
+
+      // Check for tag click events (different format depending on Showcase version)
+      if (
+        type === "tag.click" ||
+        type === "mattertag.click" ||
+        type === "tag.open" ||
+        (type === "player.click" && data.payload?.tagSid)
+      ) {
+        const tagSid = data.payload?.tagSid || data.payload?.sid || data.tagSid || data.sid;
+        if (tagSid && !sdkRef.current) {
+          // Only use postMessage fallback if SDK didn't connect
+          console.log("🏷️ Tag cliqué (postMessage):", tagSid);
+          const matchedItem = tourItemsRef.current.find((i) => i.tagSid === tagSid);
+          if (matchedItem) {
+            setSelectedItem(matchedItem);
+          }
+        }
+      }
+    };
+
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  }, []);
 
   // Navigation
   const currentIndex = allTours.findIndex((t) => t.id === tour?.id);
