@@ -80,7 +80,7 @@ const CURRENCY_SYMBOLS: Record<string, string> = { EUR: "€", USD: "$", TND: "T
 function buildEmbedUrl(tourUrl: string): string {
   const modelId = extractModelId(tourUrl);
   if (!modelId) return tourUrl;
-  return `https://my.matterport.com/show/?m=${modelId}&play=1&qs=1&applicationKey=${SDK_KEY}&brand=0&title=0&mls=2&vr=1&dh=1&gt=0&hr=0`;
+  return `https://my.matterport.com/show/?m=${modelId}&play=1&qs=1&brand=0&title=0&mls=2&vr=1&dh=1&gt=0&hr=0`;
 }
 
 const TourViewer = () => {
@@ -105,6 +105,7 @@ const TourViewer = () => {
 
   // Tour Items (products) & Cart
   const [tourItems, setTourItems] = useState<TourItemData[]>([]);
+  const tourItemsRef = useRef<TourItemData[]>([]);
   const [selectedItem, setSelectedItem] = useState<TourItemData | null>(null);
   const [cart, setCart] = useState<CartEntry[]>([]);
   const [showCart, setShowCart] = useState(false);
@@ -133,7 +134,9 @@ const TourViewer = () => {
       .then(([tourData, tours, itemsData]) => {
         setTour(tourData);
         setAllTours(tours);
-        setTourItems(Array.isArray(itemsData) ? itemsData : []);
+        const items = Array.isArray(itemsData) ? itemsData : [];
+        setTourItems(items);
+        tourItemsRef.current = items;
         setLoading(false);
         setShowCard(true);
       })
@@ -143,7 +146,7 @@ const TourViewer = () => {
       });
   }, [id]);
 
-  // Connect Matterport SDK after iframe loads
+  // Connect Matterport SDK after iframe loads (with timeout — won't block if key not whitelisted)
   useEffect(() => {
     if (!iframeLoaded || !iframeRef.current) return;
 
@@ -151,12 +154,18 @@ const TourViewer = () => {
 
     const connectSdk = async () => {
       try {
-        // Dynamic import of Matterport SDK
         const { setupSdk } = await import("@matterport/sdk");
-        const sdk = await setupSdk(SDK_KEY, {
-          iframe: iframeRef.current!,
-          space: extractModelId(tour?.tourUrl || "") || "",
-        });
+
+        // Race: SDK connect vs 8s timeout — if key isn't whitelisted, we give up
+        const sdk = await Promise.race([
+          setupSdk(SDK_KEY, {
+            iframe: iframeRef.current!,
+            space: extractModelId(tour?.tourUrl || "") || "",
+          }),
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error("SDK timeout")), 8000)
+          ),
+        ]);
 
         if (cancelled) return;
         sdkRef.current = sdk;
@@ -172,8 +181,8 @@ const TourViewer = () => {
               description: t.description?.slice(0, 50),
             })));
           }
-          if (sdk.Tag?.getData) {
-            const allTags = await sdk.Tag.getData();
+          if ((sdk as any).Tag?.getData) {
+            const allTags = await (sdk as any).Tag.getData();
             console.log("🏷️ Matterport Tags (v2):", allTags.map((t: any) => ({
               sid: t.sid,
               label: t.label,
@@ -182,21 +191,20 @@ const TourViewer = () => {
         } catch { /* tags listing optional */ }
 
         // Listen for Mattertag/Tag clicks
-        sdk.Mattertag.Event.CLICK &&
+        if (sdk.Mattertag?.Event?.CLICK) {
           sdk.on(sdk.Mattertag.Event.CLICK, (tagSid: string) => {
             handleTagClick(sdk, tagSid);
           });
+        }
 
-        // Also try the newer Tag component
-        if (sdk.Tag) {
-          sdk.Tag.Event?.CLICK &&
-            sdk.on(sdk.Tag.Event.CLICK, (tagSid: string) => {
-              handleTagClick(sdk, tagSid);
-            });
+        if ((sdk as any).Tag?.Event?.CLICK) {
+          sdk.on((sdk as any).Tag.Event.CLICK, (tagSid: string) => {
+            handleTagClick(sdk, tagSid);
+          });
         }
       } catch (err) {
         console.log("SDK connection info:", err);
-        // SDK not available - Matterport default tags still work in iframe
+        // SDK not available — Matterport default tags still work in iframe
       }
     };
 
@@ -204,8 +212,7 @@ const TourViewer = () => {
       try {
         console.log("🏷️ Tag cliqué — SID:", tagSid);
 
-        // Check if we have a matching product item for this tag
-        const matchedItem = tourItems.find((i) => i.tagSid === tagSid);
+        const matchedItem = tourItemsRef.current.find((i) => i.tagSid === tagSid);
         if (matchedItem) {
           setSelectedItem(matchedItem);
           return;
@@ -213,7 +220,6 @@ const TourViewer = () => {
 
         let tagData: TagItem | null = null;
 
-        // Try Mattertag API
         if (sdk.Mattertag?.getData) {
           const tags = await sdk.Mattertag.getData();
           const found = tags.find((t: any) => t.sid === tagSid);
@@ -229,9 +235,8 @@ const TourViewer = () => {
           }
         }
 
-        // Try newer Tag API
-        if (!tagData && sdk.Tag?.getData) {
-          const tags = await sdk.Tag.getData();
+        if (!tagData && (sdk as any).Tag?.getData) {
+          const tags = await (sdk as any).Tag.getData();
           const found = tags.find((t: any) => t.sid === tagSid);
           if (found) {
             tagData = {
@@ -326,7 +331,7 @@ const TourViewer = () => {
         else if (showShare) setShowShare(false);
         else setShowCard(false);
       }
-      if (e.key === "f" || e.key === "F") toggleFullscreen();
+      if ((e.key === "f" || e.key === "F") && !(e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement)) toggleFullscreen();
       if (e.key === "ArrowLeft" && prevTour) navigate(`/view/${prevTour.id}`);
       if (e.key === "ArrowRight" && nextTour)
         navigate(`/view/${nextTour.id}`);
@@ -335,8 +340,11 @@ const TourViewer = () => {
     return () => window.removeEventListener("keydown", handler);
   }, [
     selectedTag,
+    selectedItem,
     showShare,
     showCard,
+    showCart,
+    showProducts,
     toggleFullscreen,
     prevTour,
     nextTour,
@@ -953,7 +961,7 @@ const TourViewer = () => {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 360 }}
               transition={{ type: "spring", damping: 28, stiffness: 250 }}
-              className="absolute top-16 right-4 bottom-4 w-[320px] z-35 pointer-events-auto hidden md:flex flex-col"
+              className="absolute top-16 right-4 bottom-4 w-[320px] z-[35] pointer-events-auto hidden md:flex flex-col"
             >
               <div className="flex-1 rounded-2xl bg-black/70 backdrop-blur-2xl border border-white/10 overflow-hidden flex flex-col shadow-2xl">
                 <div className="p-4 border-b border-white/[0.06] flex items-center justify-between shrink-0">
