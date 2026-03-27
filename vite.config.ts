@@ -12,7 +12,7 @@ export default defineConfig(({ mode }) => ({
     },
     proxy: {
       '/api': {
-        target: 'http://localhost:8081',
+        target: 'https://back-end-tp6x.onrender.com',
         changeOrigin: true,
       },
     },

@@ -1,17 +1,11 @@
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { ArrowRight, Play, ExternalLink, Filter, Loader2, MapPin, LayoutGrid } from "lucide-react";
 import { Layout } from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { SectionHeading } from "@/components/SectionHeading";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -85,8 +79,8 @@ interface Project {
 }
 
 const Portfolio = () => {
+  const navigate = useNavigate();
   const [activeCategory, setActiveCategory] = useState("Tous");
-  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<"grid" | "map">("grid");
@@ -307,7 +301,7 @@ const Portfolio = () => {
                 transition={{ delay: index * 0.1 }}
                 layout
                 className="group rounded-2xl overflow-hidden bg-card shadow-soft hover:shadow-elevated transition-all duration-500 cursor-pointer"
-                onClick={() => setSelectedProject(project)}
+                onClick={() => navigate(`/view/${project.id}`)}
               >
                 <div className="relative aspect-[4/3] overflow-hidden">
                   <img
@@ -412,27 +406,6 @@ const Portfolio = () => {
         </div>
       </section>
 
-      {/* Matterport Tour Modal */}
-      <Dialog open={!!selectedProject} onOpenChange={(open) => !open && setSelectedProject(null)}>
-        <DialogContent className="max-w-5xl w-[95vw] md:w-[95vw] p-0 gap-0 overflow-hidden max-h-[90vh]">
-          <DialogHeader className="p-4 pb-2">
-            <DialogTitle className="font-display">
-              {selectedProject?.title}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="aspect-video w-full">
-            <iframe
-              src={selectedProject?.tourUrl}
-              width="100%"
-              height="100%"
-              frameBorder="0"
-              allowFullScreen
-              allow="xr-spatial-tracking"
-              className="w-full h-full"
-            />
-          </div>
-        </DialogContent>
-      </Dialog>
     </Layout>
   );
 };

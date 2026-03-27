@@ -1,0 +1,1132 @@
+import { useState, useEffect, useRef, useCallback } from "react";
+import { useParams, useNavigate, Link } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  ArrowLeft,
+  Share2,
+  Maximize,
+  Minimize,
+  X,
+  MapPin,
+  Ruler,
+  Tag,
+  Copy,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  Building2,
+  ExternalLink,
+  Eye,
+  ShoppingBag,
+  ShoppingCart,
+  Plus,
+  Minus,
+  Trash2,
+} from "lucide-react";
+
+const SDK_KEY = "b7uar4u57xdec0zw7dwygt7md";
+
+interface TourData {
+  id: number;
+  name: string;
+  description: string;
+  category: string;
+  imageUrl: string;
+  surface: number | null;
+  tourUrl: string;
+  latitude: number | null;
+  longitude: number | null;
+  location: string;
+}
+
+interface TourItemData {
+  id: number;
+  tourId: number;
+  name: string;
+  description: string;
+  imageUrl: string;
+  price: number | null;
+  currency: string;
+  externalUrl: string;
+  brand: string;
+  tagSid: string;
+}
+
+interface CartEntry {
+  item: TourItemData;
+  qty: number;
+}
+
+interface TagItem {
+  sid: string;
+  label: string;
+  description: string;
+  mediaUrl?: string;
+  mediaSrc?: string;
+  anchorPosition?: { x: number; y: number; z: number };
+}
+
+function extractModelId(tourUrl: string): string | null {
+  try {
+    const url = new URL(tourUrl);
+    return url.searchParams.get("m");
+  } catch {
+    return null;
+  }
+}
+
+const CURRENCY_SYMBOLS: Record<string, string> = { EUR: "€", USD: "$", TND: "TND", GBP: "£" };
+
+function buildEmbedUrl(tourUrl: string): string {
+  const modelId = extractModelId(tourUrl);
+  if (!modelId) return tourUrl;
+  return `https://my.matterport.com/show/?m=${modelId}&play=1&qs=1&applicationKey=${SDK_KEY}&brand=0&title=0&mls=2&vr=1&dh=1&gt=0&hr=0`;
+}
+
+const TourViewer = () => {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const sdkRef = useRef<any>(null);
+
+  const [tour, setTour] = useState<TourData | null>(null);
+  const [allTours, setAllTours] = useState<TourData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+  const [showCard, setShowCard] = useState(true);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [showShare, setShowShare] = useState(false);
+  const [iframeLoaded, setIframeLoaded] = useState(false);
+  const [sdkConnected, setSdkConnected] = useState(false);
+
+  // Tag/Item popup state
+  const [selectedTag, setSelectedTag] = useState<TagItem | null>(null);
+
+  // Tour Items (products) & Cart
+  const [tourItems, setTourItems] = useState<TourItemData[]>([]);
+  const [selectedItem, setSelectedItem] = useState<TourItemData | null>(null);
+  const [cart, setCart] = useState<CartEntry[]>([]);
+  const [showCart, setShowCart] = useState(false);
+  const [showProducts, setShowProducts] = useState(false);
+
+  // Fetch tour data
+  useEffect(() => {
+    if (!id) return;
+    setLoading(true);
+    setIframeLoaded(false);
+    setSelectedTag(null);
+    setSelectedItem(null);
+    setSdkConnected(false);
+    Promise.all([
+      fetch(`/api/tours/${id}`).then((r) => {
+        if (!r.ok) throw new Error("Not found");
+        return r.json();
+      }),
+      fetch("/api/tours")
+        .then((r) => r.json())
+        .catch(() => []),
+      fetch(`/api/tours/${id}/items`)
+        .then((r) => r.json())
+        .catch(() => []),
+    ])
+      .then(([tourData, tours, itemsData]) => {
+        setTour(tourData);
+        setAllTours(tours);
+        setTourItems(Array.isArray(itemsData) ? itemsData : []);
+        setLoading(false);
+        setShowCard(true);
+      })
+      .catch(() => {
+        setError(true);
+        setLoading(false);
+      });
+  }, [id]);
+
+  // Connect Matterport SDK after iframe loads
+  useEffect(() => {
+    if (!iframeLoaded || !iframeRef.current) return;
+
+    let cancelled = false;
+
+    const connectSdk = async () => {
+      try {
+        // Dynamic import of Matterport SDK
+        const { setupSdk } = await import("@matterport/sdk");
+        const sdk = await setupSdk(SDK_KEY, {
+          iframe: iframeRef.current!,
+          space: extractModelId(tour?.tourUrl || "") || "",
+        });
+
+        if (cancelled) return;
+        sdkRef.current = sdk;
+        setSdkConnected(true);
+
+        // List all tags in console for admin reference
+        try {
+          if (sdk.Mattertag?.getData) {
+            const allTags = await sdk.Mattertag.getData();
+            console.log("🏷️ Matterport Tags disponibles:", allTags.map((t: any) => ({
+              sid: t.sid,
+              label: t.label,
+              description: t.description?.slice(0, 50),
+            })));
+          }
+          if (sdk.Tag?.getData) {
+            const allTags = await sdk.Tag.getData();
+            console.log("🏷️ Matterport Tags (v2):", allTags.map((t: any) => ({
+              sid: t.sid,
+              label: t.label,
+            })));
+          }
+        } catch { /* tags listing optional */ }
+
+        // Listen for Mattertag/Tag clicks
+        sdk.Mattertag.Event.CLICK &&
+          sdk.on(sdk.Mattertag.Event.CLICK, (tagSid: string) => {
+            handleTagClick(sdk, tagSid);
+          });
+
+        // Also try the newer Tag component
+        if (sdk.Tag) {
+          sdk.Tag.Event?.CLICK &&
+            sdk.on(sdk.Tag.Event.CLICK, (tagSid: string) => {
+              handleTagClick(sdk, tagSid);
+            });
+        }
+      } catch (err) {
+        console.log("SDK connection info:", err);
+        // SDK not available - Matterport default tags still work in iframe
+      }
+    };
+
+    const handleTagClick = async (sdk: any, tagSid: string) => {
+      try {
+        console.log("🏷️ Tag cliqué — SID:", tagSid);
+
+        // Check if we have a matching product item for this tag
+        const matchedItem = tourItems.find((i) => i.tagSid === tagSid);
+        if (matchedItem) {
+          setSelectedItem(matchedItem);
+          return;
+        }
+
+        let tagData: TagItem | null = null;
+
+        // Try Mattertag API
+        if (sdk.Mattertag?.getData) {
+          const tags = await sdk.Mattertag.getData();
+          const found = tags.find((t: any) => t.sid === tagSid);
+          if (found) {
+            tagData = {
+              sid: found.sid,
+              label: found.label || "",
+              description: found.description || "",
+              mediaUrl: found.media?.src || "",
+              mediaSrc: found.mediaSrc || found.media?.src || "",
+              anchorPosition: found.anchorPosition,
+            };
+          }
+        }
+
+        // Try newer Tag API
+        if (!tagData && sdk.Tag?.getData) {
+          const tags = await sdk.Tag.getData();
+          const found = tags.find((t: any) => t.sid === tagSid);
+          if (found) {
+            tagData = {
+              sid: found.sid,
+              label: found.label || "",
+              description: found.description || "",
+              mediaUrl: found.media?.src || "",
+              mediaSrc: found.mediaSrc || "",
+              anchorPosition: found.anchorPosition,
+            };
+          }
+        }
+
+        if (tagData) {
+          setSelectedTag(tagData);
+        }
+      } catch (err) {
+        console.log("Tag data error:", err);
+      }
+    };
+
+    connectSdk();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [iframeLoaded, tour?.tourUrl]);
+
+  // Navigation
+  const currentIndex = allTours.findIndex((t) => t.id === tour?.id);
+  const prevTour = currentIndex > 0 ? allTours[currentIndex - 1] : null;
+  const nextTour =
+    currentIndex < allTours.length - 1 ? allTours[currentIndex + 1] : null;
+
+  // Cart functions
+  const addToCart = useCallback((item: TourItemData) => {
+    setCart((prev) => {
+      const existing = prev.find((c) => c.item.id === item.id);
+      if (existing) return prev.map((c) => c.item.id === item.id ? { ...c, qty: c.qty + 1 } : c);
+      return [...prev, { item, qty: 1 }];
+    });
+  }, []);
+
+  const updateQty = useCallback((itemId: number, delta: number) => {
+    setCart((prev) =>
+      prev
+        .map((c) => (c.item.id === itemId ? { ...c, qty: c.qty + delta } : c))
+        .filter((c) => c.qty > 0)
+    );
+  }, []);
+
+  const removeFromCart = useCallback((itemId: number) => {
+    setCart((prev) => prev.filter((c) => c.item.id !== itemId));
+  }, []);
+
+  const cartTotal = cart.reduce((sum, c) => sum + (c.item.price || 0) * c.qty, 0);
+  const cartCount = cart.reduce((sum, c) => sum + c.qty, 0);
+
+  // Fullscreen
+  const toggleFullscreen = useCallback(() => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen();
+      setIsFullscreen(true);
+    } else {
+      document.exitFullscreen();
+      setIsFullscreen(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    const handler = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener("fullscreenchange", handler);
+    return () => document.removeEventListener("fullscreenchange", handler);
+  }, []);
+
+  // Copy link
+  const copyLink = useCallback(() => {
+    navigator.clipboard.writeText(window.location.href).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }, []);
+
+  // Keyboard
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        if (selectedTag) setSelectedTag(null);
+        else if (selectedItem) setSelectedItem(null);
+        else if (showCart) setShowCart(false);
+        else if (showProducts) setShowProducts(false);
+        else if (showShare) setShowShare(false);
+        else setShowCard(false);
+      }
+      if (e.key === "f" || e.key === "F") toggleFullscreen();
+      if (e.key === "ArrowLeft" && prevTour) navigate(`/view/${prevTour.id}`);
+      if (e.key === "ArrowRight" && nextTour)
+        navigate(`/view/${nextTour.id}`);
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [
+    selectedTag,
+    showShare,
+    showCard,
+    toggleFullscreen,
+    prevTour,
+    nextTour,
+    navigate,
+  ]);
+
+  // Auto-hide card
+  useEffect(() => {
+    if (showCard && iframeLoaded) {
+      const t = setTimeout(() => setShowCard(false), 8000);
+      return () => clearTimeout(t);
+    }
+  }, [showCard, iframeLoaded]);
+
+  // Loading
+  if (loading) {
+    return (
+      <div className="fixed inset-0 bg-[#0a0a14] flex items-center justify-center z-50">
+        <div className="text-center">
+          <div className="relative w-16 h-16 mx-auto mb-6">
+            <div className="absolute inset-0 rounded-full border-2 border-purple-500/20" />
+            <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-purple-500 animate-spin" />
+          </div>
+          <p className="text-white/50 text-sm tracking-wider uppercase">
+            Chargement...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error
+  if (error || !tour) {
+    return (
+      <div className="fixed inset-0 bg-[#0a0a14] flex items-center justify-center z-50">
+        <div className="text-center max-w-md px-6">
+          <Building2 className="w-16 h-16 text-purple-400/40 mx-auto mb-6" />
+          <h2 className="text-2xl font-bold text-white mb-3">
+            Visite introuvable
+          </h2>
+          <p className="text-white/40 mb-8">
+            Cette visite n'existe pas ou a été supprimée.
+          </p>
+          <button
+            onClick={() => navigate("/portfolio")}
+            className="px-6 py-3 bg-purple-600 hover:bg-purple-500 text-white rounded-xl font-medium transition-all"
+          >
+            Retour au Portfolio
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const embedUrl = buildEmbedUrl(tour.tourUrl);
+
+  return (
+    <div className="fixed inset-0 bg-[#0a0a14] z-50 overflow-hidden select-none">
+      {/* ===== MATTERPORT 3D IFRAME ===== */}
+      <div className="absolute inset-0">
+        <AnimatePresence>
+          {!iframeLoaded && (
+            <motion.div
+              initial={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.5 }}
+              className="absolute inset-0 bg-[#0a0a14] flex items-center justify-center z-10"
+            >
+              <div className="text-center">
+                <div className="relative w-20 h-20 mx-auto mb-6">
+                  <div className="absolute inset-0 rounded-full border-2 border-purple-500/20" />
+                  <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-purple-500 animate-spin" />
+                  <div
+                    className="absolute inset-3 rounded-full border-2 border-transparent border-t-teal-400 animate-spin"
+                    style={{
+                      animationDirection: "reverse",
+                      animationDuration: "1.5s",
+                    }}
+                  />
+                </div>
+                <p className="text-white/50 text-sm tracking-wider uppercase mb-2">
+                  Chargement de l'expérience 3D
+                </p>
+                <p className="text-white/25 text-xs">{tour.name}</p>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+        <iframe
+          ref={iframeRef}
+          id="showcase-iframe"
+          src={embedUrl}
+          className="w-full h-full border-0"
+          allow="xr-spatial-tracking; fullscreen; autoplay"
+          allowFullScreen
+          onLoad={() => setIframeLoaded(true)}
+        />
+      </div>
+
+      {/* ===== TOP-LEFT: Back Button ===== */}
+      <motion.div
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ delay: 0.3 }}
+        className="absolute top-4 left-4 z-30 pointer-events-auto"
+      >
+        <button
+          onClick={() => navigate("/portfolio")}
+          className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-black/60 backdrop-blur-xl border border-white/10 text-white/80 hover:text-white hover:bg-black/80 transition-all group"
+        >
+          <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
+          <span className="text-xs font-medium hidden sm:inline">Retour</span>
+        </button>
+      </motion.div>
+
+      {/* ===== TOP-RIGHT: Action Buttons ===== */}
+      <motion.div
+        initial={{ opacity: 0, x: 20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ delay: 0.3 }}
+        className="absolute top-4 right-4 z-30 flex items-center gap-2 pointer-events-auto"
+      >
+        {/* Toggle Info Card */}
+        <button
+          onClick={() => setShowCard(!showCard)}
+          className={`flex items-center gap-1.5 px-3 py-2.5 rounded-xl backdrop-blur-xl border text-xs font-medium transition-all ${
+            showCard
+              ? "bg-white/15 border-white/20 text-white"
+              : "bg-black/60 border-white/10 text-white/70 hover:text-white hover:bg-black/80"
+          }`}
+        >
+          <Eye className="w-4 h-4" />
+          <span className="hidden sm:inline">Info</span>
+        </button>
+
+        {/* Products */}
+        {tourItems.length > 0 && (
+          <button
+            onClick={() => setShowProducts(!showProducts)}
+            className={`flex items-center gap-1.5 px-3 py-2.5 rounded-xl backdrop-blur-xl border text-xs font-medium transition-all ${
+              showProducts
+                ? "bg-white/15 border-white/20 text-white"
+                : "bg-black/60 border-white/10 text-white/70 hover:text-white hover:bg-black/80"
+            }`}
+          >
+            <ShoppingBag className="w-4 h-4" />
+            <span className="hidden sm:inline">Produits</span>
+          </button>
+        )}
+
+        {/* Cart */}
+        {cart.length > 0 && (
+          <button
+            onClick={() => setShowCart(!showCart)}
+            className="relative flex items-center gap-1.5 px-3 py-2.5 rounded-xl bg-purple-600/80 backdrop-blur-xl border border-purple-400/30 text-white text-xs font-medium transition-all hover:bg-purple-500/80"
+          >
+            <ShoppingCart className="w-4 h-4" />
+            <span className="hidden sm:inline">Panier</span>
+            <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
+              {cartCount}
+            </span>
+          </button>
+        )}
+
+        {/* Share */}
+        <div className="relative">
+          <button
+            onClick={() => setShowShare(!showShare)}
+            className={`flex items-center justify-center w-10 h-10 rounded-xl backdrop-blur-xl border transition-all ${
+              showShare
+                ? "bg-white/15 border-white/20 text-white"
+                : "bg-black/60 border-white/10 text-white/70 hover:text-white hover:bg-black/80"
+            }`}
+          >
+            <Share2 className="w-4 h-4" />
+          </button>
+          <AnimatePresence>
+            {showShare && (
+              <motion.div
+                initial={{ opacity: 0, y: -8, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -8, scale: 0.95 }}
+                className="absolute right-0 top-12 w-72 rounded-xl bg-black/80 backdrop-blur-2xl border border-white/10 p-4 shadow-2xl"
+              >
+                <p className="text-white/60 text-[10px] font-semibold uppercase tracking-widest mb-3">
+                  Partager cette visite
+                </p>
+                <div className="flex items-center gap-2 bg-white/5 rounded-lg p-2 border border-white/5">
+                  <input
+                    type="text"
+                    readOnly
+                    value={window.location.href}
+                    className="flex-1 bg-transparent text-white/70 text-xs outline-none min-w-0"
+                  />
+                  <button
+                    onClick={copyLink}
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-md bg-purple-600 hover:bg-purple-500 text-white text-xs font-medium transition-all shrink-0"
+                  >
+                    {copied ? (
+                      <Check className="w-3 h-3" />
+                    ) : (
+                      <Copy className="w-3 h-3" />
+                    )}
+                    {copied ? "Copié!" : "Copier"}
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* Fullscreen */}
+        <button
+          onClick={toggleFullscreen}
+          className="flex items-center justify-center w-10 h-10 rounded-xl bg-black/60 backdrop-blur-xl border border-white/10 text-white/70 hover:text-white hover:bg-black/80 transition-all"
+        >
+          {isFullscreen ? (
+            <Minimize className="w-4 h-4" />
+          ) : (
+            <Maximize className="w-4 h-4" />
+          )}
+        </button>
+      </motion.div>
+
+      {/* ===== LEFT SIDE: OPENHAUS-STYLE INFO CARD ===== */}
+      <AnimatePresence>
+        {showCard && (
+          <motion.div
+            initial={{ opacity: 0, x: -340 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -340 }}
+            transition={{ type: "spring", damping: 28, stiffness: 250 }}
+            className="absolute top-16 left-4 bottom-4 w-[320px] z-20 pointer-events-auto hidden md:flex flex-col"
+          >
+            <div className="flex-1 rounded-2xl bg-black/70 backdrop-blur-2xl border border-white/10 overflow-hidden flex flex-col shadow-2xl">
+              {/* Close */}
+              <button
+                onClick={() => setShowCard(false)}
+                className="absolute top-3 right-3 z-10 w-7 h-7 rounded-lg bg-black/50 hover:bg-black/80 flex items-center justify-center text-white/50 hover:text-white transition-all"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+
+              {/* Tour Image */}
+              {tour.imageUrl && (
+                <div className="relative h-44 shrink-0 overflow-hidden">
+                  <img
+                    src={tour.imageUrl}
+                    alt={tour.name}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                  <span className="absolute top-3 left-3 px-2.5 py-1 rounded-lg bg-purple-600/80 backdrop-blur-sm text-white text-[10px] font-semibold uppercase tracking-wider">
+                    {tour.category}
+                  </span>
+                  <div className="absolute bottom-3 left-3 right-3">
+                    <h2 className="text-white font-bold text-lg leading-tight">
+                      {tour.name}
+                    </h2>
+                    {tour.location && (
+                      <p className="text-white/60 text-xs flex items-center gap-1 mt-1">
+                        <MapPin className="w-3 h-3 shrink-0" />
+                        {tour.location}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Scrollable Content */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                {!tour.imageUrl && (
+                  <div>
+                    <h2 className="text-white font-bold text-lg">
+                      {tour.name}
+                    </h2>
+                    {tour.location && (
+                      <p className="text-white/50 text-xs flex items-center gap-1 mt-1">
+                        <MapPin className="w-3 h-3" /> {tour.location}
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {tour.description && (
+                  <p className="text-white/45 text-[13px] leading-relaxed">
+                    {tour.description}
+                  </p>
+                )}
+
+                {/* Info Items */}
+                <div className="space-y-2">
+                  {tour.surface && (
+                    <div className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.04] border border-white/[0.06]">
+                      <div className="w-8 h-8 rounded-lg bg-teal-500/15 flex items-center justify-center shrink-0">
+                        <Ruler className="w-4 h-4 text-teal-400" />
+                      </div>
+                      <div>
+                        <p className="text-white/30 text-[10px] uppercase tracking-wider font-medium">
+                          Surface
+                        </p>
+                        <p className="text-white/80 text-sm font-semibold">
+                          {tour.surface} m²
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.04] border border-white/[0.06]">
+                    <div className="w-8 h-8 rounded-lg bg-purple-500/15 flex items-center justify-center shrink-0">
+                      <Tag className="w-4 h-4 text-purple-400" />
+                    </div>
+                    <div>
+                      <p className="text-white/30 text-[10px] uppercase tracking-wider font-medium">
+                        Catégorie
+                      </p>
+                      <p className="text-white/80 text-sm font-semibold">
+                        {tour.category}
+                      </p>
+                    </div>
+                  </div>
+                  {tour.location && (
+                    <div className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.04] border border-white/[0.06]">
+                      <div className="w-8 h-8 rounded-lg bg-amber-500/15 flex items-center justify-center shrink-0">
+                        <MapPin className="w-4 h-4 text-amber-400" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-white/30 text-[10px] uppercase tracking-wider font-medium">
+                          Localisation
+                        </p>
+                        <p className="text-white/80 text-sm font-semibold truncate">
+                          {tour.location}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Navigation - Other tours */}
+                {(prevTour || nextTour) && (
+                  <div className="pt-2 border-t border-white/[0.06]">
+                    <p className="text-white/25 text-[10px] uppercase tracking-widest font-semibold mb-2">
+                      Autres visites
+                    </p>
+                    <div className="space-y-2">
+                      {prevTour && (
+                        <Link
+                          to={`/view/${prevTour.id}`}
+                          className="flex items-center gap-3 p-2.5 rounded-xl bg-white/[0.03] border border-white/[0.05] hover:bg-white/[0.07] transition-all group"
+                        >
+                          {prevTour.imageUrl && (
+                            <img
+                              src={prevTour.imageUrl}
+                              alt={prevTour.name}
+                              className="w-10 h-10 rounded-lg object-cover shrink-0"
+                            />
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <p className="text-white/70 text-xs font-medium truncate group-hover:text-white transition-colors">
+                              {prevTour.name}
+                            </p>
+                            <p className="text-white/30 text-[10px]">
+                              {prevTour.category}
+                            </p>
+                          </div>
+                          <ChevronLeft className="w-3.5 h-3.5 text-white/20 shrink-0" />
+                        </Link>
+                      )}
+                      {nextTour && (
+                        <Link
+                          to={`/view/${nextTour.id}`}
+                          className="flex items-center gap-3 p-2.5 rounded-xl bg-white/[0.03] border border-white/[0.05] hover:bg-white/[0.07] transition-all group"
+                        >
+                          {nextTour.imageUrl && (
+                            <img
+                              src={nextTour.imageUrl}
+                              alt={nextTour.name}
+                              className="w-10 h-10 rounded-lg object-cover shrink-0"
+                            />
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <p className="text-white/70 text-xs font-medium truncate group-hover:text-white transition-colors">
+                              {nextTour.name}
+                            </p>
+                            <p className="text-white/30 text-[10px]">
+                              {nextTour.category}
+                            </p>
+                          </div>
+                          <ChevronRight className="w-3.5 h-3.5 text-white/20 shrink-0" />
+                        </Link>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Branding */}
+              <div className="p-3 border-t border-white/[0.06] shrink-0">
+                <Link
+                  to="/"
+                  className="flex items-center gap-2.5 p-2 rounded-xl hover:bg-white/[0.04] transition-all group"
+                >
+                  <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-purple-600 to-teal-500 flex items-center justify-center shrink-0">
+                    <span className="text-white font-bold text-[10px]">P</span>
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-white/60 text-[11px] font-semibold group-hover:text-white/80 transition-colors">
+                      PrimeSpace Studio
+                    </p>
+                    <p className="text-white/20 text-[9px]">
+                      Expériences 3D immersives
+                    </p>
+                  </div>
+                  <ExternalLink className="w-3 h-3 text-white/15 ml-auto shrink-0" />
+                </Link>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ===== MOBILE: Bottom Info Card ===== */}
+      <AnimatePresence>
+        {showCard && (
+          <motion.div
+            initial={{ opacity: 0, y: 100 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 100 }}
+            transition={{ type: "spring", damping: 28, stiffness: 250 }}
+            className="md:hidden absolute bottom-0 left-0 right-0 z-20 pointer-events-auto"
+          >
+            <div className="mx-3 mb-3 rounded-2xl bg-black/75 backdrop-blur-2xl border border-white/10 overflow-hidden shadow-2xl">
+              <div className="flex items-start gap-3 p-3">
+                {tour.imageUrl && (
+                  <img
+                    src={tour.imageUrl}
+                    alt={tour.name}
+                    className="w-16 h-16 rounded-xl object-cover shrink-0"
+                  />
+                )}
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <h2 className="text-white font-bold text-sm leading-tight truncate">
+                        {tour.name}
+                      </h2>
+                      {tour.location && (
+                        <p className="text-white/50 text-[11px] flex items-center gap-1 mt-0.5">
+                          <MapPin className="w-3 h-3 shrink-0" />
+                          <span className="truncate">{tour.location}</span>
+                        </p>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => setShowCard(false)}
+                      className="w-6 h-6 rounded-md bg-white/10 flex items-center justify-center text-white/40 shrink-0"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-2 mt-2">
+                    <span className="px-2 py-0.5 rounded-md bg-purple-500/20 text-purple-300 text-[10px] font-medium">
+                      {tour.category}
+                    </span>
+                    {tour.surface && (
+                      <span className="text-white/30 text-[10px]">
+                        {tour.surface} m²
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+              {(prevTour || nextTour) && (
+                <div className="flex border-t border-white/[0.06]">
+                  {prevTour ? (
+                    <Link
+                      to={`/view/${prevTour.id}`}
+                      className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-white/40 hover:text-white/70 text-xs transition-colors border-r border-white/[0.06]"
+                    >
+                      <ChevronLeft className="w-3.5 h-3.5" /> Précédent
+                    </Link>
+                  ) : (
+                    <div className="flex-1" />
+                  )}
+                  {nextTour ? (
+                    <Link
+                      to={`/view/${nextTour.id}`}
+                      className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-white/40 hover:text-white/70 text-xs transition-colors"
+                    >
+                      Suivant <ChevronRight className="w-3.5 h-3.5" />
+                    </Link>
+                  ) : (
+                    <div className="flex-1" />
+                  )}
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ===== ITEM/TAG POPUP (OpenHaus style) ===== */}
+      <AnimatePresence>
+        {(selectedTag || selectedItem) && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => { setSelectedTag(null); setSelectedItem(null); }}
+              className="absolute inset-0 bg-black/50 backdrop-blur-sm z-40"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.92, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.92, y: 20 }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              className="absolute inset-4 md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-[700px] md:max-h-[500px] z-50 pointer-events-auto"
+            >
+              <div className="bg-white rounded-2xl overflow-hidden shadow-2xl flex flex-col md:flex-row h-full md:h-auto">
+                <button
+                  onClick={() => { setSelectedTag(null); setSelectedItem(null); }}
+                  className="absolute top-3 right-3 z-10 w-8 h-8 rounded-full bg-[#1a5c4f] hover:bg-[#144a40] flex items-center justify-center text-white transition-colors shadow-lg"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+
+                {/* Image */}
+                <div className="md:w-[45%] h-48 md:h-auto bg-gray-100 shrink-0 flex items-center justify-center">
+                  {(selectedItem?.imageUrl || selectedTag?.mediaSrc || selectedTag?.mediaUrl) ? (
+                    <img
+                      src={selectedItem?.imageUrl || selectedTag?.mediaSrc || selectedTag?.mediaUrl}
+                      alt={selectedItem?.name || selectedTag?.label}
+                      className="w-full h-full object-contain p-6"
+                    />
+                  ) : (
+                    <ShoppingBag className="w-16 h-16 text-gray-300" />
+                  )}
+                </div>
+
+                {/* Info */}
+                <div className="flex-1 p-6 flex flex-col">
+                  <div className="flex-1">
+                    {(selectedItem?.brand || tour.category) && (
+                      <p className="text-[#1a5c4f] text-xs font-bold uppercase tracking-wider mb-1">
+                        {selectedItem?.brand || tour.category}
+                      </p>
+                    )}
+                    <h3 className="text-gray-900 font-bold text-xl md:text-2xl leading-tight mb-1">
+                      {selectedItem?.name || selectedTag?.label}
+                    </h3>
+                    {selectedItem?.price != null && (
+                      <p className="text-2xl font-bold text-[#1a5c4f] mb-3">
+                        {selectedItem.price} {CURRENCY_SYMBOLS[selectedItem.currency] || selectedItem.currency}
+                      </p>
+                    )}
+
+                    {(selectedItem?.description || selectedTag?.description) && (
+                      <div className="max-h-[180px] overflow-y-auto pr-2 border border-gray-200 rounded-lg p-3 mt-2">
+                        <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-wrap">
+                          {selectedItem?.description || selectedTag?.description}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex gap-3 mt-4">
+                    {selectedItem && (
+                      <button
+                        onClick={() => { addToCart(selectedItem); setSelectedItem(null); setSelectedTag(null); }}
+                        className="flex-1 py-3.5 bg-[#1a5c4f] hover:bg-[#144a40] text-white font-semibold rounded-lg transition-colors flex items-center justify-center gap-2 text-sm"
+                      >
+                        <ShoppingCart className="w-4 h-4" />
+                        AJOUTER AU PANIER
+                      </button>
+                    )}
+                    {(selectedItem?.externalUrl) && (
+                      <a
+                        href={selectedItem.externalUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`${selectedItem ? "" : "flex-1"} py-3.5 px-6 border-2 border-[#1a5c4f] text-[#1a5c4f] hover:bg-[#1a5c4f] hover:text-white font-semibold rounded-lg transition-colors flex items-center justify-center gap-2 text-sm`}
+                      >
+                        ACHETER
+                        <ExternalLink className="w-4 h-4" />
+                      </a>
+                    )}
+                    {!selectedItem && (
+                      <button className="flex-1 py-3.5 bg-[#1a5c4f] hover:bg-[#144a40] text-white font-semibold rounded-lg transition-colors flex items-center justify-center gap-2 text-sm">
+                        EN SAVOIR PLUS
+                        <ExternalLink className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* ===== PRODUCTS LIST PANEL (right side) ===== */}
+      <AnimatePresence>
+        {showProducts && tourItems.length > 0 && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowProducts(false)}
+              className="absolute inset-0 bg-black/20 z-30"
+            />
+            <motion.div
+              initial={{ opacity: 0, x: 360 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 360 }}
+              transition={{ type: "spring", damping: 28, stiffness: 250 }}
+              className="absolute top-16 right-4 bottom-4 w-[320px] z-35 pointer-events-auto hidden md:flex flex-col"
+            >
+              <div className="flex-1 rounded-2xl bg-black/70 backdrop-blur-2xl border border-white/10 overflow-hidden flex flex-col shadow-2xl">
+                <div className="p-4 border-b border-white/[0.06] flex items-center justify-between shrink-0">
+                  <h2 className="text-white font-semibold text-sm flex items-center gap-2">
+                    <ShoppingBag className="w-4 h-4" />
+                    Produits ({tourItems.length})
+                  </h2>
+                  <button onClick={() => setShowProducts(false)} className="w-7 h-7 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/50 hover:text-white transition-all">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                <div className="flex-1 overflow-y-auto p-3 space-y-2">
+                  {tourItems.map((item) => (
+                    <button
+                      key={item.id}
+                      onClick={() => { setSelectedItem(item); setShowProducts(false); }}
+                      className="w-full flex items-center gap-3 p-3 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.08] transition-all text-left group"
+                    >
+                      {item.imageUrl ? (
+                        <img src={item.imageUrl} alt={item.name} className="w-12 h-12 rounded-lg object-cover shrink-0 bg-white" />
+                      ) : (
+                        <div className="w-12 h-12 rounded-lg bg-white/10 flex items-center justify-center shrink-0">
+                          <ShoppingBag className="w-5 h-5 text-white/30" />
+                        </div>
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <p className="text-white/80 text-sm font-medium truncate group-hover:text-white transition-colors">{item.name}</p>
+                        {item.brand && <p className="text-white/30 text-[10px] uppercase tracking-wider">{item.brand}</p>}
+                        {item.price != null && (
+                          <p className="text-purple-300 text-xs font-semibold mt-0.5">{item.price} {CURRENCY_SYMBOLS[item.currency] || item.currency}</p>
+                        )}
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-white/15 group-hover:text-white/40 transition-colors shrink-0" />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* ===== CART PANEL ===== */}
+      <AnimatePresence>
+        {showCart && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowCart(false)}
+              className="absolute inset-0 bg-black/30 z-40"
+            />
+            <motion.div
+              initial={{ opacity: 0, x: 380 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 380 }}
+              transition={{ type: "spring", damping: 28, stiffness: 250 }}
+              className="absolute top-0 right-0 bottom-0 w-full max-w-sm z-50 pointer-events-auto flex flex-col"
+            >
+              <div className="flex-1 bg-white flex flex-col shadow-2xl">
+                {/* Cart Header */}
+                <div className="p-4 border-b flex items-center justify-between shrink-0 bg-[#1a5c4f] text-white">
+                  <h2 className="font-bold text-base flex items-center gap-2">
+                    <ShoppingCart className="w-5 h-5" />
+                    Mon Panier ({cartCount})
+                  </h2>
+                  <button onClick={() => setShowCart(false)} className="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center transition-all">
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* Cart Items */}
+                <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                  {cart.map((entry) => (
+                    <div key={entry.item.id} className="flex items-center gap-3 p-3 rounded-xl border border-gray-200 bg-gray-50">
+                      {entry.item.imageUrl ? (
+                        <img src={entry.item.imageUrl} alt={entry.item.name} className="w-16 h-16 rounded-lg object-cover shrink-0" />
+                      ) : (
+                        <div className="w-16 h-16 rounded-lg bg-gray-200 flex items-center justify-center shrink-0">
+                          <ShoppingBag className="w-6 h-6 text-gray-400" />
+                        </div>
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium text-sm text-gray-900 truncate">{entry.item.name}</p>
+                        {entry.item.brand && <p className="text-xs text-gray-500">{entry.item.brand}</p>}
+                        {entry.item.price != null && (
+                          <p className="text-sm font-bold text-[#1a5c4f] mt-0.5">
+                            {(entry.item.price * entry.qty).toFixed(2)} {CURRENCY_SYMBOLS[entry.item.currency] || entry.item.currency}
+                          </p>
+                        )}
+                        <div className="flex items-center gap-2 mt-1.5">
+                          <button onClick={() => updateQty(entry.item.id, -1)} className="w-6 h-6 rounded-md bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition-colors">
+                            <Minus className="w-3 h-3" />
+                          </button>
+                          <span className="text-sm font-semibold w-6 text-center">{entry.qty}</span>
+                          <button onClick={() => updateQty(entry.item.id, 1)} className="w-6 h-6 rounded-md bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition-colors">
+                            <Plus className="w-3 h-3" />
+                          </button>
+                          <button onClick={() => removeFromCart(entry.item.id)} className="ml-auto w-6 h-6 rounded-md hover:bg-red-100 flex items-center justify-center text-red-400 hover:text-red-600 transition-colors">
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Cart Footer */}
+                <div className="p-4 border-t bg-gray-50 shrink-0 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Total</span>
+                    <span className="text-xl font-bold text-gray-900">{cartTotal.toFixed(2)} {cart[0]?.item.currency ? CURRENCY_SYMBOLS[cart[0].item.currency] || cart[0].item.currency : "€"}</span>
+                  </div>
+                  <button className="w-full py-3.5 bg-[#1a5c4f] hover:bg-[#144a40] text-white font-semibold rounded-xl transition-colors text-sm">
+                    VOIR LE RÉCAPITULATIF
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* ===== SHOW CARD BUTTON (when hidden) ===== */}
+      <AnimatePresence>
+        {!showCard && !selectedTag && (
+          <motion.button
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            onClick={() => setShowCard(true)}
+            className="absolute bottom-4 left-4 z-20 pointer-events-auto flex items-center gap-2 px-4 py-2.5 rounded-xl bg-black/60 backdrop-blur-xl border border-white/10 text-white/70 hover:text-white hover:bg-black/80 transition-all"
+          >
+            <Eye className="w-4 h-4" />
+            <span className="text-xs font-medium">{tour.name}</span>
+          </motion.button>
+        )}
+      </AnimatePresence>
+
+      {/* ===== Bottom-right badge ===== */}
+      <AnimatePresence>
+        {!showCard && !selectedTag && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute bottom-4 right-4 z-20 pointer-events-auto hidden sm:block"
+          >
+            <Link
+              to="/"
+              className="flex items-center gap-2 px-3 py-2 rounded-xl bg-black/40 backdrop-blur-xl border border-white/5 hover:border-white/15 transition-all group"
+            >
+              <div className="w-5 h-5 rounded-md bg-gradient-to-br from-purple-600 to-teal-500 flex items-center justify-center">
+                <span className="text-white font-bold text-[8px]">P</span>
+              </div>
+              <span className="text-white/35 text-[11px] font-medium group-hover:text-white/60 transition-colors">
+                PrimeSpace
+              </span>
+            </Link>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Click outside share to close */}
+      {showShare && (
+        <div
+          className="absolute inset-0 z-10"
+          onClick={() => setShowShare(false)}
+        />
+      )}
+    </div>
+  );
+};
+
+export default TourViewer;

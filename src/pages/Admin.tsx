@@ -18,7 +18,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Plus, Pencil, Trash2, Upload, X, Image as ImageIcon, LogOut, Search, MapPin, Loader2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Upload, X, Image as ImageIcon, LogOut, Search, MapPin, Loader2, ShoppingBag, ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from "react-leaflet";
 import L from "leaflet";
@@ -88,6 +88,31 @@ const emptyTour: Tour = {
   location: "",
 };
 
+interface TourItem {
+  id?: number;
+  tourId: number;
+  name: string;
+  description: string;
+  imageUrl: string;
+  price: number | null;
+  currency: string;
+  externalUrl: string;
+  brand: string;
+  tagSid: string;
+}
+
+const emptyItem: TourItem = {
+  tourId: 0,
+  name: "",
+  description: "",
+  imageUrl: "",
+  price: null,
+  currency: "EUR",
+  externalUrl: "",
+  brand: "",
+  tagSid: "",
+};
+
 const Admin = () => {
   const [tours, setTours] = useState<Tour[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -99,6 +124,13 @@ const Admin = () => {
   const [locationQuery, setLocationQuery] = useState("");
   const [locationResults, setLocationResults] = useState<any[]>([]);
   const [searchingLocation, setSearchingLocation] = useState(false);
+  // Items management
+  const [itemsDialogOpen, setItemsDialogOpen] = useState(false);
+  const [itemsTourId, setItemsTourId] = useState<number | null>(null);
+  const [items, setItems] = useState<TourItem[]>([]);
+  const [editItem, setEditItem] = useState<TourItem>(emptyItem);
+  const [itemFormOpen, setItemFormOpen] = useState(false);
+  const [isEditingItem, setIsEditingItem] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -260,6 +292,66 @@ const Admin = () => {
     }
   };
 
+  // ===== ITEMS MANAGEMENT =====
+  const fetchItems = (tourId: number) => {
+    fetch(`/api/tours/${tourId}/items`)
+      .then((r) => r.ok ? r.json() : [])
+      .then((data) => setItems(Array.isArray(data) ? data : []))
+      .catch(() => setItems([]));
+  };
+
+  const openItems = (tour: Tour) => {
+    if (!tour.id) return;
+    setItemsTourId(tour.id);
+    fetchItems(tour.id);
+    setItemsDialogOpen(true);
+    setItemFormOpen(false);
+  };
+
+  const openCreateItem = () => {
+    setEditItem({ ...emptyItem, tourId: itemsTourId || 0 });
+    setIsEditingItem(false);
+    setItemFormOpen(true);
+  };
+
+  const openEditItem = (item: TourItem) => {
+    setEditItem({ ...item });
+    setIsEditingItem(true);
+    setItemFormOpen(true);
+  };
+
+  const handleSaveItem = async () => {
+    if (!editItem.name) {
+      toast({ title: "Erreur", description: "Le nom est obligatoire", variant: "destructive" });
+      return;
+    }
+    const method = isEditingItem ? "PUT" : "POST";
+    const url = isEditingItem
+      ? `/api/tours/${itemsTourId}/items/${editItem.id}`
+      : `/api/tours/${itemsTourId}/items`;
+    const res = await fetch(url, {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(editItem),
+    });
+    if (res.ok) {
+      toast({ title: isEditingItem ? "Produit modifié" : "Produit ajouté" });
+      setItemFormOpen(false);
+      if (itemsTourId) fetchItems(itemsTourId);
+    } else {
+      toast({ title: "Erreur", description: "Échec de l'enregistrement", variant: "destructive" });
+    }
+  };
+
+  const handleDeleteItem = async (itemId: number) => {
+    if (!confirm("Supprimer ce produit ?")) return;
+    const res = await fetch(`/api/tours/${itemsTourId}/items/${itemId}`, { method: "DELETE" });
+    if (res.ok) {
+      toast({ title: "Produit supprimé" });
+      if (itemsTourId) fetchItems(itemsTourId);
+    }
+  };
+
   if (!authed) return null;
 
   return (
@@ -313,6 +405,9 @@ const Admin = () => {
                   <div className="flex justify-between items-center mt-4">
                     <span className="text-sm text-muted-foreground">{tour.surface ? `${tour.surface} m²` : ""}</span>
                     <div className="flex gap-2">
+                      <Button variant="outline" size="sm" onClick={() => openItems(tour)} title="Gérer les produits">
+                        <ShoppingBag className="w-4 h-4" />
+                      </Button>
                       <Button variant="outline" size="sm" onClick={() => openEdit(tour)}>
                         <Pencil className="w-4 h-4" />
                       </Button>
@@ -485,6 +580,128 @@ const Admin = () => {
               <Button onClick={handleSave} disabled={uploading}>Enregistrer</Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Items Management Dialog */}
+      <Dialog open={itemsDialogOpen} onOpenChange={setItemsDialogOpen}>
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ShoppingBag className="w-5 h-5" />
+              Produits de la visite
+            </DialogTitle>
+          </DialogHeader>
+
+          {!itemFormOpen ? (
+            <div className="space-y-4 mt-2">
+              <Button onClick={openCreateItem} className="flex items-center gap-2" size="sm">
+                <Plus className="w-4 h-4" /> Ajouter un produit
+              </Button>
+
+              {items.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <ShoppingBag className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                  <p>Aucun produit ajouté à cette visite</p>
+                  <p className="text-sm mt-1">Ajoutez des produits que les visiteurs pourront découvrir.</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {items.map((item) => (
+                    <div key={item.id} className="flex items-center gap-3 p-3 rounded-xl border border-border bg-card">
+                      {item.imageUrl ? (
+                        <img src={item.imageUrl} alt={item.name} className="w-14 h-14 rounded-lg object-cover shrink-0" />
+                      ) : (
+                        <div className="w-14 h-14 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                          <ShoppingBag className="w-6 h-6 text-muted-foreground" />
+                        </div>
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium text-sm truncate">{item.name}</p>
+                        {item.brand && <p className="text-xs text-muted-foreground">{item.brand}</p>}
+                        <div className="flex items-center gap-2 mt-0.5">
+                          {item.price != null && (
+                            <span className="text-xs font-semibold text-secondary">{item.price} {item.currency}</span>
+                          )}
+                          {item.externalUrl && (
+                            <a href={item.externalUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-500 flex items-center gap-0.5">
+                              <ExternalLink className="w-3 h-3" /> Lien
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex gap-1.5 shrink-0">
+                        <Button variant="outline" size="sm" onClick={() => openEditItem(item)}>
+                          <Pencil className="w-3.5 h-3.5" />
+                        </Button>
+                        <Button variant="destructive" size="sm" onClick={() => handleDeleteItem(item.id!)}>
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            /* Item Create/Edit Form */
+            <div className="space-y-4 mt-2">
+              <div className="flex items-center gap-2 mb-2">
+                <Button variant="ghost" size="sm" onClick={() => setItemFormOpen(false)}>← Retour</Button>
+                <span className="text-sm font-medium">{isEditingItem ? "Modifier le produit" : "Nouveau produit"}</span>
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block">Nom du produit *</label>
+                <Input value={editItem.name} onChange={(e) => setEditItem({ ...editItem, name: e.target.value })} placeholder="Ex: Table KALLAX" />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block">Marque</label>
+                <Input value={editItem.brand} onChange={(e) => setEditItem({ ...editItem, brand: e.target.value })} placeholder="Ex: IKEA, Zara Home..." />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block">Description</label>
+                <Textarea value={editItem.description} onChange={(e) => setEditItem({ ...editItem, description: e.target.value })} rows={3} placeholder="Description du produit..." />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block">Image du produit (URL)</label>
+                <Input value={editItem.imageUrl} onChange={(e) => setEditItem({ ...editItem, imageUrl: e.target.value })} placeholder="https://..." />
+                {editItem.imageUrl && (
+                  <img src={editItem.imageUrl} alt="preview" className="w-24 h-24 object-cover rounded-lg mt-2 border" />
+                )}
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium mb-1 block">Prix</label>
+                  <Input type="number" step="0.01" value={editItem.price ?? ""} onChange={(e) => setEditItem({ ...editItem, price: e.target.value ? Number(e.target.value) : null })} placeholder="299.99" />
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-1 block">Devise</label>
+                  <Select value={editItem.currency} onValueChange={(v) => setEditItem({ ...editItem, currency: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="EUR">EUR €</SelectItem>
+                      <SelectItem value="USD">USD $</SelectItem>
+                      <SelectItem value="TND">TND</SelectItem>
+                      <SelectItem value="GBP">GBP £</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block">Lien externe (boutique)</label>
+                <Input value={editItem.externalUrl} onChange={(e) => setEditItem({ ...editItem, externalUrl: e.target.value })} placeholder="https://www.ikea.com/..." />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block">Tag Matterport (optionnel)</label>
+                <Input value={editItem.tagSid} onChange={(e) => setEditItem({ ...editItem, tagSid: e.target.value })} placeholder="SID du tag Matterport" />
+                <p className="text-xs text-muted-foreground mt-1">Liez ce produit à un tag dans la visite 3D pour qu'il apparaisse au clic</p>
+              </div>
+              <div className="flex justify-end gap-3 pt-2">
+                <Button variant="outline" onClick={() => setItemFormOpen(false)}>Annuler</Button>
+                <Button onClick={handleSaveItem}>Enregistrer</Button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </Layout>

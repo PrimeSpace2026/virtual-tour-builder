@@ -25,6 +25,7 @@ import Admin from "./pages/Admin";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ForgotPassword from "./pages/ForgotPassword";
+import TourViewer from "./pages/TourViewer";
 
 const queryClient = new QueryClient();
 
@@ -52,6 +53,7 @@ const App = () => (
           <Route path="/industries/government" element={<Government />} />
           <Route path="/industries/energy-utilities" element={<EnergyUtilities />} />
           <Route path="/industries/oil-gas" element={<OilGas />} />
+          <Route path="/view/:id" element={<TourViewer />} />
           <Route path="/admin" element={<Admin />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
