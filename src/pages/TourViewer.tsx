@@ -90,6 +90,7 @@ const TourViewer = () => {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const sdkRef = useRef<any>(null);
   const sdkAttemptsRef = useRef(0);
+  const tagsMapRef = useRef<Map<string, string>>(new Map()); // tagName (lowercase) → SID
 
   const [tour, setTour] = useState<TourData | null>(null);
   const [allTours, setAllTours] = useState<TourData[]>([]);
@@ -232,6 +233,11 @@ const TourViewer = () => {
           if (sdk.Mattertag?.getData) {
             const allTags = await sdk.Mattertag.getData();
             console.log("🏷️ Tags:", allTags.map((t: any) => ({ sid: t.sid, label: t.label })));
+            // Cache tag name → SID mapping
+            allTags.forEach((t: any) => {
+              if (t.label) tagsMapRef.current.set(t.label.trim().toLowerCase(), t.sid);
+              if (t.sid) tagsMapRef.current.set(t.sid, t.sid);
+            });
           }
         } catch {}
 
@@ -281,6 +287,40 @@ const TourViewer = () => {
 
   const cartTotal = cart.reduce((sum, c) => sum + (c.item.price || 0) * c.qty, 0);
   const cartCount = cart.reduce((sum, c) => sum + c.qty, 0);
+
+  // Navigate to a product's tag in the 3D tour, then show popup
+  const navigateToProduct = useCallback((item: TourItemData) => {
+    setShowProducts(false);
+
+    const sdk = sdkRef.current;
+    if (sdk && item.tagSid) {
+      // Resolve SID: item.tagSid might be a tag name or an actual SID
+      const resolvedSid = tagsMapRef.current.get(item.tagSid.trim().toLowerCase()) || item.tagSid;
+
+      const doNavigate = async () => {
+        try {
+          // Try Mattertag.navigateToTag (v1 API)
+          if (sdk.Mattertag?.navigateToTag) {
+            await sdk.Mattertag.navigateToTag(resolvedSid, sdk.Mattertag.Transition?.FLY_IN || "transition.fly");
+            console.log("🎯 Zoom vers tag:", resolvedSid);
+          } else if ((sdk as any).Tag?.navigateTo) {
+            // v2 Tag API
+            await (sdk as any).Tag.navigateTo(resolvedSid);
+            console.log("🎯 Zoom vers tag (v2):", resolvedSid);
+          }
+        } catch (err) {
+          console.log("Navigation tag impossible:", err);
+        }
+        // Show popup after a short delay for the camera to arrive
+        setTimeout(() => setSelectedItem(item), 800);
+      };
+
+      doNavigate();
+    } else {
+      // No SDK or no tag — just show popup directly
+      setSelectedItem(item);
+    }
+  }, []);
 
   // Fullscreen
   const toggleFullscreen = useCallback(() => {
@@ -963,27 +1003,39 @@ const TourViewer = () => {
                 </div>
                 <div className="flex-1 overflow-y-auto p-3 space-y-2">
                   {tourItems.map((item) => (
-                    <button
+                    <div
                       key={item.id}
-                      onClick={() => { setSelectedItem(item); setShowProducts(false); }}
-                      className="w-full flex items-center gap-3 p-3 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.08] transition-all text-left group"
+                      className="w-full flex items-center gap-3 p-3 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.08] transition-all text-left group relative"
                     >
-                      {item.imageUrl ? (
-                        <img src={item.imageUrl} alt={item.name} className="w-12 h-12 rounded-lg object-cover shrink-0 bg-white" />
-                      ) : (
-                        <div className="w-12 h-12 rounded-lg bg-white/10 flex items-center justify-center shrink-0">
-                          <ShoppingBag className="w-5 h-5 text-white/30" />
-                        </div>
-                      )}
-                      <div className="min-w-0 flex-1">
-                        <p className="text-white/80 text-sm font-medium truncate group-hover:text-white transition-colors">{item.name}</p>
-                        {item.brand && <p className="text-white/30 text-[10px] uppercase tracking-wider">{item.brand}</p>}
-                        {item.price != null && (
-                          <p className="text-purple-300 text-xs font-semibold mt-0.5">{item.price} {CURRENCY_SYMBOLS[item.currency] || item.currency}</p>
+                      <button
+                        onClick={() => navigateToProduct(item)}
+                        className="flex items-center gap-3 flex-1 min-w-0"
+                      >
+                        {item.imageUrl ? (
+                          <img src={item.imageUrl} alt={item.name} className="w-12 h-12 rounded-lg object-cover shrink-0 bg-white" />
+                        ) : (
+                          <div className="w-12 h-12 rounded-lg bg-white/10 flex items-center justify-center shrink-0">
+                            <ShoppingBag className="w-5 h-5 text-white/30" />
+                          </div>
                         )}
-                      </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-white/80 text-sm font-medium truncate group-hover:text-white transition-colors">{item.name}</p>
+                          {item.brand && <p className="text-white/30 text-[10px] uppercase tracking-wider">{item.brand}</p>}
+                          {item.price != null && (
+                            <p className="text-purple-300 text-xs font-semibold mt-0.5">{item.price} {CURRENCY_SYMBOLS[item.currency] || item.currency}</p>
+                          )}
+                        </div>
+                      </button>
+                      {/* Quick add to cart */}
+                      <button
+                        onClick={(e) => { e.stopPropagation(); addToCart(item); }}
+                        className="w-8 h-8 rounded-lg bg-purple-600/80 hover:bg-purple-500 flex items-center justify-center text-white shrink-0 opacity-0 group-hover:opacity-100 transition-all"
+                        title="Ajouter au panier"
+                      >
+                        <Plus className="w-4 h-4" />
+                      </button>
                       <ChevronRight className="w-4 h-4 text-white/15 group-hover:text-white/40 transition-colors shrink-0" />
-                    </button>
+                    </div>
                   ))}
                 </div>
               </div>
@@ -1074,21 +1126,70 @@ const TourViewer = () => {
         )}
       </AnimatePresence>
 
-      {/* ===== FLOATING PRODUCTS BUTTON (when SDK unavailable on prod) ===== */}
+      {/* ===== FLOATING PRODUCT STRIP (bottom of screen) ===== */}
       <AnimatePresence>
         {tourItems.length > 0 && !showProducts && !selectedItem && !showCart && (
-          <motion.button
-            initial={{ opacity: 0, y: 20 }}
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            transition={{ delay: 1.5, type: "spring", damping: 20 }}
-            onClick={() => setShowProducts(true)}
-            className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 pointer-events-auto flex items-center gap-2.5 px-5 py-3 rounded-full bg-gradient-to-r from-purple-600 to-teal-500 text-white shadow-lg shadow-purple-500/25 hover:shadow-purple-500/40 hover:scale-105 transition-all"
+            exit={{ opacity: 0, y: 40 }}
+            transition={{ delay: 1, type: "spring", damping: 22 }}
+            className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 pointer-events-auto flex items-center gap-2"
           >
-            <ShoppingBag className="w-4 h-4" />
-            <span className="text-sm font-semibold">Voir les produits</span>
-            <span className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-xs font-bold">{tourItems.length}</span>
-          </motion.button>
+            {/* Product thumbnails */}
+            <div className="flex items-center gap-1.5 p-1.5 rounded-2xl bg-black/60 backdrop-blur-xl border border-white/10 shadow-2xl">
+              {tourItems.slice(0, 5).map((item) => (
+                <div key={item.id} className="relative group">
+                  <button
+                    onClick={() => navigateToProduct(item)}
+                    className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl overflow-hidden border-2 border-transparent hover:border-purple-400 transition-all hover:scale-110 relative"
+                  >
+                    {item.imageUrl ? (
+                      <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover bg-white" />
+                    ) : (
+                      <div className="w-full h-full bg-white/10 flex items-center justify-center">
+                        <ShoppingBag className="w-4 h-4 text-white/40" />
+                      </div>
+                    )}
+                  </button>
+                  {/* Hover tooltip */}
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 transition-all pointer-events-none group-hover:pointer-events-auto z-50 w-48">
+                    <div className="bg-black/90 backdrop-blur-xl rounded-xl border border-white/10 p-3 shadow-2xl">
+                      <p className="text-white text-xs font-semibold truncate">{item.name}</p>
+                      {item.brand && <p className="text-white/40 text-[10px] mt-0.5">{item.brand}</p>}
+                      {item.price != null && (
+                        <p className="text-purple-300 text-sm font-bold mt-1">{item.price} {CURRENCY_SYMBOLS[item.currency] || item.currency}</p>
+                      )}
+                      <button
+                        onClick={(e) => { e.stopPropagation(); addToCart(item); }}
+                        className="w-full mt-2 py-1.5 bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold rounded-lg transition-colors flex items-center justify-center gap-1.5"
+                      >
+                        <ShoppingCart className="w-3 h-3" />
+                        Ajouter au panier
+                      </button>
+                    </div>
+                    <div className="w-3 h-3 bg-black/90 border-r border-b border-white/10 rotate-45 mx-auto -mt-1.5" />
+                  </div>
+                </div>
+              ))}
+              {tourItems.length > 5 && (
+                <button
+                  onClick={() => setShowProducts(true)}
+                  className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/60 hover:text-white transition-all border-2 border-transparent hover:border-white/20"
+                >
+                  <span className="text-xs font-bold">+{tourItems.length - 5}</span>
+                </button>
+              )}
+            </div>
+            {/* "Voir tout" button */}
+            <button
+              onClick={() => setShowProducts(true)}
+              className="px-3 py-3 rounded-xl bg-black/60 backdrop-blur-xl border border-white/10 text-white/60 hover:text-white hover:bg-black/80 transition-all"
+              title="Voir tous les produits"
+            >
+              <ShoppingBag className="w-4 h-4" />
+            </button>
+          </motion.div>
         )}
       </AnimatePresence>
 
