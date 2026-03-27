@@ -212,18 +212,15 @@ const TourViewer = () => {
       try {
         console.log("🏷️ Tag cliqué — SID:", tagSid);
 
-        const matchedItem = tourItemsRef.current.find((i) => i.tagSid === tagSid);
-        if (matchedItem) {
-          setSelectedItem(matchedItem);
-          return;
-        }
-
+        // First get the tag's label (name) from SDK
+        let tagLabel = "";
         let tagData: TagItem | null = null;
 
         if (sdk.Mattertag?.getData) {
           const tags = await sdk.Mattertag.getData();
           const found = tags.find((t: any) => t.sid === tagSid);
           if (found) {
+            tagLabel = found.label || "";
             tagData = {
               sid: found.sid,
               label: found.label || "",
@@ -239,6 +236,7 @@ const TourViewer = () => {
           const tags = await (sdk as any).Tag.getData();
           const found = tags.find((t: any) => t.sid === tagSid);
           if (found) {
+            tagLabel = found.label || "";
             tagData = {
               sid: found.sid,
               label: found.label || "",
@@ -250,6 +248,25 @@ const TourViewer = () => {
           }
         }
 
+        console.log("🏷️ Tag label:", tagLabel);
+
+        // Match product by: SID exact match, OR tag name (case-insensitive)
+        const matchedItem = tourItemsRef.current.find((i) => {
+          if (!i.tagSid) return false;
+          // Match by SID
+          if (i.tagSid === tagSid) return true;
+          // Match by tag name (case-insensitive, trim whitespace)
+          if (tagLabel && i.tagSid.trim().toLowerCase() === tagLabel.trim().toLowerCase()) return true;
+          return false;
+        });
+
+        if (matchedItem) {
+          console.log("🏷️ Produit trouvé:", matchedItem.name);
+          setSelectedItem(matchedItem);
+          return;
+        }
+
+        // No product matched — show raw tag info if available
         if (tagData) {
           setSelectedTag(tagData);
         }
