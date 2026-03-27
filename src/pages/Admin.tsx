@@ -131,6 +131,10 @@ const Admin = () => {
   const [editItem, setEditItem] = useState<TourItem>(emptyItem);
   const [itemFormOpen, setItemFormOpen] = useState(false);
   const [isEditingItem, setIsEditingItem] = useState(false);
+  // Tags for dropdown
+  const [tourTags, setTourTags] = useState<{ name: string; sid: string }[]>([]);
+  const [showAddTag, setShowAddTag] = useState(false);
+  const [newTagName, setNewTagName] = useState("");
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -304,6 +308,11 @@ const Admin = () => {
     if (!tour.id) return;
     setItemsTourId(tour.id);
     fetchItems(tour.id);
+    // Fetch saved tags for this tour
+    fetch(`/api/tours/${tour.id}/tags`)
+      .then((r) => r.ok ? r.json() : [])
+      .then((data) => setTourTags(Array.isArray(data) ? data.map((t: any) => ({ name: t.name || "", sid: t.sid || "" })) : []))
+      .catch(() => setTourTags([]));
     setItemsDialogOpen(true);
     setItemFormOpen(false);
   };
@@ -692,9 +701,76 @@ const Admin = () => {
                 <Input value={editItem.externalUrl} onChange={(e) => setEditItem({ ...editItem, externalUrl: e.target.value })} placeholder="https://www.ikea.com/..." />
               </div>
               <div>
-                <label className="text-sm font-medium mb-1 block">Nom du Tag Matterport (optionnel)</label>
-                <Input value={editItem.tagSid} onChange={(e) => setEditItem({ ...editItem, tagSid: e.target.value })} placeholder="Ex: Parking sécurisé, Wifi, CCTV..." />
-                <p className="text-xs text-muted-foreground mt-1">Écrivez le nom exact du tag Matterport — quand un visiteur clique ce tag dans la visite 3D, le produit s'affiche automatiquement</p>
+                <label className="text-sm font-medium mb-1 block">Tag Matterport (optionnel)</label>
+                {tourTags.length > 0 ? (
+                  <div className="space-y-2">
+                    <Select value={editItem.tagSid || "__none__"} onValueChange={(v) => setEditItem({ ...editItem, tagSid: v === "__none__" ? "" : v })}>
+                      <SelectTrigger><SelectValue placeholder="Choisir un tag..." /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__none__">— Aucun tag —</SelectItem>
+                        {tourTags.map((tag, i) => (
+                          <SelectItem key={`${tag.sid}-${i}`} value={tag.name}>{tag.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">Sélectionnez le tag Matterport à lier — quand un visiteur clique ce tag, le produit s'affiche</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {!showAddTag ? (
+                      <>
+                        <Input value={editItem.tagSid} onChange={(e) => setEditItem({ ...editItem, tagSid: e.target.value })} placeholder="Ex: Parking sécurisé, Wifi, CCTV..." />
+                        <div className="flex items-center gap-2">
+                          <p className="text-xs text-muted-foreground flex-1">Écrivez le nom du tag ou ajoutez des tags à la liste</p>
+                          <button type="button" onClick={() => setShowAddTag(true)} className="text-xs text-purple-600 hover:text-purple-500 font-medium whitespace-nowrap">
+                            + Ajouter des tags
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="flex gap-2">
+                          <Input value={newTagName} onChange={(e) => setNewTagName(e.target.value)} placeholder="Nom du tag (ex: Table, Wifi...)" className="flex-1" />
+                          <Button size="sm" onClick={() => {
+                            if (!newTagName.trim()) return;
+                            const updated = [...tourTags, { name: newTagName.trim(), sid: "" }];
+                            setTourTags(updated);
+                            setNewTagName("");
+                            // Save to backend
+                            if (itemsTourId) {
+                              fetch(`/api/tours/${itemsTourId}/tags`, {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify(updated),
+                              }).catch(() => {});
+                            }
+                          }}>Ajouter</Button>
+                        </div>
+                        {tourTags.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5 mt-1">
+                            {tourTags.map((tag, i) => (
+                              <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 text-xs">
+                                {tag.name}
+                                <button type="button" onClick={() => {
+                                  const updated = tourTags.filter((_, idx) => idx !== i);
+                                  setTourTags(updated);
+                                  if (itemsTourId) {
+                                    fetch(`/api/tours/${itemsTourId}/tags`, {
+                                      method: "POST",
+                                      headers: { "Content-Type": "application/json" },
+                                      body: JSON.stringify(updated),
+                                    }).catch(() => {});
+                                  }
+                                }} className="hover:text-red-500">×</button>
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                        <button type="button" onClick={() => setShowAddTag(false)} className="text-xs text-muted-foreground hover:text-foreground">← Retour</button>
+                      </>
+                    )}
+                  </div>
+                )}
               </div>
               <div className="flex justify-end gap-3 pt-2">
                 <Button variant="outline" onClick={() => setItemFormOpen(false)}>Annuler</Button>
