@@ -77,10 +77,11 @@ function extractModelId(tourUrl: string): string | null {
 
 const CURRENCY_SYMBOLS: Record<string, string> = { EUR: "€", USD: "$", TND: "TND", GBP: "£" };
 
-function buildEmbedUrl(tourUrl: string): string {
+function buildEmbedUrl(tourUrl: string, withSdkKey = false): string {
   const modelId = extractModelId(tourUrl);
   if (!modelId) return tourUrl;
-  return `https://my.matterport.com/show/?m=${modelId}&play=1&qs=1&brand=0&title=0&mls=2&vr=1&dh=1&gt=0&hr=0&help=0`;
+  const base = `https://my.matterport.com/show/?m=${modelId}&play=1&qs=1&brand=0&title=0&mls=2&vr=1&dh=1&gt=0&hr=0&help=0`;
+  return withSdkKey ? `${base}&applicationKey=${SDK_KEY}` : base;
 }
 
 const TourViewer = () => {
@@ -88,6 +89,7 @@ const TourViewer = () => {
   const navigate = useNavigate();
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const sdkRef = useRef<any>(null);
+  const sdkAttemptedRef = useRef(false);
 
   const [tour, setTour] = useState<TourData | null>(null);
   const [allTours, setAllTours] = useState<TourData[]>([]);
@@ -99,6 +101,7 @@ const TourViewer = () => {
   const [showShare, setShowShare] = useState(false);
   const [iframeLoaded, setIframeLoaded] = useState(false);
   const [sdkConnected, setSdkConnected] = useState(false);
+  const [sdkFailed, setSdkFailed] = useState(false);
 
   // Tag/Item popup state
   const [selectedTag, setSelectedTag] = useState<TagItem | null>(null);
@@ -119,6 +122,8 @@ const TourViewer = () => {
     setSelectedTag(null);
     setSelectedItem(null);
     setSdkConnected(false);
+    setSdkFailed(false);
+    sdkAttemptedRef.current = false;
     Promise.all([
       fetch(`/api/tours/${id}`).then((r) => {
         if (!r.ok) throw new Error("Not found");
@@ -146,9 +151,21 @@ const TourViewer = () => {
       });
   }, [id]);
 
-  // Connect Matterport SDK after iframe loads (with timeout — won't block if key not whitelisted)
+  // Phase 1: Try loading with SDK key. If SDK connects → tag clicks work.
+  // Phase 2: If SDK fails (domain not whitelisted), reload iframe WITHOUT key so tour loads normally.
   useEffect(() => {
-    if (!iframeLoaded || !iframeRef.current) return;
+    if (!iframeLoaded || !iframeRef.current || !tour?.tourUrl) return;
+    if (sdkAttemptedRef.current) return; // Already tried
+    sdkAttemptedRef.current = true;
+
+    // Check if iframe was loaded with applicationKey
+    const currentSrc = iframeRef.current.src || "";
+    const hasKey = currentSrc.includes("applicationKey=");
+
+    if (!hasKey) {
+      // Already loaded without key (Phase 2 or no products) — skip SDK
+      return;
+    }
 
     let cancelled = false;
 
@@ -156,55 +173,46 @@ const TourViewer = () => {
       try {
         const { setupSdk } = await import("@matterport/sdk");
 
-        // Race: SDK connect vs 8s timeout — if key isn't whitelisted, we give up
         const sdk = await Promise.race([
           setupSdk(SDK_KEY, {
             iframe: iframeRef.current!,
-            space: extractModelId(tour?.tourUrl || "") || "",
+            space: extractModelId(tour.tourUrl) || "",
           }),
           new Promise<never>((_, reject) =>
-            setTimeout(() => reject(new Error("SDK timeout")), 8000)
+            setTimeout(() => reject(new Error("SDK timeout")), 10000)
           ),
         ]);
 
         if (cancelled) return;
         sdkRef.current = sdk;
         setSdkConnected(true);
+        console.log("✅ SDK connecté — les tags sont interactifs");
 
-        // List all tags in console for admin reference
+        // List tags
         try {
           if (sdk.Mattertag?.getData) {
             const allTags = await sdk.Mattertag.getData();
-            console.log("🏷️ Matterport Tags disponibles:", allTags.map((t: any) => ({
-              sid: t.sid,
-              label: t.label,
-              description: t.description?.slice(0, 50),
-            })));
+            console.log("🏷️ Tags:", allTags.map((t: any) => ({ sid: t.sid, label: t.label })));
           }
-          if ((sdk as any).Tag?.getData) {
-            const allTags = await (sdk as any).Tag.getData();
-            console.log("🏷️ Matterport Tags (v2):", allTags.map((t: any) => ({
-              sid: t.sid,
-              label: t.label,
-            })));
-          }
-        } catch { /* tags listing optional */ }
+        } catch {}
 
-        // Listen for Mattertag/Tag clicks
+        // Listen for tag clicks
         if (sdk.Mattertag?.Event?.CLICK) {
-          sdk.on(sdk.Mattertag.Event.CLICK, (tagSid: string) => {
-            handleTagClick(sdk, tagSid);
-          });
+          sdk.on(sdk.Mattertag.Event.CLICK, (tagSid: string) => handleTagClick(sdk, tagSid));
         }
-
         if ((sdk as any).Tag?.Event?.CLICK) {
-          sdk.on((sdk as any).Tag.Event.CLICK, (tagSid: string) => {
-            handleTagClick(sdk, tagSid);
-          });
+          sdk.on((sdk as any).Tag.Event.CLICK, (tagSid: string) => handleTagClick(sdk, tagSid));
         }
       } catch (err) {
-        console.log("SDK connection info:", err);
-        // SDK not available — Matterport default tags still work in iframe
+        if (cancelled) return;
+        console.log("⚠️ SDK non connecté — rechargement sans clé SDK...", err);
+        // Phase 2: Reload iframe WITHOUT applicationKey so tour loads
+        setSdkFailed(true);
+        sdkAttemptedRef.current = true;
+        if (iframeRef.current) {
+          setIframeLoaded(false);
+          iframeRef.current.src = buildEmbedUrl(tour.tourUrl, false);
+        }
       }
     };
 
@@ -212,7 +220,6 @@ const TourViewer = () => {
       try {
         console.log("🏷️ Tag cliqué — SID:", tagSid);
 
-        // First get the tag's label (name) from SDK
         let tagLabel = "";
         let tagData: TagItem | null = null;
 
@@ -222,11 +229,8 @@ const TourViewer = () => {
           if (found) {
             tagLabel = found.label || "";
             tagData = {
-              sid: found.sid,
-              label: found.label || "",
-              description: found.description || "",
-              mediaUrl: found.media?.src || "",
-              mediaSrc: found.mediaSrc || found.media?.src || "",
+              sid: found.sid, label: found.label || "", description: found.description || "",
+              mediaUrl: found.media?.src || "", mediaSrc: found.mediaSrc || found.media?.src || "",
               anchorPosition: found.anchorPosition,
             };
           }
@@ -238,81 +242,35 @@ const TourViewer = () => {
           if (found) {
             tagLabel = found.label || "";
             tagData = {
-              sid: found.sid,
-              label: found.label || "",
-              description: found.description || "",
-              mediaUrl: found.media?.src || "",
-              mediaSrc: found.mediaSrc || "",
+              sid: found.sid, label: found.label || "", description: found.description || "",
+              mediaUrl: found.media?.src || "", mediaSrc: found.mediaSrc || "",
               anchorPosition: found.anchorPosition,
             };
           }
         }
 
-        console.log("🏷️ Tag label:", tagLabel);
-
-        // Match product by: SID exact match, OR tag name (case-insensitive)
+        // Match by SID or tag name
         const matchedItem = tourItemsRef.current.find((i) => {
           if (!i.tagSid) return false;
-          // Match by SID
           if (i.tagSid === tagSid) return true;
-          // Match by tag name (case-insensitive, trim whitespace)
           if (tagLabel && i.tagSid.trim().toLowerCase() === tagLabel.trim().toLowerCase()) return true;
           return false;
         });
 
         if (matchedItem) {
-          console.log("🏷️ Produit trouvé:", matchedItem.name);
           setSelectedItem(matchedItem);
           return;
         }
 
-        // No product matched — show raw tag info if available
-        if (tagData) {
-          setSelectedTag(tagData);
-        }
+        if (tagData) setSelectedTag(tagData);
       } catch (err) {
         console.log("Tag data error:", err);
       }
     };
 
     connectSdk();
-
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [iframeLoaded, tour?.tourUrl]);
-
-  // Fallback: listen for postMessage from Matterport iframe (works without SDK whitelisting)
-  useEffect(() => {
-    const handleMessage = (event: MessageEvent) => {
-      if (!event.data || typeof event.data !== "object") return;
-
-      // Matterport Showcase sends various message types
-      const data = event.data;
-      const type = data.type || data.eventType || "";
-
-      // Check for tag click events (different format depending on Showcase version)
-      if (
-        type === "tag.click" ||
-        type === "mattertag.click" ||
-        type === "tag.open" ||
-        (type === "player.click" && data.payload?.tagSid)
-      ) {
-        const tagSid = data.payload?.tagSid || data.payload?.sid || data.tagSid || data.sid;
-        if (tagSid && !sdkRef.current) {
-          // Only use postMessage fallback if SDK didn't connect
-          console.log("🏷️ Tag cliqué (postMessage):", tagSid);
-          const matchedItem = tourItemsRef.current.find((i) => i.tagSid === tagSid);
-          if (matchedItem) {
-            setSelectedItem(matchedItem);
-          }
-        }
-      }
-    };
-
-    window.addEventListener("message", handleMessage);
-    return () => window.removeEventListener("message", handleMessage);
-  }, []);
 
   // Navigation
   const currentIndex = allTours.findIndex((t) => t.id === tour?.id);
@@ -448,7 +406,9 @@ const TourViewer = () => {
     );
   }
 
-  const embedUrl = buildEmbedUrl(tour.tourUrl);
+  // If there are products, try with SDK key first (so tag clicks can be intercepted)
+  // If SDK fails, it will auto-reload without the key
+  const embedUrl = buildEmbedUrl(tour.tourUrl, tourItems.length > 0 && !sdkFailed);
 
   return (
     <div className="fixed inset-0 bg-[#0a0a14] z-50 overflow-hidden select-none">
