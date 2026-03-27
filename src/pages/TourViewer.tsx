@@ -465,12 +465,12 @@ const TourViewer = () => {
         initial={{ opacity: 0, x: 20 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ delay: 0.3 }}
-        className="absolute top-4 right-4 z-30 flex items-center gap-2 pointer-events-auto"
+        className="absolute top-4 right-2 sm:right-4 z-30 flex items-center gap-1.5 sm:gap-2 pointer-events-auto"
       >
         {/* Toggle Info Card */}
         <button
           onClick={() => setShowCard(!showCard)}
-          className={`flex items-center gap-1.5 px-3 py-2.5 rounded-xl backdrop-blur-xl border text-xs font-medium transition-all ${
+          className={`flex items-center gap-1.5 px-2 sm:px-3 py-2 sm:py-2.5 rounded-xl backdrop-blur-xl border text-xs font-medium transition-all ${
             showCard
               ? "bg-white/15 border-white/20 text-white"
               : "bg-black/60 border-white/10 text-white/70 hover:text-white hover:bg-black/80"
@@ -484,7 +484,7 @@ const TourViewer = () => {
         {tourItems.length > 0 && (
           <button
             onClick={() => setShowProducts(!showProducts)}
-            className={`flex items-center gap-1.5 px-3 py-2.5 rounded-xl backdrop-blur-xl border text-xs font-medium transition-all ${
+            className={`flex items-center gap-1.5 px-2 sm:px-3 py-2 sm:py-2.5 rounded-xl backdrop-blur-xl border text-xs font-medium transition-all ${
               showProducts
                 ? "bg-white/15 border-white/20 text-white"
                 : "bg-black/60 border-white/10 text-white/70 hover:text-white hover:bg-black/80"
@@ -499,7 +499,7 @@ const TourViewer = () => {
         {cart.length > 0 && (
           <button
             onClick={() => setShowCart(!showCart)}
-            className="relative flex items-center gap-1.5 px-3 py-2.5 rounded-xl bg-purple-600/80 backdrop-blur-xl border border-purple-400/30 text-white text-xs font-medium transition-all hover:bg-purple-500/80"
+            className="relative flex items-center gap-1.5 px-2 sm:px-3 py-2 sm:py-2.5 rounded-xl bg-purple-600/80 backdrop-blur-xl border border-purple-400/30 text-white text-xs font-medium transition-all hover:bg-purple-500/80"
           >
             <ShoppingCart className="w-4 h-4" />
             <span className="hidden sm:inline">Panier</span>
@@ -513,7 +513,7 @@ const TourViewer = () => {
         <div className="relative">
           <button
             onClick={() => setShowShare(!showShare)}
-            className={`flex items-center justify-center w-10 h-10 rounded-xl backdrop-blur-xl border transition-all ${
+            className={`flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-xl backdrop-blur-xl border transition-all ${
               showShare
                 ? "bg-white/15 border-white/20 text-white"
                 : "bg-black/60 border-white/10 text-white/70 hover:text-white hover:bg-black/80"
@@ -527,7 +527,7 @@ const TourViewer = () => {
                 initial={{ opacity: 0, y: -8, scale: 0.95 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: -8, scale: 0.95 }}
-                className="absolute right-0 top-12 w-72 rounded-xl bg-black/80 backdrop-blur-2xl border border-white/10 p-4 shadow-2xl"
+                className="absolute right-0 top-12 w-[calc(100vw-2rem)] sm:w-72 rounded-xl bg-black/80 backdrop-blur-2xl border border-white/10 p-4 shadow-2xl"
               >
                 <p className="text-white/60 text-[10px] font-semibold uppercase tracking-widest mb-3">
                   Partager cette visite
@@ -559,7 +559,7 @@ const TourViewer = () => {
         {/* Fullscreen */}
         <button
           onClick={toggleFullscreen}
-          className="flex items-center justify-center w-10 h-10 rounded-xl bg-black/60 backdrop-blur-xl border border-white/10 text-white/70 hover:text-white hover:bg-black/80 transition-all"
+          className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-black/60 backdrop-blur-xl border border-white/10 text-white/70 hover:text-white hover:bg-black/80 transition-all"
         >
           {isFullscreen ? (
             <Minimize className="w-4 h-4" />
@@ -861,9 +861,9 @@ const TourViewer = () => {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.92, y: 20 }}
               transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="absolute inset-4 md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-[700px] md:max-h-[500px] z-50 pointer-events-auto"
+              className="absolute inset-2 sm:inset-4 md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-[700px] md:max-h-[500px] z-50 pointer-events-auto"
             >
-              <div className="bg-white rounded-2xl overflow-hidden shadow-2xl flex flex-col md:flex-row h-full md:h-auto">
+              <div className="bg-white rounded-2xl overflow-hidden shadow-2xl flex flex-col md:flex-row h-full md:h-auto max-h-[calc(100vh-1rem)] sm:max-h-[calc(100vh-2rem)] md:max-h-[500px]">
                 <button
                   onClick={() => { setSelectedTag(null); setSelectedItem(null); }}
                   className="absolute top-3 right-3 z-10 w-8 h-8 rounded-full bg-[#1a5c4f] hover:bg-[#144a40] flex items-center justify-center text-white transition-colors shadow-lg"
@@ -872,7 +872,7 @@ const TourViewer = () => {
                 </button>
 
                 {/* Image */}
-                <div className="md:w-[45%] h-48 md:h-auto bg-gray-100 shrink-0 flex items-center justify-center">
+                <div className="md:w-[45%] h-36 sm:h-48 md:h-auto bg-gray-100 shrink-0 flex items-center justify-center">
                   {(selectedItem?.imageUrl || selectedTag?.mediaSrc || selectedTag?.mediaUrl) ? (
                     <img
                       src={selectedItem?.imageUrl || selectedTag?.mediaSrc || selectedTag?.mediaUrl}
@@ -885,7 +885,7 @@ const TourViewer = () => {
                 </div>
 
                 {/* Info */}
-                <div className="flex-1 p-6 flex flex-col">
+                <div className="flex-1 p-4 sm:p-6 flex flex-col overflow-y-auto">
                   <div className="flex-1">
                     {(selectedItem?.brand || tour.category) && (
                       <p className="text-[#1a5c4f] text-xs font-bold uppercase tracking-wider mb-1">
@@ -910,7 +910,7 @@ const TourViewer = () => {
                     )}
                   </div>
 
-                  <div className="flex gap-3 mt-4">
+                  <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mt-4 shrink-0">
                     {selectedItem && (
                       <button
                         onClick={() => { addToCart(selectedItem); setSelectedItem(null); setSelectedTag(null); }}
@@ -961,9 +961,9 @@ const TourViewer = () => {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 360 }}
               transition={{ type: "spring", damping: 28, stiffness: 250 }}
-              className="absolute top-16 right-4 bottom-4 w-[320px] z-[35] pointer-events-auto hidden md:flex flex-col"
+              className="absolute bottom-0 left-0 right-0 md:bottom-4 md:left-auto md:top-16 md:right-4 w-full md:w-[320px] z-[35] pointer-events-auto flex flex-col max-h-[60vh] md:max-h-none"
             >
-              <div className="flex-1 rounded-2xl bg-black/70 backdrop-blur-2xl border border-white/10 overflow-hidden flex flex-col shadow-2xl">
+              <div className="flex-1 rounded-t-2xl md:rounded-2xl bg-black/80 md:bg-black/70 backdrop-blur-2xl border border-white/10 overflow-hidden flex flex-col shadow-2xl">
                 <div className="p-4 border-b border-white/[0.06] flex items-center justify-between shrink-0">
                   <h2 className="text-white font-semibold text-sm flex items-center gap-2">
                     <ShoppingBag className="w-4 h-4" />
@@ -1020,7 +1020,7 @@ const TourViewer = () => {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 380 }}
               transition={{ type: "spring", damping: 28, stiffness: 250 }}
-              className="absolute top-0 right-0 bottom-0 w-full max-w-sm z-50 pointer-events-auto flex flex-col"
+              className="absolute top-0 right-0 bottom-0 w-full max-w-[100vw] sm:max-w-sm z-50 pointer-events-auto flex flex-col"
             >
               <div className="flex-1 bg-white flex flex-col shadow-2xl">
                 {/* Cart Header */}
