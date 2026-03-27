@@ -151,21 +151,25 @@ const TourViewer = () => {
       });
   }, [id]);
 
-  // SDK connection: Phase 1 (with key in URL) → Phase 2 (retry without key) → fallback
+  // SDK: only works on localhost (Matterport free plan restricts to local domains)
+  const isLocalDev = typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
+
   useEffect(() => {
     if (!iframeLoaded || !iframeRef.current || !tour?.tourUrl) return;
-    if (tourItemsRef.current.length === 0) return; // No products → skip SDK
-    if (sdkAttemptsRef.current >= 2) return; // Already tried both approaches
-
-    const attempt = sdkAttemptsRef.current;
-    sdkAttemptsRef.current++;
+    if (tourItemsRef.current.length === 0) return;
+    if (!isLocalDev) {
+      // Production: SDK unavailable without paid license → auto-show products
+      setSdkFailed(true);
+      return;
+    }
+    if (sdkAttemptsRef.current >= 1) return;
+    sdkAttemptsRef.current = 1;
 
     let cancelled = false;
 
     const handleTagClick = async (sdk: any, tagSid: string) => {
       try {
         console.log("🏷️ Tag cliqué — SID:", tagSid);
-
         let tagLabel = "";
         let tagData: TagItem | null = null;
 
@@ -195,7 +199,6 @@ const TourViewer = () => {
           }
         }
 
-        // Match by SID or tag name
         const matchedItem = tourItemsRef.current.find((i) => {
           if (!i.tagSid) return false;
           if (i.tagSid === tagSid) return true;
@@ -203,119 +206,51 @@ const TourViewer = () => {
           return false;
         });
 
-        if (matchedItem) {
-          setSelectedItem(matchedItem);
-          return;
-        }
-
+        if (matchedItem) { setSelectedItem(matchedItem); return; }
         if (tagData) setSelectedTag(tagData);
       } catch (err) {
         console.log("Tag data error:", err);
       }
     };
 
-    const registerTagHandlers = async (sdk: any) => {
-      try {
-        if (sdk.Mattertag?.getData) {
-          const allTags = await sdk.Mattertag.getData();
-          console.log("🏷️ Tags trouvés:", allTags.map((t: any) => ({ sid: t.sid, label: t.label })));
-        }
-      } catch {}
-
-      if (sdk.Mattertag?.Event?.CLICK) {
-        sdk.on(sdk.Mattertag.Event.CLICK, (tagSid: string) => handleTagClick(sdk, tagSid));
-      }
-      if ((sdk as any).Tag?.Event?.CLICK) {
-        sdk.on((sdk as any).Tag.Event.CLICK, (tagSid: string) => handleTagClick(sdk, tagSid));
-      }
-    };
-
     const connectSdk = async () => {
       try {
-        console.log(`🔌 SDK tentative ${attempt + 1}/2...`);
         const { setupSdk } = await import("@matterport/sdk");
-
         const sdk = await Promise.race([
           setupSdk(SDK_KEY, {
             iframe: iframeRef.current!,
             space: extractModelId(tour.tourUrl) || "",
           }),
-          new Promise<never>((_, reject) =>
-            setTimeout(() => reject(new Error("SDK timeout")), attempt === 0 ? 10000 : 8000)
-          ),
+          new Promise<never>((_, reject) => setTimeout(() => reject(new Error("SDK timeout")), 10000)),
         ]);
-
         if (cancelled) return;
         sdkRef.current = sdk;
         setSdkConnected(true);
-        setSdkFailed(false);
-        console.log(`✅ SDK connecté (tentative ${attempt + 1})`);
+        console.log("✅ SDK connecté (localhost)");
 
-        await registerTagHandlers(sdk);
+        try {
+          if (sdk.Mattertag?.getData) {
+            const allTags = await sdk.Mattertag.getData();
+            console.log("🏷️ Tags:", allTags.map((t: any) => ({ sid: t.sid, label: t.label })));
+          }
+        } catch {}
+
+        if (sdk.Mattertag?.Event?.CLICK) {
+          sdk.on(sdk.Mattertag.Event.CLICK, (tagSid: string) => handleTagClick(sdk, tagSid));
+        }
+        if ((sdk as any).Tag?.Event?.CLICK) {
+          sdk.on((sdk as any).Tag.Event.CLICK, (tagSid: string) => handleTagClick(sdk, tagSid));
+        }
       } catch (err) {
         if (cancelled) return;
-
-        if (attempt === 0) {
-          // Phase 1 failed: reload iframe WITHOUT applicationKey, then Phase 2 will try SDK again
-          console.log("⚠️ SDK Phase 1 échoué — rechargement sans clé...", err);
-          setSdkFailed(true);
-          setIframeLoaded(false);
-          if (iframeRef.current) {
-            iframeRef.current.src = buildEmbedUrl(tour.tourUrl, false);
-          }
-        } else {
-          // Phase 2 also failed: SDK truly unavailable on this domain
-          setSdkFailed(true);
-          console.log("⚠️ SDK non disponible sur ce domaine.");
-          console.log("📋 Pour activer les tags cliquables :");
-          console.log("   1. Allez sur https://my.matterport.com/settings/account/devtools");
-          console.log("   2. Ajoutez votre domaine (ex: www.primespace.studio)");
-          console.log("   3. Rafraîchissez la page");
-          // Auto-show products panel as fallback
-          if (tourItemsRef.current.length > 0) {
-            setTimeout(() => {
-              if (!cancelled) setShowProducts(true);
-            }, 2000);
-          }
-        }
+        console.log("⚠️ SDK échoué sur localhost:", err);
+        setSdkFailed(true);
       }
     };
 
     connectSdk();
     return () => { cancelled = true; };
-  }, [iframeLoaded, tour?.tourUrl]);
-
-  // Listen for Matterport iframe postMessages (fallback for tag detection)
-  useEffect(() => {
-    if (tourItemsRef.current.length === 0) return;
-
-    const handleMessage = (event: MessageEvent) => {
-      if (!event.origin.includes("matterport.com")) return;
-      try {
-        const data = typeof event.data === "string" ? JSON.parse(event.data) : event.data;
-        if (data && typeof data === "object") {
-          // Try to detect tag click events via postMessage
-          const tagSid = data.tagSid || data.sid || data.payload?.sid;
-          const tagLabel = data.label || data.payload?.label || "";
-          if (tagSid) {
-            console.log("📩 Matterport tag event:", { tagSid, tagLabel });
-            const matched = tourItemsRef.current.find((i) => {
-              if (!i.tagSid) return false;
-              if (i.tagSid === tagSid) return true;
-              if (tagLabel && i.tagSid.trim().toLowerCase() === tagLabel.trim().toLowerCase()) return true;
-              return false;
-            });
-            if (matched) setSelectedItem(matched);
-          }
-        }
-      } catch {
-        // Not JSON or not relevant
-      }
-    };
-
-    window.addEventListener("message", handleMessage);
-    return () => window.removeEventListener("message", handleMessage);
-  }, [tourItems]);
+  }, [iframeLoaded, tour?.tourUrl, isLocalDev]);
 
   // Navigation
   const currentIndex = allTours.findIndex((t) => t.id === tour?.id);
@@ -451,9 +386,8 @@ const TourViewer = () => {
     );
   }
 
-  // If there are products, try with SDK key first (so tag clicks can be intercepted)
-  // If SDK fails, it will auto-reload without the key
-  const embedUrl = buildEmbedUrl(tour.tourUrl, tourItems.length > 0 && !sdkFailed);
+  // On localhost: use SDK key in URL for tag interception. On prod: load without key (faster, no SDK block).
+  const embedUrl = buildEmbedUrl(tour.tourUrl, isLocalDev && tourItems.length > 0 && !sdkFailed);
 
   return (
     <div className="fixed inset-0 bg-[#0a0a14] z-50 overflow-hidden select-none">
@@ -1137,6 +1071,24 @@ const TourViewer = () => {
               </div>
             </motion.div>
           </>
+        )}
+      </AnimatePresence>
+
+      {/* ===== FLOATING PRODUCTS BUTTON (when SDK unavailable on prod) ===== */}
+      <AnimatePresence>
+        {tourItems.length > 0 && !showProducts && !selectedItem && !showCart && (
+          <motion.button
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            transition={{ delay: 1.5, type: "spring", damping: 20 }}
+            onClick={() => setShowProducts(true)}
+            className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 pointer-events-auto flex items-center gap-2.5 px-5 py-3 rounded-full bg-gradient-to-r from-purple-600 to-teal-500 text-white shadow-lg shadow-purple-500/25 hover:shadow-purple-500/40 hover:scale-105 transition-all"
+          >
+            <ShoppingBag className="w-4 h-4" />
+            <span className="text-sm font-semibold">Voir les produits</span>
+            <span className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-xs font-bold">{tourItems.length}</span>
+          </motion.button>
         )}
       </AnimatePresence>
 
