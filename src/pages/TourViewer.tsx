@@ -983,17 +983,17 @@ const TourViewer = () => {
         )}
       </AnimatePresence>
 
-      {/* ===== MOBILE: Bottom Info Card ===== */}
+      {/* ===== MOBILE: Right-side Info Card ===== */}
       <AnimatePresence>
         {showCard && (
           <motion.div
-            initial={{ opacity: 0, y: 100 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 100 }}
+            initial={{ opacity: 0, x: 300 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 300 }}
             transition={{ type: "spring", damping: 28, stiffness: 250 }}
-            className="md:hidden absolute bottom-0 left-0 right-0 z-20 pointer-events-auto safe-area-bottom"
+            className="md:hidden absolute top-14 right-2 bottom-2 w-[85vw] max-w-[320px] z-20 pointer-events-auto"
           >
-            <div className="mx-2 sm:mx-3 mb-2 sm:mb-3 rounded-2xl bg-black/75 backdrop-blur-2xl border border-white/10 overflow-hidden shadow-2xl">
+            <div className="h-full rounded-2xl bg-black/75 backdrop-blur-2xl border border-white/10 overflow-y-auto overflow-x-hidden shadow-2xl">
               <div className="flex items-start gap-3 p-3">
                 {tour.imageUrl && (
                   <img
