@@ -787,15 +787,15 @@ const TourViewer = () => {
         </button>
       </motion.div>
 
-      {/* ===== LEFT SIDE: OPENHAUS-STYLE INFO CARD ===== */}
+      {/* ===== RIGHT SIDE: INFO CARD ===== */}
       <AnimatePresence>
         {showCard && (
           <motion.div
-            initial={{ opacity: 0, x: -340 }}
+            initial={{ opacity: 0, x: 340 }}
             animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -340 }}
+            exit={{ opacity: 0, x: 340 }}
             transition={{ type: "spring", damping: 28, stiffness: 250 }}
-            className="absolute top-16 left-4 bottom-4 w-[320px] z-20 pointer-events-auto hidden md:flex flex-col"
+            className="absolute top-16 right-4 bottom-4 w-[320px] z-20 pointer-events-auto hidden md:flex flex-col"
           >
             <div className="flex-1 rounded-2xl bg-black/70 backdrop-blur-2xl border border-white/10 overflow-hidden flex flex-col shadow-2xl">
               {/* Close */}
