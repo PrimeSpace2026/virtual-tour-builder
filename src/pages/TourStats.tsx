@@ -30,10 +30,15 @@ const TourStats = () => {
   useEffect(() => {
     if (!id) return;
     Promise.all([
-      fetch(`/api/analytics/tours/${id}/stats`).then(r => r.json()),
-      fetch(`/api/tours/${id}`).then(r => r.json()).catch(() => null),
+      fetch(`/api/analytics/tours/${id}/stats`).then(r => r.ok ? r.json() : null),
+      fetch(`/api/tours/${id}`).then(r => r.ok ? r.json() : null).catch(() => null),
     ]).then(([statsData, tourData]) => {
-      setStats(statsData);
+      if (statsData && statsData.totalVisits !== undefined) {
+        statsData.tagHeatmap = statsData.tagHeatmap || [];
+        statsData.productHeatmap = statsData.productHeatmap || [];
+        statsData.recentVisits = statsData.recentVisits || [];
+        setStats(statsData);
+      }
       if (tourData?.name) setTourName(tourData.name);
       setLoading(false);
     }).catch(() => setLoading(false));
@@ -95,7 +100,7 @@ const TourStats = () => {
                   <Tag className="w-4 h-4 text-purple-400" />
                   <h2 className="text-sm font-semibold text-white/70">Heatmap Tags</h2>
                 </div>
-                {stats.tagHeatmap.length === 0 ? (
+                {(stats.tagHeatmap?.length ?? 0) === 0 ? (
                   <p className="text-white/30 text-xs">Aucun clic de tag enregistré</p>
                 ) : (
                   <div className="space-y-2">
@@ -126,7 +131,7 @@ const TourStats = () => {
                   <TrendingUp className="w-4 h-4 text-orange-400" />
                   <h2 className="text-sm font-semibold text-white/70">Heatmap Produits</h2>
                 </div>
-                {stats.productHeatmap.length === 0 ? (
+                {(stats.productHeatmap?.length ?? 0) === 0 ? (
                   <p className="text-white/30 text-xs">Aucun clic de produit enregistré</p>
                 ) : (
                   <div className="space-y-2">
@@ -157,9 +162,9 @@ const TourStats = () => {
               <div className="flex items-center gap-2 mb-4">
                 <Users className="w-4 h-4 text-blue-400" />
                 <h2 className="text-sm font-semibold text-white/70">Visites récentes</h2>
-                <span className="text-white/30 text-xs ml-auto">{stats.recentVisits.length} dernières</span>
+                <span className="text-white/30 text-xs ml-auto">{stats.recentVisits?.length ?? 0} dernières</span>
               </div>
-              {stats.recentVisits.length === 0 ? (
+              {(stats.recentVisits?.length ?? 0) === 0 ? (
                 <p className="text-white/30 text-xs">Aucune visite enregistrée</p>
               ) : (
                 <div className="overflow-x-auto">
