@@ -80,7 +80,7 @@ const CURRENCY_SYMBOLS: Record<string, string> = { EUR: "€", USD: "$", TND: "T
 function buildEmbedUrl(tourUrl: string, withSdkKey = false): string {
   const modelId = extractModelId(tourUrl);
   if (!modelId) return tourUrl;
-  const base = `https://my.matterport.com/show/?m=${modelId}&play=1&qs=1&brand=0&title=0&mls=2&vr=0&dh=1&gt=0&hr=0&help=0&lp=0&log=0&f=1&pin=0&search=0&wh=0&mt=0&lang=fr`;
+  const base = `https://my.matterport.com/show/?m=${modelId}&play=1&qs=1&brand=0&title=0&mls=2&vr=0&dh=1&gt=0&hr=0&help=0&lp=0&log=0&f=1&search=0&wh=0&lang=fr&mt=1&pin=1`;
   return withSdkKey ? `${base}&applicationKey=${SDK_KEY}` : base;
 }
 
@@ -379,6 +379,43 @@ const TourViewer = () => {
             });
           }
         } catch {}
+
+        // Listen for model state changes (e.g. defurnished toggle) and restore tags
+        try {
+          const restoreTags = async () => {
+            try {
+              // Small delay to let Matterport finish state transition
+              await new Promise(r => setTimeout(r, 1500));
+              // Re-read tags to refresh visibility
+              if (sdk.Mattertag?.getData) {
+                const tags = await sdk.Mattertag.getData();
+                console.log("🔄 Tags restored after state change:", tags.length);
+                tags.forEach((t: any) => {
+                  if (t.label) tagsMapRef.current.set(t.label.trim().toLowerCase(), t.sid);
+                  if (t.sid) tagsMapRef.current.set(t.sid, t.sid);
+                });
+              }
+            } catch (e) { console.log("Tag restore error:", e); }
+          };
+
+          // Listen for mode changes (Dollhouse ↔ Inside ↔ Floorplan, and Defurnished toggle)
+          if (sdk.Mode?.Event?.CHANGE_START) {
+            sdk.on(sdk.Mode.Event.CHANGE_START, () => {
+              console.log("🔄 Mode change detected");
+            });
+          }
+          if (sdk.Mode?.Event?.CHANGE_END) {
+            sdk.on(sdk.Mode.Event.CHANGE_END, () => {
+              console.log("✅ Mode change ended — restoring tags");
+              restoreTags();
+            });
+          }
+
+          // Listen for model state/sweep changes that may affect tag visibility
+          if (sdk.Sweep?.Event?.EXIT) {
+            sdk.on(sdk.Sweep.Event.EXIT, () => restoreTags());
+          }
+        } catch (e) { console.log("Mode listener error:", e); }
 
         if (sdk.Mattertag?.Event?.CLICK) {
           sdk.on(sdk.Mattertag.Event.CLICK, (tagSid: string) => handleTagClick(sdk, tagSid));
