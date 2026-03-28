@@ -251,18 +251,18 @@ const TourViewer = () => {
     else if (ua.includes("Safari") && !ua.includes("Chrome")) browser = "Safari";
 
     // Get geo from free API + send visit
-    const sendVisit = (country = "", city = "") => {
+    const sendVisit = (country = "", city = "", latitude: number | null = null, longitude: number | null = null) => {
       fetch("/api/analytics/visit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tourId: tour.id, visitorId: vid, browser, country, city }),
+        body: JSON.stringify({ tourId: tour.id, visitorId: vid, browser, country, city, latitude, longitude }),
       }).then(r => r.json()).then(v => { visitIdRef.current = v.id; }).catch(() => {});
     };
 
     fetch("https://ipapi.co/json/")
       .then(r => r.ok ? r.json() : null)
       .then(geo => {
-        if (geo?.country_name) sendVisit(geo.country_name, geo.city || "");
+        if (geo?.country_name) sendVisit(geo.country_name, geo.city || "", geo.latitude ?? null, geo.longitude ?? null);
         else sendVisit();
       })
       .catch(() => sendVisit());

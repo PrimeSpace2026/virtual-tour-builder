@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { ArrowLeft, Eye, Clock, MousePointerClick, ShoppingCart, Tag, BarChart3, Users, TrendingUp, Box, Layers, Camera, Calendar, Globe, Hash, Monitor, MapPin } from "lucide-react";
+import { ComposableMap, Geographies, Geography, Marker, ZoomableGroup } from "react-simple-maps";
+
+const GEO_URL = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
 
 interface StatsData {
   totalVisits: number;
@@ -10,9 +13,10 @@ interface StatsData {
   addToCart: number;
   tagHeatmap: { name: string; clicks: number }[];
   productHeatmap: { name: string; clicks: number }[];
-  recentVisits: { id: number; visitorId: string; startedAt: string; durationSeconds: number | null; browser?: string; country?: string; city?: string }[];
+  recentVisits: { id: number; visitorId: string; startedAt: string; durationSeconds: number | null; browser?: string; country?: string; city?: string; latitude?: number; longitude?: number }[];
   browsers?: { name: string; count: number }[];
   locations?: { name: string; count: number }[];
+  mapPoints?: { lat: number; lng: number; count: number; name: string }[];
 }
 
 const formatDuration = (seconds: number | null) => {
@@ -320,6 +324,60 @@ const TourStats = () => {
                     })}
                   </div>
                 )}
+              </div>
+            </div>
+
+            {/* Geographic Heatmap */}
+            <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-5 mb-8">
+              <div className="flex items-center gap-2 mb-4">
+                <Globe className="w-4 h-4 text-purple-400" />
+                <h2 className="text-sm font-semibold text-white/70">Carte des visiteurs</h2>
+                <span className="text-white/30 text-xs ml-auto">{stats.mapPoints?.length ?? 0} lieux</span>
+              </div>
+              <div className="rounded-xl overflow-hidden bg-[#0d0d1a] border border-white/[0.04]" style={{ height: 400 }}>
+                <ComposableMap
+                  projection="geoMercator"
+                  projectionConfig={{ scale: 150, center: [10, 30] }}
+                  style={{ width: "100%", height: "100%" }}
+                >
+                  <ZoomableGroup>
+                    <Geographies geography={GEO_URL}>
+                      {({ geographies }) =>
+                        geographies.map((geo) => (
+                          <Geography
+                            key={geo.rsmKey}
+                            geography={geo}
+                            fill="#1a1a2e"
+                            stroke="#2a2a4a"
+                            strokeWidth={0.5}
+                            style={{
+                              default: { outline: "none" },
+                              hover: { fill: "#252545", outline: "none" },
+                              pressed: { outline: "none" },
+                            }}
+                          />
+                        ))
+                      }
+                    </Geographies>
+                    {(stats.mapPoints ?? []).map((pt, i) => {
+                      const maxCount = Math.max(...(stats.mapPoints ?? []).map(p => p.count), 1);
+                      const size = 6 + (pt.count / maxCount) * 14;
+                      const opacity = 0.5 + (pt.count / maxCount) * 0.5;
+                      return (
+                        <Marker key={i} coordinates={[pt.lng, pt.lat]}>
+                          <circle r={size} fill={`rgba(168,85,247,${opacity})`} stroke="rgba(168,85,247,0.3)" strokeWidth={size * 0.6} />
+                          <text
+                            textAnchor="middle"
+                            y={-size - 6}
+                            style={{ fontFamily: "system-ui", fill: "rgba(255,255,255,0.7)", fontSize: 10, fontWeight: 600 }}
+                          >
+                            {pt.name} ({pt.count})
+                          </text>
+                        </Marker>
+                      );
+                    })}
+                  </ZoomableGroup>
+                </ComposableMap>
               </div>
             </div>
 
