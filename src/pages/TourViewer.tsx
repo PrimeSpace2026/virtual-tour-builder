@@ -1221,7 +1221,7 @@ const TourViewer = () => {
                     onClick={() => setActiveTagFilter(null)}
                     className="text-white/40 hover:text-white text-[10px] underline transition-colors"
                   >
-                    Effacer
+                    Voir tout
                   </button>
                 </div>
               )}
@@ -1229,27 +1229,22 @@ const TourViewer = () => {
                 <AnimatePresence mode="popLayout">
                 {tourItems
                   .filter(i => i.tagSid)
-                  .map((item, idx) => {
-                  const isActive = activeTagFilter && item.tagSid?.trim().toLowerCase() === activeTagFilter.trim().toLowerCase();
-                  return (
+                  .filter(i => !activeTagFilter || i.tagSid?.trim().toLowerCase() === activeTagFilter.trim().toLowerCase())
+                  .map((item, idx) => (
                   <motion.button
                     key={item.id}
                     layout
                     initial={{ opacity: 0, y: 20, scale: 0.9 }}
-                    animate={{ opacity: 1, y: 0, scale: isActive ? 1.08 : 1 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.8, y: 10 }}
                     transition={{ delay: activeTagFilter ? 0 : 1 + idx * 0.1, type: "spring", damping: 20 }}
                     onClick={() => navigateToProduct(item)}
-                    className={`flex-shrink-0 rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.25)] overflow-hidden hover:shadow-[0_8px_30px_rgba(0,0,0,0.35)] hover:-translate-y-1 transition-all duration-200 group w-[140px] sm:w-[160px] ${
-                      isActive
-                        ? "bg-white ring-3 ring-purple-500 shadow-[0_4px_30px_rgba(139,92,246,0.5)]"
-                        : activeTagFilter
-                          ? "bg-white/80 opacity-50"
-                          : "bg-white"
+                    className={`flex-shrink-0 bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.25)] overflow-hidden hover:shadow-[0_8px_30px_rgba(0,0,0,0.35)] hover:-translate-y-1 transition-all duration-200 group ${
+                      activeTagFilter ? "w-[180px] sm:w-[200px]" : "w-[140px] sm:w-[160px]"
                     }`}
                   >
                     {/* Product image */}
-                    <div className="bg-gray-50 flex items-center justify-center relative overflow-hidden h-20 sm:h-24">
+                    <div className={`bg-gray-50 flex items-center justify-center relative overflow-hidden ${activeTagFilter ? "h-28 sm:h-32" : "h-20 sm:h-24"}`}>
                       {item.imageUrl ? (
                         <img src={item.imageUrl} alt={item.name} className="w-full h-full object-contain p-2" />
                       ) : (
@@ -1275,8 +1270,8 @@ const TourViewer = () => {
                           {item.price} <span className="text-gray-400 text-[10px] font-medium">{CURRENCY_SYMBOLS[item.currency] || item.currency}</span>
                         </p>
                       )}
-                      {/* Show add-to-cart button when this product is highlighted */}
-                      {isActive && (
+                      {/* Show add-to-cart button when filtered to single product */}
+                      {activeTagFilter && (
                         <button
                           onClick={(e) => { e.stopPropagation(); addToCart(item); }}
                           className="w-full mt-2 py-2 bg-gray-900 hover:bg-gray-800 text-white text-[11px] font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5"
@@ -1287,8 +1282,7 @@ const TourViewer = () => {
                       )}
                     </div>
                   </motion.button>
-                  );
-                })}
+                ))}
                 </AnimatePresence>
                 {/* Items without tags — show as small thumbnails */}
                 {!activeTagFilter && tourItems.filter(i => !i.tagSid).length > 0 && (
