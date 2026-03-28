@@ -26,6 +26,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ForgotPassword from "./pages/ForgotPassword";
 import TourViewer from "./pages/TourViewer";
+import TourStats from "./pages/TourStats";
 import TagFinder from "./pages/TagFinder";
 
 const queryClient = new QueryClient();
@@ -55,6 +56,7 @@ const App = () => (
           <Route path="/industries/energy-utilities" element={<EnergyUtilities />} />
           <Route path="/industries/oil-gas" element={<OilGas />} />
           <Route path="/view/:id" element={<TourViewer />} />
+          <Route path="/admin/stats/:id" element={<TourStats />} />
           <Route path="/admin/tags" element={<TagFinder />} />
           <Route path="/admin" element={<Admin />} />
           <Route path="/login" element={<Login />} />

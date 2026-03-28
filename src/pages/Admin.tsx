@@ -18,7 +18,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Plus, Pencil, Trash2, Upload, X, Image as ImageIcon, LogOut, Search, MapPin, Loader2, ShoppingBag, ExternalLink } from "lucide-react";
+import { Plus, Pencil, Trash2, Upload, X, Image as ImageIcon, LogOut, Search, MapPin, Loader2, ShoppingBag, ExternalLink, BarChart3 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from "react-leaflet";
 import L from "leaflet";
@@ -416,6 +416,9 @@ const Admin = () => {
                     <div className="flex gap-2">
                       <Button variant="outline" size="sm" onClick={() => openItems(tour)} title="Gérer les produits">
                         <ShoppingBag className="w-4 h-4" />
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => navigate(`/admin/stats/${tour.id}`)} title="Statistiques">
+                        <BarChart3 className="w-4 h-4" />
                       </Button>
                       <Button variant="outline" size="sm" onClick={() => openEdit(tour)}>
                         <Pencil className="w-4 h-4" />

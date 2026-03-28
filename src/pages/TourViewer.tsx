@@ -92,6 +92,25 @@ const TourViewer = () => {
   const sdkRef = useRef<any>(null);
   const sdkAttemptsRef = useRef(0);
   const tagsMapRef = useRef<Map<string, string>>(new Map()); // tagName (lowercase) → SID
+  const visitIdRef = useRef<number | null>(null);
+  const visitStartRef = useRef<number>(Date.now());
+
+  // Unique visitor ID (persistent in localStorage)
+  const visitorId = useRef<string>(() => {
+    let vid = localStorage.getItem("primespace_vid");
+    if (!vid) { vid = crypto.randomUUID(); localStorage.setItem("primespace_vid", vid); }
+    return vid;
+  }).current as unknown as string;
+
+  // Analytics helper
+  const trackEvent = useCallback((tourId: number, eventType: string, targetName: string, targetId: string) => {
+    const vid = localStorage.getItem("primespace_vid") || "anonymous";
+    fetch("/api/analytics/event", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tourId, visitorId: vid, eventType, targetName, targetId }),
+    }).catch(() => {});
+  }, []);
 
   const [tour, setTour] = useState<TourData | null>(null);
   const [allTours, setAllTours] = useState<TourData[]>([]);
@@ -215,6 +234,28 @@ const TourViewer = () => {
         setLoading(false);
       });
   }, [id]);
+
+  // Track visit start + duration on unmount
+  useEffect(() => {
+    if (!tour?.id) return;
+    visitStartRef.current = Date.now();
+    const vid = localStorage.getItem("primespace_vid") || "anonymous";
+    fetch("/api/analytics/visit", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tourId: tour.id, visitorId: vid }),
+    }).then(r => r.json()).then(v => { visitIdRef.current = v.id; }).catch(() => {});
+
+    const sendDuration = () => {
+      if (!visitIdRef.current) return;
+      const dur = Math.round((Date.now() - visitStartRef.current) / 1000);
+      navigator.sendBeacon?.("/api/analytics/visit/" + visitIdRef.current,
+        new Blob([JSON.stringify({ durationSeconds: dur })], { type: "application/json" })
+      );
+    };
+    window.addEventListener("beforeunload", sendDuration);
+    return () => { sendDuration(); window.removeEventListener("beforeunload", sendDuration); };
+  }, [tour?.id]);
 
   // SDK: only works on localhost (Matterport free plan restricts to local domains)
   const isLocalDev = typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
@@ -343,7 +384,8 @@ const TourViewer = () => {
       if (existing) return prev.map((c) => c.item.id === item.id ? { ...c, qty: c.qty + 1 } : c);
       return [...prev, { item, qty: 1 }];
     });
-  }, []);
+    if (tour?.id) trackEvent(tour.id, "add_to_cart", item.name, String(item.id));
+  }, [tour?.id, trackEvent]);
 
   const updateQty = useCallback((itemId: number, delta: number) => {
     setCart((prev) =>
@@ -363,6 +405,7 @@ const TourViewer = () => {
   // Navigate to a product's tag in the 3D tour, then show popup
   const navigateToProduct = useCallback((item: TourItemData) => {
     setShowProducts(false);
+    if (tour?.id) trackEvent(tour.id, "product_click", item.name, String(item.id));
 
     const sdk = sdkRef.current;
     if (sdk && item.tagSid) {
@@ -392,7 +435,7 @@ const TourViewer = () => {
       // No SDK or no tag — just show popup directly
       setSelectedItem(item);
     }
-  }, []);
+  }, [tour?.id, trackEvent]);
 
   // Fullscreen
   const toggleFullscreen = useCallback(() => {
