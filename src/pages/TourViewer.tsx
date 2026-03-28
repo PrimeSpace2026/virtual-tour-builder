@@ -1274,16 +1274,16 @@ const TourViewer = () => {
           >
             <Link
               to="/"
-              className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-black/60 backdrop-blur-xl border border-white/10 hover:border-white/25 transition-all group shadow-lg"
+              className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-black/70 backdrop-blur-xl border border-white/15 hover:border-white/30 transition-all group shadow-2xl"
             >
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-600 to-teal-500 flex items-center justify-center">
-                <span className="text-white font-bold text-sm">P</span>
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-600 to-teal-500 flex items-center justify-center shadow-lg shadow-purple-500/20">
+                <span className="text-white font-extrabold text-lg">P</span>
               </div>
               <div>
-                <p className="text-white/70 text-sm font-semibold group-hover:text-white transition-colors">
+                <p className="text-white/80 text-base font-bold group-hover:text-white transition-colors tracking-tight">
                   PrimeSpace
                 </p>
-                <p className="text-white/30 text-[10px]">Studio 3D</p>
+                <p className="text-white/35 text-[11px] font-medium">Studio 3D immersif</p>
               </div>
             </Link>
           </motion.div>
