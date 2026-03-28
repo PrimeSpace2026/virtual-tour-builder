@@ -607,8 +607,8 @@ const TourViewer = () => {
           ref={iframeRef}
           id="showcase-iframe"
           src={embedUrl}
-          className="w-full border-0 absolute inset-0"
-          style={{ height: "calc(100% + 100px)" }}
+          className="w-full border-0 absolute top-0 left-0 right-0"
+          style={{ height: "calc(100% + 160px)" }}
           allow="xr-spatial-tracking; fullscreen; autoplay"
           allowFullScreen
           onLoad={() => setIframeLoaded(true)}
