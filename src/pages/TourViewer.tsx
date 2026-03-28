@@ -603,20 +603,20 @@ const TourViewer = () => {
             </motion.div>
           )}
         </AnimatePresence>
+        {/* iframe fills container exactly — no height offset so Matterport native buttons stay in view and clickable */}
         <iframe
           ref={iframeRef}
           id="showcase-iframe"
           src={embedUrl}
-          className="absolute top-0 left-0 w-full border-0"
-          style={{ height: "calc(100% + 24px)" }}
+          className="absolute inset-0 w-full h-full border-0"
           allow="xr-spatial-tracking; fullscreen; autoplay"
           allowFullScreen
           onLoad={() => setIframeLoaded(true)}
         />
-        {/* Cover Matterport logo — bottom right */}
-        <div className="absolute bottom-[24px] right-[10px] z-[5] flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-black/60 backdrop-blur-xl border border-white/10 hover:border-white/25 transition-all group shadow-2xl">
-          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-purple-600 to-teal-500 flex items-center justify-center">
-            <span className="text-white font-extrabold text-xs">P</span>
+        {/* PrimeSpace badge — pointer-events-none so it doesn't block the Matterport fullscreen button behind it */}
+        <div className="absolute bottom-1 right-12 z-[5] pointer-events-none flex items-center gap-2 px-3 py-2 rounded-xl bg-black/60 backdrop-blur-xl border border-white/10 shadow-2xl">
+          <div className="w-6 h-6 rounded-md bg-gradient-to-br from-purple-600 to-teal-500 flex items-center justify-center">
+            <span className="text-white font-extrabold text-[10px]">P</span>
           </div>
           <span className="text-white/70 text-xs font-semibold">PrimeSpace</span>
         </div>
@@ -1287,7 +1287,7 @@ const TourViewer = () => {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 50 }}
             transition={{ delay: 0.8, type: "spring", damping: 22 }}
-            className="absolute bottom-2 sm:bottom-3 left-0 right-0 z-30 pointer-events-auto px-2 sm:px-3"
+            className="absolute bottom-[70px] sm:bottom-[75px] left-0 right-0 z-30 pointer-events-auto px-2 sm:px-3"
           >
             <div className="max-w-3xl mx-auto">
               {/* Active filter label */}
@@ -1386,7 +1386,7 @@ const TourViewer = () => {
             exit={{ opacity: 0, scale: 0.9 }}
             onClick={() => setShowCard(true)}
             className={`absolute left-2 sm:left-4 z-20 pointer-events-auto flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-black/60 backdrop-blur-xl border border-white/10 text-white/70 hover:text-white hover:bg-black/80 transition-all ${
-              tourItems.filter(i => i.tagSid).length > 0 && !showProducts && !showCart ? "bottom-[120px] sm:bottom-[140px]" : "bottom-4"
+              tourItems.filter(i => i.tagSid).length > 0 && !showProducts && !showCart ? "bottom-[190px] sm:bottom-[210px]" : "bottom-[70px]"
             }`}
           >
             <Eye className="w-4 h-4" />
