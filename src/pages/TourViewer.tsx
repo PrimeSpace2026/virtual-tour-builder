@@ -607,12 +607,15 @@ const TourViewer = () => {
           ref={iframeRef}
           id="showcase-iframe"
           src={embedUrl}
-          className="w-full border-0 absolute top-0 left-0 right-0"
-          style={{ height: "calc(100% + 160px)" }}
+          className="w-full h-full border-0"
           allow="xr-spatial-tracking; fullscreen; autoplay"
           allowFullScreen
           onLoad={() => setIframeLoaded(true)}
         />
+        {/* Cover Matterport bottom toolbar */}
+        <div className="absolute bottom-0 left-0 right-0 h-[70px] z-[5]" style={{ background: "linear-gradient(to bottom, transparent, rgba(10,10,20,0.85) 30%, rgba(10,10,20,1) 60%)" }} />
+        {/* Cover Matterport bottom-left location badge */}
+        <div className="absolute bottom-0 left-0 w-[280px] h-[100px] z-[5]" style={{ background: "radial-gradient(ellipse at bottom left, rgba(10,10,20,1) 50%, transparent 80%)" }} />
       </div>
 
       {/* ===== TOP-LEFT: Back Button ===== */}
