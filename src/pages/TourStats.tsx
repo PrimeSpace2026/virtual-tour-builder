@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, Eye, Clock, MousePointerClick, ShoppingCart, Tag, BarChart3, Users, TrendingUp } from "lucide-react";
+import { ArrowLeft, Eye, Clock, MousePointerClick, ShoppingCart, Tag, BarChart3, Users, TrendingUp, Box, Layers, Camera, Calendar, Globe, Hash } from "lucide-react";
 
 interface StatsData {
   totalVisits: number;
@@ -21,11 +21,29 @@ const formatDuration = (seconds: number | null) => {
   return `${mins}m ${secs}s`;
 };
 
+interface MatterportInfo {
+  name: string;
+  created: string;
+  modified: string;
+  floors: string;
+  sweepsCount: number;
+  captureDevice: string;
+  presentedBy: string;
+  city: string;
+  country: string;
+  thumbnail: string;
+  summary: string;
+}
+
 const TourStats = () => {
   const { id } = useParams<{ id: string }>();
   const [stats, setStats] = useState<StatsData | null>(null);
   const [tourName, setTourName] = useState("");
+  const [tourUrl, setTourUrl] = useState("");
   const [loading, setLoading] = useState(true);
+  const [mpInfo, setMpInfo] = useState<MatterportInfo | null>(null);
+  const [tagCount, setTagCount] = useState<number>(0);
+  const [itemCount, setItemCount] = useState<number>(0);
 
   useEffect(() => {
     if (!id) return;
@@ -40,9 +58,50 @@ const TourStats = () => {
         setStats(statsData);
       }
       if (tourData?.name) setTourName(tourData.name);
+      if (tourData?.tourUrl) setTourUrl(tourData.tourUrl);
       setLoading(false);
     }).catch(() => setLoading(false));
   }, [id]);
+
+  // Fetch tag count + item count
+  useEffect(() => {
+    if (!id) return;
+    fetch(`/api/tours/${id}/tags`).then(r => r.ok ? r.json() : []).then(tags => setTagCount(tags.length)).catch(() => {});
+    fetch(`/api/tours/${id}/items`).then(r => r.ok ? r.json() : []).then(items => setItemCount(items.length)).catch(() => {});
+  }, [id]);
+
+  // Fetch Matterport model info
+  useEffect(() => {
+    if (!tourUrl) return;
+    try {
+      const u = new URL(tourUrl);
+      const modelId = u.searchParams.get("m");
+      if (!modelId) return;
+      fetch(`https://my.matterport.com/api/v2/models/${modelId}`)
+        .then(r => r.ok ? r.json() : null)
+        .then(data => {
+          if (!data) return;
+          const sweeps = data.sweeps ? Object.keys(data.sweeps).length : 0;
+          const device = data.capture_sources?.[0]
+            ? `${data.capture_sources[0].model} (${data.capture_sources[0].manufacturer})`
+            : "—";
+          setMpInfo({
+            name: data.name || "",
+            created: data.created || "",
+            modified: data.modified || "",
+            floors: data.floors || "—",
+            sweepsCount: sweeps,
+            captureDevice: device,
+            presentedBy: data.presented_by || "—",
+            city: data.address?.city || "—",
+            country: data.address?.country || "—",
+            thumbnail: data.thumbnail || "",
+            summary: data.summary || "",
+          });
+        })
+        .catch(() => {});
+    } catch {}
+  }, [tourUrl]);
 
   const maxTagClicks = stats?.tagHeatmap?.length ? Math.max(...stats.tagHeatmap.map(t => t.clicks)) : 1;
   const maxProductClicks = stats?.productHeatmap?.length ? Math.max(...stats.productHeatmap.map(t => t.clicks)) : 1;
@@ -74,11 +133,13 @@ const TourStats = () => {
         ) : (
           <>
             {/* KPI Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-8">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-3 mb-8">
               {[
                 { label: "Visites", value: stats.totalVisits, icon: Eye, color: "text-blue-400", bg: "bg-blue-500/10" },
                 { label: "Durée moy.", value: formatDuration(stats.avgDuration), icon: Clock, color: "text-green-400", bg: "bg-green-500/10" },
-                { label: "Clics Tags", value: stats.tagClicks, icon: Tag, color: "text-purple-400", bg: "bg-purple-500/10" },
+                { label: "Tags", value: tagCount, icon: Tag, color: "text-cyan-400", bg: "bg-cyan-500/10" },
+                { label: "Produits", value: itemCount, icon: ShoppingCart, color: "text-amber-400", bg: "bg-amber-500/10" },
+                { label: "Clics Tags", value: stats.tagClicks, icon: Hash, color: "text-purple-400", bg: "bg-purple-500/10" },
                 { label: "Clics Produits", value: stats.productClicks, icon: MousePointerClick, color: "text-orange-400", bg: "bg-orange-500/10" },
                 { label: "Ajouts Panier", value: stats.addToCart, icon: ShoppingCart, color: "text-pink-400", bg: "bg-pink-500/10" },
               ].map((kpi) => (
@@ -91,6 +152,38 @@ const TourStats = () => {
                 </div>
               ))}
             </div>
+
+            {/* Matterport Info */}
+            {mpInfo && (
+              <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-5 mb-8">
+                <div className="flex items-center gap-2 mb-4">
+                  <Box className="w-4 h-4 text-teal-400" />
+                  <h2 className="text-sm font-semibold text-white/70">Informations Matterport</h2>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {[
+                    { label: "Scans (Sweeps)", value: mpInfo.sweepsCount, icon: Camera, color: "text-teal-400" },
+                    { label: "Étages", value: mpInfo.floors, icon: Layers, color: "text-indigo-400" },
+                    { label: "Appareil", value: mpInfo.captureDevice, icon: Camera, color: "text-sky-400" },
+                    { label: "Lieu", value: `${mpInfo.city}, ${mpInfo.country}`, icon: Globe, color: "text-emerald-400" },
+                    { label: "Créé", value: new Date(mpInfo.created).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" }), icon: Calendar, color: "text-violet-400" },
+                    { label: "Modifié", value: new Date(mpInfo.modified).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" }), icon: Calendar, color: "text-rose-400" },
+                    { label: "Présenté par", value: mpInfo.presentedBy, icon: Users, color: "text-blue-400" },
+                  ].map((info) => (
+                    <div key={info.label} className="flex items-start gap-2">
+                      <info.icon className={`w-3.5 h-3.5 mt-0.5 ${info.color} shrink-0`} />
+                      <div>
+                        <p className="text-white/30 text-[10px] uppercase tracking-wider">{info.label}</p>
+                        <p className="text-white/80 text-xs font-medium">{info.value}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {mpInfo.summary && (
+                  <p className="text-white/40 text-xs mt-4 leading-relaxed border-t border-white/[0.06] pt-3">{mpInfo.summary}</p>
+                )}
+              </div>
+            )}
 
             {/* Heatmaps */}
             <div className="grid md:grid-cols-2 gap-6 mb-8">
