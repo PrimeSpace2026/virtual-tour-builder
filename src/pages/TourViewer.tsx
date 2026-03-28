@@ -650,14 +650,16 @@ const TourViewer = () => {
           allowFullScreen
           onLoad={() => setIframeLoaded(true)}
         />
-        {/* PrimeSpace badge — pointer-events-none so it doesn't block the Matterport fullscreen button behind it */}
-        <div className="absolute bottom-2 right-12 z-[5] pointer-events-none flex items-center gap-3 px-5 py-3 rounded-2xl bg-black/70 backdrop-blur-xl border border-white/15 shadow-2xl">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-600 to-teal-500 flex items-center justify-center shadow-lg shadow-purple-500/20">
+        {/* PrimeSpace badge — centered bottom bar matching Matterport toolbar width */}
+        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 z-[5] pointer-events-none w-[calc(100%-24px)] sm:w-auto sm:min-w-[320px] flex items-center gap-3 p-3 rounded-t-2xl sm:rounded-2xl sm:bottom-2 bg-black/70 backdrop-blur-xl border border-white/15 border-b-0 sm:border-b shadow-2xl">
+          <div className="w-10 h-10 shrink-0 rounded-xl bg-gradient-to-br from-purple-600 to-teal-500 flex items-center justify-center shadow-lg shadow-purple-500/20">
             <span className="text-white font-extrabold text-lg">P</span>
           </div>
-          <div>
-            <p className="text-white/90 text-base font-bold tracking-tight">PrimeSpace</p>
-            <p className="text-white/40 text-[10px] font-medium">Studio 3D immersif</p>
+          <div className="flex-grow min-w-0">
+            <p className="text-white/90 text-sm sm:text-base font-bold tracking-tight">PrimeSpace</p>
+            <p className="text-white/40 text-[10px] sm:text-[11px] font-medium">Studio 3D immersif</p>
+          </div>
+        </div>
           </div>
         </div>
       </div>
