@@ -922,9 +922,9 @@ const TourViewer = () => {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 100 }}
             transition={{ type: "spring", damping: 28, stiffness: 250 }}
-            className="md:hidden absolute bottom-0 left-0 right-0 z-20 pointer-events-auto"
+            className="md:hidden absolute bottom-0 left-0 right-0 z-20 pointer-events-auto safe-area-bottom"
           >
-            <div className="mx-3 mb-3 rounded-2xl bg-black/75 backdrop-blur-2xl border border-white/10 overflow-hidden shadow-2xl">
+            <div className="mx-2 sm:mx-3 mb-2 sm:mb-3 rounded-2xl bg-black/75 backdrop-blur-2xl border border-white/10 overflow-hidden shadow-2xl">
               <div className="flex items-start gap-3 p-3">
                 {tour.imageUrl && (
                   <img
@@ -1010,7 +1010,7 @@ const TourViewer = () => {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 30 }}
               transition={{ type: "spring", damping: 28, stiffness: 350 }}
-              className="absolute inset-3 sm:inset-6 md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-[680px] md:max-h-[480px] z-50 pointer-events-auto"
+              className="absolute inset-2 sm:inset-6 md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-[680px] md:max-h-[480px] z-50 pointer-events-auto"
             >
               <div className="bg-white rounded-3xl overflow-hidden shadow-[0_25px_60px_rgba(0,0,0,0.3)] flex flex-col md:flex-row h-full md:h-auto max-h-[calc(100vh-1.5rem)] sm:max-h-[calc(100vh-3rem)] md:max-h-[480px]">
                 <button
@@ -1021,7 +1021,7 @@ const TourViewer = () => {
                 </button>
 
                 {/* Image */}
-                <div className="md:w-[48%] h-44 sm:h-56 md:h-auto bg-gradient-to-br from-gray-50 to-gray-100 shrink-0 flex items-center justify-center relative overflow-hidden">
+                <div className="md:w-[48%] h-36 sm:h-56 md:h-auto bg-gradient-to-br from-gray-50 to-gray-100 shrink-0 flex items-center justify-center relative overflow-hidden">
                   {selectedItem?.brand && (
                     <span className="absolute top-4 left-4 px-3 py-1 rounded-full bg-white/90 backdrop-blur-sm text-[10px] font-bold uppercase tracking-widest text-gray-500 shadow-sm">
                       {selectedItem.brand}
@@ -1039,18 +1039,18 @@ const TourViewer = () => {
                 </div>
 
                 {/* Info */}
-                <div className="flex-1 p-5 sm:p-7 flex flex-col overflow-y-auto">
+                <div className="flex-1 p-4 sm:p-7 flex flex-col overflow-y-auto">
                   <div className="flex-1">
                     {!selectedItem?.brand && (selectedItem?.brand || tour.category) && (
                       <p className="text-purple-600 text-[11px] font-bold uppercase tracking-widest mb-2">
                         {tour.category}
                       </p>
                     )}
-                    <h3 className="text-gray-900 font-bold text-2xl md:text-3xl leading-tight">
+                    <h3 className="text-gray-900 font-bold text-xl sm:text-2xl md:text-3xl leading-tight">
                       {selectedItem?.name || selectedTag?.label}
                     </h3>
                     {selectedItem?.price != null && (
-                      <p className="text-3xl font-extrabold text-gray-900 mt-2">
+                      <p className="text-2xl sm:text-3xl font-extrabold text-gray-900 mt-2">
                         {selectedItem.price} <span className="text-lg font-semibold text-gray-400">{CURRENCY_SYMBOLS[selectedItem.currency] || selectedItem.currency}</span>
                       </p>
                     )}
@@ -1062,7 +1062,7 @@ const TourViewer = () => {
                     )}
                   </div>
 
-                  <div className="flex gap-3 mt-6 shrink-0">
+                  <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mt-4 sm:mt-6 shrink-0">
                     {selectedItem && (
                       <button
                         onClick={() => { addToCart(selectedItem); setSelectedItem(null); setSelectedTag(null); }}
@@ -1252,13 +1252,13 @@ const TourViewer = () => {
 
       {/* ===== FLOATING PRODUCT CARDS (bottom of screen) ===== */}
       <AnimatePresence>
-        {tourItems.length > 0 && !showProducts && !selectedItem && !showCart && (
+        {tourItems.filter(i => i.tagSid).length > 0 && !showProducts && !selectedItem && !showCart && !showCard && (
           <motion.div
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 50 }}
             transition={{ delay: 0.8, type: "spring", damping: 22 }}
-            className="absolute bottom-3 left-0 right-0 z-30 pointer-events-auto px-3"
+            className="absolute bottom-2 sm:bottom-3 left-0 right-0 z-30 pointer-events-auto px-2 sm:px-3"
           >
             <div className="max-w-3xl mx-auto">
               {/* Active filter label */}
@@ -1288,11 +1288,11 @@ const TourViewer = () => {
                     transition={{ delay: activeTagFilter ? 0 : 1 + idx * 0.1, type: "spring", damping: 20 }}
                     onClick={() => navigateToProduct(item)}
                     className={`flex-shrink-0 bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.25)] overflow-hidden hover:shadow-[0_8px_30px_rgba(0,0,0,0.35)] hover:-translate-y-1 transition-all duration-200 group ${
-                      activeTagFilter ? "w-[180px] sm:w-[200px]" : "w-[140px] sm:w-[160px]"
+                      activeTagFilter ? "w-[160px] sm:w-[200px]" : "w-[120px] sm:w-[160px]"
                     }`}
                   >
                     {/* Product image */}
-                    <div className={`bg-gray-50 flex items-center justify-center relative overflow-hidden ${activeTagFilter ? "h-28 sm:h-32" : "h-20 sm:h-24"}`}>
+                    <div className={`bg-gray-50 flex items-center justify-center relative overflow-hidden ${activeTagFilter ? "h-24 sm:h-32" : "h-16 sm:h-24"}`}>
                       {item.imageUrl ? (
                         <img src={item.imageUrl} alt={item.name} className="w-full h-full object-contain p-2" />
                       ) : (
@@ -1356,10 +1356,12 @@ const TourViewer = () => {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.9 }}
             onClick={() => setShowCard(true)}
-            className="absolute bottom-4 left-4 z-20 pointer-events-auto flex items-center gap-2 px-4 py-2.5 rounded-xl bg-black/60 backdrop-blur-xl border border-white/10 text-white/70 hover:text-white hover:bg-black/80 transition-all"
+            className={`absolute left-2 sm:left-4 z-20 pointer-events-auto flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-black/60 backdrop-blur-xl border border-white/10 text-white/70 hover:text-white hover:bg-black/80 transition-all ${
+              tourItems.filter(i => i.tagSid).length > 0 && !showProducts && !showCart ? "bottom-[120px] sm:bottom-[140px]" : "bottom-4"
+            }`}
           >
             <Eye className="w-4 h-4" />
-            <span className="text-xs font-medium">{tour.name}</span>
+            <span className="text-xs font-medium truncate max-w-[150px] sm:max-w-none">{tour.name}</span>
           </motion.button>
         )}
       </AnimatePresence>
@@ -1371,7 +1373,9 @@ const TourViewer = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute bottom-4 right-4 z-20 pointer-events-auto hidden sm:block"
+            className={`absolute right-4 z-20 pointer-events-auto hidden sm:block ${
+              tourItems.filter(i => i.tagSid).length > 0 && !showProducts && !showCart ? "bottom-[140px]" : "bottom-4"
+            }`}
           >
             <Link
               to="/"
