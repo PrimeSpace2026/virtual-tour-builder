@@ -96,15 +96,13 @@ const TourViewer = () => {
   const visitStartRef = useRef<number>(Date.now());
 
   // Unique visitor ID (persistent in localStorage)
-  const visitorId = useRef<string>(() => {
-    let vid = localStorage.getItem("primespace_vid");
-    if (!vid) { vid = crypto.randomUUID(); localStorage.setItem("primespace_vid", vid); }
-    return vid;
-  }).current as unknown as string;
+  const visitorId = useRef<string>(
+    localStorage.getItem("primespace_vid") || (() => { const vid = crypto.randomUUID(); localStorage.setItem("primespace_vid", vid); return vid; })()
+  );
 
   // Analytics helper
   const trackEvent = useCallback((tourId: number, eventType: string, targetName: string, targetId: string) => {
-    const vid = localStorage.getItem("primespace_vid") || "anonymous";
+    const vid = visitorId.current;
     fetch("/api/analytics/event", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -170,6 +168,7 @@ const TourViewer = () => {
       const productParam = decodeURIComponent(match[1]);
       const matched = matchProduct(productParam);
       if (matched) {
+        if (tour?.id) trackEvent(tour.id, "tag_click", matched.name, matched.tagSid || productParam);
         setActiveTagFilter(matched.tagSid || matched.name);
         setSelectedItem(matched);
       }
@@ -191,12 +190,13 @@ const TourViewer = () => {
     if (!productParam || tourItems.length === 0) return;
     const matched = matchProduct(productParam);
     if (matched) {
+      if (tour?.id) trackEvent(tour.id, "tag_click", matched.name, matched.tagSid || productParam);
       setActiveTagFilter(matched.tagSid || matched.name);
       setSelectedItem(matched);
       searchParams.delete("product");
       setSearchParams(searchParams, { replace: true });
     }
-  }, [tourItems, searchParams, matchProduct]);
+  }, [tourItems, searchParams, matchProduct, tour?.id, trackEvent]);
 
   // Fetch tour data
   useEffect(() => {
@@ -239,7 +239,7 @@ const TourViewer = () => {
   useEffect(() => {
     if (!tour?.id) return;
     visitStartRef.current = Date.now();
-    const vid = localStorage.getItem("primespace_vid") || "anonymous";
+    const vid = visitorId.current;
     fetch("/api/analytics/visit", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -317,11 +317,16 @@ const TourViewer = () => {
         });
 
         if (matchedItem) {
+          // Track tag click
+          if (tour?.id) trackEvent(tour.id, "tag_click", matchedItem.name, tagSid);
           // Filter the bottom strip to show only this product
           setActiveTagFilter(matchedItem.tagSid);
           return;
         }
-        if (tagData) setSelectedTag(tagData);
+        if (tagData) {
+          if (tour?.id) trackEvent(tour.id, "tag_click", tagData.label || tagSid, tagSid);
+          setSelectedTag(tagData);
+        }
       } catch (err) {
         console.log("Tag data error:", err);
       }
