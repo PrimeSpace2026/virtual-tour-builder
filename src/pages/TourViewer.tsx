@@ -1327,9 +1327,9 @@ const TourViewer = () => {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 50 }}
             transition={{ delay: 0.8, type: "spring", damping: 22 }}
-            className="absolute bottom-[70px] sm:bottom-[75px] left-0 right-0 z-30 pointer-events-auto px-2 sm:px-3"
+            className="absolute bottom-[70px] sm:bottom-[75px] left-0 right-0 z-30 pointer-events-auto px-0 sm:px-3"
           >
-            <div className="max-w-3xl mx-auto">
+            <div className="max-w-3xl mx-auto sm:px-0 px-0">
               {/* Active filter label */}
               {activeTagFilter && (
                 <div className="flex items-center justify-center gap-2 mb-2">
@@ -1342,7 +1342,7 @@ const TourViewer = () => {
                   </button>
                 </div>
               )}
-              <div className="flex items-end gap-2 overflow-x-auto pb-1 scrollbar-hide justify-center">
+              <div className="flex items-end gap-3 sm:gap-2 overflow-x-auto pb-2 sm:pb-1 scrollbar-hide sm:justify-center px-3 sm:px-0">
                 <AnimatePresence mode="popLayout">
                 {tourItems
                   .filter(i => i.tagSid)
@@ -1357,11 +1357,11 @@ const TourViewer = () => {
                     transition={{ delay: activeTagFilter ? 0 : 1 + idx * 0.1, type: "spring", damping: 20 }}
                     onClick={() => navigateToProduct(item)}
                     className={`flex-shrink-0 bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.25)] overflow-hidden hover:shadow-[0_8px_30px_rgba(0,0,0,0.35)] hover:-translate-y-1 transition-all duration-200 group ${
-                      activeTagFilter ? "w-[160px] sm:w-[200px]" : "w-[120px] sm:w-[160px]"
+                      activeTagFilter ? "w-[180px] sm:w-[200px]" : "w-[140px] sm:w-[160px]"
                     }`}
                   >
                     {/* Product image */}
-                    <div className={`bg-gray-50 flex items-center justify-center relative overflow-hidden ${activeTagFilter ? "h-24 sm:h-32" : "h-16 sm:h-24"}`}>
+                    <div className={`bg-gray-50 flex items-center justify-center relative overflow-hidden ${activeTagFilter ? "h-28 sm:h-32" : "h-24 sm:h-24"}`}>
                       {item.imageUrl ? (
                         <img src={item.imageUrl} alt={item.name} className="w-full h-full object-contain p-2" />
                       ) : (
@@ -1380,10 +1380,10 @@ const TourViewer = () => {
                       </div>
                     </div>
                     {/* Info */}
-                    <div className="px-2.5 py-2">
-                      <p className="text-gray-900 text-[11px] font-bold truncate leading-tight">{item.name}</p>
+                    <div className="px-2.5 py-2.5 sm:py-2">
+                      <p className="text-gray-900 text-xs sm:text-[11px] font-bold truncate leading-tight">{item.name}</p>
                       {item.price != null && (
-                        <p className="text-gray-900 text-xs font-extrabold mt-0.5">
+                        <p className="text-gray-900 text-sm sm:text-xs font-extrabold mt-0.5">
                           {item.price} <span className="text-gray-400 text-[10px] font-medium">{CURRENCY_SYMBOLS[item.currency] || item.currency}</span>
                         </p>
                       )}
