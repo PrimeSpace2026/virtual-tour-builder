@@ -1327,7 +1327,7 @@ const TourViewer = () => {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 50 }}
             transition={{ delay: 0.8, type: "spring", damping: 22 }}
-            className="absolute bottom-[70px] sm:bottom-[75px] left-0 right-0 z-30 pointer-events-auto px-0 sm:px-3"
+            className="absolute bottom-[70px] sm:bottom-[75px] left-0 right-0 z-30 pointer-events-auto px-0 sm:px-3 hidden sm:block"
           >
             <div className="max-w-3xl mx-auto sm:px-0 px-0">
               {/* Active filter label */}
@@ -1426,7 +1426,7 @@ const TourViewer = () => {
             exit={{ opacity: 0, scale: 0.9 }}
             onClick={() => setShowCard(true)}
             className={`absolute left-2 sm:left-4 z-20 pointer-events-auto flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-black/60 backdrop-blur-xl border border-white/10 text-white/70 hover:text-white hover:bg-black/80 transition-all ${
-              tourItems.filter(i => i.tagSid).length > 0 && !showProducts && !showCart ? "bottom-[190px] sm:bottom-[210px]" : "bottom-[70px]"
+              tourItems.filter(i => i.tagSid).length > 0 && !showProducts && !showCart ? "bottom-4 sm:bottom-[190px] md:bottom-[210px]" : "bottom-4 sm:bottom-[70px]"
             }`}
           >
             <Eye className="w-4 h-4" />
