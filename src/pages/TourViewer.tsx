@@ -660,8 +660,6 @@ const TourViewer = () => {
             <p className="text-white/40 text-[10px] sm:text-[11px] font-medium">Studio 3D immersif</p>
           </div>
         </div>
-          </div>
-        </div>
       </div>
 
       {/* ===== TOP-LEFT: Back Button ===== */}
