@@ -131,23 +131,53 @@ const TourViewer = () => {
   }, [cart]);
   const [showProducts, setShowProducts] = useState(false);
 
-  // Deep link: detect ?product= param (from Matterport tag link)
+  // Match a product by name/id/tagSid from a URL param
+  const matchProduct = useCallback((param: string) => {
+    const items = tourItemsRef.current.length > 0 ? tourItemsRef.current : tourItems;
+    if (!param || items.length === 0) return null;
+    const paramLower = param.trim().toLowerCase();
+    return items.find((i) => {
+      const nameSlug = i.name.trim().toLowerCase().replace(/\s+/g, "-");
+      return nameSlug === paramLower || i.name.trim().toLowerCase() === paramLower || String(i.id) === param || (i.tagSid && i.tagSid.trim().toLowerCase() === paramLower);
+    }) || null;
+  }, [tourItems]);
+
+  // Deep link: detect #product=xxx hash (from Matterport tag link — no page reload!)
+  useEffect(() => {
+    const handleHash = () => {
+      const hash = window.location.hash;
+      const match = hash.match(/[#&]product=([^&]+)/);
+      if (!match) return;
+      const productParam = decodeURIComponent(match[1]);
+      const matched = matchProduct(productParam);
+      if (matched) {
+        setActiveTagFilter(matched.tagSid || matched.name);
+        setSelectedItem(matched);
+      }
+      // Clean hash
+      window.history.replaceState(null, "", window.location.pathname + window.location.search);
+    };
+
+    // Check on mount (page opened with hash)
+    handleHash();
+
+    // Listen for hash changes (user clicks tag link inside Matterport → navigates same page with new hash)
+    window.addEventListener("hashchange", handleHash);
+    return () => window.removeEventListener("hashchange", handleHash);
+  }, [matchProduct]);
+
+  // Also support ?product= query param (fallback for new tab opens)
   useEffect(() => {
     const productParam = searchParams.get("product");
     if (!productParam || tourItems.length === 0) return;
-    const matched = tourItems.find((i) => {
-      const nameSlug = i.name.trim().toLowerCase().replace(/\s+/g, "-");
-      const paramLower = productParam.trim().toLowerCase();
-      return nameSlug === paramLower || i.name.trim().toLowerCase() === paramLower || String(i.id) === productParam || (i.tagSid && i.tagSid.trim().toLowerCase() === paramLower);
-    });
+    const matched = matchProduct(productParam);
     if (matched) {
       setActiveTagFilter(matched.tagSid || matched.name);
       setSelectedItem(matched);
-      // Clean URL param
       searchParams.delete("product");
       setSearchParams(searchParams, { replace: true });
     }
-  }, [tourItems, searchParams]);
+  }, [tourItems, searchParams, matchProduct]);
 
   // Fetch tour data
   useEffect(() => {
