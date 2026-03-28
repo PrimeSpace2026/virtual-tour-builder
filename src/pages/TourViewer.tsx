@@ -80,7 +80,7 @@ const CURRENCY_SYMBOLS: Record<string, string> = { EUR: "€", USD: "$", TND: "T
 function buildEmbedUrl(tourUrl: string, withSdkKey = false): string {
   const modelId = extractModelId(tourUrl);
   if (!modelId) return tourUrl;
-  const base = `https://my.matterport.com/show/?m=${modelId}&play=1&qs=1&brand=0&title=0&mls=2&vr=1&dh=1&gt=0&hr=0&help=0&lp=0&log=0`;
+  const base = `https://my.matterport.com/show/?m=${modelId}&play=1&qs=1&brand=0&title=0&mls=2&vr=1&dh=1&gt=0&hr=0&help=0&lp=0&log=0&events=1`;
   return withSdkKey ? `${base}&applicationKey=${SDK_KEY}` : base;
 }
 
@@ -170,14 +170,48 @@ const TourViewer = () => {
   // SDK: only works on localhost (Matterport free plan restricts to local domains)
   const isLocalDev = typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
 
+  // Production: listen for Matterport postMessage tag click events (no SDK needed)
+  useEffect(() => {
+    if (isLocalDev) return; // localhost uses SDK instead
+    if (!iframeLoaded || !tour?.tourUrl) return;
+    if (tourItemsRef.current.length === 0) return;
+
+    const handleMessage = (event: MessageEvent) => {
+      // Only accept messages from Matterport
+      if (!event.origin.includes("matterport.com")) return;
+      try {
+        const data = typeof event.data === "string" ? JSON.parse(event.data) : event.data;
+        // Matterport sends various event types — look for tag/mattertag clicks
+        const tagSid = data?.payload?.sid || data?.sid || data?.payload?.tagSid || data?.tagSid;
+        const eventType = (data?.type || data?.event || data?.name || "").toLowerCase();
+        if (!tagSid) return;
+        if (!eventType.includes("tag") && !eventType.includes("click")) return;
+
+        console.log("📩 postMessage tag click:", tagSid, data);
+
+        const matchedItem = tourItemsRef.current.find((i) => {
+          if (!i.tagSid) return false;
+          if (i.tagSid === tagSid) return true;
+          if (i.tagSid.trim().toLowerCase() === tagSid.trim().toLowerCase()) return true;
+          return false;
+        });
+
+        if (matchedItem) {
+          setActiveTagFilter(matchedItem.tagSid);
+        }
+      } catch {}
+    };
+
+    window.addEventListener("message", handleMessage);
+    setSdkFailed(true); // show products strip since SDK is unavailable
+    return () => window.removeEventListener("message", handleMessage);
+  }, [iframeLoaded, tour?.tourUrl, isLocalDev]);
+
+  // SDK: only works on localhost (Matterport free plan restricts to local domains)
   useEffect(() => {
     if (!iframeLoaded || !iframeRef.current || !tour?.tourUrl) return;
     if (tourItemsRef.current.length === 0) return;
-    if (!isLocalDev) {
-      // Production: SDK unavailable without paid license → auto-show products
-      setSdkFailed(true);
-      return;
-    }
+    if (!isLocalDev) return;
     if (sdkAttemptsRef.current >= 1) return;
     sdkAttemptsRef.current = 1;
 
