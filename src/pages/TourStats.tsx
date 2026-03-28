@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, Eye, Clock, MousePointerClick, ShoppingCart, Tag, BarChart3, Users, TrendingUp, Box, Layers, Camera, Calendar, Globe, Hash } from "lucide-react";
+import { ArrowLeft, Eye, Clock, MousePointerClick, ShoppingCart, Tag, BarChart3, Users, TrendingUp, Box, Layers, Camera, Calendar, Globe, Hash, Monitor, MapPin } from "lucide-react";
 
 interface StatsData {
   totalVisits: number;
@@ -10,7 +10,9 @@ interface StatsData {
   addToCart: number;
   tagHeatmap: { name: string; clicks: number }[];
   productHeatmap: { name: string; clicks: number }[];
-  recentVisits: { id: number; visitorId: string; startedAt: string; durationSeconds: number | null }[];
+  recentVisits: { id: number; visitorId: string; startedAt: string; durationSeconds: number | null; browser?: string; country?: string; city?: string }[];
+  browsers?: { name: string; count: number }[];
+  locations?: { name: string; count: number }[];
 }
 
 const formatDuration = (seconds: number | null) => {
@@ -250,6 +252,77 @@ const TourStats = () => {
               </div>
             </div>
 
+            {/* Browser & Location Breakdown */}
+            <div className="grid md:grid-cols-2 gap-6 mb-8">
+              {/* Browser */}
+              <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-5">
+                <div className="flex items-center gap-2 mb-4">
+                  <Monitor className="w-4 h-4 text-sky-400" />
+                  <h2 className="text-sm font-semibold text-white/70">Navigateurs</h2>
+                </div>
+                {(stats.browsers?.length ?? 0) === 0 ? (
+                  <p className="text-white/30 text-xs">Aucune donnée</p>
+                ) : (
+                  <div className="space-y-2">
+                    {stats.browsers!.map((b) => {
+                      const maxB = Math.max(...stats.browsers!.map(x => x.count));
+                      return (
+                        <div key={b.name} className="flex items-center gap-3">
+                          <span className="text-white/60 text-xs w-20 truncate shrink-0">{b.name}</span>
+                          <div className="flex-1 h-6 bg-white/[0.04] rounded-lg overflow-hidden relative">
+                            <div
+                              className="h-full rounded-lg transition-all"
+                              style={{
+                                width: `${Math.max(8, (b.count / maxB) * 100)}%`,
+                                background: `linear-gradient(90deg, rgba(56,189,248,0.3), rgba(56,189,248,${0.3 + (b.count / maxB) * 0.7}))`,
+                              }}
+                            />
+                            <span className="absolute inset-0 flex items-center justify-end pr-2 text-white/70 text-[10px] font-bold">
+                              {b.count}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Locations */}
+              <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-5">
+                <div className="flex items-center gap-2 mb-4">
+                  <MapPin className="w-4 h-4 text-emerald-400" />
+                  <h2 className="text-sm font-semibold text-white/70">Localisations</h2>
+                </div>
+                {(stats.locations?.length ?? 0) === 0 ? (
+                  <p className="text-white/30 text-xs">Aucune donnée</p>
+                ) : (
+                  <div className="space-y-2">
+                    {stats.locations!.map((l) => {
+                      const maxL = Math.max(...stats.locations!.map(x => x.count));
+                      return (
+                        <div key={l.name} className="flex items-center gap-3">
+                          <span className="text-white/60 text-xs w-28 truncate shrink-0">{l.name}</span>
+                          <div className="flex-1 h-6 bg-white/[0.04] rounded-lg overflow-hidden relative">
+                            <div
+                              className="h-full rounded-lg transition-all"
+                              style={{
+                                width: `${Math.max(8, (l.count / maxL) * 100)}%`,
+                                background: `linear-gradient(90deg, rgba(52,211,153,0.3), rgba(52,211,153,${0.3 + (l.count / maxL) * 0.7}))`,
+                              }}
+                            />
+                            <span className="absolute inset-0 flex items-center justify-end pr-2 text-white/70 text-[10px] font-bold">
+                              {l.count}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+
             {/* Recent Visits */}
             <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-5">
               <div className="flex items-center gap-2 mb-4">
@@ -265,6 +338,8 @@ const TourStats = () => {
                     <thead>
                       <tr className="text-white/30 border-b border-white/[0.06]">
                         <th className="text-left py-2 pr-4 font-medium">Visiteur</th>
+                        <th className="text-left py-2 pr-4 font-medium">Navigateur</th>
+                        <th className="text-left py-2 pr-4 font-medium">Lieu</th>
                         <th className="text-left py-2 pr-4 font-medium">Date</th>
                         <th className="text-right py-2 font-medium">Durée</th>
                       </tr>
@@ -273,6 +348,8 @@ const TourStats = () => {
                       {stats.recentVisits.map((v) => (
                         <tr key={v.id} className="border-b border-white/[0.03] hover:bg-white/[0.02]">
                           <td className="py-2 pr-4 text-white/50 font-mono">{v.visitorId?.slice(0, 8) || "—"}...</td>
+                          <td className="py-2 pr-4 text-white/40">{v.browser || "—"}</td>
+                          <td className="py-2 pr-4 text-white/40">{v.city && v.country ? `${v.city}, ${v.country}` : v.country || "—"}</td>
                           <td className="py-2 pr-4 text-white/40">{new Date(v.startedAt).toLocaleString("fr-FR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}</td>
                           <td className="py-2 text-right">
                             <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${

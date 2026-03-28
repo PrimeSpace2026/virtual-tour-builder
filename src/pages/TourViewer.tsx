@@ -240,11 +240,32 @@ const TourViewer = () => {
     if (!tour?.id) return;
     visitStartRef.current = Date.now();
     const vid = visitorId.current;
-    fetch("/api/analytics/visit", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ tourId: tour.id, visitorId: vid }),
-    }).then(r => r.json()).then(v => { visitIdRef.current = v.id; }).catch(() => {});
+
+    // Detect browser name
+    const ua = navigator.userAgent;
+    let browser = "Autre";
+    if (ua.includes("Firefox")) browser = "Firefox";
+    else if (ua.includes("Edg")) browser = "Edge";
+    else if (ua.includes("OPR") || ua.includes("Opera")) browser = "Opera";
+    else if (ua.includes("Chrome") && !ua.includes("Edg")) browser = "Chrome";
+    else if (ua.includes("Safari") && !ua.includes("Chrome")) browser = "Safari";
+
+    // Get geo from free API + send visit
+    const sendVisit = (country = "", city = "") => {
+      fetch("/api/analytics/visit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tourId: tour.id, visitorId: vid, browser, country, city }),
+      }).then(r => r.json()).then(v => { visitIdRef.current = v.id; }).catch(() => {});
+    };
+
+    fetch("https://ipapi.co/json/")
+      .then(r => r.ok ? r.json() : null)
+      .then(geo => {
+        if (geo?.country_name) sendVisit(geo.country_name, geo.city || "");
+        else sendVisit();
+      })
+      .catch(() => sendVisit());
 
     const sendDuration = () => {
       if (!visitIdRef.current) return;
