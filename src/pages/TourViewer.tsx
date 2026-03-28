@@ -80,7 +80,7 @@ const CURRENCY_SYMBOLS: Record<string, string> = { EUR: "€", USD: "$", TND: "T
 function buildEmbedUrl(tourUrl: string, withSdkKey = false): string {
   const modelId = extractModelId(tourUrl);
   if (!modelId) return tourUrl;
-  const base = `https://my.matterport.com/show/?m=${modelId}&play=1&qs=1&brand=0&title=0&mls=2&vr=1&dh=1&gt=0&hr=0&help=0&lp=0&log=0`;
+  const base = `https://my.matterport.com/show/?m=${modelId}&play=1&qs=1&brand=0&title=0&mls=2&vr=0&dh=0&gt=0&hr=0&help=0&lp=0&log=0&fp=0&f=0&pin=0&search=0&wh=0`;
   return withSdkKey ? `${base}&applicationKey=${SDK_KEY}` : base;
 }
 
@@ -574,7 +574,7 @@ const TourViewer = () => {
   return (
     <div className="fixed inset-0 bg-[#0a0a14] z-50 overflow-hidden select-none">
       {/* ===== MATTERPORT 3D IFRAME ===== */}
-      <div className="absolute inset-0">
+      <div className="absolute inset-0 overflow-hidden">
         <AnimatePresence>
           {!iframeLoaded && (
             <motion.div
@@ -607,7 +607,8 @@ const TourViewer = () => {
           ref={iframeRef}
           id="showcase-iframe"
           src={embedUrl}
-          className="w-full h-full border-0"
+          className="w-full border-0 absolute inset-0"
+          style={{ height: "calc(100% + 100px)" }}
           allow="xr-spatial-tracking; fullscreen; autoplay"
           allowFullScreen
           onLoad={() => setIframeLoaded(true)}
@@ -1387,29 +1388,27 @@ const TourViewer = () => {
         )}
       </AnimatePresence>
 
-      {/* ===== Bottom-right badge ===== */}
+      {/* ===== Top-right badge ===== */}
       <AnimatePresence>
         {!showCard && !selectedTag && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className={`absolute right-4 z-20 pointer-events-auto hidden sm:block ${
-              tourItems.filter(i => i.tagSid).length > 0 && !showProducts && !showCart ? "bottom-[140px]" : "bottom-4"
-            }`}
+            className="absolute top-4 right-4 z-20 pointer-events-auto hidden sm:block"
           >
             <Link
               to="/"
-              className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-black/70 backdrop-blur-xl border border-white/15 hover:border-white/30 transition-all group shadow-2xl"
+              className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-black/60 backdrop-blur-xl border border-white/10 hover:border-white/25 transition-all group shadow-2xl"
             >
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-600 to-teal-500 flex items-center justify-center shadow-lg shadow-purple-500/20">
-                <span className="text-white font-extrabold text-lg">P</span>
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-600 to-teal-500 flex items-center justify-center shadow-lg shadow-purple-500/20">
+                <span className="text-white font-extrabold text-sm">P</span>
               </div>
               <div>
-                <p className="text-white/80 text-base font-bold group-hover:text-white transition-colors tracking-tight">
+                <p className="text-white/80 text-sm font-bold group-hover:text-white transition-colors tracking-tight">
                   PrimeSpace
                 </p>
-                <p className="text-white/35 text-[11px] font-medium">Studio 3D immersif</p>
+                <p className="text-white/30 text-[10px] font-medium">Studio 3D immersif</p>
               </div>
             </Link>
           </motion.div>
