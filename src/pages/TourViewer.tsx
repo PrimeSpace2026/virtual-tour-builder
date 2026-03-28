@@ -80,7 +80,7 @@ const CURRENCY_SYMBOLS: Record<string, string> = { EUR: "€", USD: "$", TND: "T
 function buildEmbedUrl(tourUrl: string, withSdkKey = false): string {
   const modelId = extractModelId(tourUrl);
   if (!modelId) return tourUrl;
-  const base = `https://my.matterport.com/show/?m=${modelId}&play=1&qs=1&brand=0&title=0&mls=2&vr=0&dh=0&gt=0&hr=0&help=0&lp=0&log=0&fp=0&f=0&pin=0&search=0&wh=0`;
+  const base = `https://my.matterport.com/show/?m=${modelId}&play=1&qs=1&brand=0&title=0&mls=2&vr=0&dh=1&gt=0&hr=0&help=0&lp=0&log=0&f=1&pin=0&search=0&wh=0&mt=0&lang=fr`;
   return withSdkKey ? `${base}&applicationKey=${SDK_KEY}` : base;
 }
 
@@ -612,10 +612,10 @@ const TourViewer = () => {
           allowFullScreen
           onLoad={() => setIframeLoaded(true)}
         />
-        {/* Cover Matterport bottom toolbar */}
-        <div className="absolute bottom-0 left-0 right-0 h-[70px] z-[5] pointer-events-none" style={{ background: "linear-gradient(to bottom, transparent, rgba(10,10,20,0.85) 30%, rgba(10,10,20,1) 60%)" }} />
+        {/* Cover Matterport branding text only */}
+        <div className="absolute bottom-0 left-0 right-0 h-[22px] z-[5] pointer-events-none bg-[#0a0a14]" />
         {/* Cover Matterport bottom-left location badge */}
-        <div className="absolute bottom-0 left-0 w-[280px] h-[100px] z-[5] pointer-events-none" style={{ background: "radial-gradient(ellipse at bottom left, rgba(10,10,20,1) 50%, transparent 80%)" }} />
+        <div className="absolute bottom-[22px] left-0 w-[260px] h-[50px] z-[5] pointer-events-none" style={{ background: "linear-gradient(to right, rgba(10,10,20,1) 60%, transparent)" }} />
       </div>
 
       {/* ===== TOP-LEFT: Back Button ===== */}
