@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, useNavigate, Link, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft,
@@ -87,6 +87,7 @@ function buildEmbedUrl(tourUrl: string, withSdkKey = false): string {
 const TourViewer = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const sdkRef = useRef<any>(null);
   const sdkAttemptsRef = useRef(0);
@@ -129,6 +130,24 @@ const TourViewer = () => {
     } catch {}
   }, [cart]);
   const [showProducts, setShowProducts] = useState(false);
+
+  // Deep link: detect ?product= param (from Matterport tag link)
+  useEffect(() => {
+    const productParam = searchParams.get("product");
+    if (!productParam || tourItems.length === 0) return;
+    const matched = tourItems.find((i) => {
+      const nameSlug = i.name.trim().toLowerCase().replace(/\s+/g, "-");
+      const paramLower = productParam.trim().toLowerCase();
+      return nameSlug === paramLower || i.name.trim().toLowerCase() === paramLower || String(i.id) === productParam || (i.tagSid && i.tagSid.trim().toLowerCase() === paramLower);
+    });
+    if (matched) {
+      setActiveTagFilter(matched.tagSid || matched.name);
+      setSelectedItem(matched);
+      // Clean URL param
+      searchParams.delete("product");
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [tourItems, searchParams]);
 
   // Fetch tour data
   useEffect(() => {
