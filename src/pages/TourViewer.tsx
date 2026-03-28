@@ -177,8 +177,10 @@ const TourViewer = () => {
     if (tourItemsRef.current.length === 0) return;
 
     const handleMessage = (event: MessageEvent) => {
-      // Only accept messages from Matterport
-      if (!event.origin.includes("matterport.com")) return;
+      // Log ALL messages from Matterport for debugging
+      if (event.origin.includes("matterport.com")) {
+        console.log("📨 Matterport message:", event.data);
+      }
       try {
         const data = typeof event.data === "string" ? JSON.parse(event.data) : event.data;
         // Matterport sends various event types — look for tag/mattertag clicks
