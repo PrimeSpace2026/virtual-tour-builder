@@ -613,6 +613,13 @@ const TourViewer = () => {
           allowFullScreen
           onLoad={() => setIframeLoaded(true)}
         />
+        {/* Cover Matterport logo */}
+        <div className="absolute bottom-[24px] left-[10px] z-[5] flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-black/60 backdrop-blur-xl border border-white/10 hover:border-white/25 transition-all group shadow-2xl">
+          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-purple-600 to-teal-500 flex items-center justify-center">
+            <span className="text-white font-extrabold text-xs">P</span>
+          </div>
+          <span className="text-white/70 text-xs font-semibold">PrimeSpace</span>
+        </div>
       </div>
 
       {/* ===== TOP-LEFT: Back Button ===== */}
