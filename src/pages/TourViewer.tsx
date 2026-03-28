@@ -614,11 +614,14 @@ const TourViewer = () => {
           onLoad={() => setIframeLoaded(true)}
         />
         {/* PrimeSpace badge — pointer-events-none so it doesn't block the Matterport fullscreen button behind it */}
-        <div className="absolute bottom-1 right-12 z-[5] pointer-events-none flex items-center gap-2 px-3 py-2 rounded-xl bg-black/60 backdrop-blur-xl border border-white/10 shadow-2xl">
-          <div className="w-6 h-6 rounded-md bg-gradient-to-br from-purple-600 to-teal-500 flex items-center justify-center">
-            <span className="text-white font-extrabold text-[10px]">P</span>
+        <div className="absolute bottom-2 right-12 z-[5] pointer-events-none flex items-center gap-3 px-5 py-3 rounded-2xl bg-black/70 backdrop-blur-xl border border-white/15 shadow-2xl">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-600 to-teal-500 flex items-center justify-center shadow-lg shadow-purple-500/20">
+            <span className="text-white font-extrabold text-lg">P</span>
           </div>
-          <span className="text-white/70 text-xs font-semibold">PrimeSpace</span>
+          <div>
+            <p className="text-white/90 text-base font-bold tracking-tight">PrimeSpace</p>
+            <p className="text-white/40 text-[10px] font-medium">Studio 3D immersif</p>
+          </div>
         </div>
       </div>
 
