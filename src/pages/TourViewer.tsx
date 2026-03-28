@@ -112,8 +112,22 @@ const TourViewer = () => {
   const tourItemsRef = useRef<TourItemData[]>([]);
   const [selectedItem, setSelectedItem] = useState<TourItemData | null>(null);
   const [activeTagFilter, setActiveTagFilter] = useState<string | null>(null); // tag SID or name that was clicked in 3D
-  const [cart, setCart] = useState<CartEntry[]>([]);
+  const [cart, setCart] = useState<CartEntry[]>(() => {
+    try {
+      const saved = localStorage.getItem("primespace_cart");
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
   const [showCart, setShowCart] = useState(false);
+
+  // Persist cart to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem("primespace_cart", JSON.stringify(cart));
+    } catch {}
+  }, [cart]);
   const [showProducts, setShowProducts] = useState(false);
 
   // Fetch tour data
