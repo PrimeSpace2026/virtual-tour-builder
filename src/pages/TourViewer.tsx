@@ -613,8 +613,8 @@ const TourViewer = () => {
           allowFullScreen
           onLoad={() => setIframeLoaded(true)}
         />
-        {/* Cover Matterport logo */}
-        <div className="absolute bottom-[24px] left-[10px] z-[5] flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-black/60 backdrop-blur-xl border border-white/10 hover:border-white/25 transition-all group shadow-2xl">
+        {/* Cover Matterport logo — bottom right */}
+        <div className="absolute bottom-[24px] right-[10px] z-[5] flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-black/60 backdrop-blur-xl border border-white/10 hover:border-white/25 transition-all group shadow-2xl">
           <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-purple-600 to-teal-500 flex items-center justify-center">
             <span className="text-white font-extrabold text-xs">P</span>
           </div>
@@ -1392,33 +1392,6 @@ const TourViewer = () => {
             <Eye className="w-4 h-4" />
             <span className="text-xs font-medium truncate max-w-[150px] sm:max-w-none">{tour.name}</span>
           </motion.button>
-        )}
-      </AnimatePresence>
-
-      {/* ===== Top-right badge ===== */}
-      <AnimatePresence>
-        {!showCard && !selectedTag && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="absolute top-4 right-4 z-20 pointer-events-auto hidden sm:block"
-          >
-            <Link
-              to="/"
-              className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-black/60 backdrop-blur-xl border border-white/10 hover:border-white/25 transition-all group shadow-2xl"
-            >
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-600 to-teal-500 flex items-center justify-center shadow-lg shadow-purple-500/20">
-                <span className="text-white font-extrabold text-sm">P</span>
-              </div>
-              <div>
-                <p className="text-white/80 text-sm font-bold group-hover:text-white transition-colors tracking-tight">
-                  PrimeSpace
-                </p>
-                <p className="text-white/30 text-[10px] font-medium">Studio 3D immersif</p>
-              </div>
-            </Link>
-          </motion.div>
         )}
       </AnimatePresence>
 
