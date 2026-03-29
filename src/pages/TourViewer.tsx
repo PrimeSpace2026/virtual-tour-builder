@@ -1189,18 +1189,18 @@ const TourViewer = () => {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 30 }}
               transition={{ type: "spring", damping: 28, stiffness: 350 }}
-              className="absolute left-1/2 -translate-x-1/2 bottom-16 sm:bottom-20 w-[calc(100%-1rem)] sm:w-[calc(100%-3rem)] md:w-[680px] max-h-[60vh] sm:max-h-[420px] z-50 pointer-events-auto"
+              className="absolute inset-4 md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-[680px] md:max-h-[80vh] z-50 pointer-events-auto"
             >
-              <div className="bg-white rounded-3xl overflow-hidden shadow-[0_25px_60px_rgba(0,0,0,0.3)] flex flex-col md:flex-row h-full md:h-auto max-h-[60vh] sm:max-h-[420px]">
+              <div className="bg-white rounded-2xl overflow-hidden shadow-2xl flex flex-col md:flex-row max-h-full h-full md:h-auto">
                 <button
                   onClick={() => { setSelectedTag(null); setSelectedItem(null); }}
-                  className="absolute top-4 right-4 z-10 w-9 h-9 rounded-full bg-black/10 hover:bg-black/20 flex items-center justify-center text-gray-600 hover:text-gray-900 transition-all"
+                  className="absolute top-3 right-3 z-10 w-8 h-8 rounded-full bg-black/40 hover:bg-black/60 flex items-center justify-center text-white transition-all"
                 >
                   <X className="w-4 h-4" />
                 </button>
 
                 {/* Image */}
-                <div className="md:w-[48%] h-36 sm:h-56 md:h-auto bg-gradient-to-br from-gray-50 to-gray-100 shrink-0 flex items-center justify-center relative overflow-hidden">
+                <div className="md:w-[48%] h-48 md:h-auto bg-gradient-to-br from-gray-50 to-gray-100 shrink-0 flex items-center justify-center relative overflow-hidden">
                   {selectedItem?.brand && (
                     <span className="absolute top-4 left-4 px-3 py-1 rounded-full bg-white/90 backdrop-blur-sm text-[10px] font-bold uppercase tracking-widest text-gray-500 shadow-sm">
                       {selectedItem.brand}
