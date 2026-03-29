@@ -22,6 +22,7 @@ import {
   Plus,
   Minus,
   Trash2,
+  Layers,
 } from "lucide-react";
 
 const SDK_KEY = "b7uar4u57xdec0zw7dwygt7md";
@@ -124,6 +125,10 @@ const TourViewer = () => {
 
   // Tag/Item popup state
   const [selectedTag, setSelectedTag] = useState<TagItem | null>(null);
+
+  // Floor selector state
+  const [floors, setFloors] = useState<{index: number; name: string}[]>([]);
+  const [currentFloor, setCurrentFloor] = useState<number>(-1);
 
   // Tour Items (products) & Cart
   const [tourItems, setTourItems] = useState<TourItemData[]>([]);
@@ -368,6 +373,20 @@ const TourViewer = () => {
         setSdkConnected(true);
         console.log("✅ SDK connecté (localhost)");
 
+        // Get floor data for custom floor selector
+        try {
+          const floorsData = await sdk.Floor.getData();
+          if (floorsData && floorsData.totalFloors > 1) {
+            const floorList = floorsData.floorNames.map((name: string, i: number) => ({ index: i, name: name || `Étage ${i}` }));
+            setFloors(floorList);
+            setCurrentFloor(floorsData.currentFloor);
+          }
+          // Subscribe to current floor changes
+          sdk.Floor.current.subscribe((f: any) => {
+            if (f && typeof f.sequence === "number") setCurrentFloor(f.sequence);
+          });
+        } catch (err) { console.log("Floor data error:", err); }
+
         try {
           if (sdk.Mattertag?.getData) {
             const allTags = await sdk.Mattertag.getData();
@@ -499,6 +518,13 @@ const TourViewer = () => {
       setSelectedItem(item);
     }
   }, [tour?.id, trackEvent]);
+
+  // Navigate to a specific floor
+  const navigateToFloor = useCallback((floorIndex: number) => {
+    const sdk = sdkRef.current;
+    if (!sdk?.Floor?.moveTo) return;
+    sdk.Floor.moveTo(floorIndex).catch(() => {});
+  }, []);
 
   // Fullscreen
   const toggleFullscreen = useCallback(() => {
@@ -695,6 +721,39 @@ const TourViewer = () => {
           <span className="text-xs font-medium hidden sm:inline">Retour</span>
         </button>
       </motion.div>
+
+      {/* ===== FLOOR SELECTOR (left side, vertically centered) ===== */}
+      <AnimatePresence>
+        {floors.length > 1 && sdkConnected && (
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ delay: 0.5 }}
+            className="absolute left-4 top-1/2 -translate-y-1/2 z-20 pointer-events-auto"
+          >
+            <div className="flex flex-col gap-1.5 p-1.5 rounded-2xl bg-black/60 backdrop-blur-xl border border-white/10">
+              <div className="flex items-center justify-center py-1">
+                <Layers className="w-3.5 h-3.5 text-white/40" />
+              </div>
+              {[...floors].reverse().map((floor) => (
+                <button
+                  key={floor.index}
+                  onClick={() => navigateToFloor(floor.index)}
+                  className={`w-9 h-9 rounded-xl flex items-center justify-center text-xs font-bold transition-all ${
+                    currentFloor === floor.index
+                      ? "bg-purple-600 text-white shadow-lg shadow-purple-500/30"
+                      : "bg-white/5 text-white/50 hover:bg-white/10 hover:text-white"
+                  }`}
+                  title={floor.name}
+                >
+                  {floor.index}
+                </button>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ===== TOP-RIGHT: Action Buttons ===== */}
       <motion.div
