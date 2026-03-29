@@ -1150,9 +1150,9 @@ const TourViewer = () => {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 30 }}
               transition={{ type: "spring", damping: 28, stiffness: 350 }}
-              className="absolute inset-2 sm:inset-6 md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-[680px] md:max-h-[480px] z-50 pointer-events-auto"
+              className="absolute left-1/2 -translate-x-1/2 bottom-16 sm:bottom-20 w-[calc(100%-1rem)] sm:w-[calc(100%-3rem)] md:w-[680px] max-h-[60vh] sm:max-h-[420px] z-50 pointer-events-auto"
             >
-              <div className="bg-white rounded-3xl overflow-hidden shadow-[0_25px_60px_rgba(0,0,0,0.3)] flex flex-col md:flex-row h-full md:h-auto max-h-[calc(100vh-1.5rem)] sm:max-h-[calc(100vh-3rem)] md:max-h-[480px]">
+              <div className="bg-white rounded-3xl overflow-hidden shadow-[0_25px_60px_rgba(0,0,0,0.3)] flex flex-col md:flex-row h-full md:h-auto max-h-[60vh] sm:max-h-[420px]">
                 <button
                   onClick={() => { setSelectedTag(null); setSelectedItem(null); }}
                   className="absolute top-4 right-4 z-10 w-9 h-9 rounded-full bg-black/10 hover:bg-black/20 flex items-center justify-center text-gray-600 hover:text-gray-900 transition-all"
