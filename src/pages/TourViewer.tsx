@@ -138,6 +138,10 @@ const TourViewer = () => {
   const [sdkConnected, setSdkConnected] = useState(false);
   const [sdkFailed, setSdkFailed] = useState(false);
 
+  // Iframe deep-link state: changing iframeKey forces React to unmount/remount the iframe
+  const [iframeSrc, setIframeSrc] = useState("");
+  const [iframeKey, setIframeKey] = useState(0);
+
   // Tag/Item popup state
   const [selectedTag, setSelectedTag] = useState<TagItem | null>(null);
 
@@ -254,6 +258,9 @@ const TourViewer = () => {
         setTourItems(items);
         tourItemsRef.current = items;
         setTourServices(Array.isArray(servicesData) ? servicesData : []);
+        // Set initial iframe URL
+        const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+        setIframeSrc(buildEmbedUrl(tourData.tourUrl, isLocal));
         setLoading(false);
         setShowCard(true);
       })
@@ -309,8 +316,9 @@ const TourViewer = () => {
   // SDK: only works on localhost (Matterport free plan restricts to local domains)
   const isLocalDev = typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
 
-  // Attempt SDK connection on all environments (needed for floor selector + tags)
+  // SDK: only on localhost (Matterport free plan rejects on other domains)
   useEffect(() => {
+    if (!isLocalDev) { setSdkFailed(true); return; }
     if (!iframeLoaded || !iframeRef.current || !tour?.tourUrl) return;
     if (sdkAttemptsRef.current >= 1) return;
     sdkAttemptsRef.current = 1;
@@ -514,21 +522,28 @@ const TourViewer = () => {
   const cartTotal = cart.reduce((sum, c) => sum + (c.item.price || 0) * c.qty, 0);
   const cartCount = cart.reduce((sum, c) => sum + c.qty, 0);
 
-  // Navigate to a product's tag in the 3D tour via iframe deep link, then show popup
+  // Navigate to a product's tag in the 3D tour via &pin=TAG_SID deep link
   const navigateToProduct = useCallback((item: TourItemData) => {
     setShowProducts(false);
     if (tour?.id) trackEvent(tour.id, "product_click", item.name, String(item.id));
 
-    if (item.tagSid && tour?.tourUrl && iframeRef.current) {
+    if (item.tagSid && tour?.tourUrl) {
       const resolvedSid = tagsMapRef.current.get(item.tagSid.trim().toLowerCase()) || item.tagSid;
-      const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
-      const url = buildEmbedUrl(tour.tourUrl, isLocal) + `&tag=${encodeURIComponent(resolvedSid)}`;
-      iframeRef.current.src = url;
-      console.log("🎯 Deep link vers tag:", resolvedSid);
-      // Show popup after iframe starts loading the new position
-      setTimeout(() => setSelectedItem(item), 500);
+      const modelId = extractModelId(tour.tourUrl);
+      if (!modelId) { setSelectedItem(item); return; }
+
+      // Minimal URL: play=1 (auto-start), qs=1 (skip fly-in), pin=TAG_SID
+      const pinUrl = `https://my.matterport.com/show/?m=${modelId}&play=1&qs=1&brand=0&title=0&mls=2&help=0&hl=0&pin=${encodeURIComponent(resolvedSid)}`;
+      console.log(`🎯 Deep link (pin) to tag: ${resolvedSid}`);
+
+      // Force iframe remount + show loading spinner
+      setIframeSrc(pinUrl);
+      setIframeKey((k) => k + 1);
+      setIframeLoaded(false);
+
+      // Show popup after 3D space initializes
+      setTimeout(() => setSelectedItem(item), 1200);
     } else {
-      // No tag — just show popup directly
       setSelectedItem(item);
     }
   }, [tour?.id, tour?.tourUrl, trackEvent]);
@@ -647,9 +662,6 @@ const TourViewer = () => {
     );
   }
 
-  // Only include applicationKey on localhost (Matterport free plan rejects it on other domains)
-  const embedUrl = buildEmbedUrl(tour.tourUrl, isLocalDev);
-
   return (
     <div className="fixed inset-0 bg-[#0a0a14] z-50 overflow-hidden select-none flex flex-col">
       {/* ===== TOP: MATTERPORT 3D VIEWER ===== */}
@@ -687,11 +699,12 @@ const TourViewer = () => {
         {/* iframe fills container exactly — no height offset so Matterport native buttons stay in view and clickable */}
         <iframe
           ref={iframeRef}
+          key={iframeKey}
           id="showcase-iframe"
-          src={embedUrl}
-          className="absolute inset-0 w-full h-full border-0"
+          src={iframeSrc}
+          className="absolute inset-0 w-full h-full border-0 transition-opacity duration-700 ease-in-out"
+          style={{ opacity: iframeLoaded ? 1 : 0 }}
           allow="xr-spatial-tracking; fullscreen; autoplay"
-          allowFullScreen
           onLoad={() => setIframeLoaded(true)}
         />
         {/* 
