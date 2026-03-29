@@ -18,7 +18,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Plus, Pencil, Trash2, Upload, X, Image as ImageIcon, LogOut, Search, MapPin, Loader2, ShoppingBag, ExternalLink, BarChart3 } from "lucide-react";
+import { Plus, Pencil, Trash2, Upload, X, Image as ImageIcon, LogOut, Search, MapPin, Loader2, ShoppingBag, ExternalLink, BarChart3, Briefcase, Phone, MessageCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from "react-leaflet";
 import L from "leaflet";
@@ -113,6 +113,31 @@ const emptyItem: TourItem = {
   tagSid: "",
 };
 
+interface TourServiceItem {
+  id?: number;
+  tourId: number;
+  name: string;
+  description: string;
+  imageUrl: string;
+  phone: string;
+  whatsapp: string;
+  instagram: string;
+  facebook: string;
+  tagSid: string;
+}
+
+const emptyService: TourServiceItem = {
+  tourId: 0,
+  name: "",
+  description: "",
+  imageUrl: "",
+  phone: "",
+  whatsapp: "",
+  instagram: "",
+  facebook: "",
+  tagSid: "",
+};
+
 const Admin = () => {
   const [tours, setTours] = useState<Tour[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -131,6 +156,12 @@ const Admin = () => {
   const [editItem, setEditItem] = useState<TourItem>(emptyItem);
   const [itemFormOpen, setItemFormOpen] = useState(false);
   const [isEditingItem, setIsEditingItem] = useState(false);
+  // Services management
+  const [services, setServices] = useState<TourServiceItem[]>([]);
+  const [editService, setEditService] = useState<TourServiceItem>(emptyService);
+  const [serviceFormOpen, setServiceFormOpen] = useState(false);
+  const [isEditingService, setIsEditingService] = useState(false);
+  const [activeEntityTab, setActiveEntityTab] = useState<"products" | "services">("products");
   // Tags for dropdown
   const [tourTags, setTourTags] = useState<{ name: string; sid: string }[]>([]);
   const [showAddTag, setShowAddTag] = useState(false);
@@ -308,6 +339,7 @@ const Admin = () => {
     if (!tour.id) return;
     setItemsTourId(tour.id);
     fetchItems(tour.id);
+    fetchServices(tour.id);
     // Fetch saved tags for this tour
     fetch(`/api/tours/${tour.id}/tags`)
       .then((r) => r.ok ? r.json() : [])
@@ -315,6 +347,8 @@ const Admin = () => {
       .catch(() => setTourTags([]));
     setItemsDialogOpen(true);
     setItemFormOpen(false);
+    setServiceFormOpen(false);
+    setActiveEntityTab("products");
   };
 
   const openCreateItem = () => {
@@ -358,6 +392,58 @@ const Admin = () => {
     if (res.ok) {
       toast({ title: "Produit supprimé" });
       if (itemsTourId) fetchItems(itemsTourId);
+    }
+  };
+
+  // ===== SERVICES MANAGEMENT =====
+  const fetchServices = (tourId: number) => {
+    fetch(`/api/tours/${tourId}/services`)
+      .then((r) => r.ok ? r.json() : [])
+      .then((data) => setServices(Array.isArray(data) ? data : []))
+      .catch(() => setServices([]));
+  };
+
+  const openCreateService = () => {
+    setEditService({ ...emptyService, tourId: itemsTourId || 0 });
+    setIsEditingService(false);
+    setServiceFormOpen(true);
+  };
+
+  const openEditService = (svc: TourServiceItem) => {
+    setEditService({ ...svc });
+    setIsEditingService(true);
+    setServiceFormOpen(true);
+  };
+
+  const handleSaveService = async () => {
+    if (!editService.name) {
+      toast({ title: "Erreur", description: "Le nom est obligatoire", variant: "destructive" });
+      return;
+    }
+    const method = isEditingService ? "PUT" : "POST";
+    const url = isEditingService
+      ? `/api/tours/${itemsTourId}/services/${editService.id}`
+      : `/api/tours/${itemsTourId}/services`;
+    const res = await fetch(url, {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(editService),
+    });
+    if (res.ok) {
+      toast({ title: isEditingService ? "Service modifié" : "Service ajouté" });
+      setServiceFormOpen(false);
+      if (itemsTourId) fetchServices(itemsTourId);
+    } else {
+      toast({ title: "Erreur", description: "Échec de l'enregistrement", variant: "destructive" });
+    }
+  };
+
+  const handleDeleteService = async (serviceId: number) => {
+    if (!confirm("Supprimer ce service ?")) return;
+    const res = await fetch(`/api/tours/${itemsTourId}/services/${serviceId}`, { method: "DELETE" });
+    if (res.ok) {
+      toast({ title: "Service supprimé" });
+      if (itemsTourId) fetchServices(itemsTourId);
     }
   };
 
@@ -595,191 +681,365 @@ const Admin = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Items Management Dialog */}
+      {/* Items & Services Management Dialog */}
       <Dialog open={itemsDialogOpen} onOpenChange={setItemsDialogOpen}>
         <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <ShoppingBag className="w-5 h-5" />
-              Produits de la visite
+              {activeEntityTab === "products" ? <ShoppingBag className="w-5 h-5" /> : <Briefcase className="w-5 h-5" />}
+              {activeEntityTab === "products" ? "Produits" : "Services"} de la visite
             </DialogTitle>
           </DialogHeader>
 
-          {!itemFormOpen ? (
-            <div className="space-y-4 mt-2">
-              <Button onClick={openCreateItem} className="flex items-center gap-2" size="sm">
-                <Plus className="w-4 h-4" /> Ajouter un produit
-              </Button>
+          {/* Tab switcher */}
+          {!itemFormOpen && !serviceFormOpen && (
+            <div className="flex border-b border-border mb-2">
+              <button
+                type="button"
+                onClick={() => setActiveEntityTab("products")}
+                className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                  activeEntityTab === "products"
+                    ? "border-secondary text-secondary"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <ShoppingBag className="w-4 h-4" /> Produits ({items.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveEntityTab("services")}
+                className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                  activeEntityTab === "services"
+                    ? "border-secondary text-secondary"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Briefcase className="w-4 h-4" /> Services ({services.length})
+              </button>
+            </div>
+          )}
 
-              {items.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <ShoppingBag className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                  <p>Aucun produit ajouté à cette visite</p>
-                  <p className="text-sm mt-1">Ajoutez des produits que les visiteurs pourront découvrir.</p>
+          {/* ===== PRODUCTS TAB ===== */}
+          {activeEntityTab === "products" && !serviceFormOpen && (
+            <>
+              {!itemFormOpen ? (
+                <div className="space-y-4 mt-2">
+                  <Button onClick={openCreateItem} className="flex items-center gap-2" size="sm">
+                    <Plus className="w-4 h-4" /> Ajouter un produit
+                  </Button>
+
+                  {items.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <ShoppingBag className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                      <p>Aucun produit ajouté à cette visite</p>
+                      <p className="text-sm mt-1">Ajoutez des produits que les visiteurs pourront découvrir.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {items.map((item) => (
+                        <div key={item.id} className="flex items-center gap-3 p-3 rounded-xl border border-border bg-card">
+                          {item.imageUrl ? (
+                            <img src={item.imageUrl} alt={item.name} className="w-14 h-14 rounded-lg object-cover shrink-0" />
+                          ) : (
+                            <div className="w-14 h-14 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                              <ShoppingBag className="w-6 h-6 text-muted-foreground" />
+                            </div>
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <p className="font-medium text-sm truncate">{item.name}</p>
+                            {item.brand && <p className="text-xs text-muted-foreground">{item.brand}</p>}
+                            <div className="flex items-center gap-2 mt-0.5">
+                              {item.price != null && (
+                                <span className="text-xs font-semibold text-secondary">{item.price} {item.currency}</span>
+                              )}
+                              {item.externalUrl && (
+                                <a href={item.externalUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-500 flex items-center gap-0.5">
+                                  <ExternalLink className="w-3 h-3" /> Lien
+                                </a>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex gap-1.5 shrink-0">
+                            <Button variant="outline" size="sm" onClick={() => openEditItem(item)}>
+                              <Pencil className="w-3.5 h-3.5" />
+                            </Button>
+                            <Button variant="destructive" size="sm" onClick={() => handleDeleteItem(item.id!)}>
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ) : (
-                <div className="space-y-3">
-                  {items.map((item) => (
-                    <div key={item.id} className="flex items-center gap-3 p-3 rounded-xl border border-border bg-card">
-                      {item.imageUrl ? (
-                        <img src={item.imageUrl} alt={item.name} className="w-14 h-14 rounded-lg object-cover shrink-0" />
-                      ) : (
-                        <div className="w-14 h-14 rounded-lg bg-muted flex items-center justify-center shrink-0">
-                          <ShoppingBag className="w-6 h-6 text-muted-foreground" />
-                        </div>
-                      )}
-                      <div className="min-w-0 flex-1">
-                        <p className="font-medium text-sm truncate">{item.name}</p>
-                        {item.brand && <p className="text-xs text-muted-foreground">{item.brand}</p>}
-                        <div className="flex items-center gap-2 mt-0.5">
-                          {item.price != null && (
-                            <span className="text-xs font-semibold text-secondary">{item.price} {item.currency}</span>
-                          )}
-                          {item.externalUrl && (
-                            <a href={item.externalUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-500 flex items-center gap-0.5">
-                              <ExternalLink className="w-3 h-3" /> Lien
-                            </a>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex gap-1.5 shrink-0">
-                        <Button variant="outline" size="sm" onClick={() => openEditItem(item)}>
-                          <Pencil className="w-3.5 h-3.5" />
-                        </Button>
-                        <Button variant="destructive" size="sm" onClick={() => handleDeleteItem(item.id!)}>
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          ) : (
-            /* Item Create/Edit Form */
-            <div className="space-y-4 mt-2">
-              <div className="flex items-center gap-2 mb-2">
-                <Button variant="ghost" size="sm" onClick={() => setItemFormOpen(false)}>← Retour</Button>
-                <span className="text-sm font-medium">{isEditingItem ? "Modifier le produit" : "Nouveau produit"}</span>
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-1 block">Nom du produit *</label>
-                <Input value={editItem.name} onChange={(e) => setEditItem({ ...editItem, name: e.target.value })} placeholder="Ex: Table KALLAX" />
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-1 block">Marque</label>
-                <Input value={editItem.brand} onChange={(e) => setEditItem({ ...editItem, brand: e.target.value })} placeholder="Ex: IKEA, Zara Home..." />
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-1 block">Description</label>
-                <Textarea value={editItem.description} onChange={(e) => setEditItem({ ...editItem, description: e.target.value })} rows={3} placeholder="Description du produit..." />
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-1 block">Image du produit (URL)</label>
-                <Input value={editItem.imageUrl} onChange={(e) => setEditItem({ ...editItem, imageUrl: e.target.value })} placeholder="https://..." />
-                {editItem.imageUrl && (
-                  <img src={editItem.imageUrl} alt="preview" className="w-24 h-24 object-cover rounded-lg mt-2 border" />
-                )}
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium mb-1 block">Prix</label>
-                  <Input type="number" step="0.01" value={editItem.price ?? ""} onChange={(e) => setEditItem({ ...editItem, price: e.target.value ? Number(e.target.value) : null })} placeholder="299.99" />
-                </div>
-                <div>
-                  <label className="text-sm font-medium mb-1 block">Devise</label>
-                  <Select value={editItem.currency} onValueChange={(v) => setEditItem({ ...editItem, currency: v })}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="EUR">EUR €</SelectItem>
-                      <SelectItem value="USD">USD $</SelectItem>
-                      <SelectItem value="TND">TND</SelectItem>
-                      <SelectItem value="GBP">GBP £</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-1 block">Lien externe (boutique)</label>
-                <Input value={editItem.externalUrl} onChange={(e) => setEditItem({ ...editItem, externalUrl: e.target.value })} placeholder="https://www.ikea.com/..." />
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-1 block">Tag Matterport (optionnel)</label>
-                {tourTags.length > 0 ? (
-                  <div className="space-y-2">
-                    <Select value={editItem.tagSid || "__none__"} onValueChange={(v) => setEditItem({ ...editItem, tagSid: v === "__none__" ? "" : v })}>
-                      <SelectTrigger><SelectValue placeholder="Choisir un tag..." /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="__none__">— Aucun tag —</SelectItem>
-                        {tourTags.map((tag, i) => (
-                          <SelectItem key={`${tag.sid}-${i}`} value={tag.name}>{tag.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <p className="text-xs text-muted-foreground">Sélectionnez le tag Matterport à lier — quand un visiteur clique ce tag, le produit s'affiche</p>
+                /* Product Create/Edit Form */
+                <div className="space-y-4 mt-2">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Button variant="ghost" size="sm" onClick={() => setItemFormOpen(false)}>← Retour</Button>
+                    <span className="text-sm font-medium">{isEditingItem ? "Modifier le produit" : "Nouveau produit"}</span>
                   </div>
-                ) : (
-                  <div className="space-y-2">
-                    {!showAddTag ? (
-                      <>
-                        <Input value={editItem.tagSid} onChange={(e) => setEditItem({ ...editItem, tagSid: e.target.value })} placeholder="Ex: Parking sécurisé, Wifi, CCTV..." />
-                        <div className="flex items-center gap-2">
-                          <p className="text-xs text-muted-foreground flex-1">Écrivez le nom du tag ou ajoutez des tags à la liste</p>
-                          <button type="button" onClick={() => setShowAddTag(true)} className="text-xs text-purple-600 hover:text-purple-500 font-medium whitespace-nowrap">
-                            + Ajouter des tags
-                          </button>
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <div className="flex gap-2">
-                          <Input value={newTagName} onChange={(e) => setNewTagName(e.target.value)} placeholder="Nom du tag (ex: Table, Wifi...)" className="flex-1" />
-                          <Button size="sm" onClick={() => {
-                            if (!newTagName.trim()) return;
-                            const updated = [...tourTags, { name: newTagName.trim(), sid: "" }];
-                            setTourTags(updated);
-                            setNewTagName("");
-                            // Save to backend
-                            if (itemsTourId) {
-                              fetch(`/api/tours/${itemsTourId}/tags`, {
-                                method: "POST",
-                                headers: { "Content-Type": "application/json" },
-                                body: JSON.stringify(updated),
-                              }).catch(() => {});
-                            }
-                          }}>Ajouter</Button>
-                        </div>
-                        {tourTags.length > 0 && (
-                          <div className="flex flex-wrap gap-1.5 mt-1">
-                            {tourTags.map((tag, i) => (
-                              <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 text-xs">
-                                {tag.name}
-                                <button type="button" onClick={() => {
-                                  const updated = tourTags.filter((_, idx) => idx !== i);
-                                  setTourTags(updated);
-                                  if (itemsTourId) {
-                                    fetch(`/api/tours/${itemsTourId}/tags`, {
-                                      method: "POST",
-                                      headers: { "Content-Type": "application/json" },
-                                      body: JSON.stringify(updated),
-                                    }).catch(() => {});
-                                  }
-                                }} className="hover:text-red-500">×</button>
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                        <button type="button" onClick={() => setShowAddTag(false)} className="text-xs text-muted-foreground hover:text-foreground">← Retour</button>
-                      </>
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Nom du produit *</label>
+                    <Input value={editItem.name} onChange={(e) => setEditItem({ ...editItem, name: e.target.value })} placeholder="Ex: Table KALLAX" />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Marque</label>
+                    <Input value={editItem.brand} onChange={(e) => setEditItem({ ...editItem, brand: e.target.value })} placeholder="Ex: IKEA, Zara Home..." />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Description</label>
+                    <Textarea value={editItem.description} onChange={(e) => setEditItem({ ...editItem, description: e.target.value })} rows={3} placeholder="Description du produit..." />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Image du produit (URL)</label>
+                    <Input value={editItem.imageUrl} onChange={(e) => setEditItem({ ...editItem, imageUrl: e.target.value })} placeholder="https://..." />
+                    {editItem.imageUrl && (
+                      <img src={editItem.imageUrl} alt="preview" className="w-24 h-24 object-cover rounded-lg mt-2 border" />
                     )}
                   </div>
-                )}
-              </div>
-              <div className="flex justify-end gap-3 pt-2">
-                <Button variant="outline" onClick={() => setItemFormOpen(false)}>Annuler</Button>
-                <Button onClick={handleSaveItem}>Enregistrer</Button>
-              </div>
-            </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium mb-1 block">Prix</label>
+                      <Input type="number" step="0.01" value={editItem.price ?? ""} onChange={(e) => setEditItem({ ...editItem, price: e.target.value ? Number(e.target.value) : null })} placeholder="299.99" />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium mb-1 block">Devise</label>
+                      <Select value={editItem.currency} onValueChange={(v) => setEditItem({ ...editItem, currency: v })}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="EUR">EUR €</SelectItem>
+                          <SelectItem value="USD">USD $</SelectItem>
+                          <SelectItem value="TND">TND</SelectItem>
+                          <SelectItem value="GBP">GBP £</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Lien externe (boutique)</label>
+                    <Input value={editItem.externalUrl} onChange={(e) => setEditItem({ ...editItem, externalUrl: e.target.value })} placeholder="https://www.ikea.com/..." />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Tag Matterport (optionnel)</label>
+                    {tourTags.length > 0 ? (
+                      <div className="space-y-2">
+                        <Select value={editItem.tagSid || "__none__"} onValueChange={(v) => setEditItem({ ...editItem, tagSid: v === "__none__" ? "" : v })}>
+                          <SelectTrigger><SelectValue placeholder="Choisir un tag..." /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="__none__">— Aucun tag —</SelectItem>
+                            {tourTags.map((tag, i) => (
+                              <SelectItem key={`${tag.sid}-${i}`} value={tag.name}>{tag.name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <p className="text-xs text-muted-foreground">Sélectionnez le tag Matterport à lier — quand un visiteur clique ce tag, le produit s'affiche</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {!showAddTag ? (
+                          <>
+                            <Input value={editItem.tagSid} onChange={(e) => setEditItem({ ...editItem, tagSid: e.target.value })} placeholder="Ex: Parking sécurisé, Wifi, CCTV..." />
+                            <div className="flex items-center gap-2">
+                              <p className="text-xs text-muted-foreground flex-1">Écrivez le nom du tag ou ajoutez des tags à la liste</p>
+                              <button type="button" onClick={() => setShowAddTag(true)} className="text-xs text-purple-600 hover:text-purple-500 font-medium whitespace-nowrap">
+                                + Ajouter des tags
+                              </button>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <div className="flex gap-2">
+                              <Input value={newTagName} onChange={(e) => setNewTagName(e.target.value)} placeholder="Nom du tag (ex: Table, Wifi...)" className="flex-1" />
+                              <Button size="sm" onClick={() => {
+                                if (!newTagName.trim()) return;
+                                const updated = [...tourTags, { name: newTagName.trim(), sid: "" }];
+                                setTourTags(updated);
+                                setNewTagName("");
+                                if (itemsTourId) {
+                                  fetch(`/api/tours/${itemsTourId}/tags`, {
+                                    method: "POST",
+                                    headers: { "Content-Type": "application/json" },
+                                    body: JSON.stringify(updated),
+                                  }).catch(() => {});
+                                }
+                              }}>Ajouter</Button>
+                            </div>
+                            {tourTags.length > 0 && (
+                              <div className="flex flex-wrap gap-1.5 mt-1">
+                                {tourTags.map((tag, i) => (
+                                  <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 text-xs">
+                                    {tag.name}
+                                    <button type="button" onClick={() => {
+                                      const updated = tourTags.filter((_, idx) => idx !== i);
+                                      setTourTags(updated);
+                                      if (itemsTourId) {
+                                        fetch(`/api/tours/${itemsTourId}/tags`, {
+                                          method: "POST",
+                                          headers: { "Content-Type": "application/json" },
+                                          body: JSON.stringify(updated),
+                                        }).catch(() => {});
+                                      }
+                                    }} className="hover:text-red-500">×</button>
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                            <button type="button" onClick={() => setShowAddTag(false)} className="text-xs text-muted-foreground hover:text-foreground">← Retour</button>
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex justify-end gap-3 pt-2">
+                    <Button variant="outline" onClick={() => setItemFormOpen(false)}>Annuler</Button>
+                    <Button onClick={handleSaveItem}>Enregistrer</Button>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+
+          {/* ===== SERVICES TAB ===== */}
+          {activeEntityTab === "services" && !itemFormOpen && (
+            <>
+              {!serviceFormOpen ? (
+                <div className="space-y-4 mt-2">
+                  <Button onClick={openCreateService} className="flex items-center gap-2" size="sm">
+                    <Plus className="w-4 h-4" /> Ajouter un service
+                  </Button>
+
+                  {services.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Briefcase className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                      <p>Aucun service ajouté à cette visite</p>
+                      <p className="text-sm mt-1">Ajoutez des services avec leurs coordonnées de contact.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {services.map((svc) => (
+                        <div key={svc.id} className="flex items-center gap-3 p-3 rounded-xl border border-border bg-card">
+                          {svc.imageUrl ? (
+                            <img src={svc.imageUrl} alt={svc.name} className="w-14 h-14 rounded-lg object-cover shrink-0" />
+                          ) : (
+                            <div className="w-14 h-14 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                              <Briefcase className="w-6 h-6 text-muted-foreground" />
+                            </div>
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <p className="font-medium text-sm truncate">{svc.name}</p>
+                            <p className="text-xs text-muted-foreground line-clamp-1">{svc.description}</p>
+                            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                              {svc.phone && (
+                                <span className="text-xs text-muted-foreground flex items-center gap-0.5">
+                                  <Phone className="w-3 h-3" /> {svc.phone}
+                                </span>
+                              )}
+                              {svc.whatsapp && (
+                                <span className="text-xs text-green-600 flex items-center gap-0.5">
+                                  <MessageCircle className="w-3 h-3" /> WhatsApp
+                                </span>
+                              )}
+                              {svc.instagram && (
+                                <span className="text-xs text-pink-500">IG</span>
+                              )}
+                              {svc.facebook && (
+                                <span className="text-xs text-blue-600">FB</span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex gap-1.5 shrink-0">
+                            <Button variant="outline" size="sm" onClick={() => openEditService(svc)}>
+                              <Pencil className="w-3.5 h-3.5" />
+                            </Button>
+                            <Button variant="destructive" size="sm" onClick={() => handleDeleteService(svc.id!)}>
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                /* Service Create/Edit Form */
+                <div className="space-y-4 mt-2">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Button variant="ghost" size="sm" onClick={() => setServiceFormOpen(false)}>← Retour</Button>
+                    <span className="text-sm font-medium">{isEditingService ? "Modifier le service" : "Nouveau service"}</span>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Nom du service *</label>
+                    <Input value={editService.name} onChange={(e) => setEditService({ ...editService, name: e.target.value })} placeholder="Ex: Nettoyage, Conciergerie..." />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Description</label>
+                    <Textarea value={editService.description} onChange={(e) => setEditService({ ...editService, description: e.target.value })} rows={3} placeholder="Description du service..." />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Image (URL)</label>
+                    <Input value={editService.imageUrl} onChange={(e) => setEditService({ ...editService, imageUrl: e.target.value })} placeholder="https://..." />
+                    {editService.imageUrl && (
+                      <img src={editService.imageUrl} alt="preview" className="w-24 h-24 object-cover rounded-lg mt-2 border" />
+                    )}
+                  </div>
+
+                  {/* Contact fields */}
+                  <div className="border-t border-border pt-4">
+                    <p className="text-sm font-semibold mb-3 flex items-center gap-2">
+                      <Phone className="w-4 h-4" /> Coordonnées de contact
+                    </p>
+                    <div className="space-y-3">
+                      <div>
+                        <label className="text-sm font-medium mb-1 block">Téléphone</label>
+                        <Input value={editService.phone} onChange={(e) => setEditService({ ...editService, phone: e.target.value })} placeholder="+216 XX XXX XXX" />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium mb-1 block">WhatsApp</label>
+                        <Input value={editService.whatsapp} onChange={(e) => setEditService({ ...editService, whatsapp: e.target.value })} placeholder="+216 XX XXX XXX ou lien wa.me/..." />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Social media fields */}
+                  <div className="border-t border-border pt-4">
+                    <p className="text-sm font-semibold mb-3">Réseaux sociaux</p>
+                    <div className="space-y-3">
+                      <div>
+                        <label className="text-sm font-medium mb-1 block">Instagram</label>
+                        <Input value={editService.instagram} onChange={(e) => setEditService({ ...editService, instagram: e.target.value })} placeholder="https://instagram.com/..." />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium mb-1 block">Facebook</label>
+                        <Input value={editService.facebook} onChange={(e) => setEditService({ ...editService, facebook: e.target.value })} placeholder="https://facebook.com/..." />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Tag Matterport (optionnel)</label>
+                    {tourTags.length > 0 ? (
+                      <Select value={editService.tagSid || "__none__"} onValueChange={(v) => setEditService({ ...editService, tagSid: v === "__none__" ? "" : v })}>
+                        <SelectTrigger><SelectValue placeholder="Choisir un tag..." /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="__none__">— Aucun tag —</SelectItem>
+                          {tourTags.map((tag, i) => (
+                            <SelectItem key={`${tag.sid}-${i}`} value={tag.name}>{tag.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <Input value={editService.tagSid} onChange={(e) => setEditService({ ...editService, tagSid: e.target.value })} placeholder="Nom du tag..." />
+                    )}
+                  </div>
+
+                  <div className="flex justify-end gap-3 pt-2">
+                    <Button variant="outline" onClick={() => setServiceFormOpen(false)}>Annuler</Button>
+                    <Button onClick={handleSaveService}>Enregistrer</Button>
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </DialogContent>
       </Dialog>
