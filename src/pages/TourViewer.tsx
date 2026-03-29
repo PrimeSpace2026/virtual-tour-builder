@@ -491,40 +491,24 @@ const TourViewer = () => {
   const cartTotal = cart.reduce((sum, c) => sum + (c.item.price || 0) * c.qty, 0);
   const cartCount = cart.reduce((sum, c) => sum + c.qty, 0);
 
-  // Navigate to a product's tag in the 3D tour, then show popup
+  // Navigate to a product's tag in the 3D tour via iframe deep link, then show popup
   const navigateToProduct = useCallback((item: TourItemData) => {
     setShowProducts(false);
     if (tour?.id) trackEvent(tour.id, "product_click", item.name, String(item.id));
 
-    const sdk = sdkRef.current;
-    if (sdk && item.tagSid) {
-      // Resolve SID: item.tagSid might be a tag name or an actual SID
+    if (item.tagSid && tour?.tourUrl && iframeRef.current) {
       const resolvedSid = tagsMapRef.current.get(item.tagSid.trim().toLowerCase()) || item.tagSid;
-
-      const doNavigate = async () => {
-        try {
-          // Try Mattertag.navigateToTag with INSTANT transition (no fly animation)
-          if (sdk.Mattertag?.navigateToTag) {
-            await sdk.Mattertag.navigateToTag(resolvedSid, sdk.Mattertag.Transition?.INSTANT || "transition.instant");
-            console.log("🎯 Zoom vers tag:", resolvedSid);
-          } else if ((sdk as any).Tag?.navigateTo) {
-            // v2 Tag API
-            await (sdk as any).Tag.navigateTo(resolvedSid);
-            console.log("🎯 Zoom vers tag (v2):", resolvedSid);
-          }
-        } catch (err) {
-          console.log("Navigation tag impossible:", err);
-        }
-        // Show popup quickly since camera teleports instantly
-        setTimeout(() => setSelectedItem(item), 300);
-      };
-
-      doNavigate();
+      const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+      const url = buildEmbedUrl(tour.tourUrl, isLocal) + `&tag=${encodeURIComponent(resolvedSid)}`;
+      iframeRef.current.src = url;
+      console.log("🎯 Deep link vers tag:", resolvedSid);
+      // Show popup after iframe starts loading the new position
+      setTimeout(() => setSelectedItem(item), 500);
     } else {
-      // No SDK or no tag — just show popup directly
+      // No tag — just show popup directly
       setSelectedItem(item);
     }
-  }, [tour?.id, trackEvent]);
+  }, [tour?.id, tour?.tourUrl, trackEvent]);
 
   // Navigate to a specific floor
   const navigateToFloor = useCallback((floorIndex: number) => {
