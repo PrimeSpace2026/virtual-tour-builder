@@ -366,10 +366,15 @@ const TourViewer = () => {
 
         // Navigate to the first sweep (exterior/entrance) on load
         try {
-          const sweeps = await sdk.Sweep.getData();
+          const sweeps = await new Promise<any[]>((resolve) => {
+            const sub = sdk.Sweep.data.subscribe({ onCollectionUpdated: (collection: any) => {
+              const items: any[] = [];
+              collection.forEach((item: any, key: string) => items.push({ ...item, sid: key }));
+              if (items.length > 0) { sub?.cancel?.(); resolve(items); }
+            }});
+          });
           if (sweeps && sweeps.length > 0) {
             console.log("📍 Available sweeps:", sweeps.map((s: any, i: number) => ({ index: i, sid: s.sid, position: s.position })));
-            // Move to the first sweep (entrance/exterior view)
             await sdk.Sweep.moveTo(sweeps[0].sid, { transition: sdk.Sweep.Transition?.INSTANT || "transition.instant" });
             console.log("🏠 Moved to starting sweep:", sweeps[0].sid);
           }
@@ -491,60 +496,19 @@ const TourViewer = () => {
     setShowProducts(false);
     if (tour?.id) trackEvent(tour.id, "product_click", item.name, String(item.id));
 
-    const sdk = sdkRef.current;
-    if (sdk && item.tagSid) {
+    if (item.tagSid && iframeRef.current && tour?.tourUrl) {
       const resolvedSid = tagsMapRef.current.get(item.tagSid.trim().toLowerCase()) || item.tagSid;
-
-      const doNavigate = async () => {
-        try {
-          // Get the tag's 3D position
-          let tagPosition: { x: number; y: number; z: number } | null = null;
-
-          if (sdk.Mattertag?.getData) {
-            const tags = await sdk.Mattertag.getData();
-            const found = tags.find((t: any) => t.sid === resolvedSid);
-            if (found?.anchorPosition) tagPosition = found.anchorPosition;
-          }
-          if (!tagPosition && (sdk as any).Tag?.getData) {
-            const tags = await (sdk as any).Tag.getData();
-            const found = tags.find((t: any) => t.sid === resolvedSid);
-            if (found?.anchorPosition) tagPosition = found.anchorPosition;
-          }
-
-          if (tagPosition) {
-            // Find the nearest sweep to the tag position
-            const sweeps = await sdk.Sweep.getData();
-            if (sweeps && sweeps.length > 0) {
-              let nearestSweep = sweeps[0];
-              let minDist = Infinity;
-              for (const sweep of sweeps) {
-                if (!sweep.position) continue;
-                const dx = sweep.position.x - tagPosition.x;
-                const dy = sweep.position.y - tagPosition.y;
-                const dz = sweep.position.z - tagPosition.z;
-                const dist = dx * dx + dy * dy + dz * dz;
-                if (dist < minDist) {
-                  minDist = dist;
-                  nearestSweep = sweep;
-                }
-              }
-              await sdk.Sweep.moveTo(nearestSweep.sid, {
-                transition: sdk.Sweep.Transition?.INSTANT || "transition.instant",
-              });
-              console.log("📍 Moved to nearest sweep:", nearestSweep.sid, "for tag:", resolvedSid);
-            }
-          }
-        } catch (err) {
-          console.log("Navigation error:", err);
-        }
-        setTimeout(() => setSelectedItem(item), 500);
-      };
-
-      doNavigate();
-    } else {
-      setSelectedItem(item);
+      // Deep link: reload iframe at the tag's position using Matterport URL params
+      const modelId = extractModelId(tour.tourUrl);
+      if (modelId) {
+        const tagUrl = buildEmbedUrl(tour.tourUrl, isLocalDev) + `&sr=-2.5,.4&tag=${resolvedSid}`;
+        iframeRef.current.src = tagUrl;
+        setTimeout(() => setSelectedItem(item), 1500);
+        return;
+      }
     }
-  }, [tour?.id, trackEvent]);
+    setSelectedItem(item);
+  }, [tour?.id, tour?.tourUrl, trackEvent, isLocalDev]);
 
   // Navigate to a specific floor
   const navigateToFloor = useCallback((floorIndex: number) => {
