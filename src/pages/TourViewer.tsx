@@ -23,6 +23,9 @@ import {
   Minus,
   Trash2,
   Layers,
+  Phone,
+  MessageCircle,
+  Briefcase,
 } from "lucide-react";
 
 const SDK_KEY = "b7uar4u57xdec0zw7dwygt7md";
@@ -56,6 +59,18 @@ interface TourItemData {
 interface CartEntry {
   item: TourItemData;
   qty: number;
+}
+
+interface TourServiceData {
+  id: number;
+  tourId: number;
+  name: string;
+  description: string;
+  imageUrl: string;
+  phone: string;
+  whatsapp: string;
+  instagram: string;
+  facebook: string;
 }
 
 interface TagItem {
@@ -152,6 +167,10 @@ const TourViewer = () => {
     } catch {}
   }, [cart]);
   const [showProducts, setShowProducts] = useState(false);
+  const [showServices, setShowServices] = useState(false);
+  const [tourServices, setTourServices] = useState<TourServiceData[]>([]);
+  const [selectedService, setSelectedService] = useState<TourServiceData | null>(null);
+  const [bottomTab, setBottomTab] = useState<"products" | "services">("products");
 
   // Match a product by name/id/tagSid from a URL param
   const matchProduct = useCallback((param: string) => {
@@ -224,13 +243,17 @@ const TourViewer = () => {
       fetch(`/api/tours/${id}/items`)
         .then((r) => r.json())
         .catch(() => []),
+      fetch(`/api/tours/${id}/services`)
+        .then((r) => r.json())
+        .catch(() => []),
     ])
-      .then(([tourData, tours, itemsData]) => {
+      .then(([tourData, tours, itemsData, servicesData]) => {
         setTour(tourData);
         setAllTours(tours);
         const items = Array.isArray(itemsData) ? itemsData : [];
         setTourItems(items);
         tourItemsRef.current = items;
+        setTourServices(Array.isArray(servicesData) ? servicesData : []);
         setLoading(false);
         setShowCard(true);
       })
@@ -546,10 +569,12 @@ const TourViewer = () => {
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        if (selectedTag) setSelectedTag(null);
+        if (selectedService) setSelectedService(null);
+        else if (selectedTag) setSelectedTag(null);
         else if (selectedItem) setSelectedItem(null);
         else if (activeTagFilter) setActiveTagFilter(null);
         else if (showCart) setShowCart(false);
+        else if (showServices) setShowServices(false);
         else if (showProducts) setShowProducts(false);
         else if (showShare) setShowShare(false);
         else setShowCard(false);
@@ -780,6 +805,21 @@ const TourViewer = () => {
           >
             <ShoppingBag className="w-4 h-4" />
             <span className="hidden sm:inline">Produits</span>
+          </button>
+        )}
+
+        {/* Services */}
+        {tourServices.length > 0 && (
+          <button
+            onClick={() => setShowServices(!showServices)}
+            className={`flex items-center gap-1.5 px-2 sm:px-3 py-2 sm:py-2.5 rounded-xl backdrop-blur-xl border text-xs font-medium transition-all ${
+              showServices
+                ? "bg-white/15 border-white/20 text-white"
+                : "bg-black/60 border-white/10 text-white/70 hover:text-white hover:bg-black/80"
+            }`}
+          >
+            <Briefcase className="w-4 h-4" />
+            <span className="hidden sm:inline">Services</span>
           </button>
         )}
 
@@ -1307,6 +1347,185 @@ const TourViewer = () => {
         )}
       </AnimatePresence>
 
+      {/* ===== SERVICES LIST PANEL (right side) ===== */}
+      <AnimatePresence>
+        {showServices && tourServices.length > 0 && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowServices(false)}
+              className="absolute inset-0 bg-black/20 z-30"
+            />
+            <motion.div
+              initial={{ opacity: 0, x: 360 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 360 }}
+              transition={{ type: "spring", damping: 28, stiffness: 250 }}
+              className="absolute bottom-0 left-0 right-0 md:bottom-4 md:left-auto md:top-16 md:right-4 w-full md:w-[320px] z-[35] pointer-events-auto flex flex-col max-h-[60vh] md:max-h-none"
+            >
+              <div className="flex-1 rounded-t-2xl md:rounded-2xl bg-black/80 md:bg-black/70 backdrop-blur-2xl border border-white/10 overflow-hidden flex flex-col shadow-2xl">
+                <div className="p-4 border-b border-white/[0.06] flex items-center justify-between shrink-0">
+                  <h2 className="text-white font-semibold text-sm flex items-center gap-2">
+                    <Briefcase className="w-4 h-4" />
+                    Services ({tourServices.length})
+                  </h2>
+                  <button onClick={() => setShowServices(false)} className="w-7 h-7 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/50 hover:text-white transition-all">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                <div className="flex-1 overflow-y-auto p-3 space-y-2">
+                  {tourServices.map((svc) => (
+                    <div
+                      key={svc.id}
+                      className="w-full flex items-center gap-3 p-3 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.08] transition-all group"
+                    >
+                      <button
+                        onClick={() => setSelectedService(svc)}
+                        className="flex items-center gap-3 flex-1 min-w-0"
+                      >
+                        {svc.imageUrl ? (
+                          <img src={svc.imageUrl} alt={svc.name} className="w-12 h-12 rounded-lg object-cover shrink-0 bg-white" />
+                        ) : (
+                          <div className="w-12 h-12 rounded-lg bg-white/10 flex items-center justify-center shrink-0">
+                            <Briefcase className="w-5 h-5 text-white/30" />
+                          </div>
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <p className="text-white/80 text-sm font-medium truncate group-hover:text-white transition-colors">{svc.name}</p>
+                          {svc.description && <p className="text-white/30 text-[10px] line-clamp-1">{svc.description}</p>}
+                        </div>
+                      </button>
+                      {/* Quick action icons */}
+                      <div className="flex items-center gap-1 shrink-0">
+                        {svc.whatsapp && (
+                          <a
+                            href={`https://wa.me/${svc.whatsapp.replace(/[^0-9+]/g, "")}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="w-7 h-7 rounded-lg bg-green-600/80 hover:bg-green-500 flex items-center justify-center text-white transition-all"
+                            title="WhatsApp"
+                          >
+                            <MessageCircle className="w-3.5 h-3.5" />
+                          </a>
+                        )}
+                        {svc.phone && (
+                          <a
+                            href={`tel:${svc.phone}`}
+                            onClick={(e) => e.stopPropagation()}
+                            className="w-7 h-7 rounded-lg bg-blue-600/80 hover:bg-blue-500 flex items-center justify-center text-white transition-all"
+                            title="Appeler"
+                          >
+                            <Phone className="w-3.5 h-3.5" />
+                          </a>
+                        )}
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-white/15 group-hover:text-white/40 transition-colors shrink-0" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* ===== SERVICE DETAIL POPUP ===== */}
+      <AnimatePresence>
+        {selectedService && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSelectedService(null)}
+              className="absolute inset-0 bg-black/50 z-50"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.92, y: 30 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.92, y: 30 }}
+              transition={{ type: "spring", damping: 25, stiffness: 280 }}
+              className="absolute inset-4 md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-[420px] md:max-h-[80vh] z-50 pointer-events-auto"
+            >
+              <div className="bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-full">
+                {/* Close */}
+                <button
+                  onClick={() => setSelectedService(null)}
+                  className="absolute top-3 right-3 z-10 w-8 h-8 rounded-full bg-black/40 hover:bg-black/60 flex items-center justify-center text-white transition-all"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+
+                {/* Image */}
+                {selectedService.imageUrl ? (
+                  <img src={selectedService.imageUrl} alt={selectedService.name} className="w-full h-48 object-cover" />
+                ) : (
+                  <div className="w-full h-32 bg-gradient-to-br from-purple-100 to-blue-100 flex items-center justify-center">
+                    <Briefcase className="w-16 h-16 text-purple-300" />
+                  </div>
+                )}
+
+                <div className="p-5 overflow-y-auto">
+                  <h3 className="text-lg font-bold text-gray-900">{selectedService.name}</h3>
+                  {selectedService.description && (
+                    <p className="text-sm text-gray-600 mt-2 leading-relaxed">{selectedService.description}</p>
+                  )}
+
+                  {/* Contact buttons */}
+                  <div className="mt-4 space-y-2">
+                    {selectedService.phone && (
+                      <a
+                        href={`tel:${selectedService.phone}`}
+                        className="flex items-center gap-3 w-full px-4 py-3 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium text-sm transition-colors"
+                      >
+                        <Phone className="w-5 h-5" />
+                        {selectedService.phone}
+                      </a>
+                    )}
+                    {selectedService.whatsapp && (
+                      <a
+                        href={`https://wa.me/${selectedService.whatsapp.replace(/[^0-9+]/g, "")}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-3 w-full px-4 py-3 rounded-xl bg-green-50 hover:bg-green-100 text-green-700 font-medium text-sm transition-colors"
+                      >
+                        <MessageCircle className="w-5 h-5" />
+                        WhatsApp
+                      </a>
+                    )}
+                    {selectedService.instagram && (
+                      <a
+                        href={selectedService.instagram}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-3 w-full px-4 py-3 rounded-xl bg-pink-50 hover:bg-pink-100 text-pink-700 font-medium text-sm transition-colors"
+                      >
+                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
+                        Instagram
+                      </a>
+                    )}
+                    {selectedService.facebook && (
+                      <a
+                        href={selectedService.facebook}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-3 w-full px-4 py-3 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-800 font-medium text-sm transition-colors"
+                      >
+                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+                        Facebook
+                      </a>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
       {/* ===== CART PANEL ===== */}
       <AnimatePresence>
         {showCart && (
@@ -1398,12 +1617,38 @@ const TourViewer = () => {
       )}
       </div>{/* END TOP: MATTERPORT 3D VIEWER */}
 
-      {/* ===== BOTTOM: PRODUCT STRIP ===== */}
-      {tourItems.length > 0 && (
+      {/* ===== BOTTOM: PRODUCT & SERVICE STRIP ===== */}
+      {(tourItems.length > 0 || tourServices.length > 0) && (
         <div className="shrink-0 bg-[#0d0d1a] border-t border-white/10">
           <div className="px-3 py-3">
-            {/* Active filter label */}
-            {activeTagFilter && (
+            {/* Tab switcher when both exist */}
+            {tourItems.length > 0 && tourServices.length > 0 && (
+              <div className="flex items-center justify-center gap-1 mb-2.5">
+                <button
+                  onClick={() => setBottomTab("products")}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold uppercase tracking-wider transition-all ${
+                    bottomTab === "products"
+                      ? "bg-white/15 text-white"
+                      : "text-white/40 hover:text-white/70"
+                  }`}
+                >
+                  <ShoppingBag className="w-3 h-3" /> Produits ({tourItems.length})
+                </button>
+                <button
+                  onClick={() => setBottomTab("services")}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold uppercase tracking-wider transition-all ${
+                    bottomTab === "services"
+                      ? "bg-white/15 text-white"
+                      : "text-white/40 hover:text-white/70"
+                  }`}
+                >
+                  <Briefcase className="w-3 h-3" /> Services ({tourServices.length})
+                </button>
+              </div>
+            )}
+
+            {/* Active filter label (products only) */}
+            {bottomTab === "products" && activeTagFilter && (
               <div className="flex items-center justify-center gap-2 mb-2">
                 <span className="text-white/60 text-[10px] font-medium uppercase tracking-wider">Produit lié au tag</span>
                 <button
@@ -1414,41 +1659,111 @@ const TourViewer = () => {
                 </button>
               </div>
             )}
-            <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide justify-center">
-              {tourItems
-                .filter(i => !activeTagFilter || i.tagSid?.trim().toLowerCase() === activeTagFilter.trim().toLowerCase())
-                .map((item) => (
-                <button
-                  key={item.id}
-                  onClick={() => navigateToProduct(item)}
-                  className="flex-shrink-0 flex items-center gap-2.5 bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.08] rounded-xl p-2 pr-4 transition-all group"
-                >
-                  <div className="w-12 h-12 rounded-lg bg-white overflow-hidden flex items-center justify-center shrink-0">
-                    {item.imageUrl ? (
-                      <img src={item.imageUrl} alt={item.name} className="w-full h-full object-contain p-1" />
-                    ) : (
-                      <ShoppingBag className="w-5 h-5 text-gray-300" />
-                    )}
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-white/80 text-xs font-semibold truncate max-w-[120px] group-hover:text-white transition-colors">{item.name}</p>
-                    {item.price != null && (
-                      <p className="text-purple-300 text-xs font-bold mt-0.5">
-                        {item.price} <span className="text-white/30 text-[10px]">{CURRENCY_SYMBOLS[item.currency] || item.currency}</span>
-                      </p>
-                    )}
-                  </div>
-                </button>
-              ))}
-              {!activeTagFilter && tourItems.length > 3 && (
-                <button
-                  onClick={() => setShowProducts(true)}
-                  className="flex-shrink-0 px-3 py-2 rounded-xl bg-white/[0.05] border border-white/[0.08] text-white/50 hover:text-white hover:bg-white/[0.1] transition-all text-xs font-medium"
-                >
-                  Voir tout
-                </button>
-              )}
-            </div>
+
+            {/* Products strip */}
+            {(bottomTab === "products" || tourServices.length === 0) && tourItems.length > 0 && (
+              <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide justify-center">
+                {tourItems
+                  .filter(i => !activeTagFilter || i.tagSid?.trim().toLowerCase() === activeTagFilter.trim().toLowerCase())
+                  .map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => navigateToProduct(item)}
+                    className="flex-shrink-0 flex items-center gap-2.5 bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.08] rounded-xl p-2 pr-4 transition-all group"
+                  >
+                    <div className="w-12 h-12 rounded-lg bg-white overflow-hidden flex items-center justify-center shrink-0">
+                      {item.imageUrl ? (
+                        <img src={item.imageUrl} alt={item.name} className="w-full h-full object-contain p-1" />
+                      ) : (
+                        <ShoppingBag className="w-5 h-5 text-gray-300" />
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-white/80 text-xs font-semibold truncate max-w-[120px] group-hover:text-white transition-colors">{item.name}</p>
+                      {item.price != null && (
+                        <p className="text-purple-300 text-xs font-bold mt-0.5">
+                          {item.price} <span className="text-white/30 text-[10px]">{CURRENCY_SYMBOLS[item.currency] || item.currency}</span>
+                        </p>
+                      )}
+                    </div>
+                  </button>
+                ))}
+                {!activeTagFilter && tourItems.length > 3 && (
+                  <button
+                    onClick={() => setShowProducts(true)}
+                    className="flex-shrink-0 px-3 py-2 rounded-xl bg-white/[0.05] border border-white/[0.08] text-white/50 hover:text-white hover:bg-white/[0.1] transition-all text-xs font-medium"
+                  >
+                    Voir tout
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Services strip */}
+            {bottomTab === "services" && tourServices.length > 0 && (
+              <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide justify-center">
+                {tourServices.map((svc) => (
+                  <button
+                    key={svc.id}
+                    onClick={() => setSelectedService(svc)}
+                    className="flex-shrink-0 flex items-center gap-2.5 bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.08] rounded-xl p-2 pr-3 transition-all group"
+                  >
+                    <div className="w-12 h-12 rounded-lg bg-white overflow-hidden flex items-center justify-center shrink-0">
+                      {svc.imageUrl ? (
+                        <img src={svc.imageUrl} alt={svc.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <Briefcase className="w-5 h-5 text-gray-300" />
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-white/80 text-xs font-semibold truncate max-w-[110px] group-hover:text-white transition-colors">{svc.name}</p>
+                    </div>
+                    {/* Quick action icons */}
+                    <div className="flex items-center gap-1 shrink-0">
+                      {svc.whatsapp && (
+                        <a
+                          href={`https://wa.me/${svc.whatsapp.replace(/[^0-9+]/g, "")}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="w-6 h-6 rounded-md bg-green-600/80 hover:bg-green-500 flex items-center justify-center text-white transition-all"
+                        >
+                          <MessageCircle className="w-3 h-3" />
+                        </a>
+                      )}
+                      {svc.phone && (
+                        <a
+                          href={`tel:${svc.phone}`}
+                          onClick={(e) => e.stopPropagation()}
+                          className="w-6 h-6 rounded-md bg-blue-600/80 hover:bg-blue-500 flex items-center justify-center text-white transition-all"
+                        >
+                          <Phone className="w-3 h-3" />
+                        </a>
+                      )}
+                      {svc.instagram && (
+                        <a
+                          href={svc.instagram}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="w-6 h-6 rounded-md bg-pink-600/80 hover:bg-pink-500 flex items-center justify-center text-white transition-all"
+                        >
+                          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
+                        </a>
+                      )}
+                    </div>
+                  </button>
+                ))}
+                {tourServices.length > 3 && (
+                  <button
+                    onClick={() => setShowServices(true)}
+                    className="flex-shrink-0 px-3 py-2 rounded-xl bg-white/[0.05] border border-white/[0.08] text-white/50 hover:text-white hover:bg-white/[0.1] transition-all text-xs font-medium"
+                  >
+                    Voir tout
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}
