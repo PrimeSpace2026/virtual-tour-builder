@@ -81,7 +81,7 @@ const CURRENCY_SYMBOLS: Record<string, string> = { EUR: "€", USD: "$", TND: "T
 function buildEmbedUrl(tourUrl: string, withSdkKey = false): string {
   const modelId = extractModelId(tourUrl);
   if (!modelId) return tourUrl;
-  const base = `https://my.matterport.com/show/?m=${modelId}&play=1&qs=0&brand=0&title=0&mls=2&vr=0&dh=1&gt=0&hr=0&help=0&lp=0&log=0&f=1&search=0&wh=0&lang=fr&mt=1&pin=1&nt=1&ts=0&guides=0&hl=0`;
+  const base = `https://my.matterport.com/show/?m=${modelId}&play=1&qs=1&sr=0&brand=0&title=0&mls=2&vr=0&dh=0&gt=0&hr=0&help=0&lp=0&log=0&f=1&search=0&wh=0&lang=fr&mt=1&pin=1&nt=1&ts=0&guides=0&hl=0`;
   return withSdkKey ? `${base}&applicationKey=${SDK_KEY}` : base;
 }
 
@@ -493,30 +493,55 @@ const TourViewer = () => {
 
     const sdk = sdkRef.current;
     if (sdk && item.tagSid) {
-      // Resolve SID: item.tagSid might be a tag name or an actual SID
       const resolvedSid = tagsMapRef.current.get(item.tagSid.trim().toLowerCase()) || item.tagSid;
 
       const doNavigate = async () => {
         try {
-          // Try Mattertag.navigateToTag (v1 API)
-          if (sdk.Mattertag?.navigateToTag) {
-            await sdk.Mattertag.navigateToTag(resolvedSid, sdk.Mattertag.Transition?.FLY_IN || "transition.fly");
-            console.log("🎯 Zoom vers tag:", resolvedSid);
-          } else if ((sdk as any).Tag?.navigateTo) {
-            // v2 Tag API
-            await (sdk as any).Tag.navigateTo(resolvedSid);
-            console.log("🎯 Zoom vers tag (v2):", resolvedSid);
+          // Get the tag's 3D position
+          let tagPosition: { x: number; y: number; z: number } | null = null;
+
+          if (sdk.Mattertag?.getData) {
+            const tags = await sdk.Mattertag.getData();
+            const found = tags.find((t: any) => t.sid === resolvedSid);
+            if (found?.anchorPosition) tagPosition = found.anchorPosition;
+          }
+          if (!tagPosition && (sdk as any).Tag?.getData) {
+            const tags = await (sdk as any).Tag.getData();
+            const found = tags.find((t: any) => t.sid === resolvedSid);
+            if (found?.anchorPosition) tagPosition = found.anchorPosition;
+          }
+
+          if (tagPosition) {
+            // Find the nearest sweep to the tag position
+            const sweeps = await sdk.Sweep.getData();
+            if (sweeps && sweeps.length > 0) {
+              let nearestSweep = sweeps[0];
+              let minDist = Infinity;
+              for (const sweep of sweeps) {
+                if (!sweep.position) continue;
+                const dx = sweep.position.x - tagPosition.x;
+                const dy = sweep.position.y - tagPosition.y;
+                const dz = sweep.position.z - tagPosition.z;
+                const dist = dx * dx + dy * dy + dz * dz;
+                if (dist < minDist) {
+                  minDist = dist;
+                  nearestSweep = sweep;
+                }
+              }
+              await sdk.Sweep.moveTo(nearestSweep.sid, {
+                transition: sdk.Sweep.Transition?.INSTANT || "transition.instant",
+              });
+              console.log("📍 Moved to nearest sweep:", nearestSweep.sid, "for tag:", resolvedSid);
+            }
           }
         } catch (err) {
-          console.log("Navigation tag impossible:", err);
+          console.log("Navigation error:", err);
         }
-        // Show popup after a short delay for the camera to arrive
-        setTimeout(() => setSelectedItem(item), 800);
+        setTimeout(() => setSelectedItem(item), 500);
       };
 
       doNavigate();
     } else {
-      // No SDK or no tag — just show popup directly
       setSelectedItem(item);
     }
   }, [tour?.id, trackEvent]);
