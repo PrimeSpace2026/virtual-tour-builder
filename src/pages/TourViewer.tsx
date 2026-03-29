@@ -1435,23 +1435,6 @@ const TourViewer = () => {
         )}
       </AnimatePresence>
 
-      {/* ===== SHOW CARD BUTTON (when hidden) ===== */}
-      <AnimatePresence>
-        {!showCard && !selectedTag && (
-          <motion.button
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.9 }}
-            onClick={() => setShowCard(true)}
-            className={`absolute left-2 sm:left-4 z-20 pointer-events-auto flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-black/60 backdrop-blur-xl border border-white/10 text-white/70 hover:text-white hover:bg-black/80 transition-all ${
-              tourItems.filter(i => i.tagSid).length > 0 && !showProducts && !showCart ? "bottom-4 sm:bottom-[190px] md:bottom-[210px]" : "bottom-4 sm:bottom-[70px]"
-            }`}
-          >
-            <Eye className="w-4 h-4" />
-          </motion.button>
-        )}
-      </AnimatePresence>
-
       {/* Click outside share to close */}
       {showShare && (
         <div
