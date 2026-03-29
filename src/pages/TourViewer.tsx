@@ -1448,7 +1448,6 @@ const TourViewer = () => {
             }`}
           >
             <Eye className="w-4 h-4" />
-            <span className="text-xs font-medium truncate max-w-[150px] sm:max-w-none">{tour.name}</span>
           </motion.button>
         )}
       </AnimatePresence>
