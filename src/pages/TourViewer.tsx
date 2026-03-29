@@ -491,19 +491,18 @@ const TourViewer = () => {
   const cartTotal = cart.reduce((sum, c) => sum + (c.item.price || 0) * c.qty, 0);
   const cartCount = cart.reduce((sum, c) => sum + c.qty, 0);
 
-  // Navigate to a product's tag in the 3D tour, then show popup
+  // Navigate to a product's tag in the 3D tour — let Matterport show its native annotation preview
   const navigateToProduct = useCallback((item: TourItemData) => {
     setShowProducts(false);
     if (tour?.id) trackEvent(tour.id, "product_click", item.name, String(item.id));
 
     if (item.tagSid && iframeRef.current && tour?.tourUrl) {
       const resolvedSid = tagsMapRef.current.get(item.tagSid.trim().toLowerCase()) || item.tagSid;
-      // Deep link: reload iframe at the tag's position using Matterport URL params
       const modelId = extractModelId(tour.tourUrl);
       if (modelId) {
+        // Deep link with &tag= opens the native Matterport annotation-preview panel
         const tagUrl = buildEmbedUrl(tour.tourUrl, isLocalDev) + `&sr=-2.5,.4&tag=${resolvedSid}`;
         iframeRef.current.src = tagUrl;
-        setTimeout(() => setSelectedItem(item), 1500);
         return;
       }
     }
