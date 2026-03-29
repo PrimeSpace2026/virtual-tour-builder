@@ -364,6 +364,17 @@ const TourViewer = () => {
         setSdkConnected(true);
         console.log("✅ SDK connecté (localhost)");
 
+        // Navigate to the first sweep (exterior/entrance) on load
+        try {
+          const sweeps = await sdk.Sweep.getData();
+          if (sweeps && sweeps.length > 0) {
+            console.log("📍 Available sweeps:", sweeps.map((s: any, i: number) => ({ index: i, sid: s.sid, position: s.position })));
+            // Move to the first sweep (entrance/exterior view)
+            await sdk.Sweep.moveTo(sweeps[0].sid, { transition: sdk.Sweep.Transition?.INSTANT || "transition.instant" });
+            console.log("🏠 Moved to starting sweep:", sweeps[0].sid);
+          }
+        } catch (err) { console.log("Sweep navigation error:", err); }
+
         // Get floor data for custom floor selector
         try {
           const floorsData = await sdk.Floor.getData();
