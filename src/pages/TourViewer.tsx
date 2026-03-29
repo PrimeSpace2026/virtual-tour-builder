@@ -660,10 +660,10 @@ const TourViewer = () => {
           - pointer-events-none on wrapper: user can still navigate 3D tour
           - pointer-events-auto on the Link: PrimeSpace logo is clickable
         */}
-        <div className="absolute bottom-0 left-0 right-0 z-[6] pointer-events-none flex justify-center px-3 sm:px-4 pb-0 sm:pb-3 lg:pb-3">
+        <div className="absolute bottom-0 left-0 right-0 z-[6] pointer-events-none flex justify-end px-3 sm:px-4 pb-0 sm:pb-3 lg:pb-3">
           <Link
             to="/"
-            className="pointer-events-auto w-full sm:w-auto sm:min-w-[280px] lg:w-[360px] flex items-center gap-3 p-3
+            className="pointer-events-auto w-auto sm:min-w-[280px] lg:w-[360px] flex items-center gap-3 p-3
               bg-black/70 backdrop-blur-xl border border-white/15 shadow-2xl
               rounded-t-2xl sm:rounded-2xl
               border-b-0 sm:border-b
