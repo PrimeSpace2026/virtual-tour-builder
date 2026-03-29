@@ -622,8 +622,8 @@ const TourViewer = () => {
     );
   }
 
-  // Always include SDK application key so SDK handshake can work for floor selector + tags
-  const embedUrl = buildEmbedUrl(tour.tourUrl, true);
+  // Only include applicationKey on localhost (Matterport free plan rejects it on other domains)
+  const embedUrl = buildEmbedUrl(tour.tourUrl, isLocalDev);
 
   return (
     <div className="fixed inset-0 bg-[#0a0a14] z-50 overflow-hidden select-none">
