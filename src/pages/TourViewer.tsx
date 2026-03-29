@@ -286,18 +286,9 @@ const TourViewer = () => {
   // SDK: only works on localhost (Matterport free plan restricts to local domains)
   const isLocalDev = typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
 
-  // Production: SDK unavailable without paid Matterport license
-  useEffect(() => {
-    if (isLocalDev) return;
-    if (!iframeLoaded || !tour?.tourUrl) return;
-    setSdkFailed(true); // show products strip
-  }, [iframeLoaded, tour?.tourUrl, isLocalDev]);
-
-  // SDK: only works on localhost (Matterport free plan restricts to local domains)
+  // Attempt SDK connection on all environments (needed for floor selector + tags)
   useEffect(() => {
     if (!iframeLoaded || !iframeRef.current || !tour?.tourUrl) return;
-    if (tourItemsRef.current.length === 0) return;
-    if (!isLocalDev) return;
     if (sdkAttemptsRef.current >= 1) return;
     sdkAttemptsRef.current = 1;
 
@@ -451,7 +442,7 @@ const TourViewer = () => {
 
     connectSdk();
     return () => { cancelled = true; };
-  }, [iframeLoaded, tour?.tourUrl, isLocalDev]);
+  }, [iframeLoaded, tour?.tourUrl]);
 
   // Navigation
   const currentIndex = allTours.findIndex((t) => t.id === tour?.id);
@@ -631,8 +622,8 @@ const TourViewer = () => {
     );
   }
 
-  // On localhost: use SDK key in URL for tag interception. On prod: load without key (faster, no SDK block).
-  const embedUrl = buildEmbedUrl(tour.tourUrl, isLocalDev && tourItems.length > 0 && !sdkFailed);
+  // Always include SDK application key so SDK handshake can work for floor selector + tags
+  const embedUrl = buildEmbedUrl(tour.tourUrl, true);
 
   return (
     <div className="fixed inset-0 bg-[#0a0a14] z-50 overflow-hidden select-none">
