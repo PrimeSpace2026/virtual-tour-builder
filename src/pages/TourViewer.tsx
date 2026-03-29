@@ -626,7 +626,9 @@ const TourViewer = () => {
   const embedUrl = buildEmbedUrl(tour.tourUrl, isLocalDev);
 
   return (
-    <div className="fixed inset-0 bg-[#0a0a14] z-50 overflow-hidden select-none">
+    <div className="fixed inset-0 bg-[#0a0a14] z-50 overflow-hidden select-none flex flex-col">
+      {/* ===== TOP: MATTERPORT 3D VIEWER ===== */}
+      <div className="relative flex-1 min-h-0">
       {/* ===== MATTERPORT 3D IFRAME ===== */}
       <div className="absolute inset-0 overflow-hidden">
         <AnimatePresence>
@@ -1387,110 +1389,68 @@ const TourViewer = () => {
         )}
       </AnimatePresence>
 
-      {/* ===== FLOATING PRODUCT CARDS (bottom of screen) ===== */}
-      <AnimatePresence>
-        {tourItems.filter(i => i.tagSid).length > 0 && !showProducts && !selectedItem && !showCart && !showCard && (
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 50 }}
-            transition={{ delay: 0.8, type: "spring", damping: 22 }}
-            className="absolute bottom-[70px] sm:bottom-[75px] left-0 right-0 z-30 pointer-events-auto px-0 sm:px-3 hidden sm:block"
-          >
-            <div className="max-w-3xl mx-auto sm:px-0 px-0">
-              {/* Active filter label */}
-              {activeTagFilter && (
-                <div className="flex items-center justify-center gap-2 mb-2">
-                  <span className="text-white/60 text-[10px] font-medium uppercase tracking-wider">Produit lié au tag</span>
-                  <button
-                    onClick={() => setActiveTagFilter(null)}
-                    className="text-white/40 hover:text-white text-[10px] underline transition-colors"
-                  >
-                    Voir tout
-                  </button>
-                </div>
-              )}
-              <div className="flex items-end gap-3 sm:gap-2 overflow-x-auto pb-2 sm:pb-1 scrollbar-hide sm:justify-center px-3 sm:px-0">
-                <AnimatePresence mode="popLayout">
-                {tourItems
-                  .filter(i => i.tagSid)
-                  .filter(i => !activeTagFilter || i.tagSid?.trim().toLowerCase() === activeTagFilter.trim().toLowerCase())
-                  .map((item, idx) => (
-                  <motion.button
-                    key={item.id}
-                    layout
-                    initial={{ opacity: 0, y: 20, scale: 0.9 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.8, y: 10 }}
-                    transition={{ delay: activeTagFilter ? 0 : 1 + idx * 0.1, type: "spring", damping: 20 }}
-                    onClick={() => navigateToProduct(item)}
-                    className={`flex-shrink-0 bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.25)] overflow-hidden hover:shadow-[0_8px_30px_rgba(0,0,0,0.35)] hover:-translate-y-1 transition-all duration-200 group ${
-                      activeTagFilter ? "w-[180px] sm:w-[200px]" : "w-[140px] sm:w-[160px]"
-                    }`}
-                  >
-                    {/* Product image */}
-                    <div className={`bg-gray-50 flex items-center justify-center relative overflow-hidden ${activeTagFilter ? "h-28 sm:h-32" : "h-24 sm:h-24"}`}>
-                      {item.imageUrl ? (
-                        <img src={item.imageUrl} alt={item.name} className="w-full h-full object-contain p-2" />
-                      ) : (
-                        <ShoppingBag className="w-8 h-8 text-gray-200" />
-                      )}
-                      {/* Quick add overlay on hover */}
-                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center">
-                        <div className="flex items-center gap-1 text-white text-[10px] font-bold uppercase tracking-wider">
-                          <ShoppingCart className="w-3 h-3" />
-                          Voir
-                        </div>
-                      </div>
-                      {/* Tag indicator */}
-                      <div className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-purple-600 flex items-center justify-center shadow-sm">
-                        <Tag className="w-2.5 h-2.5 text-white" />
-                      </div>
-                    </div>
-                    {/* Info */}
-                    <div className="px-2.5 py-2.5 sm:py-2">
-                      <p className="text-gray-900 text-xs sm:text-[11px] font-bold truncate leading-tight">{item.name}</p>
-                      {item.price != null && (
-                        <p className="text-gray-900 text-sm sm:text-xs font-extrabold mt-0.5">
-                          {item.price} <span className="text-gray-400 text-[10px] font-medium">{CURRENCY_SYMBOLS[item.currency] || item.currency}</span>
-                        </p>
-                      )}
-                      {/* Show add-to-cart button when filtered to single product */}
-                      {activeTagFilter && (
-                        <button
-                          onClick={(e) => { e.stopPropagation(); addToCart(item); }}
-                          className="w-full mt-2 py-2 bg-gray-900 hover:bg-gray-800 text-white text-[11px] font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5"
-                        >
-                          <ShoppingCart className="w-3 h-3" />
-                          Ajouter au panier
-                        </button>
-                      )}
-                    </div>
-                  </motion.button>
-                ))}
-                </AnimatePresence>
-                {/* Items without tags — show as small thumbnails */}
-                {!activeTagFilter && tourItems.filter(i => !i.tagSid).length > 0 && (
-                  <button
-                    onClick={() => setShowProducts(true)}
-                    className="flex-shrink-0 w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-black/50 backdrop-blur-xl border border-white/15 flex items-center justify-center text-white/60 hover:text-white hover:bg-black/70 transition-all self-center"
-                    title="Voir tous les produits"
-                  >
-                    <span className="text-[10px] font-bold">+{tourItems.filter(i => !i.tagSid).length}</span>
-                  </button>
-                )}
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       {/* Click outside share to close */}
       {showShare && (
         <div
           className="absolute inset-0 z-10"
           onClick={() => setShowShare(false)}
         />
+      )}
+      </div>{/* END TOP: MATTERPORT 3D VIEWER */}
+
+      {/* ===== BOTTOM: PRODUCT STRIP ===== */}
+      {tourItems.length > 0 && (
+        <div className="shrink-0 bg-[#0d0d1a] border-t border-white/10">
+          <div className="px-3 py-3">
+            {/* Active filter label */}
+            {activeTagFilter && (
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <span className="text-white/60 text-[10px] font-medium uppercase tracking-wider">Produit lié au tag</span>
+                <button
+                  onClick={() => setActiveTagFilter(null)}
+                  className="text-white/40 hover:text-white text-[10px] underline transition-colors"
+                >
+                  Voir tout
+                </button>
+              </div>
+            )}
+            <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide justify-center">
+              {tourItems
+                .filter(i => !activeTagFilter || i.tagSid?.trim().toLowerCase() === activeTagFilter.trim().toLowerCase())
+                .map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => navigateToProduct(item)}
+                  className="flex-shrink-0 flex items-center gap-2.5 bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.08] rounded-xl p-2 pr-4 transition-all group"
+                >
+                  <div className="w-12 h-12 rounded-lg bg-white overflow-hidden flex items-center justify-center shrink-0">
+                    {item.imageUrl ? (
+                      <img src={item.imageUrl} alt={item.name} className="w-full h-full object-contain p-1" />
+                    ) : (
+                      <ShoppingBag className="w-5 h-5 text-gray-300" />
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-white/80 text-xs font-semibold truncate max-w-[120px] group-hover:text-white transition-colors">{item.name}</p>
+                    {item.price != null && (
+                      <p className="text-purple-300 text-xs font-bold mt-0.5">
+                        {item.price} <span className="text-white/30 text-[10px]">{CURRENCY_SYMBOLS[item.currency] || item.currency}</span>
+                      </p>
+                    )}
+                  </div>
+                </button>
+              ))}
+              {!activeTagFilter && tourItems.length > 3 && (
+                <button
+                  onClick={() => setShowProducts(true)}
+                  className="flex-shrink-0 px-3 py-2 rounded-xl bg-white/[0.05] border border-white/[0.08] text-white/50 hover:text-white hover:bg-white/[0.1] transition-all text-xs font-medium"
+                >
+                  Voir tout
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
