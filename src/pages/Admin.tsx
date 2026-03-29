@@ -1016,23 +1016,6 @@ const Admin = () => {
                     </div>
                   </div>
 
-                  <div>
-                    <label className="text-sm font-medium mb-1 block">Tag Matterport (optionnel)</label>
-                    {tourTags.length > 0 ? (
-                      <Select value={editService.tagSid || "__none__"} onValueChange={(v) => setEditService({ ...editService, tagSid: v === "__none__" ? "" : v })}>
-                        <SelectTrigger><SelectValue placeholder="Choisir un tag..." /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="__none__">— Aucun tag —</SelectItem>
-                          {tourTags.map((tag, i) => (
-                            <SelectItem key={`${tag.sid}-${i}`} value={tag.name}>{tag.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    ) : (
-                      <Input value={editService.tagSid} onChange={(e) => setEditService({ ...editService, tagSid: e.target.value })} placeholder="Nom du tag..." />
-                    )}
-                  </div>
-
                   <div className="flex justify-end gap-3 pt-2">
                     <Button variant="outline" onClick={() => setServiceFormOpen(false)}>Annuler</Button>
                     <Button onClick={handleSaveService}>Enregistrer</Button>
