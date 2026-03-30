@@ -568,9 +568,14 @@ const Admin = () => {
             <Button variant="outline" onClick={handleLogout} className="flex items-center gap-2">
               <LogOut className="w-4 h-4" /> Déconnexion
             </Button>
-            <Button onClick={openCreate} className="flex items-center gap-2">
-              <Plus className="w-4 h-4" /> Ajouter une visite
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => navigate("/admin/analytics")} className="flex items-center gap-2">
+                <BarChart3 className="w-4 h-4" /> Analytics Dashboard
+              </Button>
+              <Button onClick={openCreate} className="flex items-center gap-2">
+                <Plus className="w-4 h-4" /> Ajouter une visite
+              </Button>
+            </div>
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
