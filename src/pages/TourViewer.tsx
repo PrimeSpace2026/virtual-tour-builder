@@ -154,6 +154,7 @@ const TourViewer = () => {
   const [tourItems, setTourItems] = useState<TourItemData[]>([]);
   const tourItemsRef = useRef<TourItemData[]>([]);
   const [selectedItem, setSelectedItem] = useState<TourItemData | null>(null);
+  const [hoveredItem, setHoveredItem] = useState<TourItemData | null>(null);
   const [activeTagFilter, setActiveTagFilter] = useState<string | null>(null); // tag SID or name that was clicked in 3D
   const [cart, setCart] = useState<CartEntry[]>(() => {
     try {
@@ -1400,6 +1401,8 @@ const TourViewer = () => {
                     <div
                       key={item.id}
                       className="w-full flex items-center gap-3 p-3 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.08] transition-all text-left group relative"
+                      onMouseEnter={() => setHoveredItem(item)}
+                      onMouseLeave={() => setHoveredItem(null)}
                     >
                       <button
                         onClick={() => navigateToProduct(item)}
@@ -1429,6 +1432,34 @@ const TourViewer = () => {
                         <Plus className="w-4 h-4" />
                       </button>
                       <ChevronRight className="w-4 h-4 text-white/15 group-hover:text-white/40 transition-colors shrink-0" />
+
+                      {/* Hover preview card */}
+                      {hoveredItem?.id === item.id && (
+                        <div className="hidden md:block absolute right-full top-0 mr-3 w-[280px] z-50 pointer-events-none">
+                          <div className="bg-white rounded-2xl shadow-2xl overflow-hidden border border-gray-100">
+                            {item.imageUrl && (
+                              <div className="h-40 bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center overflow-hidden">
+                                <img src={item.imageUrl} alt={item.name} className="w-full h-full object-contain p-4" />
+                              </div>
+                            )}
+                            <div className="p-4">
+                              {item.brand && (
+                                <p className="text-purple-600 text-[10px] font-bold uppercase tracking-widest mb-1">{item.brand}</p>
+                              )}
+                              <h4 className="text-gray-900 font-bold text-base leading-tight">{item.name}</h4>
+                              {item.price != null && (
+                                <p className="text-xl font-extrabold text-gray-900 mt-1">
+                                  {item.price} <span className="text-sm font-semibold text-gray-400">{CURRENCY_SYMBOLS[item.currency] || item.currency}</span>
+                                </p>
+                              )}
+                              {item.description && (
+                                <p className="text-gray-500 text-xs leading-relaxed mt-2 line-clamp-3">{item.description}</p>
+                              )}
+                              <p className="text-purple-500 text-[10px] font-semibold mt-3 uppercase tracking-wider">Cliquez pour voir dans la visite →</p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
