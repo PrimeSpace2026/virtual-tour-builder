@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import {
   ArrowLeft, Eye, Clock, MousePointerClick, ShoppingCart, Tag, BarChart3,
-  Users, TrendingUp, Globe, Hash, Monitor, MapPin, Filter, ArrowUpDown, Flame
+  Users, TrendingUp, Globe, Hash, Monitor, MapPin, Filter, ArrowUpDown, Flame,
+  Briefcase, UserCheck
 } from "lucide-react";
 import { ComposableMap, Geographies, Geography, Marker, ZoomableGroup } from "react-simple-maps";
 
@@ -16,11 +17,23 @@ interface TourBreakdown {
   tagClicks: number;
   productClicks: number;
   addToCart: number;
+  serviceTags?: number;
+  productTags?: number;
+  totalTags?: number;
 }
 
 interface HeatmapEntry {
   name: string;
   clicks: number;
+}
+
+interface ClientInfo {
+  visitorId: string;
+  totalVisits: number;
+  tours: string[];
+  lastSeen: string | null;
+  browser: string;
+  location: string;
 }
 
 interface GlobalStats {
@@ -30,11 +43,14 @@ interface GlobalStats {
   tagClicks: number;
   productClicks: number;
   addToCart: number;
+  totalServiceTags: number;
+  totalProductTags: number;
   mostClickedProduct: { name: string; clicks: number } | null;
   mostClickedTag: { name: string; clicks: number } | null;
   productHeatmap: HeatmapEntry[];
   tagHeatmap: HeatmapEntry[];
   tourBreakdown: TourBreakdown[];
+  clients: ClientInfo[];
   browsers: { name: string; count: number }[];
   locations: { name: string; count: number }[];
   mapPoints: { lat: number; lng: number; count: number; name: string }[];
@@ -143,11 +159,13 @@ const AnalyticsDashboard = () => {
         ) : (
           <>
             {/* KPI Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-8">
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3 mb-8">
               {[
                 { label: "Total Visits", value: stats.totalVisits, icon: Eye, color: "text-blue-400", bg: "bg-blue-500/10" },
                 { label: "Unique Visitors", value: stats.uniqueVisitors, icon: Users, color: "text-indigo-400", bg: "bg-indigo-500/10" },
                 { label: "Avg Duration", value: formatDuration(stats.avgDuration), icon: Clock, color: "text-green-400", bg: "bg-green-500/10" },
+                { label: "Service Tags", value: stats.totalServiceTags ?? 0, icon: Briefcase, color: "text-teal-400", bg: "bg-teal-500/10" },
+                { label: "Product Tags", value: stats.totalProductTags ?? 0, icon: Tag, color: "text-cyan-400", bg: "bg-cyan-500/10" },
                 { label: "Tag Clicks", value: stats.tagClicks, icon: Hash, color: "text-purple-400", bg: "bg-purple-500/10" },
                 { label: "Product Clicks", value: stats.productClicks, icon: MousePointerClick, color: "text-orange-400", bg: "bg-orange-500/10" },
                 { label: "Add to Cart", value: stats.addToCart, icon: ShoppingCart, color: "text-pink-400", bg: "bg-pink-500/10" },
@@ -222,6 +240,8 @@ const AnalyticsDashboard = () => {
                           </span>
                         </th>
                       ))}
+                      <th className="text-right py-2 px-2 font-medium">Svc Tags</th>
+                      <th className="text-right py-2 px-2 font-medium">Prod Tags</th>
                       <th className="text-right py-2 pl-2 font-medium">Avg Duration</th>
                       <th className="text-right py-2 pl-2 font-medium">Details</th>
                     </tr>
@@ -245,6 +265,8 @@ const AnalyticsDashboard = () => {
                           <td className="text-right py-3 px-2 text-white/60 font-mono">{t.productClicks}</td>
                           <td className="text-right py-3 px-2 text-white/60 font-mono">{t.tagClicks}</td>
                           <td className="text-right py-3 px-2 text-white/60 font-mono">{t.addToCart}</td>
+                          <td className="text-right py-3 px-2 text-teal-400/70 font-mono">{t.serviceTags ?? 0}</td>
+                          <td className="text-right py-3 px-2 text-cyan-400/70 font-mono">{t.productTags ?? 0}</td>
                           <td className="text-right py-3 pl-2 text-white/40">{formatDuration(t.avgDuration)}</td>
                           <td className="text-right py-3 pl-2">
                             <Link
@@ -411,7 +433,7 @@ const AnalyticsDashboard = () => {
                 <h2 className="text-sm font-semibold text-white/70">Visitor Map</h2>
                 <span className="text-white/30 text-xs ml-auto">{stats.mapPoints?.length ?? 0} locations</span>
               </div>
-              <div className="rounded-xl overflow-hidden bg-[#0d0d1a] border border-white/[0.04]" style={{ height: 400 }}>
+              <div className="rounded-xl overflow-hidden bg-white border border-gray-200" style={{ height: 400 }}>
                 <ComposableMap
                   projection="geoMercator"
                   projectionConfig={{ scale: 150, center: [10, 30] }}
@@ -424,12 +446,12 @@ const AnalyticsDashboard = () => {
                           <Geography
                             key={geo.rsmKey}
                             geography={geo}
-                            fill="#1a1a2e"
-                            stroke="#2a2a4a"
+                            fill="#e5e7eb"
+                            stroke="#d1d5db"
                             strokeWidth={0.5}
                             style={{
                               default: { outline: "none" },
-                              hover: { fill: "#252545", outline: "none" },
+                              hover: { fill: "#d1d5db", outline: "none" },
                               pressed: { outline: "none" },
                             }}
                           />
@@ -438,15 +460,20 @@ const AnalyticsDashboard = () => {
                     </Geographies>
                     {(stats.mapPoints ?? []).map((pt, i) => {
                       const maxCount = Math.max(...(stats.mapPoints ?? []).map((p) => p.count), 1);
-                      const size = 6 + (pt.count / maxCount) * 14;
-                      const opacity = 0.5 + (pt.count / maxCount) * 0.5;
+                      const ratio = pt.count / maxCount;
+                      const size = 6 + ratio * 14;
+                      // Blue (cold) → Red (hot)
+                      const r = Math.round(59 + ratio * 180);
+                      const g = Math.round(130 - ratio * 100);
+                      const b = Math.round(246 - ratio * 200);
+                      const color = `rgb(${r},${g},${b})`;
                       return (
                         <Marker key={i} coordinates={[pt.lng, pt.lat]}>
-                          <circle r={size} fill={`rgba(168,85,247,${opacity})`} stroke="rgba(168,85,247,0.3)" strokeWidth={size * 0.6} />
+                          <circle r={size} fill={color} fillOpacity={0.7} stroke={color} strokeOpacity={0.3} strokeWidth={size * 0.6} />
                           <text
                             textAnchor="middle"
                             y={-size - 6}
-                            style={{ fontFamily: "system-ui", fill: "rgba(255,255,255,0.7)", fontSize: 10, fontWeight: 600 }}
+                            style={{ fontFamily: "system-ui", fill: "#374151", fontSize: 10, fontWeight: 600 }}
                           >
                             {pt.name} ({pt.count})
                           </text>
@@ -456,6 +483,63 @@ const AnalyticsDashboard = () => {
                   </ZoomableGroup>
                 </ComposableMap>
               </div>
+            </div>
+
+            {/* Clients / Unique Visitors */}
+            <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-5 mb-8">
+              <div className="flex items-center gap-2 mb-4">
+                <UserCheck className="w-4 h-4 text-indigo-400" />
+                <h2 className="text-sm font-semibold text-white/70">Clients</h2>
+                <span className="text-white/30 text-xs ml-auto">{(stats.clients ?? []).length} unique visitors</span>
+              </div>
+              {(stats.clients ?? []).length === 0 ? (
+                <p className="text-white/30 text-xs">No visitors recorded</p>
+              ) : (
+                <div className="overflow-x-auto max-h-80 overflow-y-auto">
+                  <table className="w-full text-xs">
+                    <thead className="sticky top-0 bg-[#0a0a14]">
+                      <tr className="text-white/30 border-b border-white/[0.06]">
+                        <th className="text-left py-2 pr-4 font-medium">Visitor</th>
+                        <th className="text-right py-2 px-3 font-medium">Visits</th>
+                        <th className="text-left py-2 px-3 font-medium">Tours</th>
+                        <th className="text-left py-2 px-3 font-medium">Browser</th>
+                        <th className="text-left py-2 px-3 font-medium">Location</th>
+                        <th className="text-right py-2 font-medium">Last Seen</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(stats.clients ?? [])
+                        .filter((c) => !filterTourId || c.tours.some((t) => filteredBreakdown.some((fb) => fb.tourName === t)))
+                        .map((c) => (
+                        <tr key={c.visitorId} className="border-b border-white/[0.03] hover:bg-white/[0.02]">
+                          <td className="py-2 pr-4 text-white/50 font-mono">{c.visitorId?.slice(0, 10) || "—"}...</td>
+                          <td className="py-2 px-3 text-right">
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                              c.totalVisits >= 5 ? "bg-green-500/15 text-green-400" :
+                              c.totalVisits >= 2 ? "bg-yellow-500/15 text-yellow-400" :
+                              "bg-white/5 text-white/40"
+                            }`}>
+                              {c.totalVisits}
+                            </span>
+                          </td>
+                          <td className="py-2 px-3 text-white/40">
+                            <div className="flex flex-wrap gap-1">
+                              {c.tours.map((t) => (
+                                <span key={t} className="bg-purple-500/10 text-purple-300 px-1.5 py-0.5 rounded text-[9px]">{t}</span>
+                              ))}
+                            </div>
+                          </td>
+                          <td className="py-2 px-3 text-white/40">{c.browser || "—"}</td>
+                          <td className="py-2 px-3 text-white/40">{c.location || "—"}</td>
+                          <td className="py-2 text-right text-white/40">
+                            {c.lastSeen ? new Date(c.lastSeen).toLocaleString("en-US", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) : "—"}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
 
             {/* Recent Visits */}
