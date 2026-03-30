@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Layout } from "@/components/Layout";
@@ -18,11 +18,19 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Plus, Pencil, Trash2, Upload, X, Image as ImageIcon, LogOut, Search, MapPin, Loader2, ShoppingBag, ExternalLink, BarChart3, Briefcase, Phone, MessageCircle } from "lucide-react";
+import { Plus, Pencil, Trash2, Upload, X, Image as ImageIcon, LogOut, Search, MapPin, Loader2, ShoppingBag, ExternalLink, BarChart3, Briefcase, Phone, MessageCircle, Tag, Scan } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+
+const SDK_KEY = "b7uar4u57xdec0zw7dwygt7md";
+
+interface TagInfo {
+  sid: string;
+  label: string;
+  description: string;
+}
 
 // Fix default marker icons
 import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
@@ -166,6 +174,13 @@ const Admin = () => {
   const [tourTags, setTourTags] = useState<{ name: string; sid: string }[]>([]);
   const [showAddTag, setShowAddTag] = useState(false);
   const [newTagName, setNewTagName] = useState("");
+  // Tag Finder modal
+  const [itemsTourUrl, setItemsTourUrl] = useState("");
+  const [tagFinderOpen, setTagFinderOpen] = useState(false);
+  const [tagFinderTags, setTagFinderTags] = useState<TagInfo[]>([]);
+  const [tagFinderLoading, setTagFinderLoading] = useState(false);
+  const [tagFinderError, setTagFinderError] = useState("");
+  const tagFinderIframeRef = useRef<HTMLIFrameElement>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -338,6 +353,7 @@ const Admin = () => {
   const openItems = (tour: Tour) => {
     if (!tour.id) return;
     setItemsTourId(tour.id);
+    setItemsTourUrl(tour.tourUrl || "");
     fetchItems(tour.id);
     fetchServices(tour.id);
     // Fetch saved tags for this tour
@@ -393,6 +409,87 @@ const Admin = () => {
       toast({ title: "Produit supprimé" });
       if (itemsTourId) fetchItems(itemsTourId);
     }
+  };
+
+  // ===== TAG FINDER =====
+  const extractModelId = (url: string): string | null => {
+    try {
+      const u = new URL(url);
+      return u.searchParams.get("m");
+    } catch { return null; }
+  };
+
+  const scanTags = async () => {
+    const modelId = extractModelId(itemsTourUrl);
+    if (!modelId) {
+      setTagFinderError("URL invalide. Utilisez le format: https://my.matterport.com/show/?m=XXXX");
+      return;
+    }
+
+    setTagFinderLoading(true);
+    setTagFinderError("");
+    setTagFinderTags([]);
+
+    try {
+      const { setupSdk } = await import("@matterport/sdk");
+      const embedUrl = `https://my.matterport.com/show/?m=${modelId}&play=1&qs=1&applicationKey=${SDK_KEY}&brand=0&title=0`;
+      if (tagFinderIframeRef.current) {
+        tagFinderIframeRef.current.src = embedUrl;
+      }
+      await new Promise<void>((resolve) => {
+        if (tagFinderIframeRef.current) {
+          tagFinderIframeRef.current.onload = () => resolve();
+        }
+      });
+      const sdk = await Promise.race([
+        setupSdk(SDK_KEY, { iframe: tagFinderIframeRef.current!, space: modelId }),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("SDK timeout — la clé SDK n'est pas autorisée pour ce domaine. Utilisez localhost ou ajoutez votre domaine dans Matterport Developer Portal.")), 15000)
+        ),
+      ]);
+
+      const allTags: TagInfo[] = [];
+      if (sdk.Mattertag?.getData) {
+        const mattertags = await sdk.Mattertag.getData();
+        for (const t of mattertags) {
+          allTags.push({ sid: t.sid, label: t.label || "(sans nom)", description: (t.description || "").slice(0, 100) });
+        }
+      }
+      if ((sdk as any).Tag?.getData) {
+        const tagData = await (sdk as any).Tag.getData();
+        for (const t of tagData) {
+          if (!allTags.find((a) => a.sid === t.sid)) {
+            allTags.push({ sid: t.sid, label: t.label || "(sans nom)", description: (t.description || "").slice(0, 100) });
+          }
+        }
+      }
+
+      setTagFinderTags(allTags);
+      if (allTags.length === 0) {
+        setTagFinderError("Aucun tag trouvé dans cette visite.");
+      } else {
+        // Auto-save discovered tags to the tour for future use
+        const updatedTags = allTags.map((t) => ({ name: t.label, sid: t.sid }));
+        setTourTags(updatedTags);
+        if (itemsTourId) {
+          fetch(`/api/tours/${itemsTourId}/tags`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(updatedTags),
+          }).catch(() => {});
+        }
+      }
+    } catch (err: any) {
+      setTagFinderError(err.message || "Erreur de connexion SDK");
+    } finally {
+      setTagFinderLoading(false);
+    }
+  };
+
+  const selectTagForProduct = (tag: TagInfo) => {
+    setEditItem((prev) => ({ ...prev, tagSid: tag.sid }));
+    setTagFinderOpen(false);
+    toast({ title: "Tag sélectionné", description: `${tag.label} (SID: ${tag.sid.slice(0, 12)}...)` });
   };
 
   // ===== SERVICES MANAGEMENT =====
@@ -822,74 +919,49 @@ const Admin = () => {
                   </div>
                   <div>
                     <label className="text-sm font-medium mb-1 block">Tag Matterport (optionnel)</label>
-                    {tourTags.length > 0 ? (
-                      <div className="space-y-2">
-                        <Select value={editItem.tagSid || "__none__"} onValueChange={(v) => setEditItem({ ...editItem, tagSid: v === "__none__" ? "" : v })}>
-                          <SelectTrigger><SelectValue placeholder="Choisir un tag..." /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="__none__">— Aucun tag —</SelectItem>
-                            {tourTags.map((tag, i) => (
-                              <SelectItem key={`${tag.sid}-${i}`} value={tag.name}>{tag.name}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <p className="text-xs text-muted-foreground">Sélectionnez le tag Matterport à lier — quand un visiteur clique ce tag, le produit s'affiche</p>
-                      </div>
-                    ) : (
-                      <div className="space-y-2">
-                        {!showAddTag ? (
-                          <>
-                            <Input value={editItem.tagSid} onChange={(e) => setEditItem({ ...editItem, tagSid: e.target.value })} placeholder="Ex: Parking sécurisé, Wifi, CCTV..." />
-                            <div className="flex items-center gap-2">
-                              <p className="text-xs text-muted-foreground flex-1">Écrivez le nom du tag ou ajoutez des tags à la liste</p>
-                              <button type="button" onClick={() => setShowAddTag(true)} className="text-xs text-purple-600 hover:text-purple-500 font-medium whitespace-nowrap">
-                                + Ajouter des tags
-                              </button>
-                            </div>
-                          </>
-                        ) : (
-                          <>
-                            <div className="flex gap-2">
-                              <Input value={newTagName} onChange={(e) => setNewTagName(e.target.value)} placeholder="Nom du tag (ex: Table, Wifi...)" className="flex-1" />
-                              <Button size="sm" onClick={() => {
-                                if (!newTagName.trim()) return;
-                                const updated = [...tourTags, { name: newTagName.trim(), sid: "" }];
-                                setTourTags(updated);
-                                setNewTagName("");
-                                if (itemsTourId) {
-                                  fetch(`/api/tours/${itemsTourId}/tags`, {
-                                    method: "POST",
-                                    headers: { "Content-Type": "application/json" },
-                                    body: JSON.stringify(updated),
-                                  }).catch(() => {});
-                                }
-                              }}>Ajouter</Button>
-                            </div>
-                            {tourTags.length > 0 && (
-                              <div className="flex flex-wrap gap-1.5 mt-1">
-                                {tourTags.map((tag, i) => (
-                                  <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 text-xs">
-                                    {tag.name}
-                                    <button type="button" onClick={() => {
-                                      const updated = tourTags.filter((_, idx) => idx !== i);
-                                      setTourTags(updated);
-                                      if (itemsTourId) {
-                                        fetch(`/api/tours/${itemsTourId}/tags`, {
-                                          method: "POST",
-                                          headers: { "Content-Type": "application/json" },
-                                          body: JSON.stringify(updated),
-                                        }).catch(() => {});
-                                      }
-                                    }} className="hover:text-red-500">×</button>
-                                  </span>
-                                ))}
-                              </div>
-                            )}
-                            <button type="button" onClick={() => setShowAddTag(false)} className="text-xs text-muted-foreground hover:text-foreground">← Retour</button>
-                          </>
-                        )}
-                      </div>
-                    )}
+                    <div className="space-y-2">
+                      {tourTags.length > 0 ? (
+                        <>
+                          <Select value={editItem.tagSid || "__none__"} onValueChange={(v) => setEditItem({ ...editItem, tagSid: v === "__none__" ? "" : v })}>
+                            <SelectTrigger><SelectValue placeholder="Choisir un tag..." /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="__none__">— Aucun tag —</SelectItem>
+                              {tourTags.map((tag, i) => (
+                                <SelectItem key={`${tag.sid}-${i}`} value={tag.sid || tag.name}>
+                                  {tag.name}{tag.sid ? ` (${tag.sid.slice(0, 10)}…)` : " (pas de SID)"}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <p className="text-xs text-muted-foreground">Sélectionnez le tag Matterport à lier — quand un visiteur clique ce tag, le produit s'affiche</p>
+                        </>
+                      ) : (
+                        <>
+                          <Input value={editItem.tagSid} onChange={(e) => setEditItem({ ...editItem, tagSid: e.target.value })} placeholder="SID du tag Matterport ou nom du tag..." />
+                          <p className="text-xs text-muted-foreground">Collez le SID du tag Matterport ou utilisez le scanner ci-dessous</p>
+                        </>
+                      )}
+                      {editItem.tagSid && (
+                        <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-purple-50 border border-purple-200">
+                          <Tag className="w-3.5 h-3.5 text-purple-500" />
+                          <span className="text-xs text-purple-700 font-mono flex-1 truncate">{editItem.tagSid}</span>
+                          <button type="button" onClick={() => setEditItem({ ...editItem, tagSid: "" })} className="text-purple-400 hover:text-red-500">
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      )}
+                      {itemsTourUrl && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => { setTagFinderOpen(true); setTagFinderTags([]); setTagFinderError(""); }}
+                          className="flex items-center gap-2 w-full"
+                        >
+                          <Scan className="w-4 h-4" /> Scanner les Tags Matterport
+                        </Button>
+                      )}
+                    </div>
                   </div>
                   <div className="flex justify-end gap-3 pt-2">
                     <Button variant="outline" onClick={() => setItemFormOpen(false)}>Annuler</Button>
@@ -1024,6 +1096,100 @@ const Admin = () => {
               )}
             </>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* ===== TAG FINDER MODAL ===== */}
+      <Dialog open={tagFinderOpen} onOpenChange={setTagFinderOpen}>
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Scan className="w-5 h-5 text-purple-500" />
+              Scanner les Tags Matterport
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 mt-2">
+            {/* Tour URL (read-only) */}
+            <div>
+              <label className="text-sm font-medium mb-1 block">URL de la visite</label>
+              <Input value={itemsTourUrl} readOnly className="bg-muted text-muted-foreground" />
+            </div>
+
+            {/* Scan button */}
+            <Button
+              onClick={scanTags}
+              disabled={tagFinderLoading || !itemsTourUrl}
+              className="flex items-center gap-2 w-full"
+            >
+              {tagFinderLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+              {tagFinderLoading ? "Connexion au SDK..." : "Charger les Tags"}
+            </Button>
+
+            {/* Error */}
+            {tagFinderError && (
+              <div className="bg-destructive/10 border border-destructive/20 rounded-xl p-4 text-destructive text-sm">
+                {tagFinderError}
+              </div>
+            )}
+
+            {/* Tags list */}
+            {tagFinderTags.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-muted-foreground">
+                  {tagFinderTags.length} tag{tagFinderTags.length > 1 ? "s" : ""} trouvé{tagFinderTags.length > 1 ? "s" : ""}
+                </p>
+                {tagFinderTags.map((tag) => (
+                  <div
+                    key={tag.sid}
+                    className="flex items-center gap-3 p-3 rounded-xl border border-border bg-card hover:bg-accent/50 transition-all"
+                  >
+                    <div className="w-9 h-9 rounded-lg bg-purple-100 flex items-center justify-center shrink-0">
+                      <Tag className="w-4 h-4 text-purple-500" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium truncate">{tag.label}</p>
+                      {tag.description && (
+                        <p className="text-xs text-muted-foreground truncate">{tag.description}</p>
+                      )}
+                      <p className="text-[10px] text-muted-foreground font-mono mt-0.5">SID: {tag.sid}</p>
+                    </div>
+                    <Button
+                      size="sm"
+                      onClick={() => selectTagForProduct(tag)}
+                      className="shrink-0"
+                    >
+                      Sélectionner
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Hidden iframe for SDK connection */}
+            <iframe
+              ref={tagFinderIframeRef}
+              className="w-full h-[300px] rounded-xl border border-border"
+              style={{ display: tagFinderLoading || tagFinderTags.length > 0 ? "block" : "none" }}
+              allow="xr-spatial-tracking"
+            />
+
+            {/* Manual fallback */}
+            {!tagFinderLoading && tagFinderTags.length === 0 && (
+              <div className="bg-muted/50 border border-border rounded-xl p-4">
+                <p className="text-sm font-semibold mb-2">Méthode alternative (sans SDK)</p>
+                <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
+                  <li>Ouvrez votre visite dans le Workshop Matterport</li>
+                  <li>Cliquez sur un tag dans la liste à droite</li>
+                  <li>Le tag SID apparaît dans l'URL après <code className="text-purple-600">&tag=</code></li>
+                  <li>Copiez ce SID et collez-le dans le champ Tag ci-dessus</li>
+                </ol>
+                <p className="text-xs text-amber-600 mt-2">
+                  ⚠ Le SDK ne fonctionne que sur localhost. Sur un autre domaine, utilisez la méthode manuelle.
+                </p>
+              </div>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </Layout>

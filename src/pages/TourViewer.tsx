@@ -108,6 +108,7 @@ const TourViewer = () => {
   const sdkRef = useRef<any>(null);
   const sdkAttemptsRef = useRef(0);
   const tagsMapRef = useRef<Map<string, string>>(new Map()); // tagName (lowercase) → SID
+  const savedTagsMapRef = useRef<Map<string, string>>(new Map()); // saved tags from DB: name (lowercase) → SID
   const visitIdRef = useRef<number | null>(null);
   const visitStartRef = useRef<number>(Date.now());
 
@@ -250,14 +251,28 @@ const TourViewer = () => {
       fetch(`/api/tours/${id}/services`)
         .then((r) => r.json())
         .catch(() => []),
+      fetch(`/api/tours/${id}/tags`)
+        .then((r) => r.ok ? r.json() : [])
+        .catch(() => []),
     ])
-      .then(([tourData, tours, itemsData, servicesData]) => {
+      .then(([tourData, tours, itemsData, servicesData, tagsData]) => {
         setTour(tourData);
         setAllTours(tours);
         const items = Array.isArray(itemsData) ? itemsData : [];
         setTourItems(items);
         tourItemsRef.current = items;
         setTourServices(Array.isArray(servicesData) ? servicesData : []);
+        // Build saved tags map (name → SID) for production tag resolution
+        const savedMap = new Map<string, string>();
+        if (Array.isArray(tagsData)) {
+          for (const t of tagsData) {
+            if (t.name && t.sid) {
+              savedMap.set(t.name.trim().toLowerCase(), t.sid);
+              savedMap.set(t.sid.trim().toLowerCase(), t.sid);
+            }
+          }
+        }
+        savedTagsMapRef.current = savedMap;
         // Set initial iframe URL
         const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
         setIframeSrc(buildEmbedUrl(tourData.tourUrl, isLocal));
@@ -522,27 +537,90 @@ const TourViewer = () => {
   const cartTotal = cart.reduce((sum, c) => sum + (c.item.price || 0) * c.qty, 0);
   const cartCount = cart.reduce((sum, c) => sum + c.qty, 0);
 
-  // Navigate to a product's tag in the 3D tour via &pin=TAG_SID deep link
+  // Navigate to a product's tag in the 3D tour
   const navigateToProduct = useCallback((item: TourItemData) => {
     setShowProducts(false);
     if (tour?.id) trackEvent(tour.id, "product_click", item.name, String(item.id));
 
     if (item.tagSid && tour?.tourUrl) {
-      const resolvedSid = tagsMapRef.current.get(item.tagSid.trim().toLowerCase()) || item.tagSid;
-      const modelId = extractModelId(tour.tourUrl);
-      if (!modelId) { setSelectedItem(item); return; }
+      const tagKey = item.tagSid.trim().toLowerCase();
+      const resolvedSid = tagsMapRef.current.get(tagKey) || savedTagsMapRef.current.get(tagKey) || item.tagSid;
+      const sdk = sdkRef.current;
 
-      // Minimal URL: play=1 (auto-start), qs=1 (skip fly-in), pin=TAG_SID
-      const pinUrl = `https://my.matterport.com/show/?m=${modelId}&play=1&qs=1&brand=0&title=0&mls=2&help=0&hl=0&pin=${encodeURIComponent(resolvedSid)}`;
-      console.log(`🎯 Deep link (pin) to tag: ${resolvedSid}`);
-
-      // Force iframe remount + show loading spinner
-      setIframeSrc(pinUrl);
-      setIframeKey((k) => k + 1);
-      setIframeLoaded(false);
-
-      // Show popup after 3D space initializes
-      setTimeout(() => setSelectedItem(item), 1200);
+      // Primary: use SDK to navigate smoothly (no iframe reload)
+      if (sdk) {
+        const tryNavigate = async () => {
+          try {
+            // Try Mattertag.navigateToTag (SDK v3)
+            if (sdk.Mattertag?.navigateToTag) {
+              await sdk.Mattertag.navigateToTag(resolvedSid, sdk.Mattertag.Transition?.FLY || "transition.fly");
+              console.log(`🎯 SDK navigated to tag: ${resolvedSid}`);
+            }
+            // Try Tag.open (newer SDK)
+            else if (sdk.Tag?.open) {
+              await sdk.Tag.open(resolvedSid);
+              console.log(`🎯 SDK Tag.open: ${resolvedSid}`);
+            }
+          } catch (err) {
+            console.log("SDK tag navigation failed, trying fallback:", err);
+            // If SDK nav fails, try moving to nearest sweep based on tag anchor
+            try {
+              let anchorPos: any = null;
+              if (sdk.Mattertag?.getData) {
+                const tags = await sdk.Mattertag.getData();
+                const found = tags.find((t: any) => t.sid === resolvedSid);
+                if (found?.anchorPosition) anchorPos = found.anchorPosition;
+              }
+              if (!anchorPos && sdk.Tag?.getData) {
+                const tags = await sdk.Tag.getData();
+                const found = tags.find((t: any) => t.sid === resolvedSid);
+                if (found?.anchorPosition) anchorPos = found.anchorPosition;
+              }
+              if (anchorPos) {
+                // Find nearest sweep to the tag's anchor position
+                const sweeps = await new Promise<any[]>((resolve) => {
+                  const sub = sdk.Sweep.data.subscribe({ onCollectionUpdated: (collection: any) => {
+                    const items: any[] = [];
+                    collection.forEach((item: any, key: string) => items.push({ ...item, sid: key }));
+                    if (items.length > 0) { sub?.cancel?.(); resolve(items); }
+                  }});
+                });
+                if (sweeps.length > 0) {
+                  let nearest = sweeps[0];
+                  let minDist = Infinity;
+                  for (const s of sweeps) {
+                    if (!s.position) continue;
+                    const dx = s.position.x - anchorPos.x;
+                    const dy = s.position.y - anchorPos.y;
+                    const dz = s.position.z - anchorPos.z;
+                    const dist = dx * dx + dy * dy + dz * dz;
+                    if (dist < minDist) { minDist = dist; nearest = s; }
+                  }
+                  await sdk.Sweep.moveTo(nearest.sid, {
+                    rotation: { x: Math.atan2(anchorPos.y - nearest.position.y, Math.sqrt((anchorPos.x - nearest.position.x) ** 2 + (anchorPos.z - nearest.position.z) ** 2)) * (180 / Math.PI), y: Math.atan2(anchorPos.x - nearest.position.x, anchorPos.z - nearest.position.z) * (180 / Math.PI) },
+                    transition: sdk.Sweep.Transition?.FLY || "transition.fly",
+                  });
+                  console.log(`🎯 Moved to nearest sweep for tag: ${nearest.sid}`);
+                }
+              }
+            } catch (sweepErr) {
+              console.log("Sweep fallback also failed:", sweepErr);
+            }
+          }
+        };
+        tryNavigate();
+        setSelectedItem(item);
+      } else {
+        // Fallback: no SDK — reload iframe with tag deep link
+        const modelId = extractModelId(tour.tourUrl);
+        if (!modelId) { setSelectedItem(item); return; }
+        const tagUrl = `https://my.matterport.com/show/?m=${modelId}&play=1&qs=1&brand=0&title=0&mls=2&help=0&hl=0&tag=${encodeURIComponent(resolvedSid)}&mt=1&pin=1`;
+        console.log(`🎯 Iframe deep link to tag: ${resolvedSid}`);
+        setIframeSrc(tagUrl);
+        setIframeKey((k) => k + 1);
+        setIframeLoaded(false);
+        setTimeout(() => setSelectedItem(item), 1200);
+      }
     } else {
       setSelectedItem(item);
     }
