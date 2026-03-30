@@ -16,6 +16,22 @@ import {
   Store,
   Briefcase,
   ArrowRight,
+  Landmark,
+  PenTool,
+  Settings,
+  Megaphone,
+  Users,
+  Factory,
+  ShieldCheck as Insurance,
+  HardHat,
+  Plane,
+  ShoppingCart,
+  Home,
+  Building,
+  Zap,
+  Fuel,
+  User,
+  Handshake,
 } from "lucide-react";
 import { Layout } from "@/components/Layout";
 import { Button } from "@/components/ui/button";
@@ -124,13 +140,46 @@ const itemVariants = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
 };
 
+const solutionsList = [
+  { icon: Landmark, title: "Immobilier Commercial", subtitle: "Gérez des portefeuilles entiers" },
+  { icon: PenTool, title: "Design & Construction", subtitle: "Accélérez vos projets AEC" },
+  { icon: Settings, title: "Gestion des Installations", subtitle: "Gérez et visitez à distance" },
+  { icon: Megaphone, title: "Marketing Immobilier", subtitle: "Commercialisez vos espaces" },
+  { icon: Users, title: "Entreprise", subtitle: "Collaborez à grande échelle" },
+];
+
+const industriesList = [
+  { icon: Building2, title: "Immobilier Commercial", href: "/industries/commercial-real-estate" },
+  { icon: HardHat, title: "Architecture & Construction", href: "/industries/architecture-construction" },
+  { icon: Factory, title: "Industrie", href: "/industries/manufacturing" },
+  { icon: Insurance, title: "Assurance", href: "/industries/insurance" },
+  { icon: Home, title: "Construction Résidentielle", href: "/industries/residential-construction" },
+  { icon: Plane, title: "Tourisme & Hôtellerie", href: "/industries/travel-hospitality" },
+  { icon: ShoppingCart, title: "Commerce & Retail", href: "/industries/commerce-retail" },
+  { icon: Home, title: "Immobilier Résidentiel", href: "/industries/residential-real-estate" },
+  { icon: Building, title: "Gouvernement", href: "/industries/government" },
+  { icon: Zap, title: "Énergie & Utilités", href: "/industries/energy-utilities" },
+  { icon: Fuel, title: "Pétrole & Gaz", href: "/industries/oil-gas" },
+];
+
+const rolesList = [
+  "Propriétaire",
+  "Occupant Commercial",
+  "Gestionnaire Immobilier",
+  "Architecte",
+  "Designer",
+  "Professionnel Construction",
+  "Facility Manager",
+  "Agent Immobilier",
+];
+
 const Benefits = () => {
   return (
     <Layout>
       <WhatsAppButton />
 
       {/* Hero Section */}
-      <section className="relative pt-32 pb-20 bg-gradient-hero overflow-hidden">
+      <section className="relative pt-24 md:pt-32 pb-12 md:pb-20 bg-gradient-hero overflow-hidden">
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-20 right-20 w-96 h-96 rounded-full bg-secondary/30 blur-3xl" />
           <div className="absolute bottom-10 left-10 w-72 h-72 rounded-full bg-accent/20 blur-3xl" />
@@ -151,7 +200,7 @@ const Benefits = () => {
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.1 }}
-              className="text-4xl md:text-5xl lg:text-6xl font-display font-bold text-primary-foreground mb-6 leading-tight"
+              className="text-3xl md:text-5xl lg:text-6xl font-display font-bold text-primary-foreground mb-4 md:mb-6 leading-tight"
             >
               Voyez. Ressentez.{" "}
               <span className="text-gradient-accent">Décidez en Toute Confiance.</span>
@@ -161,16 +210,16 @@ const Benefits = () => {
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
-              className="text-lg md:text-xl text-primary-foreground/80 max-w-2xl mx-auto"
+              className="text-base md:text-xl text-white/90 max-w-2xl mx-auto"
             >
-              Les jumeaux numériques Matterport vous permettent d'explorer n'importe quel espace à distance avec une précision spatiale totale — pour prendre de meilleures décisions sans vous déplacer.
+              Les jumeaux numériques PrimeSpace vous permettent d'explorer n'importe quel espace à distance avec une précision spatiale totale — pour prendre de meilleures décisions sans vous déplacer.
             </motion.p>
           </div>
         </div>
       </section>
 
       {/* Core Benefits */}
-      <section className="py-24 bg-background">
+      <section className="py-12 md:py-24 bg-background">
         <div className="container mx-auto px-4 lg:px-8">
           <SectionHeading
             badge="Pourquoi Nos Clients l'Adorent"
@@ -183,18 +232,18 @@ const Benefits = () => {
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, margin: "-80px" }}
-            className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6"
+            className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6"
           >
             {benefits.map((benefit) => (
               <motion.div
                 key={benefit.title}
                 variants={itemVariants}
-                className="group p-6 rounded-2xl bg-card shadow-soft hover:shadow-elevated hover:-translate-y-1 transition-all duration-300"
+                className="group p-5 md:p-6 rounded-2xl bg-card shadow-soft hover:shadow-elevated hover:-translate-y-1 transition-all duration-300"
               >
-                <div className="w-14 h-14 rounded-xl flex items-center justify-center mb-5 bg-secondary/10 text-secondary group-hover:bg-secondary group-hover:text-secondary-foreground transition-colors duration-300">
-                  <benefit.icon className="w-7 h-7" />
+                <div className="w-12 h-12 md:w-14 md:h-14 rounded-xl flex items-center justify-center mb-4 md:mb-5 bg-secondary/10 text-secondary group-hover:bg-secondary group-hover:text-secondary-foreground transition-colors duration-300">
+                  <benefit.icon className="w-6 h-6 md:w-7 md:h-7" />
                 </div>
-                <h3 className="font-display font-semibold text-xl mb-2 text-foreground">
+                <h3 className="font-display font-semibold text-lg md:text-xl mb-2 text-foreground">
                   {benefit.title}
                 </h3>
                 <p className="text-muted-foreground leading-relaxed">
@@ -206,8 +255,89 @@ const Benefits = () => {
         </div>
       </section>
 
+      {/* Solutions Section - Matterport Style */}
+      <section className="py-12 md:py-24 bg-muted/30">
+        <div className="container mx-auto px-4 lg:px-8">
+          <SectionHeading
+            badge="Nos Solutions"
+            title="Tout Ce Dont Vous Avez Besoin"
+            description="Solutions, secteurs d'activité et rôles professionnels couverts par nos visites virtuelles 3D."
+          />
+
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-10 lg:gap-16"
+          >
+            {/* Column 1: Solutions */}
+            <div>
+              <h3 className="font-display font-semibold text-lg text-muted-foreground mb-6 uppercase tracking-wider text-sm">
+                Solutions
+              </h3>
+              <div className="space-y-5">
+                {solutionsList.map((item) => (
+                  <div key={item.title} className="flex items-start gap-4 group cursor-default">
+                    <div className="w-10 h-10 rounded-lg flex-shrink-0 flex items-center justify-center bg-secondary/10 text-secondary group-hover:bg-secondary group-hover:text-secondary-foreground transition-colors duration-300">
+                      <item.icon className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-foreground group-hover:text-secondary transition-colors">{item.title}</p>
+                      <p className="text-sm text-muted-foreground">{item.subtitle}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Column 2: For Your Industry */}
+            <div>
+              <h3 className="font-display font-semibold text-lg text-muted-foreground mb-6 uppercase tracking-wider text-sm">
+                Pour Votre Secteur
+              </h3>
+              <div className="space-y-4">
+                {industriesList.map((item) => {
+                  const content = (
+                    <>
+                      <item.icon className="w-5 h-5 text-muted-foreground group-hover:text-secondary transition-colors flex-shrink-0" />
+                      <p className="font-medium text-foreground group-hover:text-secondary transition-colors">{item.title}</p>
+                      {"href" in item && item.href && <ArrowRight className="w-4 h-4 ml-auto text-muted-foreground/0 group-hover:text-secondary group-hover:translate-x-1 transition-all flex-shrink-0" />}
+                    </>
+                  );
+                  return "href" in item && item.href ? (
+                    <Link key={item.title} to={item.href} className="flex items-center gap-3 group">
+                      {content}
+                    </Link>
+                  ) : (
+                    <div key={item.title} className="flex items-center gap-3 group cursor-default">
+                      {content}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Column 3: For Your Role */}
+            <div>
+              <h3 className="font-display font-semibold text-lg text-muted-foreground mb-6 uppercase tracking-wider text-sm">
+                Pour Votre Rôle
+              </h3>
+              <div className="space-y-4">
+                {rolesList.map((role) => (
+                  <div key={role} className="flex items-center gap-3 group cursor-default">
+                    <User className="w-5 h-5 text-muted-foreground group-hover:text-secondary transition-colors flex-shrink-0" />
+                    <p className="font-medium text-foreground group-hover:text-secondary transition-colors">{role}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
       {/* Industry Use Cases */}
-      <section className="py-24 bg-muted/50">
+      <section className="py-12 md:py-24 bg-muted/50">
         <div className="container mx-auto px-4 lg:px-8">
           <SectionHeading
             badge="Exemples par Secteur"
@@ -215,7 +345,7 @@ const Benefits = () => {
             description="De l'immobilier à l'hôtellerie, les jumeaux numériques renforcent l'expérience client dans tous les domaines."
           />
 
-          <div className="grid sm:grid-cols-2 gap-6 max-w-4xl mx-auto">
+            <div className="grid sm:grid-cols-2 gap-4 md:gap-6 max-w-4xl mx-auto">
             {industries.map((industry, index) => (
               <motion.div
                 key={industry.title}
@@ -223,7 +353,7 @@ const Benefits = () => {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
-                className="p-8 rounded-2xl bg-card shadow-soft hover:shadow-elevated transition-all duration-300 flex gap-5"
+                className="p-5 md:p-8 rounded-2xl bg-card shadow-soft hover:shadow-elevated transition-all duration-300 flex gap-4 md:gap-5"
               >
                 <div className="w-12 h-12 rounded-xl flex-shrink-0 flex items-center justify-center bg-accent/10 text-accent">
                   <industry.icon className="w-6 h-6" />
@@ -243,14 +373,14 @@ const Benefits = () => {
       </section>
 
       {/* Closing CTA */}
-      <section className="py-24 bg-gradient-hero">
+      <section className="py-12 md:py-24 bg-gradient-hero">
         <div className="container mx-auto px-4 lg:px-8">
           <div className="max-w-3xl mx-auto text-center">
             <motion.h2
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="text-3xl md:text-4xl lg:text-5xl font-display font-bold text-primary-foreground mb-6"
+              className="text-2xl md:text-4xl lg:text-5xl font-display font-bold text-primary-foreground mb-4 md:mb-6"
             >
               Informé. Confiant. Maître de Vos Décisions.
             </motion.h2>
@@ -259,9 +389,9 @@ const Benefits = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: 0.1 }}
-              className="text-lg text-primary-foreground/70 mb-10"
+              className="text-base md:text-lg text-primary-foreground/70 mb-8 md:mb-10"
             >
-              Les jumeaux numériques Matterport vous offrent tout ce dont vous avez besoin pour évaluer, comparer et décider — avant même votre première visite physique.
+              Les jumeaux numériques PrimeSpace vous offrent tout ce dont vous avez besoin pour évaluer, comparer et décider — avant même votre première visite physique.
             </motion.p>
             <motion.div
               initial={{ opacity: 0, y: 20 }}

@@ -33,8 +33,8 @@ const timeline = [
   },
   {
     year: "2019",
-    title: "Premier Partenariat Matterport",
-    description: "Devenu partenaire officiel Matterport, nous acquérons notre premier scanner professionnel.",
+    title: "Premier Partenariat PrimeSpace",
+    description: "Devenu partenaire officiel PrimeSpace, nous acquérons notre premier scanner professionnel.",
   },
   {
     year: "2021",
@@ -43,8 +43,8 @@ const timeline = [
   },
   {
     year: "2023",
-    title: "Matterport Pro 3",
-    description: "Acquisition du Matterport Pro 3, le scanner le plus avancé pour une qualité inégalée.",
+    title: "PrimeSpace Pro 3",
+    description: "Acquisition du PrimeSpace Pro 3, le scanner le plus avancé pour une qualité inégalée.",
   },
   {
     year: "2024",
@@ -70,7 +70,7 @@ const About = () => {
       <WhatsAppButton />
       
       {/* Hero */}
-      <section className="pt-32 pb-20 bg-gradient-hero">
+      <section className="pt-24 md:pt-32 pb-12 md:pb-20 bg-gradient-hero">
         <div className="container mx-auto px-4 lg:px-8">
           <div className="max-w-3xl mx-auto text-center">
             <motion.span
@@ -84,7 +84,7 @@ const About = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className="text-4xl md:text-5xl lg:text-6xl font-display font-bold text-primary-foreground mb-6"
+              className="text-3xl md:text-5xl lg:text-6xl font-display font-bold text-primary-foreground mb-4 md:mb-6"
             >
               À Propos de Visite3D
             </motion.h1>
@@ -92,7 +92,7 @@ const About = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="text-lg text-primary-foreground/70"
+              className="text-base md:text-lg text-primary-foreground/70"
             >
               Pionniers de la visite virtuelle 3D en Tunisie, nous transformons 
               vos espaces en expériences numériques immersives depuis 2018.
@@ -102,9 +102,9 @@ const About = () => {
       </section>
 
       {/* Mission */}
-      <section className="py-24 bg-background">
+      <section className="py-12 md:py-24 bg-background">
         <div className="container mx-auto px-4 lg:px-8">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
+          <div className="grid lg:grid-cols-2 gap-8 md:gap-12 items-center">
             <motion.div
               initial={{ opacity: 0, x: -30 }}
               whileInView={{ opacity: 1, x: 0 }}
@@ -113,7 +113,7 @@ const About = () => {
               <span className="inline-block px-4 py-1.5 rounded-full bg-secondary/10 text-secondary text-sm font-medium mb-4">
                 Notre Mission
               </span>
-              <h2 className="text-3xl md:text-4xl font-display font-bold text-foreground mb-6">
+              <h2 className="text-2xl md:text-4xl font-display font-bold text-foreground mb-4 md:mb-6">
                 Démocratiser l'Accès aux Visites Virtuelles
               </h2>
               <p className="text-muted-foreground mb-6">
@@ -139,7 +139,7 @@ const About = () => {
               initial={{ opacity: 0, x: 30 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
-              className="grid grid-cols-2 gap-4"
+              className="grid grid-cols-2 gap-3 md:gap-4"
             >
               {[
                 { value: "250+", label: "Projets Réalisés" },
@@ -149,9 +149,9 @@ const About = () => {
               ].map((stat, index) => (
                 <div
                   key={stat.label}
-                  className="bg-card rounded-2xl p-6 text-center shadow-soft"
+                  className="bg-card rounded-2xl p-4 md:p-6 text-center shadow-soft"
                 >
-                  <div className="text-3xl font-display font-bold text-secondary mb-1">
+                  <div className="text-2xl md:text-3xl font-display font-bold text-secondary mb-1">
                     {stat.value}
                   </div>
                   <p className="text-sm text-muted-foreground">{stat.label}</p>
@@ -163,7 +163,7 @@ const About = () => {
       </section>
 
       {/* Values */}
-      <section className="py-24 bg-muted/50">
+      <section className="py-12 md:py-24 bg-muted/50">
         <div className="container mx-auto px-4 lg:px-8">
           <SectionHeading
             badge="Nos Valeurs"
@@ -219,7 +219,7 @@ const About = () => {
       </section>*/}
 
       {/* Matterport */}
-      <section className="py-24 bg-gradient-hero">
+      <section className="py-12 md:py-24 bg-gradient-hero">
         <div className="container mx-auto px-4 lg:px-8">
           <div className="max-w-4xl mx-auto text-center">
             <motion.div
@@ -230,11 +230,11 @@ const About = () => {
               <span className="inline-block px-4 py-2 rounded-full bg-primary-foreground/10 text-primary-foreground text-sm font-medium mb-6">
                 Notre Technologie
               </span>
-              <h2 className="text-3xl md:text-4xl lg:text-5xl font-display font-bold text-primary-foreground mb-6">
-                Pourquoi Matterport Pro 3?
+              <h2 className="text-2xl md:text-4xl lg:text-5xl font-display font-bold text-primary-foreground mb-4 md:mb-6">
+                Pourquoi PrimeSpace Pro 3?
               </h2>
-              <p className="text-lg text-primary-foreground/70 mb-12">
-                Le Matterport Pro 3 représente le summum de la technologie de capture 3D. 
+              <p className="text-base md:text-lg text-primary-foreground/70 mb-8 md:mb-12">
+                Le PrimeSpace Pro 3 représente le summum de la technologie de capture 3D. 
                 C'est le choix des professionnels les plus exigeants dans le monde entier.
               </p>
             </motion.div>
@@ -263,7 +263,7 @@ const About = () => {
       </section>
 
       {/* Coverage */}
-      <section className="py-24 bg-background">
+      <section className="py-12 md:py-24 bg-background">
         <div className="container mx-auto px-4 lg:px-8">
           <SectionHeading
             badge="Zone de Service"
@@ -297,14 +297,14 @@ const About = () => {
       </section>
 
       {/* CTA */}
-      <section className="py-24 bg-muted/50">
+      <section className="py-12 md:py-24 bg-muted/50">
         <div className="container mx-auto px-4 lg:px-8">
           <div className="max-w-3xl mx-auto text-center">
             <motion.h2
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="text-3xl md:text-4xl font-display font-bold text-foreground mb-6"
+              className="text-2xl md:text-4xl font-display font-bold text-foreground mb-4 md:mb-6"
             >
               Prêt à Travailler Avec Nous?
             </motion.h2>
@@ -313,7 +313,7 @@ const About = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: 0.1 }}
-              className="text-lg text-muted-foreground mb-10"
+              className="text-base md:text-lg text-muted-foreground mb-8 md:mb-10"
             >
               Contactez notre équipe pour discuter de votre projet et découvrir 
               comment nous pouvons vous aider à valoriser vos espaces.

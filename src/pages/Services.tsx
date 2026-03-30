@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { SectionHeading } from "@/components/SectionHeading";
 import { FeatureCard } from "@/components/FeatureCard";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
+import { ProductBannerPopup } from "@/components/ProductBannerPopup";
 
 const services = [
   {
@@ -135,9 +136,10 @@ const Services = () => {
   return (
     <PageLayout>
       <WhatsAppButton />
+      <ProductBannerPopup />
       
       {/* Hero */}
-      <section className="pt-32 pb-20 bg-gradient-hero">
+      <section className="pt-24 md:pt-32 pb-12 md:pb-20 bg-gradient-hero">
         <div className="container mx-auto px-4 lg:px-8">
           <div className="max-w-3xl mx-auto text-center">
             <motion.span
@@ -151,7 +153,7 @@ const Services = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className="text-4xl md:text-5xl lg:text-6xl font-display font-bold text-primary-foreground mb-6"
+              className="text-3xl md:text-5xl lg:text-6xl font-display font-bold text-primary-foreground mb-4 md:mb-6"
             >
               Solutions de Visites Virtuelles 3D
             </motion.h1>
@@ -159,7 +161,7 @@ const Services = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="text-lg text-primary-foreground/70"
+              className="text-base md:text-lg text-primary-foreground/70"
             >
               Des solutions adaptées à tous vos besoins, de la simple visite virtuelle 
               aux projets de documentation technique les plus complexes.
@@ -169,7 +171,7 @@ const Services = () => {
       </section>
 
       {/* Services Grid */}
-      <section className="py-24 bg-background">
+      <section className="py-12 md:py-24 bg-background">
         <div className="container mx-auto px-4 lg:px-8">
           <SectionHeading
             badge="Ce que nous offrons"
@@ -192,9 +194,9 @@ const Services = () => {
       </section>
 
       {/* Matterport Technology */}
-      <section className="py-24 bg-muted/50">
+      <section className="py-12 md:py-24 bg-muted/50">
         <div className="container mx-auto px-4 lg:px-8">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
+          <div className="grid lg:grid-cols-2 gap-8 md:gap-12 items-center">
             <motion.div
               initial={{ opacity: 0, x: -30 }}
               whileInView={{ opacity: 1, x: 0 }}
@@ -203,7 +205,7 @@ const Services = () => {
               <span className="inline-block px-4 py-1.5 rounded-full bg-secondary/10 text-secondary text-sm font-medium mb-4">
                 Technologie de Pointe
               </span>
-              <h2 className="text-3xl md:text-4xl font-display font-bold text-foreground mb-6">
+              <h2 className="text-2xl md:text-4xl font-display font-bold text-foreground mb-4 md:mb-6">
                 
               </h2>
               <p className="text-muted-foreground mb-6">
@@ -321,7 +323,7 @@ const Services = () => {
       </section>*/}
 
       {/* Industries */}
-      <section className="py-24 bg-muted/50">
+      <section className="py-12 md:py-24 bg-muted/50">
         <div className="container mx-auto px-4 lg:px-8">
           <SectionHeading
             badge="Secteurs d'Activité"
@@ -329,7 +331,7 @@ const Services = () => {
             description="Nos visites virtuelles s'adaptent à tous les types d'espaces et d'industries"
           />
 
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4">
             {industries.map((industry, index) => (
               <motion.div
                 key={industry.name}
@@ -337,9 +339,9 @@ const Services = () => {
                 whileInView={{ opacity: 1, scale: 1 }}
                 viewport={{ once: true }}
                 transition={{ delay: index * 0.05 }}
-                className="bg-card rounded-xl p-6 text-center shadow-soft hover:shadow-elevated transition-all duration-300 hover:-translate-y-1"
+                className="bg-card rounded-xl p-4 md:p-6 text-center shadow-soft hover:shadow-elevated transition-all duration-300 hover:-translate-y-1"
               >
-                <industry.icon className="w-10 h-10 text-secondary mx-auto mb-3" />
+                <industry.icon className="w-8 h-8 md:w-10 md:h-10 text-secondary mx-auto mb-2 md:mb-3" />
                 <h3 className="font-semibold text-foreground mb-1">{industry.name}</h3>
                 <p className="text-xs text-muted-foreground">{industry.description}</p>
               </motion.div>
@@ -349,7 +351,7 @@ const Services = () => {
       </section>
 
       {/* Process */}
-      <section className="py-24 bg-background">
+      <section className="py-12 md:py-24 bg-background">
         <div className="container mx-auto px-4 lg:px-8">
           <SectionHeading
             badge="Notre Processus"
@@ -357,7 +359,7 @@ const Services = () => {
             description="Un processus simple et efficace de la prise de contact à la livraison"
           />
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
             {processSteps.map((step, index) => (
               <motion.div
                 key={step.step}
@@ -367,10 +369,10 @@ const Services = () => {
                 transition={{ delay: index * 0.1 }}
                 className="relative"
               >
-                <div className="text-7xl font-display font-bold text-secondary/10 mb-4">
+                <div className="text-5xl md:text-7xl font-display font-bold text-secondary/10 mb-2 md:mb-4">
                   {step.step}
                 </div>
-                <h3 className="font-display font-semibold text-xl text-foreground mb-2">
+                <h3 className="font-display font-semibold text-lg md:text-xl text-foreground mb-2">
                   {step.title}
                 </h3>
                 <p className="text-muted-foreground">{step.description}</p>
@@ -385,14 +387,14 @@ const Services = () => {
       </section>
 
       {/* CTA */}
-      <section className="py-24 bg-gradient-hero">
+      <section className="py-12 md:py-24 bg-gradient-hero">
         <div className="container mx-auto px-4 lg:px-8">
           <div className="max-w-3xl mx-auto text-center">
             <motion.h2
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="text-3xl md:text-4xl font-display font-bold text-primary-foreground mb-6"
+              className="text-2xl md:text-4xl font-display font-bold text-primary-foreground mb-4 md:mb-6"
             >
               Prêt à Digitaliser Votre Espace?
             </motion.h2>
@@ -401,7 +403,7 @@ const Services = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: 0.1 }}
-              className="text-lg text-primary-foreground/70 mb-10"
+              className="text-base md:text-lg text-primary-foreground/70 mb-8 md:mb-10"
             >
               Contactez-nous pour un devis personnalisé gratuit. Notre équipe vous 
               accompagne de A à Z dans votre projet.

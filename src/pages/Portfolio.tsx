@@ -1,17 +1,43 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import { Link } from "react-router-dom";
-import { ArrowRight, Play, ExternalLink, Filter } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { ArrowRight, Play, ExternalLink, Filter, Loader2, MapPin, LayoutGrid } from "lucide-react";
 import { Layout } from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { SectionHeading } from "@/components/SectionHeading";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+
+// Fix default marker icons
+import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
+import markerIcon from "leaflet/dist/images/marker-icon.png";
+import markerShadow from "leaflet/dist/images/marker-shadow.png";
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: markerIcon2x,
+  iconUrl: markerIcon,
+  shadowUrl: markerShadow,
+});
+
+// Custom flag marker
+const createFlagIcon = (imageUrl: string) => {
+  return L.divIcon({
+    className: "custom-flag-marker",
+    html: `
+      <div style="position:relative;width:48px;height:62px;">
+        <div style="width:44px;height:44px;border-radius:8px;overflow:hidden;border:3px solid #D4A853;box-shadow:0 2px 8px rgba(0,0,0,0.3);background:#fff;">
+          <img src="${imageUrl}" style="width:100%;height:100%;object-fit:cover;" />
+        </div>
+        <div style="width:3px;height:18px;background:#1a1a2e;margin:0 auto;border-radius:0 0 2px 2px;"></div>
+      </div>
+    `,
+    iconSize: [48, 62],
+    iconAnchor: [24, 62],
+    popupAnchor: [0, -62],
+  });
+};
 
 import portfolioHotel from "@/assets/portfolio-hotel.jpg";
 import portfolioApartment from "@/assets/portfolio-apartment.jpg";
@@ -21,77 +47,74 @@ import portfolioRestaurant from "@/assets/portfolio-restaurant1.png";
 import portfolioOffice from "@/assets/portfolio-office.jpg";
 import portfolioWedding from "@/assets/wedding-venue.png";
 
-const categories = [
-  "Tous",
-  "Immobilier",
-  "Hôtellerie",
-  "Commerce",
-  "Wedding venue",
-  "Culture",
-  "Restaurant",
-  "Entreprise",
-];
+// Fallback images by category
+const fallbackImages: Record<string, string> = {
+  "Hôtellerie": portfolioHotel,
+  "Immobilier": portfolioApartment,
+  "Commerce": portfolioRetail,
+  "Culture": portfolioMuseum,
+  "Restaurant": portfolioRestaurant,
+  "Entreprise": portfolioOffice,
+  "Wedding venue": portfolioWedding,
+};
 
-const projects = [
-  {
-    id: 1,
-    image: portfolioHotel,
-    title: "Clayton Hotel Belfast",
-    category: "Hôtellerie",
-    description: "Visite virtuelle complète de l'hôtel 5 étoiles avec chambres, lobby et espaces communs.",
-    size: "2500 m²",
-    tourUrl: "https://my.matterport.com/show/?m=1aWQXDdxWnG",
-  },
-  {
-    id: 2,
-    image: portfolioApartment,
-    title: "Villa ireland",
-    category: "Immobilier",
-    description: "Villa de luxe. Visite 3D avec plans interactifs.",
-    size: "280 m²",
-    tourUrl: "https://my.matterport.com/show/?m=t84zwhnXjvJ",
-  },
-  {
-    id: 3,
-    image: portfolioRetail,
-    title: "Boutique Mode Avenue",
-    category: "Commerce",
-    description: "Showroom de mode haut de gamme capturé pour expérience shopping virtuel.",
-    size: "150 m²",
-    tourUrl: "https://my.matterport.com/show?play=1&lang=en-US&m=i4XHNhtSSYx",
-  },
-  {
-    id: 4,
-    image: portfolioWedding,
-    title: "The Ivory Pavillon",
-    category: "Wedding venue",
-    description: "Exposition permanente digitalisée pour visites à distance et archives numériques.",
-    size: "800 m²",
-    tourUrl: "https://my.matterport.com/show?play=1&lang=en-US&m=nwzR6S7LzMD",
-  },
-  {
-    id: 5,
-    image: portfolioRestaurant,
-    title: "Oro Restaurant O2 Barbados",
-    category: "Restaurant",
-    description: "Capture de l'ambiance unique du restaurant pour prévisualisation et événements.",
-    size: "320 m²",
-    tourUrl: "https://my.matterport.com/show?play=1&lang=en-US&m=hUiuMVtqB7F",
-  },
-  {
-    id: 6,
-    image: portfolioOffice,
-    title: "Siège Social TechCorp",
-    category: "Entreprise",
-    description: "Bureaux modernes capturés pour recrutement virtuel et visite clients.",
-    size: "1200 m²",
-    tourUrl: "https://my.matterport.com/show?play=1&lang=en-US&m=3kVVQfg1wSy",
-  },
-];
+// Component to expose map instance
+const MapRef = ({ mapRef }: { mapRef: React.MutableRefObject<L.Map | null> }) => {
+  const map = useMap();
+  mapRef.current = map;
+  return null;
+};
+
+interface Project {
+  id: number;
+  image: string;
+  title: string;
+  category: string;
+  description: string;
+  size: string;
+  tourUrl: string;
+  latitude: number | null;
+  longitude: number | null;
+  location: string;
+}
 
 const Portfolio = () => {
+  const navigate = useNavigate();
   const [activeCategory, setActiveCategory] = useState("Tous");
-  const [selectedProject, setSelectedProject] = useState<typeof projects[0] | null>(null);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [viewMode, setViewMode] = useState<"grid" | "map">("grid");
+  const mapRef = useRef<L.Map | null>(null);
+
+  const fetchTours = () => {
+    fetch("/api/tours")
+      .then((res) => res.json())
+      .then((tours) => {
+        const mapped = tours.map((t: any) => ({
+          id: t.id,
+          image: t.imageUrl || fallbackImages[t.category] || portfolioHotel,
+          title: t.name,
+          category: t.category,
+          description: t.description,
+          size: t.surface ? `${t.surface} m²` : "",
+          tourUrl: t.tourUrl || "",
+          latitude: t.latitude,
+          longitude: t.longitude,
+          location: t.location || "",
+        }));
+        setProjects(mapped);
+      })
+      .catch((err) => console.error("Failed to fetch tours:", err))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    fetchTours();
+    const interval = setInterval(fetchTours, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const allCategories = ["Tous", ...Array.from(new Set(projects.map((p) => p.category)))];
 
   const filteredProjects = activeCategory === "Tous"
     ? projects
@@ -102,7 +125,7 @@ const Portfolio = () => {
       <WhatsAppButton />
       
       {/* Hero */}
-      <section className="pt-32 pb-20 bg-gradient-hero">
+      <section className="pt-24 md:pt-32 pb-12 md:pb-20 bg-gradient-hero">
         <div className="container mx-auto px-4 lg:px-8">
           <div className="max-w-3xl mx-auto text-center">
             <motion.span
@@ -116,7 +139,7 @@ const Portfolio = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className="text-4xl md:text-5xl lg:text-6xl font-display font-bold text-primary-foreground mb-6"
+              className="text-3xl md:text-5xl lg:text-6xl font-display font-bold text-primary-foreground mb-4 md:mb-6"
             >
               Portfolio
             </motion.h1>
@@ -124,7 +147,7 @@ const Portfolio = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="text-lg text-primary-foreground/70"
+              className="text-base md:text-lg text-primary-foreground/70"
             >
               Explorez nos visites virtuelles 3D réalisées pour des clients 
               dans toute la Tunisie et découvrez la qualité de notre travail.
@@ -134,19 +157,48 @@ const Portfolio = () => {
       </section>
 
       {/* Filter & Projects */}
-      <section className="py-24 bg-background">
+      <section className="py-12 md:py-24 bg-background">
         <div className="container mx-auto px-4 lg:px-8">
-          {/* Category Filter */}
+          {/* View Toggle + Category Filter */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="flex flex-wrap justify-center gap-3 mb-12"
+            className="flex flex-col items-center gap-4 mb-8 md:mb-12"
           >
-            {categories.map((category) => (
+            {/* View Toggle */}
+            <div className="flex gap-2 bg-muted rounded-full p-1">
+              <button
+                onClick={() => setViewMode("grid")}
+                className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
+                  viewMode === "grid"
+                    ? "bg-secondary text-secondary-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <LayoutGrid className="w-4 h-4" />
+                Grille
+              </button>
+              <button
+                onClick={() => setViewMode("map")}
+                className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
+                  viewMode === "map"
+                    ? "bg-secondary text-secondary-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <MapPin className="w-4 h-4" />
+                Carte
+              </button>
+            </div>
+
+            {/* Category Filter - only in grid mode */}
+            {viewMode === "grid" && (
+            <div className="flex flex-wrap justify-center gap-2 md:gap-3">
+            {allCategories.map((category) => (
               <button
                 key={category}
                 onClick={() => setActiveCategory(category)}
-                className={`px-5 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
+                className={`px-4 md:px-5 py-1.5 md:py-2 rounded-full text-xs md:text-sm font-medium transition-all duration-300 ${
                   activeCategory === category
                     ? "bg-secondary text-secondary-foreground"
                     : "bg-muted text-muted-foreground hover:bg-muted/80"
@@ -155,10 +207,92 @@ const Portfolio = () => {
                 {category}
               </button>
             ))}
+            </div>
+            )}
           </motion.div>
 
-          {/* Projects Grid */}
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {/* Projects Grid or Map */}
+          {loading ? (
+            <div className="flex justify-center py-20">
+              <Loader2 className="w-8 h-8 animate-spin text-secondary" />
+            </div>
+          ) : viewMode === "map" ? (
+            /* Map View */
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="space-y-6"
+            >
+              <div className="relative rounded-2xl overflow-hidden shadow-soft h-[300px] md:h-[500px]">
+                <MapContainer
+                  center={[34.5, 9.5]}
+                  zoom={7}
+                  style={{ height: "100%", width: "100%" }}
+                  scrollWheelZoom={true}
+                >
+                  <MapRef mapRef={mapRef} />
+                  <TileLayer
+                    attribution='&copy; Esri &mdash; Esri, DeLorme, NAVTEQ'
+                    url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+                  />
+                  {filteredProjects
+                    .filter((p) => p.latitude && p.longitude)
+                    .map((project) => (
+                      <Marker
+                        key={project.id}
+                        position={[project.latitude!, project.longitude!]}
+                        icon={createFlagIcon(project.image)}
+                      >
+                        <Popup>
+                          <div className="text-center">
+                            <img src={project.image} alt={project.title} className="w-32 h-20 object-cover rounded mb-2" />
+                            <strong>{project.title}</strong>
+                            <br />
+                            {project.location && (
+                              <><span className="text-xs text-gray-600">{project.location}</span><br /></>
+                            )}
+                            <span className="text-xs">{project.category} • {project.size}</span>
+                          </div>
+                        </Popup>
+                      </Marker>
+                    ))}
+                </MapContainer>
+              </div>
+              {/* Tour cards below map */}
+              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {filteredProjects.map((project) => (
+                  <motion.div
+                    key={project.id}
+                    layout
+                    className="flex items-center gap-3 p-3 rounded-xl bg-card shadow-soft cursor-pointer hover:shadow-elevated transition-all"
+                    onClick={() => {
+                      if (project.latitude && project.longitude && mapRef.current) {
+                        mapRef.current.flyTo([project.latitude, project.longitude], 15, { duration: 1.5 });
+                      }
+                    }}
+                  >
+                    <img
+                      src={project.image}
+                      alt={project.title}
+                      className="w-16 h-16 rounded-lg object-cover flex-shrink-0"
+                    />
+                    <div className="min-w-0">
+                      <h4 className="font-semibold text-sm text-foreground truncate">{project.title}</h4>
+                      {project.location && (
+                        <p className="text-xs text-secondary flex items-center gap-0.5 truncate">
+                          <MapPin className="w-3 h-3 flex-shrink-0" />
+                          {project.location}
+                        </p>
+                      )}
+                      <p className="text-xs text-muted-foreground">{project.category}</p>
+                      <p className="text-xs text-secondary font-medium">{project.size}</p>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </motion.div>
+          ) : (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-8">
             {filteredProjects.map((project, index) => (
               <motion.div
                 key={project.id}
@@ -167,7 +301,7 @@ const Portfolio = () => {
                 transition={{ delay: index * 0.1 }}
                 layout
                 className="group rounded-2xl overflow-hidden bg-card shadow-soft hover:shadow-elevated transition-all duration-500 cursor-pointer"
-                onClick={() => setSelectedProject(project)}
+                onClick={() => navigate(`/view/${project.id}`)}
               >
                 <div className="relative aspect-[4/3] overflow-hidden">
                   <img
@@ -188,10 +322,16 @@ const Portfolio = () => {
                   </span>
                 </div>
                 
-                <div className="p-6">
-                  <h3 className="font-display font-semibold text-xl text-foreground mb-2">
+                <div className="p-4 md:p-6">
+                  <h3 className="font-display font-semibold text-lg md:text-xl text-foreground mb-2">
                     {project.title}
                   </h3>
+                  {project.location && (
+                    <p className="text-secondary text-sm mb-2 flex items-center gap-1">
+                      <MapPin className="w-3.5 h-3.5" />
+                      {project.location}
+                    </p>
+                  )}
                   <p className="text-muted-foreground text-sm mb-4">
                     {project.description}
                   </p>
@@ -208,9 +348,10 @@ const Portfolio = () => {
               </motion.div>
             ))}
           </div>
+          )}
 
           {/* Empty State */}
-          {filteredProjects.length === 0 && (
+          {!loading && filteredProjects.length === 0 && (
             <div className="text-center py-20">
               <Filter className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-xl font-semibold text-foreground mb-2">
@@ -227,14 +368,14 @@ const Portfolio = () => {
      
 
       {/* CTA */}
-      <section className="py-24 bg-gradient-hero">
+      <section className="py-12 md:py-24 bg-gradient-hero">
         <div className="container mx-auto px-4 lg:px-8">
           <div className="max-w-3xl mx-auto text-center">
             <motion.h2
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="text-3xl md:text-4xl font-display font-bold text-primary-foreground mb-6"
+              className="text-2xl md:text-4xl font-display font-bold text-primary-foreground mb-4 md:mb-6"
             >
               Votre Espace Mérite D'être Vu
             </motion.h2>
@@ -243,7 +384,7 @@ const Portfolio = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: 0.1 }}
-              className="text-lg text-primary-foreground/70 mb-10"
+              className="text-base md:text-lg text-primary-foreground/70 mb-8 md:mb-10"
             >
               Rejoignez nos clients satisfaits et offrez une expérience unique 
               à vos visiteurs avec une visite virtuelle professionnelle.
@@ -265,27 +406,6 @@ const Portfolio = () => {
         </div>
       </section>
 
-      {/* Matterport Tour Modal */}
-      <Dialog open={!!selectedProject} onOpenChange={(open) => !open && setSelectedProject(null)}>
-        <DialogContent className="max-w-5xl w-[95vw] p-0 gap-0 overflow-hidden">
-          <DialogHeader className="p-4 pb-2">
-            <DialogTitle className="font-display">
-              {selectedProject?.title}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="aspect-video w-full">
-            <iframe
-              src={selectedProject?.tourUrl}
-              width="100%"
-              height="100%"
-              frameBorder="0"
-              allowFullScreen
-              allow="xr-spatial-tracking"
-              className="w-full h-full"
-            />
-          </div>
-        </DialogContent>
-      </Dialog>
     </Layout>
   );
 };
