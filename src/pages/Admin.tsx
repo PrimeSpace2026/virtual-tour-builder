@@ -181,7 +181,6 @@ const Admin = () => {
   const [tagFinderError, setTagFinderError] = useState("");
   const { toast } = useToast();
   const navigate = useNavigate();
-  const navigate = useNavigate();
 
   useEffect(() => {
     const token = sessionStorage.getItem("admin_token");
