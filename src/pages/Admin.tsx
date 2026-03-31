@@ -171,6 +171,7 @@ const Admin = () => {
   const [activeEntityTab, setActiveEntityTab] = useState<"products" | "services">("products");
   // Tags for dropdown
   const [tourTags, setTourTags] = useState<{ name: string; sid: string }[]>([]);
+  const [tourTagsLoading, setTourTagsLoading] = useState(false);
   const [showAddTag, setShowAddTag] = useState(false);
   const [newTagName, setNewTagName] = useState("");
   // Tag Finder modal
@@ -354,11 +355,52 @@ const Admin = () => {
     setItemsTourUrl(tour.tourUrl || "");
     fetchItems(tour.id);
     fetchServices(tour.id);
-    // Fetch saved tags for this tour
+    // Auto-fetch tags: try saved tags first, then fetch live from Matterport
+    setTourTagsLoading(true);
+    setTourTags([]);
+    const tourUrl = tour.tourUrl || "";
+    // Extract modelId from tour URL
+    let modelId: string | null = null;
+    try { modelId = new URL(tourUrl).searchParams.get("m"); } catch {}
+
     fetch(`/api/tours/${tour.id}/tags`)
       .then((r) => r.ok ? r.json() : [])
-      .then((data) => setTourTags(Array.isArray(data) ? data.map((t: any) => ({ name: t.name || "", sid: t.sid || "" })) : []))
-      .catch(() => setTourTags([]));
+      .then(async (savedData) => {
+        const saved = Array.isArray(savedData) ? savedData.map((t: any) => ({ name: t.name || "", sid: t.sid || "" })) : [];
+        if (saved.length > 0) {
+          setTourTags(saved);
+          setTourTagsLoading(false);
+        }
+        // Always fetch live tags from Matterport to merge
+        if (modelId) {
+          try {
+            const res = await fetch(`/api/matterport/tags?modelId=${encodeURIComponent(modelId)}`);
+            if (res.ok) {
+              const data = await res.json();
+              const liveTags: { name: string; sid: string }[] = (data.tags || []).map((t: any, i: number) => ({
+                name: t.label || `Tag ${i + 1}`,
+                sid: t.sid,
+              }));
+              if (liveTags.length > 0) {
+                // Merge: keep names from saved tags, add any new from live
+                const merged = liveTags.map((lt) => {
+                  const existing = saved.find((s) => s.sid === lt.sid);
+                  return existing && existing.name ? existing : lt;
+                });
+                setTourTags(merged);
+                // Save merged tags for future use
+                fetch(`/api/tours/${tour.id}/tags`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify(merged),
+                }).catch(() => {});
+              }
+            }
+          } catch {}
+        }
+        setTourTagsLoading(false);
+      })
+      .catch(() => { setTourTags([]); setTourTagsLoading(false); });
     setItemsDialogOpen(true);
     setItemFormOpen(false);
     setServiceFormOpen(false);
@@ -905,7 +947,12 @@ const Admin = () => {
                   <div>
                     <label className="text-sm font-medium mb-1 block">Tag Matterport (optionnel)</label>
                     <div className="space-y-2">
-                      {tourTags.length > 0 ? (
+                      {tourTagsLoading ? (
+                        <div className="flex items-center gap-2 p-3 rounded-xl border border-border bg-muted/50">
+                          <Loader2 className="w-4 h-4 animate-spin text-purple-500" />
+                          <span className="text-sm text-muted-foreground">Chargement des tags Matterport...</span>
+                        </div>
+                      ) : tourTags.length > 0 ? (
                         <>
                           <Select value={editItem.tagSid || "__none__"} onValueChange={(v) => setEditItem({ ...editItem, tagSid: v === "__none__" ? "" : v })}>
                             <SelectTrigger><SelectValue placeholder="Choisir un tag..." /></SelectTrigger>
@@ -918,12 +965,12 @@ const Admin = () => {
                               ))}
                             </SelectContent>
                           </Select>
-                          <p className="text-xs text-muted-foreground">Sélectionnez le tag Matterport à lier — quand un visiteur clique ce tag, le produit s'affiche</p>
+                          <p className="text-xs text-muted-foreground">{tourTags.length} tag{tourTags.length > 1 ? "s" : ""} disponible{tourTags.length > 1 ? "s" : ""} — sélectionnez celui à lier au produit</p>
                         </>
                       ) : (
                         <>
-                          <Input value={editItem.tagSid} onChange={(e) => setEditItem({ ...editItem, tagSid: e.target.value })} placeholder="SID du tag Matterport ou nom du tag..." />
-                          <p className="text-xs text-muted-foreground">Collez le SID du tag Matterport ou utilisez le scanner ci-dessous</p>
+                          <Input value={editItem.tagSid} onChange={(e) => setEditItem({ ...editItem, tagSid: e.target.value })} placeholder="SID du tag Matterport..." />
+                          <p className="text-xs text-muted-foreground">Aucun tag trouvé. Collez le SID manuellement ou vérifiez l'URL de la visite.</p>
                         </>
                       )}
                       {editItem.tagSid && (
@@ -934,17 +981,6 @@ const Admin = () => {
                             <X className="w-3.5 h-3.5" />
                           </button>
                         </div>
-                      )}
-                      {itemsTourUrl && (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => { setTagFinderOpen(true); setTagFinderTags([]); setTagFinderError(""); }}
-                          className="flex items-center gap-2 w-full"
-                        >
-                          <Scan className="w-4 h-4" /> Scanner les Tags Matterport
-                        </Button>
                       )}
                     </div>
                   </div>
