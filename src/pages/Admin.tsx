@@ -1109,6 +1109,47 @@ const Admin = () => {
                     </div>
                   </div>
 
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Tag Matterport (optionnel)</label>
+                    <div className="space-y-2">
+                      {tourTagsLoading ? (
+                        <div className="flex items-center gap-2 p-3 rounded-xl border border-border bg-muted/50">
+                          <Loader2 className="w-4 h-4 animate-spin text-purple-500" />
+                          <span className="text-sm text-muted-foreground">Chargement des tags Matterport...</span>
+                        </div>
+                      ) : tourTags.length > 0 ? (
+                        <>
+                          <Select value={editService.tagSid || "__none__"} onValueChange={(v) => setEditService({ ...editService, tagSid: v === "__none__" ? "" : v })}>
+                            <SelectTrigger><SelectValue placeholder="Choisir un tag..." /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="__none__">— Aucun tag —</SelectItem>
+                              {tourTags.map((tag, i) => (
+                                <SelectItem key={`svc-${tag.sid}-${i}`} value={tag.sid || tag.name}>
+                                  {tag.name}{tag.sid ? ` (${tag.sid.slice(0, 10)}…)` : " (pas de SID)"}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <p className="text-xs text-muted-foreground">{tourTags.length} tag{tourTags.length > 1 ? "s" : ""} disponible{tourTags.length > 1 ? "s" : ""} — sélectionnez celui à lier au service</p>
+                        </>
+                      ) : (
+                        <>
+                          <Input value={editService.tagSid} onChange={(e) => setEditService({ ...editService, tagSid: e.target.value })} placeholder="SID du tag Matterport..." />
+                          <p className="text-xs text-muted-foreground">Aucun tag trouvé. Collez le SID manuellement ou vérifiez l'URL de la visite.</p>
+                        </>
+                      )}
+                      {editService.tagSid && (
+                        <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-purple-50 border border-purple-200">
+                          <Tag className="w-3.5 h-3.5 text-purple-500" />
+                          <span className="text-xs text-purple-700 font-mono flex-1 truncate">{editService.tagSid}</span>
+                          <button type="button" onClick={() => setEditService({ ...editService, tagSid: "" })} className="text-purple-400 hover:text-red-500">
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
                   <div className="flex justify-end gap-3 pt-2">
                     <Button variant="outline" onClick={() => setServiceFormOpen(false)}>Annuler</Button>
                     <Button onClick={handleSaveService}>Enregistrer</Button>
