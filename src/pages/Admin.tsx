@@ -378,7 +378,7 @@ const Admin = () => {
             if (res.ok) {
               const data = await res.json();
               const liveTags: { name: string; sid: string }[] = (data.tags || []).map((t: any, i: number) => ({
-                name: t.label || `Tag ${i + 1}`,
+                name: t.label || t.description || `Tag ${i + 1}`,
                 sid: t.sid,
               }));
               if (liveTags.length > 0) {
