@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Layout } from "@/components/Layout";
@@ -24,7 +24,6 @@ import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from "react-lea
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
-const SDK_KEY = "b7uar4u57xdec0zw7dwygt7md";
 
 interface TagInfo {
   sid: string;
@@ -180,8 +179,8 @@ const Admin = () => {
   const [tagFinderTags, setTagFinderTags] = useState<TagInfo[]>([]);
   const [tagFinderLoading, setTagFinderLoading] = useState(false);
   const [tagFinderError, setTagFinderError] = useState("");
-  const tagFinderIframeRef = useRef<HTMLIFrameElement>(null);
   const { toast } = useToast();
+  const navigate = useNavigate();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -431,38 +430,20 @@ const Admin = () => {
     setTagFinderTags([]);
 
     try {
-      const { setupSdk } = await import("@matterport/sdk");
-      const embedUrl = `https://my.matterport.com/show/?m=${modelId}&play=1&qs=1&applicationKey=${SDK_KEY}&brand=0&title=0`;
-      if (tagFinderIframeRef.current) {
-        tagFinderIframeRef.current.src = embedUrl;
+      const res = await fetch(`/api/matterport/tags?modelId=${encodeURIComponent(modelId)}`);
+      if (!res.ok) {
+        throw new Error(`Erreur serveur (${res.status})`);
       }
-      await new Promise<void>((resolve) => {
-        if (tagFinderIframeRef.current) {
-          tagFinderIframeRef.current.onload = () => resolve();
-        }
-      });
-      const sdk = await Promise.race([
-        setupSdk(SDK_KEY, { iframe: tagFinderIframeRef.current!, space: modelId }),
-        new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error("SDK timeout — la clé SDK n'est pas autorisée pour ce domaine. Utilisez localhost ou ajoutez votre domaine dans Matterport Developer Portal.")), 15000)
-        ),
-      ]);
+      const data = await res.json();
+      if (data.error) {
+        throw new Error(data.error);
+      }
 
-      const allTags: TagInfo[] = [];
-      if (sdk.Mattertag?.getData) {
-        const mattertags = await sdk.Mattertag.getData();
-        for (const t of mattertags) {
-          allTags.push({ sid: t.sid, label: t.label || "(sans nom)", description: (t.description || "").slice(0, 100) });
-        }
-      }
-      if ((sdk as any).Tag?.getData) {
-        const tagData = await (sdk as any).Tag.getData();
-        for (const t of tagData) {
-          if (!allTags.find((a) => a.sid === t.sid)) {
-            allTags.push({ sid: t.sid, label: t.label || "(sans nom)", description: (t.description || "").slice(0, 100) });
-          }
-        }
-      }
+      const allTags: TagInfo[] = (data.tags || []).map((t: any) => ({
+        sid: t.sid,
+        label: t.label || "(sans nom)",
+        description: (t.description || "").slice(0, 100),
+      }));
 
       setTagFinderTags(allTags);
       if (allTags.length === 0) {
@@ -480,7 +461,7 @@ const Admin = () => {
         }
       }
     } catch (err: any) {
-      setTagFinderError(err.message || "Erreur de connexion SDK");
+      setTagFinderError(err.message || "Erreur lors de la récupération des tags");
     } finally {
       setTagFinderLoading(false);
     }
@@ -1128,7 +1109,7 @@ const Admin = () => {
               className="flex items-center gap-2 w-full"
             >
               {tagFinderLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
-              {tagFinderLoading ? "Connexion au SDK..." : "Charger les Tags"}
+              {tagFinderLoading ? "Chargement des tags..." : "Charger les Tags"}
             </Button>
 
             {/* Error */}
@@ -1171,27 +1152,16 @@ const Admin = () => {
               </div>
             )}
 
-            {/* Hidden iframe for SDK connection */}
-            <iframe
-              ref={tagFinderIframeRef}
-              className="w-full h-[300px] rounded-xl border border-border"
-              style={{ display: tagFinderLoading || tagFinderTags.length > 0 ? "block" : "none" }}
-              allow="xr-spatial-tracking"
-            />
-
             {/* Manual fallback */}
-            {!tagFinderLoading && tagFinderTags.length === 0 && (
+            {!tagFinderLoading && tagFinderTags.length === 0 && !tagFinderError && (
               <div className="bg-muted/50 border border-border rounded-xl p-4">
-                <p className="text-sm font-semibold mb-2">Méthode alternative (sans SDK)</p>
+                <p className="text-sm font-semibold mb-2">Méthode alternative</p>
                 <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
                   <li>Ouvrez votre visite dans le Workshop Matterport</li>
                   <li>Cliquez sur un tag dans la liste à droite</li>
                   <li>Le tag SID apparaît dans l'URL après <code className="text-purple-600">&tag=</code></li>
                   <li>Copiez ce SID et collez-le dans le champ Tag ci-dessus</li>
                 </ol>
-                <p className="text-xs text-amber-600 mt-2">
-                  ⚠ Le SDK ne fonctionne que sur localhost. Sur un autre domaine, utilisez la méthode manuelle.
-                </p>
               </div>
             )}
           </div>
