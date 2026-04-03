@@ -18,7 +18,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Plus, Pencil, Trash2, Upload, X, Image as ImageIcon, LogOut, Search, MapPin, Loader2, ShoppingBag, ExternalLink, BarChart3, Briefcase, Phone, MessageCircle, Tag, Scan, Wifi, Snowflake, Tv, Wine, Bath, DoorOpen, Lock, BedDouble } from "lucide-react";
+import { Plus, Pencil, Trash2, Upload, X, Image as ImageIcon, LogOut, Search, MapPin, Loader2, ShoppingBag, ExternalLink, BarChart3, Briefcase, Phone, MessageCircle, Tag, Scan, Wifi, Snowflake, Tv, Wine, Bath, DoorOpen, Lock, BedDouble, ChevronDown, ChevronUp, GripVertical, Sparkles, UtensilsCrossed, Dumbbell, CalendarDays, Heart, Home, Users, Star, Coffee, Music, Palmtree, ShieldCheck, PlayCircle, Layers } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from "react-leaflet";
 import L from "leaflet";
@@ -82,6 +82,54 @@ interface HotelRoom {
   capacity: number | null;
   amenities: string[];
 }
+
+interface MenuItemData {
+  name: string;
+  icon: string;
+}
+
+interface MenuSectionData {
+  title: string;
+  icon: string;
+  items: MenuItemData[];
+}
+
+const SECTION_ICON_OPTIONS = [
+  { key: "bed", label: "Hébergement", icon: BedDouble },
+  { key: "sparkles", label: "Wellness", icon: Sparkles },
+  { key: "utensils", label: "Restauration", icon: UtensilsCrossed },
+  { key: "dumbbell", label: "Fitness", icon: Dumbbell },
+  { key: "calendar", label: "Événements", icon: CalendarDays },
+  { key: "heart", label: "Bien-être", icon: Heart },
+  { key: "palmtree", label: "Loisirs", icon: Palmtree },
+  { key: "shield", label: "Services", icon: ShieldCheck },
+  { key: "play", label: "Bienvenue", icon: PlayCircle },
+  { key: "star", label: "Premium", icon: Star },
+  { key: "coffee", label: "Café", icon: Coffee },
+  { key: "music", label: "Divertissement", icon: Music },
+  { key: "layers", label: "Autre", icon: Layers },
+];
+
+const ITEM_ICON_OPTIONS = [
+  { key: "bed", label: "Chambre", icon: BedDouble },
+  { key: "home", label: "Résidence", icon: Home },
+  { key: "heart", label: "Santé", icon: Heart },
+  { key: "sparkles", label: "Spa", icon: Sparkles },
+  { key: "dumbbell", label: "Fitness", icon: Dumbbell },
+  { key: "utensils", label: "Restaurant", icon: UtensilsCrossed },
+  { key: "coffee", label: "Café", icon: Coffee },
+  { key: "music", label: "Musique", icon: Music },
+  { key: "users", label: "Groupe", icon: Users },
+  { key: "palmtree", label: "Détente", icon: Palmtree },
+  { key: "star", label: "Premium", icon: Star },
+  { key: "wifi", label: "WiFi", icon: Wifi },
+  { key: "tv", label: "TV", icon: Tv },
+  { key: "bath", label: "Bain", icon: Bath },
+  { key: "briefcase", label: "Business", icon: Briefcase },
+  { key: "calendar", label: "Événement", icon: CalendarDays },
+  { key: "shield", label: "Sécurité", icon: ShieldCheck },
+  { key: "layers", label: "Autre", icon: Layers },
+];
 
 const BED_TYPES = ["King", "Queen", "Twin", "Double", "Single", "Suite"];
 
@@ -203,6 +251,8 @@ const Admin = () => {
   const [tagFinderError, setTagFinderError] = useState("");
   // Hotel rooms
   const [hotelRooms, setHotelRooms] = useState<HotelRoom[]>([]);
+  // Hotel menu sections (Canyon Ranch style)
+  const [menuSections, setMenuSections] = useState<MenuSectionData[]>([]);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -324,6 +374,7 @@ const Admin = () => {
     setLocationQuery("");
     setLocationResults([]);
     setHotelRooms([]);
+    setMenuSections([]);
     setDialogOpen(true);
   };
 
@@ -337,9 +388,11 @@ const Admin = () => {
       try {
         const meta = JSON.parse(tour.metadataJson);
         setHotelRooms(meta.rooms || []);
-      } catch { setHotelRooms([]); }
+        setMenuSections(meta.sections || []);
+      } catch { setHotelRooms([]); setMenuSections([]); }
     } else {
       setHotelRooms([]);
+      setMenuSections([]);
     }
     setDialogOpen(true);
   };
@@ -351,8 +404,8 @@ const Admin = () => {
     }
     // Attach hotel rooms as metadataJson when Hôtellerie
     const payload: Record<string, unknown> = { ...editTour };
-    if (editTour.category === "Hôtellerie" && hotelRooms.length > 0) {
-      payload.metadataJson = JSON.stringify({ rooms: hotelRooms });
+    if (editTour.category === "Hôtellerie" && (hotelRooms.length > 0 || menuSections.length > 0)) {
+      payload.metadataJson = JSON.stringify({ rooms: hotelRooms, sections: menuSections });
     }
     const method = isEditing ? "PUT" : "POST";
     const url = isEditing ? `/api/tours/${editTour.id}` : "/api/tours";
@@ -753,127 +806,264 @@ const Admin = () => {
             </div>
             {/* Hotel Rooms — only for Hôtellerie */}
             {editTour.category === "Hôtellerie" && (
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <label className="text-sm font-medium flex items-center gap-2">
-                    <BedDouble className="w-4 h-4" /> Chambres
-                  </label>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setHotelRooms([...hotelRooms, { name: "", tagSid: "", bedType: "", capacity: null, amenities: [] }])}
-                  >
-                    <Plus className="w-4 h-4 mr-1" /> Ajouter
-                  </Button>
-                </div>
-                {hotelRooms.map((room, idx) => (
-                  <div key={idx} className="border border-border rounded-xl p-4 space-y-3 relative">
-                    <button
+              <div className="space-y-4">
+                {/* ── Menu Sections (Canyon Ranch style) ── */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium flex items-center gap-2">
+                      <Layers className="w-4 h-4" /> Sections du menu
+                    </label>
+                    <Button
                       type="button"
-                      onClick={() => setHotelRooms(hotelRooms.filter((_, i) => i !== idx))}
-                      className="absolute top-2 right-2 text-muted-foreground hover:text-destructive transition-colors"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setMenuSections([...menuSections, { title: "", icon: "layers", items: [] }])}
                     >
-                      <X className="w-4 h-4" />
-                    </button>
-                    <p className="text-xs font-semibold text-muted-foreground">Chambre {idx + 1}</p>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="text-xs text-muted-foreground mb-1 block">Nom de la chambre</label>
-                        <Input
-                          value={room.name}
-                          onChange={(e) => {
-                            const updated = [...hotelRooms];
-                            updated[idx] = { ...room, name: e.target.value };
-                            setHotelRooms(updated);
-                          }}
-                          placeholder="Suite Deluxe"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-xs text-muted-foreground mb-1 block">Tag Matterport (SID)</label>
-                        <Input
-                          value={room.tagSid}
-                          onChange={(e) => {
-                            const updated = [...hotelRooms];
-                            updated[idx] = { ...room, tagSid: e.target.value };
-                            setHotelRooms(updated);
-                          }}
-                          placeholder="abcDEF123"
-                        />
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="text-xs text-muted-foreground mb-1 block">Type de lit</label>
-                        <Select
-                          value={room.bedType}
-                          onValueChange={(v) => {
-                            const updated = [...hotelRooms];
-                            updated[idx] = { ...room, bedType: v };
-                            setHotelRooms(updated);
-                          }}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Choisir" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {BED_TYPES.map((bt) => (
-                              <SelectItem key={bt} value={bt}>{bt}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <label className="text-xs text-muted-foreground mb-1 block">Capacité</label>
-                        <Input
-                          type="number"
-                          min={1}
-                          value={room.capacity ?? ""}
-                          onChange={(e) => {
-                            const updated = [...hotelRooms];
-                            updated[idx] = { ...room, capacity: e.target.value ? Number(e.target.value) : null };
-                            setHotelRooms(updated);
-                          }}
-                          placeholder="2"
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="text-xs text-muted-foreground mb-1 block">Équipements</label>
-                      <div className="flex flex-wrap gap-2">
-                        {AMENITIES_OPTIONS.map((a) => {
-                          const active = room.amenities.includes(a.key);
-                          return (
-                            <button
-                              key={a.key}
-                              type="button"
-                              onClick={() => {
-                                const updated = [...hotelRooms];
-                                const newAmenities = active
-                                  ? room.amenities.filter((k) => k !== a.key)
-                                  : [...room.amenities, a.key];
-                                updated[idx] = { ...room, amenities: newAmenities };
-                                setHotelRooms(updated);
-                              }}
-                              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
-                                active
-                                  ? "bg-secondary text-secondary-foreground border-secondary"
-                                  : "bg-muted text-muted-foreground border-border hover:border-secondary/50"
-                              }`}
-                            >
-                              <a.icon className="w-3.5 h-3.5" />
-                              {a.label}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
+                      <Plus className="w-4 h-4 mr-1" /> Section
+                    </Button>
                   </div>
-                ))}
-                {hotelRooms.length === 0 && (
-                  <p className="text-xs text-muted-foreground text-center py-3">Aucune chambre ajoutée</p>
-                )}
+                  {menuSections.map((sec, sIdx) => {
+                    const SecIconObj = SECTION_ICON_OPTIONS.find(o => o.key === sec.icon);
+                    return (
+                      <div key={sIdx} className="border border-border rounded-xl overflow-hidden">
+                        {/* Section header */}
+                        <div className="bg-muted/50 px-3 py-2 flex items-center gap-2">
+                          <Select
+                            value={sec.icon}
+                            onValueChange={(v) => {
+                              const updated = [...menuSections];
+                              updated[sIdx] = { ...sec, icon: v };
+                              setMenuSections(updated);
+                            }}
+                          >
+                            <SelectTrigger className="w-[110px] h-8 text-xs">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {SECTION_ICON_OPTIONS.map((o) => (
+                                <SelectItem key={o.key} value={o.key}>
+                                  <span className="flex items-center gap-1.5"><o.icon className="w-3.5 h-3.5" />{o.label}</span>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <Input
+                            value={sec.title}
+                            onChange={(e) => {
+                              const updated = [...menuSections];
+                              updated[sIdx] = { ...sec, title: e.target.value };
+                              setMenuSections(updated);
+                            }}
+                            placeholder="Titre de la section"
+                            className="h-8 text-sm flex-1"
+                          />
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
+                            onClick={() => setMenuSections(menuSections.filter((_, i) => i !== sIdx))}
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </div>
+                        {/* Section items */}
+                        <div className="p-3 space-y-2">
+                          {sec.items.map((item, iIdx) => (
+                            <div key={iIdx} className="flex items-center gap-2">
+                              <Select
+                                value={item.icon}
+                                onValueChange={(v) => {
+                                  const updated = [...menuSections];
+                                  const items = [...sec.items];
+                                  items[iIdx] = { ...item, icon: v };
+                                  updated[sIdx] = { ...sec, items };
+                                  setMenuSections(updated);
+                                }}
+                              >
+                                <SelectTrigger className="w-[90px] h-8 text-xs">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {ITEM_ICON_OPTIONS.map((o) => (
+                                    <SelectItem key={o.key} value={o.key}>
+                                      <span className="flex items-center gap-1.5"><o.icon className="w-3 h-3" />{o.label}</span>
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <Input
+                                value={item.name}
+                                onChange={(e) => {
+                                  const updated = [...menuSections];
+                                  const items = [...sec.items];
+                                  items[iIdx] = { ...item, name: e.target.value };
+                                  updated[sIdx] = { ...sec, items };
+                                  setMenuSections(updated);
+                                }}
+                                placeholder="Nom de l'élément"
+                                className="h-8 text-sm flex-1"
+                              />
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="ghost"
+                                className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
+                                onClick={() => {
+                                  const updated = [...menuSections];
+                                  updated[sIdx] = { ...sec, items: sec.items.filter((_, i) => i !== iIdx) };
+                                  setMenuSections(updated);
+                                }}
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </Button>
+                            </div>
+                          ))}
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            className="w-full h-8 text-xs text-muted-foreground"
+                            onClick={() => {
+                              const updated = [...menuSections];
+                              updated[sIdx] = { ...sec, items: [...sec.items, { name: "", icon: "layers" }] };
+                              setMenuSections(updated);
+                            }}
+                          >
+                            <Plus className="w-3.5 h-3.5 mr-1" /> Ajouter un élément
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {menuSections.length === 0 && (
+                    <p className="text-xs text-muted-foreground text-center py-2">Aucune section ajoutée — Cliquez + Section pour créer un menu style Canyon Ranch</p>
+                  )}
+                </div>
+
+                {/* ── Chambres détaillées ── */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium flex items-center gap-2">
+                      <BedDouble className="w-4 h-4" /> Chambres
+                    </label>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setHotelRooms([...hotelRooms, { name: "", tagSid: "", bedType: "", capacity: null, amenities: [] }])}
+                    >
+                      <Plus className="w-4 h-4 mr-1" /> Chambre
+                    </Button>
+                  </div>
+                  {hotelRooms.map((room, idx) => (
+                    <div key={idx} className="border border-border rounded-xl p-4 space-y-3 relative">
+                      <button
+                        type="button"
+                        onClick={() => setHotelRooms(hotelRooms.filter((_, i) => i !== idx))}
+                        className="absolute top-2 right-2 text-muted-foreground hover:text-destructive transition-colors"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                      <p className="text-xs font-semibold text-muted-foreground">Chambre {idx + 1}</p>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-xs text-muted-foreground mb-1 block">Nom de la chambre</label>
+                          <Input
+                            value={room.name}
+                            onChange={(e) => {
+                              const updated = [...hotelRooms];
+                              updated[idx] = { ...room, name: e.target.value };
+                              setHotelRooms(updated);
+                            }}
+                            placeholder="Suite Deluxe"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs text-muted-foreground mb-1 block">Tag Matterport (SID)</label>
+                          <Input
+                            value={room.tagSid}
+                            onChange={(e) => {
+                              const updated = [...hotelRooms];
+                              updated[idx] = { ...room, tagSid: e.target.value };
+                              setHotelRooms(updated);
+                            }}
+                            placeholder="abcDEF123"
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-xs text-muted-foreground mb-1 block">Type de lit</label>
+                          <Select
+                            value={room.bedType}
+                            onValueChange={(v) => {
+                              const updated = [...hotelRooms];
+                              updated[idx] = { ...room, bedType: v };
+                              setHotelRooms(updated);
+                            }}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Choisir" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {BED_TYPES.map((bt) => (
+                                <SelectItem key={bt} value={bt}>{bt}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <label className="text-xs text-muted-foreground mb-1 block">Capacité</label>
+                          <Input
+                            type="number"
+                            min={1}
+                            value={room.capacity ?? ""}
+                            onChange={(e) => {
+                              const updated = [...hotelRooms];
+                              updated[idx] = { ...room, capacity: e.target.value ? Number(e.target.value) : null };
+                              setHotelRooms(updated);
+                            }}
+                            placeholder="2"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-xs text-muted-foreground mb-1 block">Équipements</label>
+                        <div className="flex flex-wrap gap-2">
+                          {AMENITIES_OPTIONS.map((a) => {
+                            const active = room.amenities.includes(a.key);
+                            return (
+                              <button
+                                key={a.key}
+                                type="button"
+                                onClick={() => {
+                                  const updated = [...hotelRooms];
+                                  const newAmenities = active
+                                    ? room.amenities.filter((k) => k !== a.key)
+                                    : [...room.amenities, a.key];
+                                  updated[idx] = { ...room, amenities: newAmenities };
+                                  setHotelRooms(updated);
+                                }}
+                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+                                  active
+                                    ? "bg-secondary text-secondary-foreground border-secondary"
+                                    : "bg-muted text-muted-foreground border-border hover:border-secondary/50"
+                                }`}
+                              >
+                                <a.icon className="w-3.5 h-3.5" />
+                                {a.label}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  {hotelRooms.length === 0 && (
+                    <p className="text-xs text-muted-foreground text-center py-3">Aucune chambre ajoutée</p>
+                  )}
+                </div>
               </div>
             )}
             <div>
