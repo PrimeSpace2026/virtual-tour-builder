@@ -107,10 +107,11 @@ const SECTION_COLORS: Record<string, string> = {
 interface MenuSectionProps {
   title: string;
   iconKey: string;
-  items: { name: string; iconKey: string; sub?: string }[];
+  items: { name: string; iconKey: string; sub?: string; tagSid?: string }[];
+  onItemClick?: (tagSid: string) => void;
 }
 
-const HotelMenuSection = ({ title, iconKey, items }: MenuSectionProps) => {
+const HotelMenuSection = ({ title, iconKey, items, onItemClick }: MenuSectionProps) => {
   const [open, setOpen] = useState(false);
   const Icon = ICON_MAP[iconKey] || Layers;
   const color = SECTION_COLORS[iconKey] || "#6a6a4a";
@@ -134,17 +135,19 @@ const HotelMenuSection = ({ title, iconKey, items }: MenuSectionProps) => {
         <div className="bg-black/30">
           {items.map((item, i) => {
             const ItemIcon = ICON_MAP[item.iconKey] || Layers;
+            const hasTag = !!item.tagSid;
             return (
               <div
                 key={i}
-                className="flex items-center gap-3 px-4 py-2.5 border-t border-white/[0.05] hover:bg-white/[0.06] transition-colors cursor-pointer"
+                onClick={() => hasTag && onItemClick?.(item.tagSid!)}
+                className={`flex items-center gap-3 px-4 py-2.5 border-t border-white/[0.05] transition-colors ${hasTag ? "cursor-pointer hover:bg-white/[0.08]" : "hover:bg-white/[0.06] cursor-default"}`}
               >
                 <ItemIcon className="w-4 h-4 text-white/40 shrink-0" />
                 <div className="flex-1 min-w-0">
                   <p className="text-white/80 text-[12px] font-medium truncate">{item.name}</p>
                   {item.sub && <p className="text-white/35 text-[10px] truncate">{item.sub}</p>}
                 </div>
-                <Eye className="w-3.5 h-3.5 text-white/20 shrink-0" />
+                {hasTag && <Eye className="w-3.5 h-3.5 text-white/30 shrink-0" />}
               </div>
             );
           })}
@@ -527,7 +530,11 @@ const TourViewer = () => {
           const sweeps = await new Promise<any[]>((resolve) => {
             const sub = sdk.Sweep.data.subscribe({ onCollectionUpdated: (collection: any) => {
               const items: any[] = [];
-              collection.forEach((item: any, key: string) => items.push({ ...item, sid: key }));
+              if (collection && typeof collection.forEach === 'function') {
+                collection.forEach((item: any, key: any) => items.push({ ...item, sid: key }));
+              } else if (Array.isArray(collection)) {
+                collection.forEach((item: any) => items.push({ ...item, sid: item.sid || item.id }));
+              }
               if (items.length > 0) { sub?.cancel?.(); resolve(items); }
             }});
           });
@@ -693,7 +700,11 @@ const TourViewer = () => {
                 const sweeps = await new Promise<any[]>((resolve) => {
                   const sub = sdk.Sweep.data.subscribe({ onCollectionUpdated: (collection: any) => {
                     const items: any[] = [];
-                    collection.forEach((item: any, key: string) => items.push({ ...item, sid: key }));
+                    if (collection && typeof collection.forEach === 'function') {
+                      collection.forEach((item: any, key: any) => items.push({ ...item, sid: key }));
+                    } else if (Array.isArray(collection)) {
+                      collection.forEach((item: any) => items.push({ ...item, sid: item.sid || item.id }));
+                    }
                     if (items.length > 0) { sub?.cancel?.(); resolve(items); }
                   }});
                 });
@@ -737,6 +748,65 @@ const TourViewer = () => {
       setSelectedItem(item);
     }
   }, [tour?.id, tour?.tourUrl, trackEvent]);
+
+  // Navigate to a Matterport tag by SID (used by hotel menu sections)
+  const navigateToMenuTag = useCallback(async (tagSid: string) => {
+    const sdk = sdkRef.current;
+    if (!sdk) return;
+    const resolvedSid = tagsMapRef.current.get(tagSid.trim().toLowerCase()) || savedTagsMapRef.current.get(tagSid.trim().toLowerCase()) || tagSid;
+    console.log(`🏷️ Menu tag click — SID: ${tagSid}, resolved: ${resolvedSid}`);
+    try {
+      if (sdk.Mattertag?.navigateToTag) {
+        await sdk.Mattertag.navigateToTag(resolvedSid, sdk.Mattertag.Transition?.FLY || "transition.fly");
+      } else if (sdk.Tag?.open) {
+        await sdk.Tag.open(resolvedSid);
+      }
+    } catch (err) {
+      console.log("Menu tag SDK nav failed, trying sweep fallback:", err);
+      try {
+        let anchorPos: any = null;
+        if (sdk.Mattertag?.getData) {
+          const tags = await sdk.Mattertag.getData();
+          const found = tags.find((t: any) => t.sid === resolvedSid);
+          if (found?.anchorPosition) anchorPos = found.anchorPosition;
+        }
+        if (!anchorPos && (sdk as any).Tag?.getData) {
+          const tags = await (sdk as any).Tag.getData();
+          const found = tags.find((t: any) => t.sid === resolvedSid);
+          if (found?.anchorPosition) anchorPos = found.anchorPosition;
+        }
+        if (anchorPos) {
+          const sweeps = await new Promise<any[]>((resolve) => {
+            const sub = sdk.Sweep.data.subscribe({ onCollectionUpdated: (collection: any) => {
+              const items: any[] = [];
+              if (collection && typeof collection.forEach === 'function') {
+                collection.forEach((item: any, key: any) => items.push({ ...item, sid: key }));
+              } else if (Array.isArray(collection)) {
+                collection.forEach((item: any) => items.push({ ...item, sid: item.sid || item.id }));
+              }
+              if (items.length > 0) { sub?.cancel?.(); resolve(items); }
+            }});
+          });
+          if (sweeps.length > 0) {
+            let nearest = sweeps[0];
+            let minDist = Infinity;
+            for (const s of sweeps) {
+              if (!s.position) continue;
+              const dx = s.position.x - anchorPos.x;
+              const dy = s.position.y - anchorPos.y;
+              const dz = s.position.z - anchorPos.z;
+              const dist = dx * dx + dy * dy + dz * dz;
+              if (dist < minDist) { minDist = dist; nearest = s; }
+            }
+            await sdk.Sweep.moveTo(nearest.sid, {
+              rotation: { x: Math.atan2(anchorPos.y - nearest.position.y, Math.sqrt((anchorPos.x - nearest.position.x) ** 2 + (anchorPos.z - nearest.position.z) ** 2)) * (180 / Math.PI), y: Math.atan2(anchorPos.x - nearest.position.x, anchorPos.z - nearest.position.z) * (180 / Math.PI) },
+              transition: sdk.Sweep.Transition?.FLY || "transition.fly",
+            });
+          }
+        }
+      } catch (sweepErr) { console.log("Menu tag sweep fallback failed:", sweepErr); }
+    }
+  }, []);
 
   // Navigate to a specific floor
   const navigateToFloor = useCallback((floorIndex: number) => {
@@ -1217,7 +1287,7 @@ const TourViewer = () => {
                 {tour.category === "Hôtellerie" && tour.metadataJson && (() => {
                   try {
                     const meta = JSON.parse(tour.metadataJson);
-                    const customSections: { title: string; icon: string; items: { name: string; icon: string }[] }[] = meta.sections || [];
+                    const customSections: { title: string; icon: string; items: { name: string; icon: string; tagSid?: string }[] }[] = meta.sections || [];
                     const rooms: HotelRoom[] = meta.rooms || [];
                     const allAmenities = Array.from(new Set(rooms.flatMap(r => r.amenities || [])));
 
@@ -1229,6 +1299,7 @@ const TourViewer = () => {
                         name: r.name || "Chambre",
                         iconKey: "bed",
                         sub: `${r.bedType || ""} ${r.capacity ? `· ${r.capacity} pers.` : ""}`.trim(),
+                        tagSid: r.tagSid || undefined,
                       })),
                     }] : [];
 
@@ -1246,7 +1317,7 @@ const TourViewer = () => {
                       ...customSections.map(s => ({
                         title: s.title,
                         iconKey: s.icon,
-                        items: s.items.map(it => ({ name: it.name, iconKey: it.icon, sub: "" })),
+                        items: s.items.map(it => ({ name: it.name, iconKey: it.icon, sub: "", tagSid: it.tagSid || undefined })),
                       })),
                       ...autoRoomSection,
                       ...autoAmenitySection,
@@ -1256,7 +1327,7 @@ const TourViewer = () => {
                     return (
                       <div className="rounded-xl overflow-hidden border border-white/[0.06]">
                         {allSections.map((sec, i) => (
-                          <HotelMenuSection key={i} title={sec.title} iconKey={sec.iconKey} items={sec.items} />
+                          <HotelMenuSection key={i} title={sec.title} iconKey={sec.iconKey} items={sec.items} onItemClick={navigateToMenuTag} />
                         ))}
                       </div>
                     );
@@ -1401,14 +1472,14 @@ const TourViewer = () => {
               {tour.category === "Hôtellerie" && tour.metadataJson && (() => {
                 try {
                   const meta = JSON.parse(tour.metadataJson);
-                  const customSections: { title: string; icon: string; items: { name: string; icon: string }[] }[] = meta.sections || [];
+                  const customSections: { title: string; icon: string; items: { name: string; icon: string; tagSid?: string }[] }[] = meta.sections || [];
                   const rooms: HotelRoom[] = meta.rooms || [];
                   const allAmenities = Array.from(new Set(rooms.flatMap(r => r.amenities || [])));
 
                   const autoRoomSection = rooms.length > 0 ? [{
                     title: "Hébergements",
                     iconKey: "bed",
-                    items: rooms.map(r => ({ name: r.name || "Chambre", iconKey: "bed", sub: `${r.bedType || ""} ${r.capacity ? `· ${r.capacity}p` : ""}`.trim() })),
+                    items: rooms.map(r => ({ name: r.name || "Chambre", iconKey: "bed", sub: `${r.bedType || ""} ${r.capacity ? `· ${r.capacity}p` : ""}`.trim(), tagSid: r.tagSid || undefined })),
                   }] : [];
 
                   const autoAmenitySection = allAmenities.length > 0 ? [{
@@ -1424,7 +1495,7 @@ const TourViewer = () => {
                     ...customSections.map(s => ({
                       title: s.title,
                       iconKey: s.icon,
-                      items: s.items.map(it => ({ name: it.name, iconKey: it.icon })),
+                      items: s.items.map(it => ({ name: it.name, iconKey: it.icon, tagSid: it.tagSid || undefined })),
                     })),
                     ...autoRoomSection,
                     ...autoAmenitySection,
@@ -1434,7 +1505,7 @@ const TourViewer = () => {
                   return (
                     <div className="border-t border-white/[0.06] overflow-hidden">
                       {allSections.map((sec, i) => (
-                        <HotelMenuSection key={i} title={sec.title} iconKey={sec.iconKey} items={sec.items} />
+                        <HotelMenuSection key={i} title={sec.title} iconKey={sec.iconKey} items={sec.items} onItemClick={navigateToMenuTag} />
                       ))}
                     </div>
                   );

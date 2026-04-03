@@ -86,6 +86,7 @@ interface HotelRoom {
 interface MenuItemData {
   name: string;
   icon: string;
+  tagSid: string;
 }
 
 interface MenuSectionData {
@@ -253,6 +254,9 @@ const Admin = () => {
   const [hotelRooms, setHotelRooms] = useState<HotelRoom[]>([]);
   // Hotel menu sections (Canyon Ranch style)
   const [menuSections, setMenuSections] = useState<MenuSectionData[]>([]);
+  // Tags for the create/edit dialog (auto-fetched from tour URL)
+  const [dialogTags, setDialogTags] = useState<{ name: string; sid: string }[]>([]);
+  const [dialogTagsLoading, setDialogTagsLoading] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -297,6 +301,26 @@ const Admin = () => {
     }, 400);
     return () => clearTimeout(timer);
   }, [locationQuery]);
+
+  // Auto-fetch Matterport tags when tour URL changes in dialog
+  useEffect(() => {
+    if (!dialogOpen || !editTour.tourUrl) { setDialogTags([]); return; }
+    let modelId: string | null = null;
+    try { modelId = new URL(editTour.tourUrl).searchParams.get("m"); } catch {}
+    if (!modelId) { setDialogTags([]); return; }
+    setDialogTagsLoading(true);
+    fetch(`/api/matterport/tags?modelId=${encodeURIComponent(modelId)}`)
+      .then(r => r.ok ? r.json() : { tags: [] })
+      .then(data => {
+        const tags = (data.tags || []).map((t: any, i: number) => ({
+          name: t.label || t.description || `Tag ${i + 1}`,
+          sid: t.sid,
+        }));
+        setDialogTags(tags);
+      })
+      .catch(() => setDialogTags([]))
+      .finally(() => setDialogTagsLoading(false));
+  }, [dialogOpen, editTour.tourUrl]);
 
   const selectLocation = (place: any) => {
     setEditTour({
@@ -904,6 +928,43 @@ const Admin = () => {
                                 placeholder="Nom de l'élément"
                                 className="h-8 text-sm flex-1"
                               />
+                              {dialogTags.length > 0 ? (
+                                <Select
+                                  value={item.tagSid || "__none__"}
+                                  onValueChange={(v) => {
+                                    const updated = [...menuSections];
+                                    const items = [...sec.items];
+                                    items[iIdx] = { ...item, tagSid: v === "__none__" ? "" : v };
+                                    updated[sIdx] = { ...sec, items };
+                                    setMenuSections(updated);
+                                  }}
+                                >
+                                  <SelectTrigger className="h-8 text-xs w-[120px]">
+                                    <SelectValue placeholder={dialogTagsLoading ? "Chargement..." : "Tag"} />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="__none__">Aucun tag</SelectItem>
+                                    {dialogTags.map((tag) => (
+                                      <SelectItem key={tag.sid} value={tag.sid}>
+                                        <span className="flex items-center gap-1"><Tag className="w-3 h-3" />{tag.name}</span>
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              ) : (
+                                <Input
+                                  value={item.tagSid || ""}
+                                  onChange={(e) => {
+                                    const updated = [...menuSections];
+                                    const items = [...sec.items];
+                                    items[iIdx] = { ...item, tagSid: e.target.value };
+                                    updated[sIdx] = { ...sec, items };
+                                    setMenuSections(updated);
+                                  }}
+                                  placeholder={dialogTagsLoading ? "Chargement..." : "Tag SID"}
+                                  className="h-8 text-xs w-[100px]"
+                                />
+                              )}
                               <Button
                                 type="button"
                                 size="sm"
@@ -926,7 +987,7 @@ const Admin = () => {
                             className="w-full h-8 text-xs text-muted-foreground"
                             onClick={() => {
                               const updated = [...menuSections];
-                              updated[sIdx] = { ...sec, items: [...sec.items, { name: "", icon: "layers" }] };
+                              updated[sIdx] = { ...sec, items: [...sec.items, { name: "", icon: "layers", tagSid: "" }] };
                               setMenuSections(updated);
                             }}
                           >
@@ -981,15 +1042,38 @@ const Admin = () => {
                         </div>
                         <div>
                           <label className="text-xs text-muted-foreground mb-1 block">Tag Matterport (SID)</label>
-                          <Input
-                            value={room.tagSid}
-                            onChange={(e) => {
-                              const updated = [...hotelRooms];
-                              updated[idx] = { ...room, tagSid: e.target.value };
-                              setHotelRooms(updated);
-                            }}
-                            placeholder="abcDEF123"
-                          />
+                          {dialogTags.length > 0 ? (
+                            <Select
+                              value={room.tagSid || "__none__"}
+                              onValueChange={(v) => {
+                                const updated = [...hotelRooms];
+                                updated[idx] = { ...room, tagSid: v === "__none__" ? "" : v };
+                                setHotelRooms(updated);
+                              }}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder={dialogTagsLoading ? "Chargement..." : "Choisir un tag"} />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="__none__">Aucun tag</SelectItem>
+                                {dialogTags.map((tag) => (
+                                  <SelectItem key={tag.sid} value={tag.sid}>
+                                    <span className="flex items-center gap-1"><Tag className="w-3 h-3" />{tag.name}</span>
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            <Input
+                              value={room.tagSid}
+                              onChange={(e) => {
+                                const updated = [...hotelRooms];
+                                updated[idx] = { ...room, tagSid: e.target.value };
+                                setHotelRooms(updated);
+                              }}
+                              placeholder={dialogTagsLoading ? "Chargement..." : "abcDEF123"}
+                            />
+                          )}
                         </div>
                       </div>
                       <div className="grid grid-cols-2 gap-3">
@@ -1056,6 +1140,45 @@ const Admin = () => {
                               </button>
                             );
                           })}
+                          {/* Custom amenities */}
+                          {room.amenities.filter(k => !AMENITIES_OPTIONS.some(a => a.key === k)).map((custom) => (
+                            <span
+                              key={custom}
+                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border bg-secondary text-secondary-foreground border-secondary"
+                            >
+                              <Star className="w-3.5 h-3.5" />
+                              {custom}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const updated = [...hotelRooms];
+                                  updated[idx] = { ...room, amenities: room.amenities.filter(k => k !== custom) };
+                                  setHotelRooms(updated);
+                                }}
+                                className="ml-0.5 hover:text-destructive"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </span>
+                          ))}
+                          {/* + Add custom amenity */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const name = prompt("Nom de l'équipement :");
+                              if (name && name.trim()) {
+                                const key = name.trim();
+                                if (!room.amenities.includes(key)) {
+                                  const updated = [...hotelRooms];
+                                  updated[idx] = { ...room, amenities: [...room.amenities, key] };
+                                  setHotelRooms(updated);
+                                }
+                              }
+                            }}
+                            className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium border border-dashed border-muted-foreground/40 text-muted-foreground hover:border-secondary hover:text-secondary transition-colors"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                          </button>
                         </div>
                       </div>
                     </div>
