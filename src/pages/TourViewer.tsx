@@ -670,65 +670,51 @@ const TourViewer = () => {
       if (sdk) {
         const tryNavigate = async () => {
           try {
-            // Try Mattertag.navigateToTag (SDK v3)
-            if (sdk.Mattertag?.navigateToTag) {
-              await sdk.Mattertag.navigateToTag(resolvedSid, sdk.Mattertag.Transition?.MOVE || "transition.move");
-              console.log(`🎯 SDK navigated to tag: ${resolvedSid}`);
+            // Get tag anchor position to find nearest sweep
+            let anchorPos: any = null;
+            if (sdk.Mattertag?.getData) {
+              const tags = await sdk.Mattertag.getData();
+              const found = tags.find((t: any) => t.sid === resolvedSid);
+              if (found?.anchorPosition) anchorPos = found.anchorPosition;
             }
-            // Try Tag.open (newer SDK)
-            else if (sdk.Tag?.open) {
-              await sdk.Tag.open(resolvedSid);
-              console.log(`🎯 SDK Tag.open: ${resolvedSid}`);
+            if (!anchorPos && sdk.Tag?.getData) {
+              const tags = await sdk.Tag.getData();
+              const found = tags.find((t: any) => t.sid === resolvedSid);
+              if (found?.anchorPosition) anchorPos = found.anchorPosition;
+            }
+            if (anchorPos) {
+              // Move to nearest sweep using MOVE transition
+              const sweeps = await new Promise<any[]>((resolve) => {
+                const sub = sdk.Sweep.data.subscribe({ onCollectionUpdated: (collection: any) => {
+                  const items: any[] = [];
+                  if (collection && typeof collection.forEach === 'function') {
+                    collection.forEach((item: any, key: any) => items.push({ ...item, sid: key }));
+                  } else if (Array.isArray(collection)) {
+                    collection.forEach((item: any) => items.push({ ...item, sid: item.sid || item.id }));
+                  }
+                  if (items.length > 0) { sub?.cancel?.(); resolve(items); }
+                }});
+              });
+              if (sweeps.length > 0) {
+                let nearest = sweeps[0];
+                let minDist = Infinity;
+                for (const s of sweeps) {
+                  if (!s.position) continue;
+                  const dx = s.position.x - anchorPos.x;
+                  const dy = s.position.y - anchorPos.y;
+                  const dz = s.position.z - anchorPos.z;
+                  const dist = dx * dx + dy * dy + dz * dz;
+                  if (dist < minDist) { minDist = dist; nearest = s; }
+                }
+                await sdk.Sweep.moveTo(nearest.sid, {
+                  rotation: { x: Math.atan2(anchorPos.y - nearest.position.y, Math.sqrt((anchorPos.x - nearest.position.x) ** 2 + (anchorPos.z - nearest.position.z) ** 2)) * (180 / Math.PI), y: Math.atan2(anchorPos.x - nearest.position.x, anchorPos.z - nearest.position.z) * (180 / Math.PI) },
+                  transition: sdk.Sweep.Transition?.MOVE || "transition.move",
+                });
+                console.log(`🎯 Moved to nearest sweep for tag: ${nearest.sid}`);
+              }
             }
           } catch (err) {
-            console.log("SDK tag navigation failed, trying fallback:", err);
-            // If SDK nav fails, try moving to nearest sweep based on tag anchor
-            try {
-              let anchorPos: any = null;
-              if (sdk.Mattertag?.getData) {
-                const tags = await sdk.Mattertag.getData();
-                const found = tags.find((t: any) => t.sid === resolvedSid);
-                if (found?.anchorPosition) anchorPos = found.anchorPosition;
-              }
-              if (!anchorPos && sdk.Tag?.getData) {
-                const tags = await sdk.Tag.getData();
-                const found = tags.find((t: any) => t.sid === resolvedSid);
-                if (found?.anchorPosition) anchorPos = found.anchorPosition;
-              }
-              if (anchorPos) {
-                // Find nearest sweep to the tag's anchor position
-                const sweeps = await new Promise<any[]>((resolve) => {
-                  const sub = sdk.Sweep.data.subscribe({ onCollectionUpdated: (collection: any) => {
-                    const items: any[] = [];
-                    if (collection && typeof collection.forEach === 'function') {
-                      collection.forEach((item: any, key: any) => items.push({ ...item, sid: key }));
-                    } else if (Array.isArray(collection)) {
-                      collection.forEach((item: any) => items.push({ ...item, sid: item.sid || item.id }));
-                    }
-                    if (items.length > 0) { sub?.cancel?.(); resolve(items); }
-                  }});
-                });
-                if (sweeps.length > 0) {
-                  let nearest = sweeps[0];
-                  let minDist = Infinity;
-                  for (const s of sweeps) {
-                    if (!s.position) continue;
-                    const dx = s.position.x - anchorPos.x;
-                    const dy = s.position.y - anchorPos.y;
-                    const dz = s.position.z - anchorPos.z;
-                    const dist = dx * dx + dy * dy + dz * dz;
-                    if (dist < minDist) { minDist = dist; nearest = s; }
-                  }
-                  await sdk.Sweep.moveTo(nearest.sid, {
-                    rotation: { x: Math.atan2(anchorPos.y - nearest.position.y, Math.sqrt((anchorPos.x - nearest.position.x) ** 2 + (anchorPos.z - nearest.position.z) ** 2)) * (180 / Math.PI), y: Math.atan2(anchorPos.x - nearest.position.x, anchorPos.z - nearest.position.z) * (180 / Math.PI) },
-                    transition: sdk.Sweep.Transition?.MOVE || "transition.move",
-                  });
-                  console.log(`🎯 Moved to nearest sweep for tag: ${nearest.sid}`);
-                }
-              }
-            } catch (sweepErr) {
-              console.log("Sweep fallback also failed:", sweepErr);
-            }
+            console.log("Tag sweep navigation failed:", err);
           }
         };
         tryNavigate();
@@ -756,56 +742,49 @@ const TourViewer = () => {
     const resolvedSid = tagsMapRef.current.get(tagSid.trim().toLowerCase()) || savedTagsMapRef.current.get(tagSid.trim().toLowerCase()) || tagSid;
     console.log(`🏷️ Menu tag click — SID: ${tagSid}, resolved: ${resolvedSid}`);
     try {
-      if (sdk.Mattertag?.navigateToTag) {
-        await sdk.Mattertag.navigateToTag(resolvedSid, sdk.Mattertag.Transition?.MOVE || "transition.move");
-      } else if (sdk.Tag?.open) {
-        await sdk.Tag.open(resolvedSid);
+      // Get tag anchor position, then move to nearest sweep
+      let anchorPos: any = null;
+      if (sdk.Mattertag?.getData) {
+        const tags = await sdk.Mattertag.getData();
+        const found = tags.find((t: any) => t.sid === resolvedSid);
+        if (found?.anchorPosition) anchorPos = found.anchorPosition;
       }
-    } catch (err) {
-      console.log("Menu tag SDK nav failed, trying sweep fallback:", err);
-      try {
-        let anchorPos: any = null;
-        if (sdk.Mattertag?.getData) {
-          const tags = await sdk.Mattertag.getData();
-          const found = tags.find((t: any) => t.sid === resolvedSid);
-          if (found?.anchorPosition) anchorPos = found.anchorPosition;
-        }
-        if (!anchorPos && (sdk as any).Tag?.getData) {
-          const tags = await (sdk as any).Tag.getData();
-          const found = tags.find((t: any) => t.sid === resolvedSid);
-          if (found?.anchorPosition) anchorPos = found.anchorPosition;
-        }
-        if (anchorPos) {
-          const sweeps = await new Promise<any[]>((resolve) => {
-            const sub = sdk.Sweep.data.subscribe({ onCollectionUpdated: (collection: any) => {
-              const items: any[] = [];
-              if (collection && typeof collection.forEach === 'function') {
-                collection.forEach((item: any, key: any) => items.push({ ...item, sid: key }));
-              } else if (Array.isArray(collection)) {
-                collection.forEach((item: any) => items.push({ ...item, sid: item.sid || item.id }));
-              }
-              if (items.length > 0) { sub?.cancel?.(); resolve(items); }
-            }});
-          });
-          if (sweeps.length > 0) {
-            let nearest = sweeps[0];
-            let minDist = Infinity;
-            for (const s of sweeps) {
-              if (!s.position) continue;
-              const dx = s.position.x - anchorPos.x;
-              const dy = s.position.y - anchorPos.y;
-              const dz = s.position.z - anchorPos.z;
-              const dist = dx * dx + dy * dy + dz * dz;
-              if (dist < minDist) { minDist = dist; nearest = s; }
+      if (!anchorPos && (sdk as any).Tag?.getData) {
+        const tags = await (sdk as any).Tag.getData();
+        const found = tags.find((t: any) => t.sid === resolvedSid);
+        if (found?.anchorPosition) anchorPos = found.anchorPosition;
+      }
+      if (anchorPos) {
+        const sweeps = await new Promise<any[]>((resolve) => {
+          const sub = sdk.Sweep.data.subscribe({ onCollectionUpdated: (collection: any) => {
+            const items: any[] = [];
+            if (collection && typeof collection.forEach === 'function') {
+              collection.forEach((item: any, key: any) => items.push({ ...item, sid: key }));
+            } else if (Array.isArray(collection)) {
+              collection.forEach((item: any) => items.push({ ...item, sid: item.sid || item.id }));
             }
-            await sdk.Sweep.moveTo(nearest.sid, {
-              rotation: { x: Math.atan2(anchorPos.y - nearest.position.y, Math.sqrt((anchorPos.x - nearest.position.x) ** 2 + (anchorPos.z - nearest.position.z) ** 2)) * (180 / Math.PI), y: Math.atan2(anchorPos.x - nearest.position.x, anchorPos.z - nearest.position.z) * (180 / Math.PI) },
-              transition: sdk.Sweep.Transition?.MOVE || "transition.move",
-            });
+            if (items.length > 0) { sub?.cancel?.(); resolve(items); }
+          }});
+        });
+        if (sweeps.length > 0) {
+          let nearest = sweeps[0];
+          let minDist = Infinity;
+          for (const s of sweeps) {
+            if (!s.position) continue;
+            const dx = s.position.x - anchorPos.x;
+            const dy = s.position.y - anchorPos.y;
+            const dz = s.position.z - anchorPos.z;
+            const dist = dx * dx + dy * dy + dz * dz;
+            if (dist < minDist) { minDist = dist; nearest = s; }
           }
+          await sdk.Sweep.moveTo(nearest.sid, {
+            rotation: { x: Math.atan2(anchorPos.y - nearest.position.y, Math.sqrt((anchorPos.x - nearest.position.x) ** 2 + (anchorPos.z - nearest.position.z) ** 2)) * (180 / Math.PI), y: Math.atan2(anchorPos.x - nearest.position.x, anchorPos.z - nearest.position.z) * (180 / Math.PI) },
+            transition: sdk.Sweep.Transition?.MOVE || "transition.move",
+          });
+          console.log(`🎯 Moved to nearest sweep for tag: ${nearest.sid}`);
         }
-      } catch (sweepErr) { console.log("Menu tag sweep fallback failed:", sweepErr); }
-    }
+      }
+    } catch (err) { console.log("Menu tag navigation failed:", err); }
   }, []);
 
   // Navigate to a specific floor
