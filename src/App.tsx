@@ -1,11 +1,13 @@
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { ServerGate } from "@/components/ServerGate";
+import { ServerStatusProvider } from "@/context/ServerStatusContext";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
 import Index from "./pages/Index";
 import Services from "./pages/Services";
- import Portfolio from "./pages/Portfolio"; 
+import Portfolio from "./pages/Portfolio";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import Benefits from "./pages/Benefits";
@@ -29,47 +31,53 @@ import TourViewer from "./pages/TourViewer";
 import TourStats from "./pages/TourStats";
 import TagFinder from "./pages/TagFinder";
 import AnalyticsDashboard from "./pages/AnalyticsDashboard";
+import AddTourForm from "@/components/AddTourForm";
 
 const queryClient = new QueryClient();
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/services" element={<Services />} />
-         <Route path="/portfolio" element={<Portfolio />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/contact" element={<Contact />} />
-          <Route path="/benefits" element={<Benefits />} />
-          <Route path="/industries/commercial-real-estate" element={<CommercialRealEstate />} />
-          <Route path="/industries/architecture-construction" element={<ArchitectureConstruction />} />
-          <Route path="/industries/travel-hospitality" element={<TravelHospitality />} />
-          <Route path="/industries/manufacturing" element={<Manufacturing />} />
-          <Route path="/industries/insurance" element={<Insurance />} />
-          <Route path="/industries/residential-construction" element={<ResidentialConstruction />} />
-          <Route path="/industries/commerce-retail" element={<CommerceRetail />} />
-          <Route path="/industries/residential-real-estate" element={<ResidentialRealEstate />} />
-          <Route path="/industries/government" element={<Government />} />
-          <Route path="/industries/energy-utilities" element={<EnergyUtilities />} />
-          <Route path="/industries/oil-gas" element={<OilGas />} />
-          <Route path="/view/:id" element={<TourViewer />} />
-          <Route path="/admin/stats/:id" element={<TourStats />} />
-          <Route path="/admin/analytics" element={<AnalyticsDashboard />} />
-          <Route path="/admin/tags" element={<TagFinder />} />
-          <Route path="/admin" element={<Admin />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
+  <ServerStatusProvider>
+    <ServerGate>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/services" element={<Services />} />
+              <Route path="/portfolio" element={<Portfolio />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/contact" element={<Contact />} />
+              <Route path="/benefits" element={<Benefits />} />
+              <Route path="/industries/commercial-real-estate" element={<CommercialRealEstate />} />
+              <Route path="/industries/architecture-construction" element={<ArchitectureConstruction />} />
+              <Route path="/industries/travel-hospitality" element={<TravelHospitality />} />
+              <Route path="/industries/manufacturing" element={<Manufacturing />} />
+              <Route path="/industries/insurance" element={<Insurance />} />
+              <Route path="/industries/residential-construction" element={<ResidentialConstruction />} />
+              <Route path="/industries/commerce-retail" element={<CommerceRetail />} />
+              <Route path="/industries/residential-real-estate" element={<ResidentialRealEstate />} />
+              <Route path="/industries/government" element={<Government />} />
+              <Route path="/industries/energy-utilities" element={<EnergyUtilities />} />
+              <Route path="/industries/oil-gas" element={<OilGas />} />
+              <Route path="/view/:id" element={<TourViewer />} />
+              <Route path="/admin/stats/:id" element={<TourStats />} />
+              <Route path="/admin/analytics" element={<AnalyticsDashboard />} />
+              <Route path="/admin/tags" element={<TagFinder />} />
+              <Route path="/admin" element={<Admin />} />
+              <Route path="/admin/add-tour-test" element={<AddTourForm />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </QueryClientProvider>
+    </ServerGate>
+  </ServerStatusProvider>
 );
 
 export default App;

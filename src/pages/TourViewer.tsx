@@ -26,6 +26,20 @@ import {
   Phone,
   MessageCircle,
   Briefcase,
+  BedDouble,
+  Users,
+  Wifi,
+  Snowflake,
+  Tv,
+  Wine,
+  Bath,
+  DoorOpen,
+  Lock,
+  ChevronDown,
+  Sparkles,
+  UtensilsCrossed,
+  Dumbbell,
+  CalendarDays,
 } from "lucide-react";
 
 const SDK_KEY = "b7uar4u57xdec0zw7dwygt7md";
@@ -41,7 +55,78 @@ interface TourData {
   latitude: number | null;
   longitude: number | null;
   location: string;
+  metadataJson?: string;
 }
+
+interface HotelRoom {
+  name: string;
+  tagSid: string;
+  bedType: string;
+  capacity: number | null;
+  amenities: string[];
+}
+
+const AMENITY_ICONS: Record<string, { icon: React.ComponentType<{ className?: string }>; label: string }> = {
+  wifi: { icon: Wifi, label: "WiFi" },
+  ac: { icon: Snowflake, label: "Climatisation" },
+  tv: { icon: Tv, label: "TV" },
+  minibar: { icon: Wine, label: "Mini-bar" },
+  bathroom: { icon: Bath, label: "Salle de bain" },
+  balcony: { icon: DoorOpen, label: "Balcon" },
+  safe: { icon: Lock, label: "Coffre-fort" },
+};
+
+/* ── Collapsible hotel menu section (Canyon Ranch style) ── */
+interface MenuSectionData {
+  key: string;
+  title: string;
+  icon: React.ComponentType<{ className?: string }>;
+  color: string;
+  items: { name: string; sub: string; icon: React.ComponentType<{ className?: string }>; tagSid: string }[];
+}
+
+const HotelMenuSection = ({ section }: { section: MenuSectionData }) => {
+  const [open, setOpen] = useState(true);
+  const Icon = section.icon;
+  return (
+    <div className="overflow-hidden">
+      {/* Section header */}
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center gap-3 px-3 py-2.5 bg-white/[0.04] hover:bg-white/[0.07] transition-colors"
+      >
+        <div className={`w-7 h-7 rounded-lg bg-gradient-to-br ${section.color} flex items-center justify-center shrink-0`}>
+          <Icon className="w-3.5 h-3.5 text-white" />
+        </div>
+        <span className="text-white/80 text-[13px] font-semibold flex-1 text-left">{section.title}</span>
+        <ChevronDown className={`w-4 h-4 text-white/30 transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
+      </button>
+
+      {/* Items list */}
+      {open && section.items.length > 0 && (
+        <div className="bg-black/20">
+          {section.items.map((item, i) => {
+            const ItemIcon = item.icon;
+            return (
+              <div
+                key={i}
+                className="flex items-center gap-3 px-4 py-2 border-t border-white/[0.04] hover:bg-white/[0.04] transition-colors"
+              >
+                <ItemIcon className="w-4 h-4 text-white/30 shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-white/70 text-[12px] font-medium truncate">{item.name}</p>
+                  {item.sub && <p className="text-white/30 text-[10px] truncate">{item.sub}</p>}
+                </div>
+                <Eye className="w-3.5 h-3.5 text-white/20 shrink-0" />
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
 
 interface TourItemData {
   id: number;
@@ -1102,6 +1187,43 @@ const TourViewer = () => {
                   )}
                 </div>
 
+                {/* Hotel Menu — Canyon Ranch style for Hôtellerie */}
+                {tour.category === "Hôtellerie" && tour.metadataJson && (() => {
+                  try {
+                    const meta = JSON.parse(tour.metadataJson);
+                    const rooms: HotelRoom[] = meta.rooms || [];
+                    // Collect unique amenities across all rooms
+                    const allAmenities = Array.from(new Set(rooms.flatMap(r => r.amenities || [])));
+                    // Define menu sections
+                    const sections = [
+                      {
+                        key: "accommodations",
+                        title: "Hébergements",
+                        icon: Building2,
+                        color: "from-amber-600 to-amber-700",
+                        items: rooms.map(r => ({ name: r.name, sub: `${r.bedType || ""} ${r.capacity ? `· ${r.capacity} pers.` : ""}`.trim(), icon: BedDouble, tagSid: r.tagSid })),
+                      },
+                      ...(allAmenities.length > 0 ? [{
+                        key: "amenities",
+                        title: "Équipements & Services",
+                        icon: Sparkles,
+                        color: "from-teal-600 to-teal-700",
+                        items: allAmenities.map(key => {
+                          const a = AMENITY_ICONS[key];
+                          return a ? { name: a.label, sub: "", icon: a.icon, tagSid: "" } : null;
+                        }).filter(Boolean) as { name: string; sub: string; icon: React.ComponentType<{className?:string}>; tagSid: string }[],
+                      }] : []),
+                    ];
+                    return (
+                      <div className="space-y-1">
+                        {sections.map(sec => (
+                          <HotelMenuSection key={sec.key} section={sec} />
+                        ))}
+                      </div>
+                    );
+                  } catch { return null; }
+                })()}
+
                 {/* Navigation - Other tours */}
                 {(prevTour || nextTour) && (
                   <div className="pt-2 border-t border-white/[0.06]">
@@ -1236,6 +1358,40 @@ const TourViewer = () => {
                   </div>
                 </div>
               </div>
+              {/* Mobile: Hotel Menu */}
+              {tour.category === "Hôtellerie" && tour.metadataJson && (() => {
+                try {
+                  const meta = JSON.parse(tour.metadataJson);
+                  const rooms: HotelRoom[] = meta.rooms || [];
+                  const allAmenities = Array.from(new Set(rooms.flatMap(r => r.amenities || [])));
+                  const sections = [
+                    {
+                      key: "accommodations",
+                      title: "Hébergements",
+                      icon: Building2,
+                      color: "from-amber-600 to-amber-700",
+                      items: rooms.map(r => ({ name: r.name, sub: `${r.bedType || ""} ${r.capacity ? `· ${r.capacity} pers.` : ""}`.trim(), icon: BedDouble, tagSid: r.tagSid })),
+                    },
+                    ...(allAmenities.length > 0 ? [{
+                      key: "amenities",
+                      title: "Équipements",
+                      icon: Sparkles,
+                      color: "from-teal-600 to-teal-700",
+                      items: allAmenities.map(key => {
+                        const a = AMENITY_ICONS[key];
+                        return a ? { name: a.label, sub: "", icon: a.icon, tagSid: "" } : null;
+                      }).filter(Boolean) as { name: string; sub: string; icon: React.ComponentType<{className?:string}>; tagSid: string }[],
+                    }] : []),
+                  ];
+                  return (
+                    <div className="border-t border-white/[0.06]">
+                      {sections.map(sec => (
+                        <HotelMenuSection key={sec.key} section={sec} />
+                      ))}
+                    </div>
+                  );
+                } catch { return null; }
+              })()}
               {(prevTour || nextTour) && (
                 <div className="flex border-t border-white/[0.06]">
                   {prevTour ? (

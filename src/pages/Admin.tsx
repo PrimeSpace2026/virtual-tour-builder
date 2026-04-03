@@ -18,7 +18,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Plus, Pencil, Trash2, Upload, X, Image as ImageIcon, LogOut, Search, MapPin, Loader2, ShoppingBag, ExternalLink, BarChart3, Briefcase, Phone, MessageCircle, Tag, Scan } from "lucide-react";
+import { Plus, Pencil, Trash2, Upload, X, Image as ImageIcon, LogOut, Search, MapPin, Loader2, ShoppingBag, ExternalLink, BarChart3, Briefcase, Phone, MessageCircle, Tag, Scan, Wifi, Snowflake, Tv, Wine, Bath, DoorOpen, Lock, BedDouble } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from "react-leaflet";
 import L from "leaflet";
@@ -72,7 +72,28 @@ interface Tour {
   latitude: number | null;
   longitude: number | null;
   location: string;
+  metadataJson?: string;
 }
+
+interface HotelRoom {
+  name: string;
+  tagSid: string;
+  bedType: string;
+  capacity: number | null;
+  amenities: string[];
+}
+
+const BED_TYPES = ["King", "Queen", "Twin", "Double", "Single", "Suite"];
+
+const AMENITIES_OPTIONS = [
+  { key: "wifi", label: "WiFi", icon: Wifi },
+  { key: "ac", label: "Climatisation", icon: Snowflake },
+  { key: "tv", label: "TV", icon: Tv },
+  { key: "minibar", label: "Mini-bar", icon: Wine },
+  { key: "bathroom", label: "Salle de bain", icon: Bath },
+  { key: "balcony", label: "Balcon", icon: DoorOpen },
+  { key: "safe", label: "Coffre-fort", icon: Lock },
+];
 
 const CATEGORIES = [
   "Hôtellerie",
@@ -180,6 +201,8 @@ const Admin = () => {
   const [tagFinderTags, setTagFinderTags] = useState<TagInfo[]>([]);
   const [tagFinderLoading, setTagFinderLoading] = useState(false);
   const [tagFinderError, setTagFinderError] = useState("");
+  // Hotel rooms
+  const [hotelRooms, setHotelRooms] = useState<HotelRoom[]>([]);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -300,6 +323,7 @@ const Admin = () => {
     setIsEditing(false);
     setLocationQuery("");
     setLocationResults([]);
+    setHotelRooms([]);
     setDialogOpen(true);
   };
 
@@ -308,6 +332,15 @@ const Admin = () => {
     setIsEditing(true);
     setLocationQuery(tour.location || "");
     setLocationResults([]);
+    // Restore hotel rooms from metadataJson
+    if (tour.metadataJson) {
+      try {
+        const meta = JSON.parse(tour.metadataJson);
+        setHotelRooms(meta.rooms || []);
+      } catch { setHotelRooms([]); }
+    } else {
+      setHotelRooms([]);
+    }
     setDialogOpen(true);
   };
 
@@ -316,13 +349,27 @@ const Admin = () => {
       toast({ title: "Erreur", description: "Nom et catégorie sont obligatoires", variant: "destructive" });
       return;
     }
+    // Attach hotel rooms as metadataJson when Hôtellerie
+    const payload: Record<string, unknown> = { ...editTour };
+    if (editTour.category === "Hôtellerie" && hotelRooms.length > 0) {
+      payload.metadataJson = JSON.stringify({ rooms: hotelRooms });
+    }
     const method = isEditing ? "PUT" : "POST";
     const url = isEditing ? `/api/tours/${editTour.id}` : "/api/tours";
-    const res = await fetch(url, {
+    let res = await fetch(url, {
       method,
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(editTour),
+      body: JSON.stringify(payload),
     });
+    // Fallback: if 500 and we sent metadataJson, retry without it (column may not exist yet)
+    if (!res.ok && payload.metadataJson) {
+      const { metadataJson: _, ...fallback } = payload;
+      res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(fallback),
+      });
+    }
     if (res.ok) {
       toast({ title: isEditing ? "Visite modifiée" : "Visite créée" });
       setDialogOpen(false);
@@ -704,6 +751,131 @@ const Admin = () => {
                 )}
               </div>
             </div>
+            {/* Hotel Rooms — only for Hôtellerie */}
+            {editTour.category === "Hôtellerie" && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-medium flex items-center gap-2">
+                    <BedDouble className="w-4 h-4" /> Chambres
+                  </label>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setHotelRooms([...hotelRooms, { name: "", tagSid: "", bedType: "", capacity: null, amenities: [] }])}
+                  >
+                    <Plus className="w-4 h-4 mr-1" /> Ajouter
+                  </Button>
+                </div>
+                {hotelRooms.map((room, idx) => (
+                  <div key={idx} className="border border-border rounded-xl p-4 space-y-3 relative">
+                    <button
+                      type="button"
+                      onClick={() => setHotelRooms(hotelRooms.filter((_, i) => i !== idx))}
+                      className="absolute top-2 right-2 text-muted-foreground hover:text-destructive transition-colors"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                    <p className="text-xs font-semibold text-muted-foreground">Chambre {idx + 1}</p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-xs text-muted-foreground mb-1 block">Nom de la chambre</label>
+                        <Input
+                          value={room.name}
+                          onChange={(e) => {
+                            const updated = [...hotelRooms];
+                            updated[idx] = { ...room, name: e.target.value };
+                            setHotelRooms(updated);
+                          }}
+                          placeholder="Suite Deluxe"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs text-muted-foreground mb-1 block">Tag Matterport (SID)</label>
+                        <Input
+                          value={room.tagSid}
+                          onChange={(e) => {
+                            const updated = [...hotelRooms];
+                            updated[idx] = { ...room, tagSid: e.target.value };
+                            setHotelRooms(updated);
+                          }}
+                          placeholder="abcDEF123"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-xs text-muted-foreground mb-1 block">Type de lit</label>
+                        <Select
+                          value={room.bedType}
+                          onValueChange={(v) => {
+                            const updated = [...hotelRooms];
+                            updated[idx] = { ...room, bedType: v };
+                            setHotelRooms(updated);
+                          }}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Choisir" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {BED_TYPES.map((bt) => (
+                              <SelectItem key={bt} value={bt}>{bt}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <label className="text-xs text-muted-foreground mb-1 block">Capacité</label>
+                        <Input
+                          type="number"
+                          min={1}
+                          value={room.capacity ?? ""}
+                          onChange={(e) => {
+                            const updated = [...hotelRooms];
+                            updated[idx] = { ...room, capacity: e.target.value ? Number(e.target.value) : null };
+                            setHotelRooms(updated);
+                          }}
+                          placeholder="2"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">Équipements</label>
+                      <div className="flex flex-wrap gap-2">
+                        {AMENITIES_OPTIONS.map((a) => {
+                          const active = room.amenities.includes(a.key);
+                          return (
+                            <button
+                              key={a.key}
+                              type="button"
+                              onClick={() => {
+                                const updated = [...hotelRooms];
+                                const newAmenities = active
+                                  ? room.amenities.filter((k) => k !== a.key)
+                                  : [...room.amenities, a.key];
+                                updated[idx] = { ...room, amenities: newAmenities };
+                                setHotelRooms(updated);
+                              }}
+                              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+                                active
+                                  ? "bg-secondary text-secondary-foreground border-secondary"
+                                  : "bg-muted text-muted-foreground border-border hover:border-secondary/50"
+                              }`}
+                            >
+                              <a.icon className="w-3.5 h-3.5" />
+                              {a.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                {hotelRooms.length === 0 && (
+                  <p className="text-xs text-muted-foreground text-center py-3">Aucune chambre ajoutée</p>
+                )}
+              </div>
+            )}
             <div>
               <label className="text-sm font-medium mb-1 block">Surface (m²)</label>
               <Input

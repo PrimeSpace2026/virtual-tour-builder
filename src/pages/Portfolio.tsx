@@ -120,6 +120,15 @@ const Portfolio = () => {
     ? projects
     : projects.filter((p) => p.category === activeCategory);
 
+  const openProjectTour = (project: Project) => {
+    const url = project.tourUrl?.trim();
+    if (url && /^https?:\/\//i.test(url) && !url.includes("my.matterport.com/show/?m=")) {
+      window.open(url, "_blank", "noopener,noreferrer");
+      return;
+    }
+    navigate(`/view/${project.id}`);
+  };
+
   return (
     <Layout>
       <WhatsAppButton />
@@ -301,7 +310,7 @@ const Portfolio = () => {
                 transition={{ delay: index * 0.1 }}
                 layout
                 className="group rounded-2xl overflow-hidden bg-card shadow-soft hover:shadow-elevated transition-all duration-500 cursor-pointer"
-                onClick={() => navigate(`/view/${project.id}`)}
+                onClick={() => openProjectTour(project)}
               >
                 <div className="relative aspect-[4/3] overflow-hidden">
                   <img
@@ -341,7 +350,11 @@ const Portfolio = () => {
                     </span>
                     <span className="text-sm text-foreground hover:text-secondary transition-colors flex items-center gap-1">
                       Voir la visite
-                      <Play className="w-4 h-4" />
+                      {project.tourUrl?.startsWith("http") && !project.tourUrl.includes("my.matterport.com/show/?m=") ? (
+                        <ExternalLink className="w-4 h-4" />
+                      ) : (
+                        <Play className="w-4 h-4" />
+                      )}
                     </span>
                   </div>
                 </div>
