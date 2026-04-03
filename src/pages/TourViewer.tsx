@@ -672,7 +672,7 @@ const TourViewer = () => {
           try {
             // Try Mattertag.navigateToTag (SDK v3)
             if (sdk.Mattertag?.navigateToTag) {
-              await sdk.Mattertag.navigateToTag(resolvedSid, sdk.Mattertag.Transition?.FLY || "transition.fly");
+              await sdk.Mattertag.navigateToTag(resolvedSid, sdk.Mattertag.Transition?.MOVE || "transition.move");
               console.log(`🎯 SDK navigated to tag: ${resolvedSid}`);
             }
             // Try Tag.open (newer SDK)
@@ -721,7 +721,7 @@ const TourViewer = () => {
                   }
                   await sdk.Sweep.moveTo(nearest.sid, {
                     rotation: { x: Math.atan2(anchorPos.y - nearest.position.y, Math.sqrt((anchorPos.x - nearest.position.x) ** 2 + (anchorPos.z - nearest.position.z) ** 2)) * (180 / Math.PI), y: Math.atan2(anchorPos.x - nearest.position.x, anchorPos.z - nearest.position.z) * (180 / Math.PI) },
-                    transition: sdk.Sweep.Transition?.FLY || "transition.fly",
+                    transition: sdk.Sweep.Transition?.MOVE || "transition.move",
                   });
                   console.log(`🎯 Moved to nearest sweep for tag: ${nearest.sid}`);
                 }
@@ -757,7 +757,7 @@ const TourViewer = () => {
     console.log(`🏷️ Menu tag click — SID: ${tagSid}, resolved: ${resolvedSid}`);
     try {
       if (sdk.Mattertag?.navigateToTag) {
-        await sdk.Mattertag.navigateToTag(resolvedSid, sdk.Mattertag.Transition?.FLY || "transition.fly");
+        await sdk.Mattertag.navigateToTag(resolvedSid, sdk.Mattertag.Transition?.MOVE || "transition.move");
       } else if (sdk.Tag?.open) {
         await sdk.Tag.open(resolvedSid);
       }
@@ -800,7 +800,7 @@ const TourViewer = () => {
             }
             await sdk.Sweep.moveTo(nearest.sid, {
               rotation: { x: Math.atan2(anchorPos.y - nearest.position.y, Math.sqrt((anchorPos.x - nearest.position.x) ** 2 + (anchorPos.z - nearest.position.z) ** 2)) * (180 / Math.PI), y: Math.atan2(anchorPos.x - nearest.position.x, anchorPos.z - nearest.position.z) * (180 / Math.PI) },
-              transition: sdk.Sweep.Transition?.FLY || "transition.fly",
+              transition: sdk.Sweep.Transition?.MOVE || "transition.move",
             });
           }
         }
