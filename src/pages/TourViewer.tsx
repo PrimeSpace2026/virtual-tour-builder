@@ -816,9 +816,10 @@ const TourViewer = () => {
     navigate,
   ]);
 
-  // Auto-hide card
+  // Auto-hide card only on initial load, not on manual toggle
+  const cardManuallyToggled = useRef(false);
   useEffect(() => {
-    if (showCard && iframeLoaded) {
+    if (showCard && iframeLoaded && !cardManuallyToggled.current) {
       const t = setTimeout(() => setShowCard(false), 8000);
       return () => clearTimeout(t);
     }
@@ -997,7 +998,7 @@ const TourViewer = () => {
       >
         {/* Toggle Info Card */}
         <button
-          onClick={() => setShowCard(!showCard)}
+          onClick={() => { cardManuallyToggled.current = true; setShowCard(!showCard); }}
           className={`flex items-center gap-1.5 px-2 sm:px-3 py-2 sm:py-2.5 rounded-xl backdrop-blur-xl border text-xs font-medium transition-all ${
             showCard
               ? "bg-white/15 border-white/20 text-white"
