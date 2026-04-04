@@ -303,24 +303,56 @@ const Admin = () => {
   }, [locationQuery]);
 
   // Auto-fetch Matterport tags when tour URL changes in dialog
-  useEffect(() => {
-    if (!dialogOpen || !editTour.tourUrl) { setDialogTags([]); return; }
+  const fetchDialogTags = useCallback(async () => {
+    if (!editTour.tourUrl) { setDialogTags([]); return; }
     let modelId: string | null = null;
     try { modelId = new URL(editTour.tourUrl).searchParams.get("m"); } catch {}
     if (!modelId) { setDialogTags([]); return; }
     setDialogTagsLoading(true);
-    fetch(`/api/matterport/tags?modelId=${encodeURIComponent(modelId)}`)
-      .then(r => r.ok ? r.json() : { tags: [] })
-      .then(data => {
-        const tags = (data.tags || []).map((t: any, i: number) => ({
+
+    // Try saved tags first (when editing existing tour)
+    if (isEditing && editTour.id) {
+      try {
+        const savedRes = await fetch(`/api/tours/${editTour.id}/tags`);
+        if (savedRes.ok) {
+          const savedData = await savedRes.json();
+          const saved = Array.isArray(savedData) ? savedData.map((t: any) => ({ name: t.name || "", sid: t.sid || "" })).filter((t: any) => t.sid) : [];
+          if (saved.length > 0) {
+            setDialogTags(saved);
+          }
+        }
+      } catch {}
+    }
+
+    // Fetch live from Matterport (merge or set)
+    try {
+      const res = await fetch(`/api/matterport/tags?modelId=${encodeURIComponent(modelId)}`);
+      if (res.ok) {
+        const data = await res.json();
+        const liveTags = (data.tags || []).map((t: any, i: number) => ({
           name: t.label || t.description || `Tag ${i + 1}`,
           sid: t.sid,
-        }));
-        setDialogTags(tags);
-      })
-      .catch(() => setDialogTags([]))
-      .finally(() => setDialogTagsLoading(false));
-  }, [dialogOpen, editTour.tourUrl]);
+        })).filter((t: any) => t.sid);
+        if (liveTags.length > 0) {
+          setDialogTags(liveTags);
+          // Save for future use
+          if (isEditing && editTour.id) {
+            fetch(`/api/tours/${editTour.id}/tags`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(liveTags),
+            }).catch(() => {});
+          }
+        }
+      }
+    } catch {}
+    setDialogTagsLoading(false);
+  }, [editTour.tourUrl, editTour.id, isEditing]);
+
+  useEffect(() => {
+    if (!dialogOpen) { setDialogTags([]); return; }
+    fetchDialogTags();
+  }, [dialogOpen, fetchDialogTags]);
 
   const selectLocation = (place: any) => {
     setEditTour({
@@ -928,43 +960,28 @@ const Admin = () => {
                                 placeholder="Nom de l'élément"
                                 className="h-8 text-sm flex-1"
                               />
-                              {dialogTags.length > 0 ? (
-                                <Select
-                                  value={item.tagSid || "__none__"}
-                                  onValueChange={(v) => {
-                                    const updated = [...menuSections];
-                                    const items = [...sec.items];
-                                    items[iIdx] = { ...item, tagSid: v === "__none__" ? "" : v };
-                                    updated[sIdx] = { ...sec, items };
-                                    setMenuSections(updated);
-                                  }}
-                                >
-                                  <SelectTrigger className="h-8 text-xs w-[120px]">
-                                    <SelectValue placeholder={dialogTagsLoading ? "Chargement..." : "Tag"} />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="__none__">Aucun tag</SelectItem>
-                                    {dialogTags.map((tag) => (
-                                      <SelectItem key={tag.sid} value={tag.sid}>
-                                        <span className="flex items-center gap-1"><Tag className="w-3 h-3" />{tag.name}</span>
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              ) : (
-                                <Input
-                                  value={item.tagSid || ""}
-                                  onChange={(e) => {
-                                    const updated = [...menuSections];
-                                    const items = [...sec.items];
-                                    items[iIdx] = { ...item, tagSid: e.target.value };
-                                    updated[sIdx] = { ...sec, items };
-                                    setMenuSections(updated);
-                                  }}
-                                  placeholder={dialogTagsLoading ? "Chargement..." : "Tag SID"}
-                                  className="h-8 text-xs w-[100px]"
-                                />
-                              )}
+                              <Select
+                                value={item.tagSid || "__none__"}
+                                onValueChange={(v) => {
+                                  const updated = [...menuSections];
+                                  const items = [...sec.items];
+                                  items[iIdx] = { ...item, tagSid: v === "__none__" ? "" : v };
+                                  updated[sIdx] = { ...sec, items };
+                                  setMenuSections(updated);
+                                }}
+                              >
+                                <SelectTrigger className="h-8 text-xs w-[140px]">
+                                  <SelectValue placeholder={dialogTagsLoading ? "Chargement..." : dialogTags.length === 0 ? "Aucun tag" : "Tag"} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="__none__">Aucun tag</SelectItem>
+                                  {dialogTags.map((tag) => (
+                                    <SelectItem key={tag.sid} value={tag.sid}>
+                                      <span className="flex items-center gap-1"><Tag className="w-3 h-3" />{tag.name}</span>
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
                               <Button
                                 type="button"
                                 size="sm"
@@ -1042,38 +1059,26 @@ const Admin = () => {
                         </div>
                         <div>
                           <label className="text-xs text-muted-foreground mb-1 block">Tag Matterport (SID)</label>
-                          {dialogTags.length > 0 ? (
-                            <Select
-                              value={room.tagSid || "__none__"}
-                              onValueChange={(v) => {
-                                const updated = [...hotelRooms];
-                                updated[idx] = { ...room, tagSid: v === "__none__" ? "" : v };
-                                setHotelRooms(updated);
-                              }}
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder={dialogTagsLoading ? "Chargement..." : "Choisir un tag"} />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="__none__">Aucun tag</SelectItem>
-                                {dialogTags.map((tag) => (
-                                  <SelectItem key={tag.sid} value={tag.sid}>
-                                    <span className="flex items-center gap-1"><Tag className="w-3 h-3" />{tag.name}</span>
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          ) : (
-                            <Input
-                              value={room.tagSid}
-                              onChange={(e) => {
-                                const updated = [...hotelRooms];
-                                updated[idx] = { ...room, tagSid: e.target.value };
-                                setHotelRooms(updated);
-                              }}
-                              placeholder={dialogTagsLoading ? "Chargement..." : "abcDEF123"}
-                            />
-                          )}
+                          <Select
+                            value={room.tagSid || "__none__"}
+                            onValueChange={(v) => {
+                              const updated = [...hotelRooms];
+                              updated[idx] = { ...room, tagSid: v === "__none__" ? "" : v };
+                              setHotelRooms(updated);
+                            }}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder={dialogTagsLoading ? "Chargement..." : dialogTags.length === 0 ? "Aucun tag" : "Choisir un tag"} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="__none__">Aucun tag</SelectItem>
+                              {dialogTags.map((tag) => (
+                                <SelectItem key={tag.sid} value={tag.sid}>
+                                  <span className="flex items-center gap-1"><Tag className="w-3 h-3" />{tag.name}</span>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </div>
                       </div>
                       <div className="grid grid-cols-2 gap-3">
@@ -1199,7 +1204,19 @@ const Admin = () => {
             </div>
             <div>
               <label className="text-sm font-medium mb-1 block">URL de la visite virtuelle</label>
-              <Input value={editTour.tourUrl} onChange={(e) => setEditTour({ ...editTour, tourUrl: e.target.value })} placeholder="https://my.matterport.com/show/..." />
+              <div className="flex gap-2">
+                <Input value={editTour.tourUrl} onChange={(e) => setEditTour({ ...editTour, tourUrl: e.target.value })} placeholder="https://my.matterport.com/show/..." className="flex-1" />
+                {editTour.tourUrl && (
+                  <Button type="button" size="sm" variant="outline" onClick={fetchDialogTags} disabled={dialogTagsLoading} className="shrink-0 h-10">
+                    {dialogTagsLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Scan className="w-4 h-4" />}
+                  </Button>
+                )}
+              </div>
+              {editTour.tourUrl && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  {dialogTagsLoading ? "Récupération des tags..." : dialogTags.length > 0 ? `${dialogTags.length} tag(s) trouvé(s)` : "Aucun tag — cliquez le bouton pour réessayer"}
+                </p>
+              )}
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
