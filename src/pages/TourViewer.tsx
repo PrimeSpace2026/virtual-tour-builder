@@ -1234,25 +1234,22 @@ const TourViewer = () => {
                     const rooms: HotelRoom[] = meta.rooms || [];
                     const allAmenities = Array.from(new Set(rooms.flatMap(r => r.amenities || [])));
 
-                    // Build auto-sections from rooms if no custom sections exist
-                    const autoRoomSection = rooms.length > 0 ? [{
+                    // Build room items + amenity items merged into one Hébergements section
+                    const roomItems = rooms.map(r => ({
+                      name: r.name || "Chambre",
+                      iconKey: "bed",
+                      sub: `${r.bedType || ""} ${r.capacity ? `· ${r.capacity} pers.` : ""}`.trim(),
+                      tagSid: r.tagSid || undefined,
+                    }));
+                    const amenityItems = allAmenities.map(key => {
+                      const a = AMENITY_ICONS[key];
+                      return a ? { name: a.label, iconKey: key, sub: "" } : null;
+                    }).filter(Boolean) as { name: string; iconKey: string; sub?: string }[];
+
+                    const autoRoomSection = (roomItems.length > 0 || amenityItems.length > 0) ? [{
                       title: "Hébergements",
                       iconKey: "bed",
-                      items: rooms.map(r => ({
-                        name: r.name || "Chambre",
-                        iconKey: "bed",
-                        sub: `${r.bedType || ""} ${r.capacity ? `· ${r.capacity} pers.` : ""}`.trim(),
-                        tagSid: r.tagSid || undefined,
-                      })),
-                    }] : [];
-
-                    const autoAmenitySection = allAmenities.length > 0 ? [{
-                      title: "Équipements & Services",
-                      iconKey: "sparkles",
-                      items: allAmenities.map(key => {
-                        const a = AMENITY_ICONS[key];
-                        return a ? { name: a.label, iconKey: key, sub: "" } : null;
-                      }).filter(Boolean) as { name: string; iconKey: string; sub?: string }[],
+                      items: [...roomItems, ...amenityItems],
                     }] : [];
 
                     // Custom sections first, then auto-generated
@@ -1263,7 +1260,6 @@ const TourViewer = () => {
                         items: s.items.map(it => ({ name: it.name, iconKey: it.icon, sub: "", tagSid: it.tagSid || undefined })),
                       })),
                       ...autoRoomSection,
-                      ...autoAmenitySection,
                     ];
 
                     if (allSections.length === 0) return null;
@@ -1419,19 +1415,16 @@ const TourViewer = () => {
                   const rooms: HotelRoom[] = meta.rooms || [];
                   const allAmenities = Array.from(new Set(rooms.flatMap(r => r.amenities || [])));
 
-                  const autoRoomSection = rooms.length > 0 ? [{
+                  const roomItems = rooms.map(r => ({ name: r.name || "Chambre", iconKey: "bed", sub: `${r.bedType || ""} ${r.capacity ? `· ${r.capacity}p` : ""}`.trim(), tagSid: r.tagSid || undefined }));
+                  const amenityItems = allAmenities.map(key => {
+                    const a = AMENITY_ICONS[key];
+                    return a ? { name: a.label, iconKey: key } : null;
+                  }).filter(Boolean) as { name: string; iconKey: string }[];
+
+                  const autoRoomSection = (roomItems.length > 0 || amenityItems.length > 0) ? [{
                     title: "Hébergements",
                     iconKey: "bed",
-                    items: rooms.map(r => ({ name: r.name || "Chambre", iconKey: "bed", sub: `${r.bedType || ""} ${r.capacity ? `· ${r.capacity}p` : ""}`.trim(), tagSid: r.tagSid || undefined })),
-                  }] : [];
-
-                  const autoAmenitySection = allAmenities.length > 0 ? [{
-                    title: "Équipements",
-                    iconKey: "sparkles",
-                    items: allAmenities.map(key => {
-                      const a = AMENITY_ICONS[key];
-                      return a ? { name: a.label, iconKey: key } : null;
-                    }).filter(Boolean) as { name: string; iconKey: string }[],
+                    items: [...roomItems, ...amenityItems],
                   }] : [];
 
                   const allSections = [
@@ -1441,7 +1434,6 @@ const TourViewer = () => {
                       items: s.items.map(it => ({ name: it.name, iconKey: it.icon, tagSid: it.tagSid || undefined })),
                     })),
                     ...autoRoomSection,
-                    ...autoAmenitySection,
                   ];
 
                   if (allSections.length === 0) return null;
