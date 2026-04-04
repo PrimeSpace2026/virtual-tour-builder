@@ -108,10 +108,11 @@ interface MenuSectionProps {
   title: string;
   iconKey: string;
   items: { name: string; iconKey: string; sub?: string; tagSid?: string }[];
+  amenities?: string[];
   onItemClick?: (tagSid: string) => void;
 }
 
-const HotelMenuSection = ({ title, iconKey, items, onItemClick }: MenuSectionProps) => {
+const HotelMenuSection = ({ title, iconKey, items, amenities, onItemClick }: MenuSectionProps) => {
   const [open, setOpen] = useState(false);
   const Icon = ICON_MAP[iconKey] || Layers;
   const color = SECTION_COLORS[iconKey] || "#6a6a4a";
@@ -130,8 +131,8 @@ const HotelMenuSection = ({ title, iconKey, items, onItemClick }: MenuSectionPro
         <ChevronDown className={`w-4 h-4 text-white/60 transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
       </button>
 
-      {/* Sub-items */}
-      {open && items.length > 0 && (
+      {/* Sub-items + amenity chips */}
+      {open && (
         <div className="bg-black/30">
           {items.map((item, i) => {
             const ItemIcon = ICON_MAP[item.iconKey] || Layers;
@@ -151,6 +152,24 @@ const HotelMenuSection = ({ title, iconKey, items, onItemClick }: MenuSectionPro
               </div>
             );
           })}
+          {amenities && amenities.length > 0 && (
+            <div className="px-4 py-3 border-t border-white/[0.05]">
+              <p className="text-white/30 text-[10px] uppercase tracking-wider font-semibold mb-2">Équipements</p>
+              <div className="flex flex-wrap gap-1.5">
+                {amenities.map(key => {
+                  const a = AMENITY_ICONS[key];
+                  if (!a) return null;
+                  const AIcon = a.icon;
+                  return (
+                    <span key={key} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-purple-600 text-white text-[11px] font-medium">
+                      <AIcon className="w-3 h-3" />
+                      {a.label}
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -1237,6 +1256,7 @@ const TourViewer = () => {
                     const autoRoomSection = rooms.length > 0 ? [{
                       title: "Hébergements",
                       iconKey: "bed",
+                      amenities: allAmenities,
                       items: rooms.map(r => ({
                         name: r.name || "Chambre",
                         iconKey: "bed",
@@ -1245,43 +1265,23 @@ const TourViewer = () => {
                       })),
                     }] : [];
 
+                    // Hébergements first, then custom sections
                     const allSections = [
+                      ...autoRoomSection,
                       ...customSections.map(s => ({
                         title: s.title,
                         iconKey: s.icon,
+                        amenities: [] as string[],
                         items: s.items.map(it => ({ name: it.name, iconKey: it.icon, sub: "", tagSid: it.tagSid || undefined })),
                       })),
-                      ...autoRoomSection,
                     ];
 
-                    if (allSections.length === 0 && allAmenities.length === 0) return null;
+                    if (allSections.length === 0) return null;
                     return (
-                      <div className="space-y-3">
-                        {allSections.length > 0 && (
-                          <div className="rounded-xl overflow-hidden border border-white/[0.06]">
-                            {allSections.map((sec, i) => (
-                              <HotelMenuSection key={i} title={sec.title} iconKey={sec.iconKey} items={sec.items} onItemClick={navigateToMenuTag} />
-                            ))}
-                          </div>
-                        )}
-                        {allAmenities.length > 0 && (
-                          <div>
-                            <p className="text-white/30 text-[10px] uppercase tracking-wider font-semibold mb-2">Équipements</p>
-                            <div className="flex flex-wrap gap-1.5">
-                              {allAmenities.map(key => {
-                                const a = AMENITY_ICONS[key];
-                                if (!a) return null;
-                                const AIcon = a.icon;
-                                return (
-                                  <span key={key} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-purple-600 text-white text-[11px] font-medium">
-                                    <AIcon className="w-3 h-3" />
-                                    {a.label}
-                                  </span>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        )}
+                      <div className="rounded-xl overflow-hidden border border-white/[0.06]">
+                        {allSections.map((sec, i) => (
+                          <HotelMenuSection key={i} title={sec.title} iconKey={sec.iconKey} items={sec.items} amenities={sec.amenities} onItemClick={navigateToMenuTag} />
+                        ))}
                       </div>
                     );
                   } catch { return null; }
@@ -1432,46 +1432,26 @@ const TourViewer = () => {
                   const autoRoomSection = rooms.length > 0 ? [{
                     title: "Hébergements",
                     iconKey: "bed",
+                    amenities: allAmenities,
                     items: rooms.map(r => ({ name: r.name || "Chambre", iconKey: "bed", sub: `${r.bedType || ""} ${r.capacity ? `· ${r.capacity}p` : ""}`.trim(), tagSid: r.tagSid || undefined })),
                   }] : [];
 
                   const allSections = [
+                    ...autoRoomSection,
                     ...customSections.map(s => ({
                       title: s.title,
                       iconKey: s.icon,
+                      amenities: [] as string[],
                       items: s.items.map(it => ({ name: it.name, iconKey: it.icon, tagSid: it.tagSid || undefined })),
                     })),
-                    ...autoRoomSection,
                   ];
 
-                  if (allSections.length === 0 && allAmenities.length === 0) return null;
+                  if (allSections.length === 0) return null;
                   return (
-                    <div>
-                      {allSections.length > 0 && (
-                        <div className="border-t border-white/[0.06] overflow-hidden">
-                          {allSections.map((sec, i) => (
-                            <HotelMenuSection key={i} title={sec.title} iconKey={sec.iconKey} items={sec.items} onItemClick={navigateToMenuTag} />
-                          ))}
-                        </div>
-                      )}
-                      {allAmenities.length > 0 && (
-                        <div className="px-3 py-2.5 border-t border-white/[0.06]">
-                          <p className="text-white/30 text-[10px] uppercase tracking-wider font-semibold mb-1.5">Équipements</p>
-                          <div className="flex flex-wrap gap-1.5">
-                            {allAmenities.map(key => {
-                              const a = AMENITY_ICONS[key];
-                              if (!a) return null;
-                              const AIcon = a.icon;
-                              return (
-                                <span key={key} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-purple-600 text-white text-[10px] font-medium">
-                                  <AIcon className="w-2.5 h-2.5" />
-                                  {a.label}
-                                </span>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
+                    <div className="border-t border-white/[0.06] overflow-hidden">
+                      {allSections.map((sec, i) => (
+                        <HotelMenuSection key={i} title={sec.title} iconKey={sec.iconKey} items={sec.items} amenities={sec.amenities} onItemClick={navigateToMenuTag} />
+                      ))}
                     </div>
                   );
                 } catch { return null; }
