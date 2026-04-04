@@ -736,67 +736,19 @@ const TourViewer = () => {
   }, [tour?.id, tour?.tourUrl, trackEvent]);
 
   // Navigate to a Matterport tag by SID (used by hotel menu sections)
-  // Uses exact same approach as navigateToProduct
+  // Uses iframe deep-link method (same as product navigation fallback)
   const navigateToMenuTag = useCallback((tagSid: string) => {
-    const sdk = sdkRef.current;
-    if (!sdk) { console.log("⚠️ SDK not connected"); return; }
+    if (!tour?.tourUrl) return;
     const tagKey = tagSid.trim().toLowerCase();
     const resolvedSid = tagsMapRef.current.get(tagKey) || savedTagsMapRef.current.get(tagKey) || tagSid;
-    console.log(`🏷️ Menu tag click — tagSid: ${tagSid}, tagKey: ${tagKey}, resolved: ${resolvedSid}`);
-    console.log(`📋 tagsMap keys:`, Array.from(tagsMapRef.current.keys()));
-    console.log(`📋 savedTagsMap keys:`, Array.from(savedTagsMapRef.current.keys()));
-
-    const tryNavigate = async () => {
-      try {
-        let anchorPos: any = null;
-        if (sdk.Mattertag?.getData) {
-          const tags = await sdk.Mattertag.getData();
-          const found = tags.find((t: any) => t.sid === resolvedSid);
-          if (found?.anchorPosition) anchorPos = found.anchorPosition;
-        }
-        if (!anchorPos && (sdk as any).Tag?.getData) {
-          const tags = await (sdk as any).Tag.getData();
-          const found = tags.find((t: any) => t.sid === resolvedSid);
-          if (found?.anchorPosition) anchorPos = found.anchorPosition;
-        }
-        if (anchorPos) {
-          const sweeps = await new Promise<any[]>((resolve) => {
-            const sub = sdk.Sweep.data.subscribe({ onCollectionUpdated: (collection: any) => {
-              const items: any[] = [];
-              if (collection && typeof collection.forEach === 'function') {
-                collection.forEach((item: any, key: any) => items.push({ ...item, sid: key }));
-              } else if (Array.isArray(collection)) {
-                collection.forEach((item: any) => items.push({ ...item, sid: item.sid || item.id }));
-              }
-              if (items.length > 0) { sub?.cancel?.(); resolve(items); }
-            }});
-          });
-          if (sweeps.length > 0) {
-            let nearest = sweeps[0];
-            let minDist = Infinity;
-            for (const s of sweeps) {
-              if (!s.position) continue;
-              const dx = s.position.x - anchorPos.x;
-              const dy = s.position.y - anchorPos.y;
-              const dz = s.position.z - anchorPos.z;
-              const dist = dx * dx + dy * dy + dz * dz;
-              if (dist < minDist) { minDist = dist; nearest = s; }
-            }
-            await sdk.Sweep.moveTo(nearest.sid, {
-              rotation: { x: Math.atan2(anchorPos.y - nearest.position.y, Math.sqrt((anchorPos.x - nearest.position.x) ** 2 + (anchorPos.z - nearest.position.z) ** 2)) * (180 / Math.PI), y: Math.atan2(anchorPos.x - nearest.position.x, anchorPos.z - nearest.position.z) * (180 / Math.PI) },
-              transition: sdk.Sweep.Transition?.MOVE || "transition.move",
-            });
-            console.log(`🎯 Moved to nearest sweep for tag: ${nearest.sid}`);
-          }
-        } else {
-          console.log(`⚠️ No anchor position found for resolved SID: ${resolvedSid}`);
-        }
-      } catch (err) {
-        console.log("Menu tag navigation failed:", err);
-      }
-    };
-    tryNavigate();
-  }, []);
+    const modelId = extractModelId(tour.tourUrl);
+    if (!modelId) return;
+    const tagUrl = `https://my.matterport.com/show/?m=${modelId}&play=1&qs=1&brand=0&title=0&mls=2&help=0&hl=0&tag=${encodeURIComponent(resolvedSid)}&mt=1&pin=1`;
+    console.log(`🏷️ Menu tag → iframe deep link: ${resolvedSid}`);
+    setIframeSrc(tagUrl);
+    setIframeKey((k) => k + 1);
+    setIframeLoaded(false);
+  }, [tour?.tourUrl]);
 
   // Navigate to a specific floor
   const navigateToFloor = useCallback((floorIndex: number) => {
