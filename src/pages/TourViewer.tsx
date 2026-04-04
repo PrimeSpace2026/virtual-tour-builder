@@ -114,6 +114,7 @@ interface MenuSectionProps {
 
 const HotelMenuSection = ({ title, iconKey, items, amenities, onItemClick }: MenuSectionProps) => {
   const [open, setOpen] = useState(false);
+  const [amenitiesOpen, setAmenitiesOpen] = useState(false);
   const Icon = ICON_MAP[iconKey] || Layers;
   const color = SECTION_COLORS[iconKey] || "#6a6a4a";
 
@@ -153,21 +154,33 @@ const HotelMenuSection = ({ title, iconKey, items, amenities, onItemClick }: Men
             );
           })}
           {amenities && amenities.length > 0 && (
-            <div className="px-4 py-3 border-t border-white/[0.05]">
-              <p className="text-white/30 text-[10px] uppercase tracking-wider font-semibold mb-2">Équipements</p>
-              <div className="flex flex-wrap gap-1.5">
-                {amenities.map(key => {
-                  const a = AMENITY_ICONS[key];
-                  if (!a) return null;
-                  const AIcon = a.icon;
-                  return (
-                    <span key={key} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-purple-600 text-white text-[11px] font-medium">
-                      <AIcon className="w-3 h-3" />
-                      {a.label}
-                    </span>
-                  );
-                })}
-              </div>
+            <div className="border-t border-white/[0.05]">
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); setAmenitiesOpen(!amenitiesOpen); }}
+                className="w-full flex items-center gap-2 px-4 py-2.5 hover:bg-white/[0.06] transition-colors"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-purple-400 shrink-0" />
+                <span className="text-purple-300 text-[11px] font-semibold flex-1 text-left uppercase tracking-wider">Équipements</span>
+                <ChevronDown className={`w-3.5 h-3.5 text-purple-400/60 transition-transform duration-200 ${amenitiesOpen ? "rotate-180" : ""}`} />
+              </button>
+              {amenitiesOpen && (
+                <div className="px-4 pb-3 pt-1">
+                  <div className="flex flex-wrap gap-1.5">
+                    {amenities.map(key => {
+                      const a = AMENITY_ICONS[key];
+                      if (!a) return null;
+                      const AIcon = a.icon;
+                      return (
+                        <span key={key} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-purple-600 text-white text-[11px] font-medium">
+                          <AIcon className="w-3 h-3" />
+                          {a.label}
+                        </span>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
