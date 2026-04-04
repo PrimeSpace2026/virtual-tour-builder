@@ -139,7 +139,7 @@ const TourStats = () => {
         ) : (
           <>
             {/* KPI Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-3 mb-8">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-2 md:gap-3 mb-6 md:mb-8">
               {[
                 { label: "Visites", value: stats.totalVisits, icon: Eye, color: "text-blue-400", bg: "bg-blue-500/10" },
                 { label: "Durée moy.", value: formatDuration(stats.avgDuration), icon: Clock, color: "text-green-400", bg: "bg-green-500/10" },
@@ -149,12 +149,12 @@ const TourStats = () => {
                 { label: "Clics Produits", value: stats.productClicks, icon: MousePointerClick, color: "text-orange-400", bg: "bg-orange-500/10" },
                 { label: "Ajouts Panier", value: stats.addToCart, icon: ShoppingCart, color: "text-pink-400", bg: "bg-pink-500/10" },
               ].map((kpi) => (
-                <div key={kpi.label} className={`${kpi.bg} border border-white/[0.06] rounded-xl p-4`}>
-                  <div className="flex items-center gap-2 mb-2">
-                    <kpi.icon className={`w-4 h-4 ${kpi.color}`} />
-                    <span className="text-white/40 text-[11px] font-medium uppercase tracking-wider">{kpi.label}</span>
+                <div key={kpi.label} className={`${kpi.bg} border border-white/[0.06] rounded-xl p-3 md:p-4`}>
+                  <div className="flex items-center gap-1.5 md:gap-2 mb-1.5 md:mb-2">
+                    <kpi.icon className={`w-3.5 h-3.5 md:w-4 md:h-4 ${kpi.color}`} />
+                    <span className="text-white/40 text-[10px] md:text-[11px] font-medium uppercase tracking-wider truncate">{kpi.label}</span>
                   </div>
-                  <p className={`text-2xl font-bold ${kpi.color}`}>{kpi.value}</p>
+                  <p className={`text-xl md:text-2xl font-bold ${kpi.color}`}>{kpi.value}</p>
                 </div>
               ))}
             </div>
@@ -166,7 +166,7 @@ const TourStats = () => {
                   <Box className="w-4 h-4 text-teal-400" />
                   <h2 className="text-sm font-semibold text-white/70">Informations Matterport</h2>
                 </div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
                   {[
                     { label: "Scans (Sweeps)", value: mpInfo.sweepsCount, icon: Camera, color: "text-teal-400" },
                     { label: "Étages", value: mpInfo.floors, icon: Layers, color: "text-indigo-400" },
