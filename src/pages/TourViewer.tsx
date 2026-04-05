@@ -1744,9 +1744,9 @@ const TourViewer = () => {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 30 }}
               transition={{ type: "spring", damping: 28, stiffness: 350 }}
-              className="absolute inset-4 md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-[680px] md:max-h-[80vh] z-50 pointer-events-auto"
+              className="absolute inset-0 flex items-center justify-center z-50 pointer-events-none p-4"
             >
-              <div className="bg-white rounded-2xl overflow-hidden shadow-2xl flex flex-col md:flex-row max-h-full h-full md:h-auto">
+              <div className="bg-white rounded-2xl overflow-hidden shadow-2xl flex flex-col md:flex-row w-full max-w-[680px] max-h-[90vh] pointer-events-auto">
                 <button
                   onClick={() => { setSelectedTag(null); setSelectedItem(null); }}
                   className="absolute top-3 right-3 z-10 w-8 h-8 rounded-full bg-black/40 hover:bg-black/60 flex items-center justify-center text-white transition-all"
@@ -2035,9 +2035,9 @@ const TourViewer = () => {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.92, y: 30 }}
               transition={{ type: "spring", damping: 25, stiffness: 280 }}
-              className="fixed inset-4 md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-[420px] md:max-h-[85vh] z-[100] pointer-events-auto"
+              className="fixed inset-0 flex items-center justify-center z-[100] pointer-events-none p-4"
             >
-              <div className="bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col h-full md:max-h-[85vh]">
+              <div className="bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col w-full max-w-[420px] max-h-[90vh] pointer-events-auto">
                 {/* Close */}
                 <button
                   onClick={() => setSelectedService(null)}
@@ -2129,9 +2129,9 @@ const TourViewer = () => {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.92, y: 30 }}
               transition={{ type: "spring", damping: 25, stiffness: 280 }}
-              className="fixed inset-4 md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-[440px] md:max-h-[90vh] z-[100] pointer-events-auto"
+              className="fixed inset-0 flex items-center justify-center z-[100] pointer-events-none p-4"
             >
-              <div className="bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col h-full md:max-h-[90vh]">
+              <div className="bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col w-full max-w-[440px] max-h-[90vh] pointer-events-auto">
                 <button
                   onClick={() => setSelectedCoach(null)}
                   className="absolute top-3 right-3 z-10 w-8 h-8 rounded-full bg-black/40 hover:bg-black/60 flex items-center justify-center text-white transition-all"
