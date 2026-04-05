@@ -18,7 +18,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Plus, Pencil, Trash2, Upload, X, Image as ImageIcon, LogOut, Search, MapPin, Loader2, ShoppingBag, ExternalLink, BarChart3, Briefcase, Phone, MessageCircle, Tag, Scan, Wifi, Snowflake, Tv, Wine, Bath, DoorOpen, Lock, BedDouble, ChevronDown, ChevronUp, GripVertical, Sparkles, UtensilsCrossed, Dumbbell, CalendarDays, Heart, Home, Users, Star, Coffee, Music, Palmtree, ShieldCheck, PlayCircle, Layers, Clock, Banknote, Trophy, Droplets } from "lucide-react";
+import { Plus, Pencil, Trash2, Upload, X, Image as ImageIcon, LogOut, Search, MapPin, Loader2, ShoppingBag, ExternalLink, BarChart3, Briefcase, Phone, MessageCircle, Tag, Scan, Wifi, Snowflake, Tv, Wine, Bath, DoorOpen, Lock, BedDouble, ChevronDown, ChevronUp, GripVertical, Sparkles, UtensilsCrossed, Dumbbell, CalendarDays, Heart, Home, Users, Star, Coffee, Music, Palmtree, ShieldCheck, PlayCircle, Layers, Clock, Banknote, Trophy, Droplets, Award, Mail, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from "react-leaflet";
 import L from "leaflet";
@@ -115,13 +115,45 @@ interface GymClass {
   schedule: string;
 }
 
+interface GymCoach {
+  name: string;
+  title: string;
+  imageUrl: string;
+  description: string;
+  specialties: string[];
+  certifications: string;
+  experience: string;
+  schedule: string;
+  price: string;
+  phone: string;
+  whatsapp: string;
+  instagram: string;
+  tagSid: string;
+}
+
 interface GymMetadata {
   spaces: GymSpace[];
   equipment: string[];
   plans: GymPlan[];
   classes: GymClass[];
   sections: MenuSectionData[];
+  coaches: GymCoach[];
 }
+
+const COACH_SPECIALTY_OPTIONS = [
+  { key: "musculation", label: "Musculation", icon: Dumbbell },
+  { key: "cardio", label: "Cardio", icon: Heart },
+  { key: "yoga", label: "Yoga", icon: Sparkles },
+  { key: "crossfit", label: "CrossFit", icon: Trophy },
+  { key: "nutrition", label: "Nutrition", icon: Coffee },
+  { key: "boxing", label: "Boxing", icon: ShieldCheck },
+  { key: "stretching", label: "Stretching", icon: Heart },
+  { key: "pilates", label: "Pilates", icon: Sparkles },
+  { key: "cycling", label: "Cycling", icon: PlayCircle },
+  { key: "swimming", label: "Natation", icon: Droplets },
+  { key: "rehab", label: "Rééducation", icon: ShieldCheck },
+  { key: "weight_loss", label: "Perte de poids", icon: Star },
+];
 
 const GYM_SPACE_ICONS = [
   { key: "dumbbell", label: "Musculation", icon: Dumbbell },
@@ -327,6 +359,7 @@ const Admin = () => {
   const [gymPlans, setGymPlans] = useState<GymPlan[]>([]);
   const [gymClasses, setGymClasses] = useState<GymClass[]>([]);
   const [gymSections, setGymSections] = useState<MenuSectionData[]>([]);
+  const [gymCoaches, setGymCoaches] = useState<GymCoach[]>([]);
   // Tags for the create/edit dialog (auto-fetched from tour URL)
   const [dialogTags, setDialogTags] = useState<{ name: string; sid: string }[]>([]);
   const [dialogTagsLoading, setDialogTagsLoading] = useState(false);
@@ -520,6 +553,7 @@ const Admin = () => {
     setGymPlans([]);
     setGymClasses([]);
     setGymSections([]);
+    setGymCoaches([]);
     setDialogOpen(true);
   };
 
@@ -540,7 +574,8 @@ const Admin = () => {
         setGymPlans(meta.plans || []);
         setGymClasses(meta.classes || []);
         setGymSections(meta.gymSections || []);
-      } catch { setHotelRooms([]); setMenuSections([]); setGymSpaces([]); setGymEquipment([]); setGymPlans([]); setGymClasses([]); setGymSections([]); }
+        setGymCoaches(meta.coaches || []);
+      } catch { setHotelRooms([]); setMenuSections([]); setGymSpaces([]); setGymEquipment([]); setGymPlans([]); setGymClasses([]); setGymSections([]); setGymCoaches([]); }
     } else {
       setHotelRooms([]);
       setMenuSections([]);
@@ -549,6 +584,7 @@ const Admin = () => {
       setGymPlans([]);
       setGymClasses([]);
       setGymSections([]);
+      setGymCoaches([]);
     }
     setDialogOpen(true);
   };
@@ -563,8 +599,8 @@ const Admin = () => {
     if (editTour.category === "Hôtellerie" && (hotelRooms.length > 0 || menuSections.length > 0)) {
       payload.metadataJson = JSON.stringify({ rooms: hotelRooms, sections: menuSections });
     }
-    if (editTour.category === "Gym & Fitness" && (gymSpaces.length > 0 || gymEquipment.length > 0 || gymPlans.length > 0 || gymClasses.length > 0 || gymSections.length > 0)) {
-      payload.metadataJson = JSON.stringify({ spaces: gymSpaces, equipment: gymEquipment, plans: gymPlans, classes: gymClasses, gymSections } as GymMetadata);
+    if (editTour.category === "Gym & Fitness" && (gymSpaces.length > 0 || gymEquipment.length > 0 || gymPlans.length > 0 || gymClasses.length > 0 || gymSections.length > 0 || gymCoaches.length > 0)) {
+      payload.metadataJson = JSON.stringify({ spaces: gymSpaces, equipment: gymEquipment, plans: gymPlans, classes: gymClasses, gymSections, coaches: gymCoaches } as GymMetadata);
     }
     const method = isEditing ? "PUT" : "POST";
     const url = isEditing ? `/api/tours/${editTour.id}` : "/api/tours";
@@ -1437,6 +1473,129 @@ const Admin = () => {
                     </div>
                   ))}
                   {gymClasses.length === 0 && <p className="text-xs text-muted-foreground text-center py-2">Aucun cours ajouté</p>}
+                </div>
+
+                {/* ── Coachs ── */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium flex items-center gap-2">
+                      <User className="w-4 h-4" /> Coachs
+                    </label>
+                    <Button type="button" size="sm" variant="outline" onClick={() => setGymCoaches([...gymCoaches, { name: "", title: "", imageUrl: "", description: "", specialties: [], certifications: "", experience: "", schedule: "", price: "", phone: "", whatsapp: "", instagram: "", tagSid: "" }])}>
+                      <Plus className="w-4 h-4 mr-1" /> Coach
+                    </Button>
+                  </div>
+                  {gymCoaches.map((coach, idx) => (
+                    <div key={idx} className="border border-border rounded-xl p-4 space-y-3 relative">
+                      <button type="button" onClick={() => setGymCoaches(gymCoaches.filter((_, i) => i !== idx))} className="absolute top-2 right-2 text-muted-foreground hover:text-destructive transition-colors">
+                        <X className="w-4 h-4" />
+                      </button>
+                      <div className="flex items-center gap-3">
+                        {coach.imageUrl ? (
+                          <img src={coach.imageUrl} alt={coach.name} className="w-14 h-14 rounded-full object-cover border-2 border-purple-200" />
+                        ) : (
+                          <div className="w-14 h-14 rounded-full bg-purple-100 flex items-center justify-center border-2 border-purple-200">
+                            <User className="w-6 h-6 text-purple-400" />
+                          </div>
+                        )}
+                        <p className="text-xs font-semibold text-muted-foreground">Coach {idx + 1}</p>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-xs text-muted-foreground mb-1 block">Nom *</label>
+                          <Input value={coach.name} onChange={(e) => { const u = [...gymCoaches]; u[idx] = { ...coach, name: e.target.value }; setGymCoaches(u); }} placeholder="Ahmed Ben Ali" />
+                        </div>
+                        <div>
+                          <label className="text-xs text-muted-foreground mb-1 block">Titre / Rôle</label>
+                          <Input value={coach.title} onChange={(e) => { const u = [...gymCoaches]; u[idx] = { ...coach, title: e.target.value }; setGymCoaches(u); }} placeholder="Personal Trainer" />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-xs text-muted-foreground mb-1 block">Photo URL</label>
+                        <Input value={coach.imageUrl} onChange={(e) => { const u = [...gymCoaches]; u[idx] = { ...coach, imageUrl: e.target.value }; setGymCoaches(u); }} placeholder="https://..." />
+                      </div>
+                      <div>
+                        <label className="text-xs text-muted-foreground mb-1 block">Bio / Description</label>
+                        <Textarea value={coach.description} onChange={(e) => { const u = [...gymCoaches]; u[idx] = { ...coach, description: e.target.value }; setGymCoaches(u); }} placeholder="Expérience, philosophie..." rows={2} className="text-sm" />
+                      </div>
+                      {/* Specialties chips */}
+                      <div>
+                        <label className="text-xs text-muted-foreground mb-1 block flex items-center gap-1"><Award className="w-3 h-3" /> Spécialités</label>
+                        <div className="flex flex-wrap gap-1.5">
+                          {COACH_SPECIALTY_OPTIONS.map((opt) => {
+                            const active = coach.specialties.includes(opt.key);
+                            return (
+                              <button key={opt.key} type="button" onClick={() => { const u = [...gymCoaches]; u[idx] = { ...coach, specialties: active ? coach.specialties.filter(k => k !== opt.key) : [...coach.specialties, opt.key] }; setGymCoaches(u); }}
+                                className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-medium transition-colors ${active ? "bg-purple-600 text-white" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}
+                              >
+                                <opt.icon className="w-3 h-3" />
+                                {opt.label}
+                              </button>
+                            );
+                          })}
+                          <button type="button" onClick={() => { const name = prompt("Spécialité :"); if (name?.trim() && !coach.specialties.includes(name.trim())) { const u = [...gymCoaches]; u[idx] = { ...coach, specialties: [...coach.specialties, name.trim()] }; setGymCoaches(u); } }}
+                            className="flex items-center gap-0.5 px-2 py-1 rounded-full text-[10px] font-medium border border-dashed border-muted-foreground/40 text-muted-foreground hover:border-secondary hover:text-secondary transition-colors"
+                          >
+                            <Plus className="w-3 h-3" />
+                          </button>
+                        </div>
+                        {/* Custom specialties as removable chips */}
+                        {coach.specialties.filter(k => !COACH_SPECIALTY_OPTIONS.find(o => o.key === k)).map(custom => (
+                          <span key={custom} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-purple-600 text-white text-[10px] font-medium mr-1 mt-1">
+                            {custom}
+                            <button type="button" onClick={() => { const u = [...gymCoaches]; u[idx] = { ...coach, specialties: coach.specialties.filter(k => k !== custom) }; setGymCoaches(u); }} className="ml-0.5 hover:text-destructive"><X className="w-2.5 h-2.5" /></button>
+                          </span>
+                        ))}
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-xs text-muted-foreground mb-1 block flex items-center gap-1"><Award className="w-3 h-3" /> Certifications</label>
+                          <Input value={coach.certifications} onChange={(e) => { const u = [...gymCoaches]; u[idx] = { ...coach, certifications: e.target.value }; setGymCoaches(u); }} placeholder="NASM-CPT, ACE..." />
+                        </div>
+                        <div>
+                          <label className="text-xs text-muted-foreground mb-1 block">Expérience</label>
+                          <Input value={coach.experience} onChange={(e) => { const u = [...gymCoaches]; u[idx] = { ...coach, experience: e.target.value }; setGymCoaches(u); }} placeholder="10 ans" />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-xs text-muted-foreground mb-1 block flex items-center gap-1"><Clock className="w-3 h-3" /> Disponibilité</label>
+                          <Input value={coach.schedule} onChange={(e) => { const u = [...gymCoaches]; u[idx] = { ...coach, schedule: e.target.value }; setGymCoaches(u); }} placeholder="Lun-Ven 08:00-18:00" />
+                        </div>
+                        <div>
+                          <label className="text-xs text-muted-foreground mb-1 block flex items-center gap-1"><Banknote className="w-3 h-3" /> Tarif</label>
+                          <Input value={coach.price} onChange={(e) => { const u = [...gymCoaches]; u[idx] = { ...coach, price: e.target.value }; setGymCoaches(u); }} placeholder="50€/séance" />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-xs text-muted-foreground mb-1 block flex items-center gap-1"><Phone className="w-3 h-3" /> Téléphone</label>
+                          <Input value={coach.phone} onChange={(e) => { const u = [...gymCoaches]; u[idx] = { ...coach, phone: e.target.value }; setGymCoaches(u); }} placeholder="+216 XX XXX XXX" />
+                        </div>
+                        <div>
+                          <label className="text-xs text-muted-foreground mb-1 block flex items-center gap-1"><MessageCircle className="w-3 h-3" /> WhatsApp</label>
+                          <Input value={coach.whatsapp} onChange={(e) => { const u = [...gymCoaches]; u[idx] = { ...coach, whatsapp: e.target.value }; setGymCoaches(u); }} placeholder="+216 XX XXX XXX" />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-xs text-muted-foreground mb-1 block">Instagram</label>
+                        <Input value={coach.instagram} onChange={(e) => { const u = [...gymCoaches]; u[idx] = { ...coach, instagram: e.target.value }; setGymCoaches(u); }} placeholder="https://instagram.com/..." />
+                      </div>
+                      <div>
+                        <label className="text-xs text-muted-foreground mb-1 block">Tag Matterport</label>
+                        <Select value={coach.tagSid || "__none__"} onValueChange={(v) => { const u = [...gymCoaches]; u[idx] = { ...coach, tagSid: v === "__none__" ? "" : v }; setGymCoaches(u); }}>
+                          <SelectTrigger><SelectValue placeholder={dialogTagsLoading ? "Chargement..." : dialogTags.length === 0 ? "Aucun tag" : "Choisir un tag"} /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="__none__">Aucun tag</SelectItem>
+                            {dialogTags.map((tag) => (
+                              <SelectItem key={tag.sid} value={tag.sid}><span className="flex items-center gap-1"><Tag className="w-3 h-3" />{tag.name}</span></SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  ))}
+                  {gymCoaches.length === 0 && <p className="text-xs text-muted-foreground text-center py-2">Aucun coach ajouté</p>}
                 </div>
 
                 {/* ── Custom Sections (reuse Canyon Ranch builder) ── */}

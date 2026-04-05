@@ -52,6 +52,9 @@ import {
   Banknote,
   Trophy,
   Droplets,
+  Award,
+  Mail,
+  User,
 } from "lucide-react";
 
 const SDK_KEY = "b7uar4u57xdec0zw7dwygt7md";
@@ -97,6 +100,22 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   calendar: CalendarDays, shield: ShieldCheck, play: PlayCircle,
   layers: Layers, lock: Lock, snowflake: Snowflake, wine: Wine,
   balcony: DoorOpen, clock: Clock, banknote: Banknote, trophy: Trophy, droplets: Droplets,
+  award: Award, user: User,
+};
+
+const COACH_SPECIALTY_LABELS: Record<string, { icon: React.ComponentType<{ className?: string }>; label: string }> = {
+  musculation: { icon: Dumbbell, label: "Musculation" },
+  cardio: { icon: Heart, label: "Cardio" },
+  yoga: { icon: Sparkles, label: "Yoga" },
+  crossfit: { icon: Trophy, label: "CrossFit" },
+  nutrition: { icon: Coffee, label: "Nutrition" },
+  boxing: { icon: ShieldCheck, label: "Boxing" },
+  stretching: { icon: Heart, label: "Stretching" },
+  pilates: { icon: Sparkles, label: "Pilates" },
+  cycling: { icon: PlayCircle, label: "Cycling" },
+  swimming: { icon: Droplets, label: "Natation" },
+  rehab: { icon: ShieldCheck, label: "Rééducation" },
+  weight_loss: { icon: Star, label: "Perte de poids" },
 };
 
 const GYM_EQUIPMENT_ICONS: Record<string, { icon: React.ComponentType<{ className?: string }>; label: string }> = {
@@ -240,6 +259,22 @@ interface TourServiceData {
   facebook: string;
 }
 
+interface GymCoachData {
+  name: string;
+  title: string;
+  imageUrl: string;
+  description: string;
+  specialties: string[];
+  certifications: string;
+  experience: string;
+  schedule: string;
+  price: string;
+  phone: string;
+  whatsapp: string;
+  instagram: string;
+  tagSid: string;
+}
+
 interface TagItem {
   sid: string;
   label: string;
@@ -343,7 +378,9 @@ const TourViewer = () => {
   const [showServices, setShowServices] = useState(false);
   const [tourServices, setTourServices] = useState<TourServiceData[]>([]);
   const [selectedService, setSelectedService] = useState<TourServiceData | null>(null);
-  const [bottomTab, setBottomTab] = useState<"products" | "services">("products");
+  const [selectedCoach, setSelectedCoach] = useState<GymCoachData | null>(null);
+  const [gymCoaches, setGymCoaches] = useState<GymCoachData[]>([]);
+  const [bottomTab, setBottomTab] = useState<"products" | "services" | "coaches">("products");
 
   // Match a product by name/id/tagSid from a URL param
   const matchProduct = useCallback((param: string) => {
@@ -426,6 +463,13 @@ const TourViewer = () => {
       .then(([tourData, tours, itemsData, servicesData, tagsData]) => {
         setTour(tourData);
         setAllTours(tours);
+        // Parse gym coaches from metadataJson
+        if (tourData.category === "Gym & Fitness" && tourData.metadataJson) {
+          try {
+            const meta = JSON.parse(tourData.metadataJson);
+            setGymCoaches(Array.isArray(meta.coaches) ? meta.coaches : []);
+          } catch { setGymCoaches([]); }
+        } else { setGymCoaches([]); }
         const items = Array.isArray(itemsData) ? itemsData : [];
         setTourItems(items);
         tourItemsRef.current = items;
@@ -839,7 +883,8 @@ const TourViewer = () => {
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        if (selectedService) setSelectedService(null);
+        if (selectedCoach) setSelectedCoach(null);
+        else if (selectedService) setSelectedService(null);
         else if (selectedTag) setSelectedTag(null);
         else if (selectedItem) setSelectedItem(null);
         else if (activeTagFilter) setActiveTagFilter(null);
@@ -859,6 +904,7 @@ const TourViewer = () => {
   }, [
     selectedTag,
     selectedItem,
+    selectedCoach,
     showShare,
     showCard,
     showCart,
@@ -1375,13 +1421,46 @@ const TourViewer = () => {
                       })),
                     ];
 
-                    if (allSections.length === 0) return null;
+                    if (allSections.length === 0 && (!meta.coaches || meta.coaches.length === 0)) return null;
+                    const coaches: GymCoachData[] = meta.coaches || [];
                     return (
-                      <div className="rounded-xl overflow-hidden border border-white/[0.06]">
-                        {allSections.map((sec, i) => (
-                          <HotelMenuSection key={i} title={sec.title} iconKey={sec.iconKey} items={sec.items} amenities={sec.amenities} onItemClick={navigateToMenuTag} />
-                        ))}
-                      </div>
+                      <>
+                        {allSections.length > 0 && (
+                          <div className="rounded-xl overflow-hidden border border-white/[0.06]">
+                            {allSections.map((sec, i) => (
+                              <HotelMenuSection key={i} title={sec.title} iconKey={sec.iconKey} items={sec.items} amenities={sec.amenities} onItemClick={navigateToMenuTag} />
+                            ))}
+                          </div>
+                        )}
+                        {coaches.length > 0 && (
+                          <div className="space-y-2">
+                            <p className="text-white/25 text-[10px] uppercase tracking-widest font-semibold">
+                              Nos Coachs
+                            </p>
+                            {coaches.map((coach, ci) => (
+                              <button
+                                key={ci}
+                                onClick={() => setSelectedCoach(coach)}
+                                className="w-full flex items-center gap-3 p-3 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.07] transition-all group"
+                              >
+                                {coach.imageUrl ? (
+                                  <img src={coach.imageUrl} alt={coach.name} className="w-12 h-12 rounded-full object-cover border-2 border-purple-400/30" />
+                                ) : (
+                                  <div className="w-12 h-12 rounded-full bg-purple-500/20 flex items-center justify-center border-2 border-purple-400/30">
+                                    <User className="w-5 h-5 text-purple-300" />
+                                  </div>
+                                )}
+                                <div className="min-w-0 flex-1 text-left">
+                                  <p className="text-white/80 text-sm font-medium truncate group-hover:text-white transition-colors">{coach.name}</p>
+                                  {coach.title && <p className="text-white/30 text-[10px]">{coach.title}</p>}
+                                  {coach.price && <p className="text-purple-300 text-xs font-semibold mt-0.5">{coach.price}</p>}
+                                </div>
+                                <ChevronRight className="w-4 h-4 text-white/20 group-hover:text-white/50 transition-colors shrink-0" />
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </>
                     );
                   } catch { return null; }
                 })()}
@@ -1582,13 +1661,40 @@ const TourViewer = () => {
                     title: s.title, iconKey: s.icon, amenities: [] as string[],
                     items: s.items.map(it => ({ name: it.name, iconKey: it.icon, tagSid: it.tagSid || undefined })),
                   }))];
-                  if (allSections.length === 0) return null;
+                  if (allSections.length === 0 && (!meta.coaches || meta.coaches.length === 0)) return null;
+                  const coaches: GymCoachData[] = meta.coaches || [];
                   return (
-                    <div className="border-t border-white/[0.06] overflow-hidden">
-                      {allSections.map((sec, i) => (
-                        <HotelMenuSection key={i} title={sec.title} iconKey={sec.iconKey} items={sec.items} amenities={sec.amenities} onItemClick={navigateToMenuTag} />
-                      ))}
-                    </div>
+                    <>
+                      {allSections.length > 0 && (
+                        <div className="border-t border-white/[0.06] overflow-hidden">
+                          {allSections.map((sec, i) => (
+                            <HotelMenuSection key={i} title={sec.title} iconKey={sec.iconKey} items={sec.items} amenities={sec.amenities} onItemClick={navigateToMenuTag} />
+                          ))}
+                        </div>
+                      )}
+                      {coaches.length > 0 && (
+                        <div className="border-t border-white/[0.06] p-3 space-y-2">
+                          <p className="text-white/25 text-[10px] uppercase tracking-widest font-semibold">Nos Coachs</p>
+                          {coaches.map((coach, ci) => (
+                            <button key={ci} onClick={() => setSelectedCoach(coach)}
+                              className="w-full flex items-center gap-3 p-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.07] transition-all group"
+                            >
+                              {coach.imageUrl ? (
+                                <img src={coach.imageUrl} alt={coach.name} className="w-10 h-10 rounded-full object-cover border-2 border-purple-400/30" />
+                              ) : (
+                                <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center border-2 border-purple-400/30">
+                                  <User className="w-4 h-4 text-purple-300" />
+                                </div>
+                              )}
+                              <div className="min-w-0 flex-1 text-left">
+                                <p className="text-white/80 text-xs font-medium truncate">{coach.name}</p>
+                                {coach.title && <p className="text-white/30 text-[10px]">{coach.title}</p>}
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </>
                   );
                 } catch { return null; }
               })()}
@@ -2004,6 +2110,149 @@ const TourViewer = () => {
         )}
       </AnimatePresence>
 
+      {/* ===== COACH PROFILE POPUP ===== */}
+      <AnimatePresence>
+        {selectedCoach && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSelectedCoach(null)}
+              className="absolute inset-0 bg-black/50 z-50"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.92, y: 30 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.92, y: 30 }}
+              transition={{ type: "spring", damping: 25, stiffness: 280 }}
+              className="absolute inset-4 md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-[440px] md:max-h-[85vh] z-50 pointer-events-auto"
+            >
+              <div className="bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-full">
+                <button
+                  onClick={() => setSelectedCoach(null)}
+                  className="absolute top-3 right-3 z-10 w-8 h-8 rounded-full bg-black/40 hover:bg-black/60 flex items-center justify-center text-white transition-all"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+
+                {/* Coach header */}
+                <div className="bg-gradient-to-br from-purple-600 to-indigo-700 p-6 flex flex-col items-center text-center">
+                  {selectedCoach.imageUrl ? (
+                    <img src={selectedCoach.imageUrl} alt={selectedCoach.name} className="w-24 h-24 rounded-full object-cover border-4 border-white/30 shadow-lg" />
+                  ) : (
+                    <div className="w-24 h-24 rounded-full bg-white/20 flex items-center justify-center border-4 border-white/30">
+                      <User className="w-10 h-10 text-white/70" />
+                    </div>
+                  )}
+                  <h3 className="text-white font-bold text-xl mt-3">{selectedCoach.name}</h3>
+                  {selectedCoach.title && <p className="text-white/70 text-sm mt-0.5">{selectedCoach.title}</p>}
+                  {selectedCoach.price && (
+                    <span className="mt-2 inline-flex items-center gap-1.5 bg-white/20 px-3 py-1 rounded-full text-white text-sm font-semibold">
+                      <Banknote className="w-4 h-4" /> {selectedCoach.price}
+                    </span>
+                  )}
+                </div>
+
+                <div className="p-5 overflow-y-auto space-y-4">
+                  {/* Bio */}
+                  {selectedCoach.description && (
+                    <p className="text-sm text-gray-600 leading-relaxed">{selectedCoach.description}</p>
+                  )}
+
+                  {/* Specialties chips */}
+                  {selectedCoach.specialties && selectedCoach.specialties.length > 0 && (
+                    <div>
+                      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Spécialités</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {selectedCoach.specialties.map((s, si) => {
+                          const spec = COACH_SPECIALTY_LABELS[s];
+                          const SpecIcon = spec?.icon || Star;
+                          return (
+                            <span key={si} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-purple-100 text-purple-700 text-xs font-medium">
+                              <SpecIcon className="w-3 h-3" />
+                              {spec?.label || s}
+                            </span>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Info grid */}
+                  {(selectedCoach.certifications || selectedCoach.experience || selectedCoach.schedule) && (
+                    <div className="grid grid-cols-1 gap-2">
+                      {selectedCoach.certifications && (
+                        <div className="flex items-start gap-2.5 p-2.5 rounded-lg bg-gray-50">
+                          <Award className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
+                          <div>
+                            <p className="text-[10px] text-gray-400 font-semibold uppercase">Certifications</p>
+                            <p className="text-sm text-gray-700">{selectedCoach.certifications}</p>
+                          </div>
+                        </div>
+                      )}
+                      {selectedCoach.experience && (
+                        <div className="flex items-start gap-2.5 p-2.5 rounded-lg bg-gray-50">
+                          <Trophy className="w-4 h-4 text-purple-500 mt-0.5 shrink-0" />
+                          <div>
+                            <p className="text-[10px] text-gray-400 font-semibold uppercase">Expérience</p>
+                            <p className="text-sm text-gray-700">{selectedCoach.experience}</p>
+                          </div>
+                        </div>
+                      )}
+                      {selectedCoach.schedule && (
+                        <div className="flex items-start gap-2.5 p-2.5 rounded-lg bg-gray-50">
+                          <Clock className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
+                          <div>
+                            <p className="text-[10px] text-gray-400 font-semibold uppercase">Disponibilité</p>
+                            <p className="text-sm text-gray-700">{selectedCoach.schedule}</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Contact buttons */}
+                  <div className="space-y-2">
+                    {selectedCoach.phone && (
+                      <a
+                        href={`tel:${selectedCoach.phone}`}
+                        className="flex items-center gap-3 w-full px-4 py-3 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium text-sm transition-colors"
+                      >
+                        <Phone className="w-5 h-5" />
+                        {selectedCoach.phone}
+                      </a>
+                    )}
+                    {selectedCoach.whatsapp && (
+                      <a
+                        href={`https://wa.me/${selectedCoach.whatsapp.replace(/[^0-9+]/g, "")}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-3 w-full px-4 py-3 rounded-xl bg-green-50 hover:bg-green-100 text-green-700 font-medium text-sm transition-colors"
+                      >
+                        <MessageCircle className="w-5 h-5" />
+                        WhatsApp
+                      </a>
+                    )}
+                    {selectedCoach.instagram && (
+                      <a
+                        href={selectedCoach.instagram}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-3 w-full px-4 py-3 rounded-xl bg-pink-50 hover:bg-pink-100 text-pink-700 font-medium text-sm transition-colors"
+                      >
+                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
+                        Instagram
+                      </a>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
       {/* ===== CART PANEL ===== */}
       <AnimatePresence>
         {showCart && (
@@ -2096,32 +2345,36 @@ const TourViewer = () => {
       </div>{/* END TOP: MATTERPORT 3D VIEWER */}
 
       {/* ===== BOTTOM: PRODUCT & SERVICE STRIP ===== */}
-      {(tourItems.length > 0 || tourServices.length > 0) && (
+      {(tourItems.length > 0 || tourServices.length > 0 || gymCoaches.length > 0) && (
         <div className="shrink-0 bg-[#0d0d1a] border-t border-white/10">
           <div className="px-3 py-3">
             {/* Tab switcher when both exist */}
-            {tourItems.length > 0 && tourServices.length > 0 && (
+            {(tourItems.length > 0 ? 1 : 0) + (tourServices.length > 0 ? 1 : 0) + (gymCoaches.length > 0 ? 1 : 0) > 1 && (
               <div className="flex items-center justify-center gap-1 mb-2.5">
-                <button
-                  onClick={() => setBottomTab("products")}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold uppercase tracking-wider transition-all ${
-                    bottomTab === "products"
-                      ? "bg-white/15 text-white"
-                      : "text-white/40 hover:text-white/70"
-                  }`}
-                >
-                  <ShoppingBag className="w-3 h-3" /> Produits ({tourItems.length})
-                </button>
-                <button
-                  onClick={() => setBottomTab("services")}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold uppercase tracking-wider transition-all ${
-                    bottomTab === "services"
-                      ? "bg-white/15 text-white"
-                      : "text-white/40 hover:text-white/70"
-                  }`}
-                >
-                  <Briefcase className="w-3 h-3" /> Services ({tourServices.length})
-                </button>
+                {tourItems.length > 0 && (
+                  <button
+                    onClick={() => setBottomTab("products")}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold uppercase tracking-wider transition-all ${bottomTab === "products" ? "bg-white/15 text-white" : "text-white/40 hover:text-white/70"}`}
+                  >
+                    <ShoppingBag className="w-3 h-3" /> Produits ({tourItems.length})
+                  </button>
+                )}
+                {tourServices.length > 0 && (
+                  <button
+                    onClick={() => setBottomTab("services")}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold uppercase tracking-wider transition-all ${bottomTab === "services" ? "bg-white/15 text-white" : "text-white/40 hover:text-white/70"}`}
+                  >
+                    <Briefcase className="w-3 h-3" /> Services ({tourServices.length})
+                  </button>
+                )}
+                {gymCoaches.length > 0 && (
+                  <button
+                    onClick={() => setBottomTab("coaches")}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold uppercase tracking-wider transition-all ${bottomTab === "coaches" ? "bg-white/15 text-white" : "text-white/40 hover:text-white/70"}`}
+                  >
+                    <User className="w-3 h-3" /> Coachs ({gymCoaches.length})
+                  </button>
+                )}
               </div>
             )}
 
@@ -2139,7 +2392,7 @@ const TourViewer = () => {
             )}
 
             {/* Products strip */}
-            {(bottomTab === "products" || tourServices.length === 0) && tourItems.length > 0 && (
+            {(bottomTab === "products" || (tourServices.length === 0 && gymCoaches.length === 0)) && tourItems.length > 0 && (
               <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide justify-center">
                 {tourItems
                   .filter(i => !activeTagFilter || i.tagSid?.trim().toLowerCase() === activeTagFilter.trim().toLowerCase())
@@ -2240,6 +2493,32 @@ const TourViewer = () => {
                     Voir tout
                   </button>
                 )}
+              </div>
+            )}
+
+            {/* Coaches strip */}
+            {bottomTab === "coaches" && gymCoaches.length > 0 && (
+              <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide justify-center">
+                {gymCoaches.map((coach, ci) => (
+                  <button
+                    key={ci}
+                    onClick={() => setSelectedCoach(coach)}
+                    className="flex-shrink-0 flex items-center gap-2.5 bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.08] rounded-xl p-2 pr-4 transition-all group"
+                  >
+                    {coach.imageUrl ? (
+                      <img src={coach.imageUrl} alt={coach.name} className="w-12 h-12 rounded-full object-cover border-2 border-purple-400/30" />
+                    ) : (
+                      <div className="w-12 h-12 rounded-full bg-purple-500/20 flex items-center justify-center border-2 border-purple-400/30">
+                        <User className="w-5 h-5 text-purple-300" />
+                      </div>
+                    )}
+                    <div className="min-w-0">
+                      <p className="text-white/80 text-xs font-semibold truncate max-w-[120px] group-hover:text-white transition-colors">{coach.name}</p>
+                      {coach.title && <p className="text-white/40 text-[10px] truncate max-w-[120px]">{coach.title}</p>}
+                      {coach.price && <p className="text-purple-300 text-xs font-bold mt-0.5">{coach.price}</p>}
+                    </div>
+                  </button>
+                ))}
               </div>
             )}
           </div>
