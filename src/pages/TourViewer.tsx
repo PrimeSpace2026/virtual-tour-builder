@@ -2028,16 +2028,16 @@ const TourViewer = () => {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setSelectedService(null)}
-              className="absolute inset-0 bg-black/50 z-50"
+              className="fixed inset-0 bg-black/50 z-[100]"
             />
             <motion.div
               initial={{ opacity: 0, scale: 0.92, y: 30 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.92, y: 30 }}
               transition={{ type: "spring", damping: 25, stiffness: 280 }}
-              className="absolute inset-4 md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-[420px] md:max-h-[80vh] z-50 pointer-events-auto"
+              className="fixed inset-4 md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-[420px] md:max-h-[85vh] z-[100] pointer-events-auto"
             >
-              <div className="bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-full">
+              <div className="bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col h-full md:max-h-[85vh]">
                 {/* Close */}
                 <button
                   onClick={() => setSelectedService(null)}
@@ -2055,7 +2055,7 @@ const TourViewer = () => {
                   </div>
                 )}
 
-                <div className="p-5 overflow-y-auto">
+                <div className="p-5 overflow-y-auto flex-1 min-h-0">
                   <h3 className="text-lg font-bold text-gray-900">{selectedService.name}</h3>
                   {selectedService.description && (
                     <p className="text-sm text-gray-600 mt-2 leading-relaxed">{selectedService.description}</p>
@@ -2122,16 +2122,16 @@ const TourViewer = () => {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setSelectedCoach(null)}
-              className="absolute inset-0 bg-black/50 z-50"
+              className="fixed inset-0 bg-black/50 z-[100]"
             />
             <motion.div
               initial={{ opacity: 0, scale: 0.92, y: 30 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.92, y: 30 }}
               transition={{ type: "spring", damping: 25, stiffness: 280 }}
-              className="absolute inset-4 md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-[440px] md:max-h-[85vh] z-50 pointer-events-auto"
+              className="fixed inset-4 md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-[440px] md:max-h-[90vh] z-[100] pointer-events-auto"
             >
-              <div className="bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-full">
+              <div className="bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col h-full md:max-h-[90vh]">
                 <button
                   onClick={() => setSelectedCoach(null)}
                   className="absolute top-3 right-3 z-10 w-8 h-8 rounded-full bg-black/40 hover:bg-black/60 flex items-center justify-center text-white transition-all"
@@ -2157,7 +2157,7 @@ const TourViewer = () => {
                   )}
                 </div>
 
-                <div className="p-5 overflow-y-auto space-y-4">
+                <div className="p-5 overflow-y-auto flex-1 min-h-0 space-y-4">
                   {/* Bio */}
                   {selectedCoach.description && (
                     <p className="text-sm text-gray-600 leading-relaxed">{selectedCoach.description}</p>
