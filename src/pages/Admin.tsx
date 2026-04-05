@@ -5,6 +5,7 @@ import { Layout } from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -275,6 +276,7 @@ interface TourItem {
   externalUrl: string;
   brand: string;
   tagSid: string;
+  showAddToCart: boolean;
 }
 
 const emptyItem: TourItem = {
@@ -287,6 +289,7 @@ const emptyItem: TourItem = {
   externalUrl: "",
   brand: "",
   tagSid: "",
+  showAddToCart: true,
 };
 
 interface TourServiceItem {
@@ -1933,6 +1936,13 @@ const Admin = () => {
                         </div>
                       )}
                     </div>
+                  </div>
+                  <div className="flex items-center justify-between rounded-lg border p-3">
+                    <div>
+                      <label className="text-sm font-medium">Bouton "Ajouter au panier"</label>
+                      <p className="text-xs text-muted-foreground">Afficher le bouton d'achat sur ce produit</p>
+                    </div>
+                    <Switch checked={editItem.showAddToCart} onCheckedChange={(checked) => setEditItem({ ...editItem, showAddToCart: checked })} />
                   </div>
                   <div className="flex justify-end gap-3 pt-2">
                     <Button variant="outline" onClick={() => setItemFormOpen(false)}>Annuler</Button>

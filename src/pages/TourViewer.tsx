@@ -240,6 +240,7 @@ interface TourItemData {
   externalUrl: string;
   brand: string;
   tagSid: string;
+  showAddToCart: boolean;
 }
 
 interface CartEntry {
@@ -1796,7 +1797,7 @@ const TourViewer = () => {
                   </div>
 
                   <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mt-4 sm:mt-6 shrink-0">
-                    {selectedItem && (
+                    {selectedItem && selectedItem.showAddToCart !== false && (
                       <button
                         onClick={() => { addToCart(selectedItem); setSelectedItem(null); setSelectedTag(null); }}
                         className="flex-1 py-3.5 bg-gray-900 hover:bg-gray-800 text-white font-semibold rounded-xl transition-all hover:shadow-lg flex items-center justify-center gap-2 text-sm"
@@ -1886,13 +1887,15 @@ const TourViewer = () => {
                         </div>
                       </button>
                       {/* Quick add to cart */}
-                      <button
-                        onClick={(e) => { e.stopPropagation(); addToCart(item); }}
-                        className="w-8 h-8 rounded-lg bg-purple-600/80 hover:bg-purple-500 flex items-center justify-center text-white shrink-0 opacity-0 group-hover:opacity-100 transition-all"
-                        title="Ajouter au panier"
-                      >
-                        <Plus className="w-4 h-4" />
-                      </button>
+                      {item.showAddToCart !== false && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); addToCart(item); }}
+                          className="w-8 h-8 rounded-lg bg-purple-600/80 hover:bg-purple-500 flex items-center justify-center text-white shrink-0 opacity-0 group-hover:opacity-100 transition-all"
+                          title="Ajouter au panier"
+                        >
+                          <Plus className="w-4 h-4" />
+                        </button>
+                      )}
                       <ChevronRight className="w-4 h-4 text-white/15 group-hover:text-white/40 transition-colors shrink-0" />
 
                       {/* Hover preview card */}
