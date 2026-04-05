@@ -48,6 +48,10 @@ import {
   Palmtree,
   ShieldCheck,
   PlayCircle,
+  Clock,
+  Banknote,
+  Trophy,
+  Droplets,
 } from "lucide-react";
 
 const SDK_KEY = "b7uar4u57xdec0zw7dwygt7md";
@@ -92,7 +96,24 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   wifi: Wifi, tv: Tv, bath: Bath, briefcase: Briefcase,
   calendar: CalendarDays, shield: ShieldCheck, play: PlayCircle,
   layers: Layers, lock: Lock, snowflake: Snowflake, wine: Wine,
-  balcony: DoorOpen,
+  balcony: DoorOpen, clock: Clock, banknote: Banknote, trophy: Trophy, droplets: Droplets,
+};
+
+const GYM_EQUIPMENT_ICONS: Record<string, { icon: React.ComponentType<{ className?: string }>; label: string }> = {
+  cardio: { icon: Heart, label: "Cardio" },
+  weights: { icon: Dumbbell, label: "Poids libres" },
+  machines: { icon: Star, label: "Machines guidées" },
+  crossfit: { icon: Trophy, label: "CrossFit" },
+  pool: { icon: Droplets, label: "Piscine" },
+  sauna: { icon: Sparkles, label: "Sauna" },
+  hammam: { icon: Bath, label: "Hammam" },
+  boxing: { icon: ShieldCheck, label: "Ring / Boxing" },
+  yoga: { icon: Heart, label: "Studio yoga" },
+  cycling: { icon: PlayCircle, label: "Cycling" },
+  locker: { icon: Lock, label: "Vestiaires" },
+  parking: { icon: ShieldCheck, label: "Parking" },
+  wifi: { icon: Wifi, label: "WiFi" },
+  ac: { icon: Snowflake, label: "Climatisation" },
 };
 
 const SECTION_COLORS: Record<string, string> = {
@@ -168,13 +189,13 @@ const HotelMenuSection = ({ title, iconKey, items, amenities, onItemClick }: Men
                 <div className="px-4 pb-3 pt-1">
                   <div className="flex flex-wrap gap-1.5">
                     {amenities.map(key => {
-                      const a = AMENITY_ICONS[key];
-                      if (!a) return null;
-                      const AIcon = a.icon;
+                      const a = AMENITY_ICONS[key] || GYM_EQUIPMENT_ICONS[key];
+                      const AIcon = a ? a.icon : Sparkles;
+                      const label = a ? a.label : key;
                       return (
                         <span key={key} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-purple-600 text-white text-[11px] font-medium">
                           <AIcon className="w-3 h-3" />
-                          {a.label}
+                          {label}
                         </span>
                       );
                     })}
@@ -1300,6 +1321,71 @@ const TourViewer = () => {
                   } catch { return null; }
                 })()}
 
+                {/* Gym & Fitness Menu */}
+                {tour.category === "Gym & Fitness" && tour.metadataJson && (() => {
+                  try {
+                    const meta = JSON.parse(tour.metadataJson);
+                    const gymSpaces: { name: string; tagSid: string; icon: string; schedule: string }[] = meta.spaces || [];
+                    const gymEquipment: string[] = meta.equipment || [];
+                    const gymPlans: { name: string; price: string; duration: string }[] = meta.plans || [];
+                    const gymClasses: { name: string; icon: string; schedule: string }[] = meta.classes || [];
+                    const gymCustomSections: { title: string; icon: string; items: { name: string; icon: string; tagSid?: string }[] }[] = meta.gymSections || [];
+
+                    const spacesSection = gymSpaces.length > 0 ? [{
+                      title: "Espaces",
+                      iconKey: "dumbbell",
+                      amenities: gymEquipment,
+                      items: gymSpaces.map(s => ({
+                        name: s.name || "Espace",
+                        iconKey: s.icon || "dumbbell",
+                        sub: s.schedule ? `🕐 ${s.schedule}` : "",
+                        tagSid: s.tagSid || undefined,
+                      })),
+                    }] : [];
+
+                    const plansSection = gymPlans.length > 0 ? [{
+                      title: "Abonnements",
+                      iconKey: "star",
+                      amenities: [] as string[],
+                      items: gymPlans.map(p => ({
+                        name: p.name || "Plan",
+                        iconKey: "star",
+                        sub: [p.price, p.duration].filter(Boolean).join(" · "),
+                      })),
+                    }] : [];
+
+                    const classesSection = gymClasses.length > 0 ? [{
+                      title: "Cours collectifs",
+                      iconKey: "users",
+                      amenities: [] as string[],
+                      items: gymClasses.map(c => ({
+                        name: c.name || "Cours",
+                        iconKey: c.icon || "heart",
+                        sub: c.schedule || "",
+                      })),
+                    }] : [];
+
+                    const allSections = [
+                      ...spacesSection,
+                      ...plansSection,
+                      ...classesSection,
+                      ...gymCustomSections.map(s => ({
+                        title: s.title, iconKey: s.icon, amenities: [] as string[],
+                        items: s.items.map(it => ({ name: it.name, iconKey: it.icon, sub: "", tagSid: it.tagSid || undefined })),
+                      })),
+                    ];
+
+                    if (allSections.length === 0) return null;
+                    return (
+                      <div className="rounded-xl overflow-hidden border border-white/[0.06]">
+                        {allSections.map((sec, i) => (
+                          <HotelMenuSection key={i} title={sec.title} iconKey={sec.iconKey} items={sec.items} amenities={sec.amenities} onItemClick={navigateToMenuTag} />
+                        ))}
+                      </div>
+                    );
+                  } catch { return null; }
+                })()}
+
                 {/* Navigation - Other tours */}
                 {(prevTour || nextTour) && (
                   <div className="pt-2 border-t border-white/[0.06]">
@@ -1459,6 +1545,43 @@ const TourViewer = () => {
                     })),
                   ];
 
+                  if (allSections.length === 0) return null;
+                  return (
+                    <div className="border-t border-white/[0.06] overflow-hidden">
+                      {allSections.map((sec, i) => (
+                        <HotelMenuSection key={i} title={sec.title} iconKey={sec.iconKey} items={sec.items} amenities={sec.amenities} onItemClick={navigateToMenuTag} />
+                      ))}
+                    </div>
+                  );
+                } catch { return null; }
+              })()}
+
+              {/* Mobile: Gym Menu */}
+              {tour.category === "Gym & Fitness" && tour.metadataJson && (() => {
+                try {
+                  const meta = JSON.parse(tour.metadataJson);
+                  const gymSpaces: { name: string; tagSid: string; icon: string; schedule: string }[] = meta.spaces || [];
+                  const gymEquipment: string[] = meta.equipment || [];
+                  const gymPlans: { name: string; price: string; duration: string }[] = meta.plans || [];
+                  const gymClasses: { name: string; icon: string; schedule: string }[] = meta.classes || [];
+                  const gymCustomSections: { title: string; icon: string; items: { name: string; icon: string; tagSid?: string }[] }[] = meta.gymSections || [];
+
+                  const spacesSection = gymSpaces.length > 0 ? [{
+                    title: "Espaces", iconKey: "dumbbell", amenities: gymEquipment,
+                    items: gymSpaces.map(s => ({ name: s.name || "Espace", iconKey: s.icon || "dumbbell", sub: s.schedule ? `🕐 ${s.schedule}` : "", tagSid: s.tagSid || undefined })),
+                  }] : [];
+                  const plansSection = gymPlans.length > 0 ? [{
+                    title: "Abonnements", iconKey: "star", amenities: [] as string[],
+                    items: gymPlans.map(p => ({ name: p.name || "Plan", iconKey: "star", sub: [p.price, p.duration].filter(Boolean).join(" · ") })),
+                  }] : [];
+                  const classesSection = gymClasses.length > 0 ? [{
+                    title: "Cours collectifs", iconKey: "users", amenities: [] as string[],
+                    items: gymClasses.map(c => ({ name: c.name || "Cours", iconKey: c.icon || "heart", sub: c.schedule || "" })),
+                  }] : [];
+                  const allSections = [...spacesSection, ...plansSection, ...classesSection, ...gymCustomSections.map(s => ({
+                    title: s.title, iconKey: s.icon, amenities: [] as string[],
+                    items: s.items.map(it => ({ name: it.name, iconKey: it.icon, tagSid: it.tagSid || undefined })),
+                  }))];
                   if (allSections.length === 0) return null;
                   return (
                     <div className="border-t border-white/[0.06] overflow-hidden">

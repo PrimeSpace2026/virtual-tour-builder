@@ -18,7 +18,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Plus, Pencil, Trash2, Upload, X, Image as ImageIcon, LogOut, Search, MapPin, Loader2, ShoppingBag, ExternalLink, BarChart3, Briefcase, Phone, MessageCircle, Tag, Scan, Wifi, Snowflake, Tv, Wine, Bath, DoorOpen, Lock, BedDouble, ChevronDown, ChevronUp, GripVertical, Sparkles, UtensilsCrossed, Dumbbell, CalendarDays, Heart, Home, Users, Star, Coffee, Music, Palmtree, ShieldCheck, PlayCircle, Layers } from "lucide-react";
+import { Plus, Pencil, Trash2, Upload, X, Image as ImageIcon, LogOut, Search, MapPin, Loader2, ShoppingBag, ExternalLink, BarChart3, Briefcase, Phone, MessageCircle, Tag, Scan, Wifi, Snowflake, Tv, Wine, Bath, DoorOpen, Lock, BedDouble, ChevronDown, ChevronUp, GripVertical, Sparkles, UtensilsCrossed, Dumbbell, CalendarDays, Heart, Home, Users, Star, Coffee, Music, Palmtree, ShieldCheck, PlayCircle, Layers, Clock, Banknote, Trophy, Droplets } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from "react-leaflet";
 import L from "leaflet";
@@ -95,6 +95,72 @@ interface MenuSectionData {
   items: MenuItemData[];
 }
 
+// ── Gym & Fitness types ──
+interface GymSpace {
+  name: string;
+  tagSid: string;
+  icon: string;
+  schedule: string;
+}
+
+interface GymPlan {
+  name: string;
+  price: string;
+  duration: string;
+}
+
+interface GymClass {
+  name: string;
+  icon: string;
+  schedule: string;
+}
+
+interface GymMetadata {
+  spaces: GymSpace[];
+  equipment: string[];
+  plans: GymPlan[];
+  classes: GymClass[];
+  sections: MenuSectionData[];
+}
+
+const GYM_SPACE_ICONS = [
+  { key: "dumbbell", label: "Musculation", icon: Dumbbell },
+  { key: "heart", label: "Cardio", icon: Heart },
+  { key: "bath", label: "Piscine", icon: Bath },
+  { key: "sparkles", label: "Spa / Sauna", icon: Sparkles },
+  { key: "users", label: "Cours collectif", icon: Users },
+  { key: "trophy", label: "CrossFit", icon: Trophy },
+  { key: "star", label: "Premium", icon: Star },
+  { key: "layers", label: "Autre", icon: Layers },
+];
+
+const GYM_CLASS_ICONS = [
+  { key: "heart", label: "Cardio", icon: Heart },
+  { key: "sparkles", label: "Yoga", icon: Sparkles },
+  { key: "dumbbell", label: "Musculation", icon: Dumbbell },
+  { key: "trophy", label: "CrossFit", icon: Trophy },
+  { key: "users", label: "Groupe", icon: Users },
+  { key: "music", label: "Danse", icon: Music },
+  { key: "layers", label: "Autre", icon: Layers },
+];
+
+const GYM_EQUIPMENT_OPTIONS = [
+  { key: "cardio", label: "Cardio", icon: Heart },
+  { key: "weights", label: "Poids libres", icon: Dumbbell },
+  { key: "machines", label: "Machines guidées", icon: Star },
+  { key: "crossfit", label: "CrossFit", icon: Trophy },
+  { key: "pool", label: "Piscine", icon: Droplets },
+  { key: "sauna", label: "Sauna", icon: Sparkles },
+  { key: "hammam", label: "Hammam", icon: Bath },
+  { key: "boxing", label: "Ring / Boxing", icon: ShieldCheck },
+  { key: "yoga", label: "Studio yoga", icon: Heart },
+  { key: "cycling", label: "Cycling", icon: PlayCircle },
+  { key: "locker", label: "Vestiaires", icon: Lock },
+  { key: "parking", label: "Parking", icon: ShieldCheck },
+  { key: "wifi", label: "WiFi", icon: Wifi },
+  { key: "ac", label: "Climatisation", icon: Snowflake },
+];
+
 const SECTION_ICON_OPTIONS = [
   { key: "bed", label: "Hébergement", icon: BedDouble },
   { key: "sparkles", label: "Wellness", icon: Sparkles },
@@ -151,6 +217,7 @@ const CATEGORIES = [
   "Wedding venue",
   "Restaurant",
   "Entreprise",
+  "Gym & Fitness",
 ];
 
 const emptyTour: Tour = {
@@ -254,6 +321,12 @@ const Admin = () => {
   const [hotelRooms, setHotelRooms] = useState<HotelRoom[]>([]);
   // Hotel menu sections (Canyon Ranch style)
   const [menuSections, setMenuSections] = useState<MenuSectionData[]>([]);
+  // Gym & Fitness
+  const [gymSpaces, setGymSpaces] = useState<GymSpace[]>([]);
+  const [gymEquipment, setGymEquipment] = useState<string[]>([]);
+  const [gymPlans, setGymPlans] = useState<GymPlan[]>([]);
+  const [gymClasses, setGymClasses] = useState<GymClass[]>([]);
+  const [gymSections, setGymSections] = useState<MenuSectionData[]>([]);
   // Tags for the create/edit dialog (auto-fetched from tour URL)
   const [dialogTags, setDialogTags] = useState<{ name: string; sid: string }[]>([]);
   const [dialogTagsLoading, setDialogTagsLoading] = useState(false);
@@ -442,6 +515,11 @@ const Admin = () => {
     setLocationResults([]);
     setHotelRooms([]);
     setMenuSections([]);
+    setGymSpaces([]);
+    setGymEquipment([]);
+    setGymPlans([]);
+    setGymClasses([]);
+    setGymSections([]);
     setDialogOpen(true);
   };
 
@@ -456,10 +534,21 @@ const Admin = () => {
         const meta = JSON.parse(tour.metadataJson);
         setHotelRooms(meta.rooms || []);
         setMenuSections(meta.sections || []);
-      } catch { setHotelRooms([]); setMenuSections([]); }
+        // Gym data
+        setGymSpaces(meta.spaces || []);
+        setGymEquipment(meta.equipment || []);
+        setGymPlans(meta.plans || []);
+        setGymClasses(meta.classes || []);
+        setGymSections(meta.gymSections || []);
+      } catch { setHotelRooms([]); setMenuSections([]); setGymSpaces([]); setGymEquipment([]); setGymPlans([]); setGymClasses([]); setGymSections([]); }
     } else {
       setHotelRooms([]);
       setMenuSections([]);
+      setGymSpaces([]);
+      setGymEquipment([]);
+      setGymPlans([]);
+      setGymClasses([]);
+      setGymSections([]);
     }
     setDialogOpen(true);
   };
@@ -473,6 +562,9 @@ const Admin = () => {
     const payload: Record<string, unknown> = { ...editTour };
     if (editTour.category === "Hôtellerie" && (hotelRooms.length > 0 || menuSections.length > 0)) {
       payload.metadataJson = JSON.stringify({ rooms: hotelRooms, sections: menuSections });
+    }
+    if (editTour.category === "Gym & Fitness" && (gymSpaces.length > 0 || gymEquipment.length > 0 || gymPlans.length > 0 || gymClasses.length > 0 || gymSections.length > 0)) {
+      payload.metadataJson = JSON.stringify({ spaces: gymSpaces, equipment: gymEquipment, plans: gymPlans, classes: gymClasses, gymSections } as GymMetadata);
     }
     const method = isEditing ? "PUT" : "POST";
     const url = isEditing ? `/api/tours/${editTour.id}` : "/api/tours";
@@ -1205,6 +1297,192 @@ const Admin = () => {
                 </div>
               </div>
             )}
+
+            {/* ══════ Gym & Fitness Form ══════ */}
+            {editTour.category === "Gym & Fitness" && (
+              <div className="space-y-4">
+
+                {/* ── Espaces / Facilities ── */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium flex items-center gap-2">
+                      <Dumbbell className="w-4 h-4" /> Espaces
+                    </label>
+                    <Button type="button" size="sm" variant="outline" onClick={() => setGymSpaces([...gymSpaces, { name: "", tagSid: "", icon: "dumbbell", schedule: "" }])}>
+                      <Plus className="w-4 h-4 mr-1" /> Espace
+                    </Button>
+                  </div>
+                  {gymSpaces.map((space, idx) => (
+                    <div key={idx} className="border border-border rounded-xl p-4 space-y-3 relative">
+                      <button type="button" onClick={() => setGymSpaces(gymSpaces.filter((_, i) => i !== idx))} className="absolute top-2 right-2 text-muted-foreground hover:text-destructive transition-colors">
+                        <X className="w-4 h-4" />
+                      </button>
+                      <p className="text-xs font-semibold text-muted-foreground">Espace {idx + 1}</p>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-xs text-muted-foreground mb-1 block">Nom</label>
+                          <Input value={space.name} onChange={(e) => { const u = [...gymSpaces]; u[idx] = { ...space, name: e.target.value }; setGymSpaces(u); }} placeholder="Salle de musculation" />
+                        </div>
+                        <div>
+                          <label className="text-xs text-muted-foreground mb-1 block">Icône</label>
+                          <Select value={space.icon} onValueChange={(v) => { const u = [...gymSpaces]; u[idx] = { ...space, icon: v }; setGymSpaces(u); }}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              {GYM_SPACE_ICONS.map((o) => (
+                                <SelectItem key={o.key} value={o.key}><span className="flex items-center gap-1.5"><o.icon className="w-3.5 h-3.5" />{o.label}</span></SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <label className="text-xs text-muted-foreground mb-1 block flex items-center gap-1"><Clock className="w-3 h-3" /> Horaires</label>
+                          <Input value={space.schedule} onChange={(e) => { const u = [...gymSpaces]; u[idx] = { ...space, schedule: e.target.value }; setGymSpaces(u); }} placeholder="06:00 - 22:00" />
+                        </div>
+                        <div>
+                          <label className="text-xs text-muted-foreground mb-1 block">Tag Matterport</label>
+                          <Select value={space.tagSid || "__none__"} onValueChange={(v) => { const u = [...gymSpaces]; u[idx] = { ...space, tagSid: v === "__none__" ? "" : v }; setGymSpaces(u); }}>
+                            <SelectTrigger><SelectValue placeholder={dialogTagsLoading ? "Chargement..." : dialogTags.length === 0 ? "Aucun tag" : "Choisir un tag"} /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="__none__">Aucun tag</SelectItem>
+                              {dialogTags.map((tag) => (
+                                <SelectItem key={tag.sid} value={tag.sid}><span className="flex items-center gap-1"><Tag className="w-3 h-3" />{tag.name}</span></SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  {gymSpaces.length === 0 && <p className="text-xs text-muted-foreground text-center py-2">Aucun espace ajouté</p>}
+                </div>
+
+                {/* ── Équipements (chips) ── */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium flex items-center gap-2">
+                    <Star className="w-4 h-4" /> Équipements
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {GYM_EQUIPMENT_OPTIONS.map((opt) => {
+                      const active = gymEquipment.includes(opt.key);
+                      return (
+                        <button key={opt.key} type="button" onClick={() => setGymEquipment(active ? gymEquipment.filter(k => k !== opt.key) : [...gymEquipment, opt.key])}
+                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${active ? "bg-purple-600 text-white" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}
+                        >
+                          <opt.icon className="w-3.5 h-3.5" />
+                          {opt.label}
+                        </button>
+                      );
+                    })}
+                    <button type="button" onClick={() => { const name = prompt("Nom de l'équipement :"); if (name?.trim() && !gymEquipment.includes(name.trim())) setGymEquipment([...gymEquipment, name.trim()]); }}
+                      className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium border border-dashed border-muted-foreground/40 text-muted-foreground hover:border-secondary hover:text-secondary transition-colors"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                  {/* Show custom equipment as removable chips */}
+                  {gymEquipment.filter(k => !GYM_EQUIPMENT_OPTIONS.find(o => o.key === k)).map(custom => (
+                    <span key={custom} className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-purple-600 text-white text-xs font-medium mr-1">
+                      {custom}
+                      <button type="button" onClick={() => setGymEquipment(gymEquipment.filter(k => k !== custom))} className="ml-0.5 hover:text-destructive"><X className="w-3 h-3" /></button>
+                    </span>
+                  ))}
+                </div>
+
+                {/* ── Abonnements / Plans ── */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium flex items-center gap-2">
+                      <Banknote className="w-4 h-4" /> Abonnements
+                    </label>
+                    <Button type="button" size="sm" variant="outline" onClick={() => setGymPlans([...gymPlans, { name: "", price: "", duration: "" }])}>
+                      <Plus className="w-4 h-4 mr-1" /> Plan
+                    </Button>
+                  </div>
+                  {gymPlans.map((plan, idx) => (
+                    <div key={idx} className="border border-border rounded-lg p-3 relative">
+                      <button type="button" onClick={() => setGymPlans(gymPlans.filter((_, i) => i !== idx))} className="absolute top-2 right-2 text-muted-foreground hover:text-destructive"><X className="w-3.5 h-3.5" /></button>
+                      <div className="grid grid-cols-3 gap-2">
+                        <Input value={plan.name} onChange={(e) => { const u = [...gymPlans]; u[idx] = { ...plan, name: e.target.value }; setGymPlans(u); }} placeholder="Plan mensuel" className="text-sm" />
+                        <Input value={plan.price} onChange={(e) => { const u = [...gymPlans]; u[idx] = { ...plan, price: e.target.value }; setGymPlans(u); }} placeholder="30€" className="text-sm" />
+                        <Input value={plan.duration} onChange={(e) => { const u = [...gymPlans]; u[idx] = { ...plan, duration: e.target.value }; setGymPlans(u); }} placeholder="1 mois" className="text-sm" />
+                      </div>
+                    </div>
+                  ))}
+                  {gymPlans.length === 0 && <p className="text-xs text-muted-foreground text-center py-2">Aucun abonnement ajouté</p>}
+                </div>
+
+                {/* ── Cours collectifs ── */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium flex items-center gap-2">
+                      <Users className="w-4 h-4" /> Cours collectifs
+                    </label>
+                    <Button type="button" size="sm" variant="outline" onClick={() => setGymClasses([...gymClasses, { name: "", icon: "heart", schedule: "" }])}>
+                      <Plus className="w-4 h-4 mr-1" /> Cours
+                    </Button>
+                  </div>
+                  {gymClasses.map((cls, idx) => (
+                    <div key={idx} className="flex items-center gap-2">
+                      <Select value={cls.icon} onValueChange={(v) => { const u = [...gymClasses]; u[idx] = { ...cls, icon: v }; setGymClasses(u); }}>
+                        <SelectTrigger className="w-[100px] h-8 text-xs"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {GYM_CLASS_ICONS.map((o) => (<SelectItem key={o.key} value={o.key}><span className="flex items-center gap-1.5"><o.icon className="w-3 h-3" />{o.label}</span></SelectItem>))}
+                        </SelectContent>
+                      </Select>
+                      <Input value={cls.name} onChange={(e) => { const u = [...gymClasses]; u[idx] = { ...cls, name: e.target.value }; setGymClasses(u); }} placeholder="Yoga, Spinning..." className="h-8 text-sm flex-1" />
+                      <Input value={cls.schedule} onChange={(e) => { const u = [...gymClasses]; u[idx] = { ...cls, schedule: e.target.value }; setGymClasses(u); }} placeholder="Lun-Ven 18h" className="h-8 text-sm w-[130px]" />
+                      <Button type="button" size="sm" variant="ghost" className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive" onClick={() => setGymClasses(gymClasses.filter((_, i) => i !== idx))}>
+                        <X className="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
+                  ))}
+                  {gymClasses.length === 0 && <p className="text-xs text-muted-foreground text-center py-2">Aucun cours ajouté</p>}
+                </div>
+
+                {/* ── Custom Sections (reuse Canyon Ranch builder) ── */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium flex items-center gap-2"><Layers className="w-4 h-4" /> Sections personnalisées</label>
+                    <Button type="button" size="sm" variant="outline" onClick={() => setGymSections([...gymSections, { title: "", icon: "layers", items: [] }])}><Plus className="w-4 h-4 mr-1" /> Section</Button>
+                  </div>
+                  {gymSections.map((sec, sIdx) => (
+                    <div key={sIdx} className="border border-border rounded-xl overflow-hidden">
+                      <div className="bg-muted/50 px-3 py-2 flex items-center gap-2">
+                        <Select value={sec.icon} onValueChange={(v) => { const u = [...gymSections]; u[sIdx] = { ...sec, icon: v }; setGymSections(u); }}>
+                          <SelectTrigger className="w-[110px] h-8 text-xs"><SelectValue /></SelectTrigger>
+                          <SelectContent>{SECTION_ICON_OPTIONS.map((o) => (<SelectItem key={o.key} value={o.key}><span className="flex items-center gap-1.5"><o.icon className="w-3.5 h-3.5" />{o.label}</span></SelectItem>))}</SelectContent>
+                        </Select>
+                        <Input value={sec.title} onChange={(e) => { const u = [...gymSections]; u[sIdx] = { ...sec, title: e.target.value }; setGymSections(u); }} placeholder="Titre de la section" className="h-8 text-sm flex-1" />
+                        <Button type="button" size="sm" variant="ghost" className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive" onClick={() => setGymSections(gymSections.filter((_, i) => i !== sIdx))}><X className="w-4 h-4" /></Button>
+                      </div>
+                      <div className="p-3 space-y-2">
+                        {sec.items.map((item, iIdx) => (
+                          <div key={iIdx} className="flex items-center gap-2">
+                            <Select value={item.icon} onValueChange={(v) => { const u = [...gymSections]; const items = [...sec.items]; items[iIdx] = { ...item, icon: v }; u[sIdx] = { ...sec, items }; setGymSections(u); }}>
+                              <SelectTrigger className="w-[90px] h-8 text-xs"><SelectValue /></SelectTrigger>
+                              <SelectContent>{ITEM_ICON_OPTIONS.map((o) => (<SelectItem key={o.key} value={o.key}><span className="flex items-center gap-1.5"><o.icon className="w-3 h-3" />{o.label}</span></SelectItem>))}</SelectContent>
+                            </Select>
+                            <Input value={item.name} onChange={(e) => { const u = [...gymSections]; const items = [...sec.items]; items[iIdx] = { ...item, name: e.target.value }; u[sIdx] = { ...sec, items }; setGymSections(u); }} placeholder="Nom" className="h-8 text-sm flex-1" />
+                            <Select value={item.tagSid || "__none__"} onValueChange={(v) => { const u = [...gymSections]; const items = [...sec.items]; items[iIdx] = { ...item, tagSid: v === "__none__" ? "" : v }; u[sIdx] = { ...sec, items }; setGymSections(u); }}>
+                              <SelectTrigger className="h-8 text-xs w-[140px]"><SelectValue placeholder={dialogTagsLoading ? "Chargement..." : dialogTags.length === 0 ? "Aucun tag" : "Tag"} /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="__none__">Aucun tag</SelectItem>
+                                {dialogTags.map((tag) => (<SelectItem key={tag.sid} value={tag.sid}><span className="flex items-center gap-1"><Tag className="w-3 h-3" />{tag.name}</span></SelectItem>))}
+                              </SelectContent>
+                            </Select>
+                            <Button type="button" size="sm" variant="ghost" className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive" onClick={() => { const u = [...gymSections]; u[sIdx] = { ...sec, items: sec.items.filter((_, i) => i !== iIdx) }; setGymSections(u); }}><X className="w-3.5 h-3.5" /></Button>
+                          </div>
+                        ))}
+                        <Button type="button" size="sm" variant="ghost" className="w-full h-8 text-xs text-muted-foreground" onClick={() => { const u = [...gymSections]; u[sIdx] = { ...sec, items: [...sec.items, { name: "", icon: "layers", tagSid: "" }] }; setGymSections(u); }}>
+                          <Plus className="w-3.5 h-3.5 mr-1" /> Ajouter un élément
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div>
               <label className="text-sm font-medium mb-1 block">Surface (m²)</label>
               <Input
