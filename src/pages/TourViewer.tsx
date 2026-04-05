@@ -240,7 +240,7 @@ interface TourItemData {
   externalUrl: string;
   brand: string;
   tagSid: string;
-  showAddToCart: boolean;
+  showAddToCart?: boolean | null;
 }
 
 interface CartEntry {

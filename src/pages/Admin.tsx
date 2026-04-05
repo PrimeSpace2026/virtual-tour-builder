@@ -712,7 +712,7 @@ const Admin = () => {
   };
 
   const openEditItem = (item: TourItem) => {
-    setEditItem({ ...item });
+    setEditItem({ ...item, showAddToCart: item.showAddToCart !== false });
     setIsEditingItem(true);
     setItemFormOpen(true);
   };
