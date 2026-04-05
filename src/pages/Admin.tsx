@@ -303,28 +303,34 @@ const Admin = () => {
   }, [locationQuery]);
 
   // Auto-fetch Matterport tags when tour URL changes in dialog
-  const fetchDialogTags = useCallback(async () => {
-    if (!editTour.tourUrl) { setDialogTags([]); return; }
+  const fetchDialogTags = async (tourUrl?: string, tourId?: number, editing?: boolean) => {
+    const url = tourUrl ?? editTour.tourUrl;
+    const id = tourId ?? editTour.id;
+    const isEdit = editing ?? isEditing;
+    if (!url) { setDialogTags([]); return; }
     let modelId: string | null = null;
-    try { modelId = new URL(editTour.tourUrl).searchParams.get("m"); } catch {}
+    try { modelId = new URL(url).searchParams.get("m"); } catch {}
     if (!modelId) { setDialogTags([]); return; }
     setDialogTagsLoading(true);
+    setDialogTags([]);
 
     // Try saved tags first (when editing existing tour)
-    if (isEditing && editTour.id) {
+    if (isEdit && id) {
       try {
-        const savedRes = await fetch(`/api/tours/${editTour.id}/tags`);
+        const savedRes = await fetch(`/api/tours/${id}/tags`);
         if (savedRes.ok) {
           const savedData = await savedRes.json();
-          const saved = Array.isArray(savedData) ? savedData.map((t: any) => ({ name: t.name || "", sid: t.sid || "" })).filter((t: any) => t.sid) : [];
+          const saved = Array.isArray(savedData) ? savedData.map((t: any) => ({ name: t.name || "", sid: t.sid || "" })).filter((t: { name: string; sid: string }) => t.sid) : [];
           if (saved.length > 0) {
             setDialogTags(saved);
+            setDialogTagsLoading(false);
+            // Still fetch live in background to update
           }
         }
       } catch {}
     }
 
-    // Fetch live from Matterport (merge or set)
+    // Fetch live from Matterport
     try {
       const res = await fetch(`/api/matterport/tags?modelId=${encodeURIComponent(modelId)}`);
       if (res.ok) {
@@ -332,12 +338,12 @@ const Admin = () => {
         const liveTags = (data.tags || []).map((t: any, i: number) => ({
           name: t.label || t.description || `Tag ${i + 1}`,
           sid: t.sid,
-        })).filter((t: any) => t.sid);
+        })).filter((t: { name: string; sid: string }) => t.sid);
         if (liveTags.length > 0) {
           setDialogTags(liveTags);
           // Save for future use
-          if (isEditing && editTour.id) {
-            fetch(`/api/tours/${editTour.id}/tags`, {
+          if (isEdit && id) {
+            fetch(`/api/tours/${id}/tags`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify(liveTags),
@@ -347,12 +353,17 @@ const Admin = () => {
       }
     } catch {}
     setDialogTagsLoading(false);
-  }, [editTour.tourUrl, editTour.id, isEditing]);
+  };
 
+  // Debounced auto-fetch when tour URL changes
   useEffect(() => {
-    if (!dialogOpen) { setDialogTags([]); return; }
-    fetchDialogTags();
-  }, [dialogOpen, fetchDialogTags]);
+    if (!dialogOpen || !editTour.tourUrl) { setDialogTags([]); return; }
+    const timer = setTimeout(() => {
+      fetchDialogTags(editTour.tourUrl, editTour.id, isEditing);
+    }, 600);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dialogOpen, editTour.tourUrl]);
 
   const selectLocation = (place: any) => {
     setEditTour({
@@ -1207,7 +1218,7 @@ const Admin = () => {
               <div className="flex gap-2">
                 <Input value={editTour.tourUrl} onChange={(e) => setEditTour({ ...editTour, tourUrl: e.target.value })} placeholder="https://my.matterport.com/show/..." className="flex-1" />
                 {editTour.tourUrl && (
-                  <Button type="button" size="sm" variant="outline" onClick={fetchDialogTags} disabled={dialogTagsLoading} className="shrink-0 h-10">
+                  <Button type="button" size="sm" variant="outline" onClick={() => fetchDialogTags()} disabled={dialogTagsLoading} className="shrink-0 h-10">
                     {dialogTagsLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Scan className="w-4 h-4" />}
                   </Button>
                 )}
