@@ -1042,20 +1042,21 @@ const TourViewer = () => {
             </div>
           </Link>
         </div>
-        {/* Mobile: overlay Matterport native fullscreen & share buttons with our own */}
-        <div className="sm:hidden absolute right-[6px] bottom-[52px] z-[6] flex flex-col gap-[4px] pointer-events-auto">
+        {/* Mobile: overlay Matterport native fullscreen, share & menu buttons with our own */}
+        <div className="sm:hidden absolute right-[2px] bottom-[46px] z-[6] flex flex-col gap-0 pointer-events-auto">
           <button
             onClick={toggleFullscreen}
-            className="w-[36px] h-[36px] rounded-md bg-[#333333] flex items-center justify-center text-white/80 hover:text-white transition-all"
+            className="w-[40px] h-[40px] rounded-[4px] bg-[#1a1a1a]/95 flex items-center justify-center text-white/90 hover:text-white transition-all"
           >
-            {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
+            {isFullscreen ? <Minimize className="w-[18px] h-[18px]" /> : <Maximize className="w-[18px] h-[18px]" />}
           </button>
           <button
             onClick={() => setShowShare(!showShare)}
-            className="w-[36px] h-[36px] rounded-md bg-[#333333] flex items-center justify-center text-white/80 hover:text-white transition-all"
+            className="w-[40px] h-[40px] rounded-[4px] bg-[#1a1a1a]/95 flex items-center justify-center text-white/90 hover:text-white transition-all"
           >
-            <Share2 className="w-4 h-4" />
+            <Share2 className="w-[18px] h-[18px]" />
           </button>
+          <div className="w-[40px] h-[40px] rounded-[4px] bg-[#1a1a1a]/95" />
         </div>
       </div>
 
