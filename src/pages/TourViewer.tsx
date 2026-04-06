@@ -665,18 +665,7 @@ const TourViewer = () => {
               if (t.label) tagsMapRef.current.set(t.label.trim().toLowerCase(), t.sid);
               if (t.sid) tagsMapRef.current.set(t.sid, t.sid);
             });
-            // Store tags with anchorPosition for wayfinding panel
-            const tagsWithPosition: TagItem[] = allTags
-              .filter((t: any) => t.anchorPosition)
-              .map((t: any) => ({
-                sid: t.sid,
-                label: t.label || "",
-                description: t.description || "",
-                mediaUrl: t.media?.src || "",
-                mediaSrc: t.mediaSrc || t.media?.src || "",
-                anchorPosition: t.anchorPosition,
-              }));
-            setAllMatterportTags(tagsWithPosition);
+
           }
         } catch {}
 
@@ -1145,8 +1134,6 @@ const TourViewer = () => {
             <span className="hidden sm:inline">Services</span>
           </button>
         )}
-
-        {/* Wayfinding Navigate - removed */}
 
         {/* Cart */}
         {cart.length > 0 && (
@@ -2355,76 +2342,7 @@ const TourViewer = () => {
         />
       )}
 
-      {/* ===== WAYFINDING NAVIGATION BANNER (floating, bottom center) ===== */}
-      <AnimatePresence>
-        {(wayfinding.isNavigating || deepLinkNav.active) && (
-          <motion.div
-            initial={{ opacity: 0, y: 40 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 40 }}
-            transition={{ type: "spring", damping: 24, stiffness: 300 }}
-            className="absolute bottom-6 left-1/2 -translate-x-1/2 z-[60] pointer-events-auto"
-          >
-            <div className="flex items-center gap-4 px-5 py-3.5 rounded-2xl bg-black/80 backdrop-blur-2xl border border-white/15 shadow-2xl min-w-[320px] max-w-[480px]">
-              {/* Progress bar */}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between mb-1.5">
-                  <p className="text-white/90 text-xs font-semibold truncate">
-                    {wayfinding.isNavigating ? wayfinding.destination : deepLinkNav.destination}
-                  </p>
-                  {wayfinding.isNavigating && wayfinding.distanceRemaining > 0 && (
-                    <span className="text-white/50 text-[10px] font-medium shrink-0 ml-2">
-                      {wayfinding.distanceRemaining}m
-                    </span>
-                  )}
-                </div>
-                {/* Animated progress bar */}
-                <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
-                  <motion.div
-                    className="h-full rounded-full"
-                    style={{ background: "linear-gradient(90deg, #06b6d4, #22d3ee, #67e8f9)" }}
-                    initial={{ width: "0%" }}
-                    animate={{
-                      width: wayfinding.isNavigating
-                        ? `${wayfinding.progress * 100}%`
-                        : deepLinkNav.arrived ? "100%" : "60%"
-                    }}
-                    transition={{ duration: 0.3 }}
-                  />
-                </div>
-                <p className="text-white/40 text-[10px] mt-1.5 font-medium">
-                  {wayfinding.isNavigating
-                    ? wayfinding.arrived
-                      ? "✅ Vous êtes arrivé !"
-                      : wayfinding.mode === "auto"
-                      ? "🚀 Navigation automatique"
-                      : "➤ Suivez les flèches rouges"
-                    : deepLinkNav.arrived
-                    ? "✅ Vous êtes arrivé !"
-                    : "🧭 Navigation en cours..."}
-                </p>
-              </div>
-              {/* Cancel / Close button */}
-              <button
-                onClick={() => {
-                  if (wayfinding.isNavigating) wayfinding.cancelNavigation();
-                  if (deepLinkNav.active) {
-                    if (deepLinkTimerRef.current) clearTimeout(deepLinkTimerRef.current);
-                    setDeepLinkNav({ active: false, destination: "", arrived: false });
-                  }
-                }}
-                className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-all ${
-                  (wayfinding.isNavigating && wayfinding.arrived) || deepLinkNav.arrived
-                    ? "bg-green-500/20 hover:bg-green-500/30 text-green-400"
-                    : "bg-white/5 hover:bg-white/10 text-white/50 hover:text-white"
-                }`}
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+
 
       </div>{/* END TOP: MATTERPORT 3D VIEWER */}
 
