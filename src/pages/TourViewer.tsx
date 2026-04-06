@@ -361,6 +361,9 @@ const TourViewer = () => {
   const wayfinding = useWayfinding(sdkRef);
   const [allMatterportTags, setAllMatterportTags] = useState<TagItem[]>([]);
   const [showTagsPanel, setShowTagsPanel] = useState(false);
+  // Deep-link navigation banner (non-SDK fallback)
+  const [deepLinkNav, setDeepLinkNav] = useState<{ active: boolean; destination: string; arrived: boolean }>({ active: false, destination: "", arrived: false });
+  const deepLinkTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Tour Items (products) & Cart
   const [tourItems, setTourItems] = useState<TourItemData[]>([]);
@@ -872,29 +875,67 @@ const TourViewer = () => {
     setIframeLoaded(false);
   }, [tour?.tourUrl]);
 
+  // Deep-link navigation helper (iframe URL change — works without SDK)
+  const deepLinkNavigate = useCallback((tagSid: string, label: string) => {
+    if (!tour?.tourUrl) return;
+    const tagKey = tagSid.trim().toLowerCase();
+    const resolvedSid = tagsMapRef.current.get(tagKey) || savedTagsMapRef.current.get(tagKey) || tagSid;
+    const modelId = extractModelId(tour.tourUrl);
+    if (!modelId) return;
+    // Cancel previous timer
+    if (deepLinkTimerRef.current) clearTimeout(deepLinkTimerRef.current);
+    // Show banner
+    setDeepLinkNav({ active: true, destination: label, arrived: false });
+    // Navigate iframe
+    const tagUrl = `https://my.matterport.com/show/?m=${modelId}&play=1&qs=1&brand=0&title=0&mls=2&help=0&hl=0&tag=${encodeURIComponent(resolvedSid)}&mt=1&pin=1`;
+    setIframeSrc(tagUrl);
+    setIframeKey((k) => k + 1);
+    setIframeLoaded(false);
+    // Show arrived after iframe loads (approx 3s), then dismiss
+    deepLinkTimerRef.current = setTimeout(() => {
+      setDeepLinkNav({ active: true, destination: label, arrived: true });
+      deepLinkTimerRef.current = setTimeout(() => {
+        setDeepLinkNav({ active: false, destination: "", arrived: false });
+      }, 3000);
+    }, 3000);
+  }, [tour?.tourUrl]);
+
   // Wayfinding: navigate to a product's tag
   const startWayfindingTo = useCallback(async (item: TourItemData, mode: "manual" | "auto" = "auto") => {
+    if (!item.tagSid) return;
     const sdk = sdkRef.current;
-    if (!sdk || !item.tagSid) return;
-    try {
-      let anchorPos: { x: number; y: number; z: number } | null = null;
-      if (sdk.Mattertag?.getData) {
-        const tags = await sdk.Mattertag.getData();
-        const tagKey = item.tagSid.trim().toLowerCase();
-        const resolvedSid = tagsMapRef.current.get(tagKey) || item.tagSid;
-        const found = tags.find((t: any) => t.sid === resolvedSid);
-        if (found?.anchorPosition) anchorPos = found.anchorPosition;
-      }
-      if (!anchorPos) return;
-      await wayfinding.startNavigation({ label: item.name, position: anchorPos }, mode);
-    } catch (e) { console.log("Wayfinding to product error:", e); }
-  }, [wayfinding]);
+    // SDK path: full wayfinding with arrows
+    if (sdk && sdkConnected) {
+      try {
+        let anchorPos: { x: number; y: number; z: number } | null = null;
+        if (sdk.Mattertag?.getData) {
+          const tags = await sdk.Mattertag.getData();
+          const tagKey = item.tagSid.trim().toLowerCase();
+          const resolvedSid = tagsMapRef.current.get(tagKey) || item.tagSid;
+          const found = tags.find((t: any) => t.sid === resolvedSid);
+          if (found?.anchorPosition) anchorPos = found.anchorPosition;
+        }
+        if (anchorPos) {
+          await wayfinding.startNavigation({ label: item.name, position: anchorPos }, mode);
+          return;
+        }
+      } catch (e) { console.log("SDK wayfinding error:", e); }
+    }
+    // Fallback: iframe deep-link
+    deepLinkNavigate(item.tagSid, item.name);
+  }, [wayfinding, sdkConnected, deepLinkNavigate]);
 
   // Wayfinding: navigate to a Mattertag directly
   const startWayfindingToTag = useCallback(async (tag: TagItem, mode: "manual" | "auto" = "auto") => {
-    if (!tag.anchorPosition) return;
-    await wayfinding.startNavigation({ label: tag.label || tag.sid, position: tag.anchorPosition }, mode);
-  }, [wayfinding]);
+    const sdk = sdkRef.current;
+    // SDK path
+    if (sdk && sdkConnected && tag.anchorPosition) {
+      await wayfinding.startNavigation({ label: tag.label || tag.sid, position: tag.anchorPosition }, mode);
+      return;
+    }
+    // Fallback: iframe deep-link
+    deepLinkNavigate(tag.sid, tag.label || tag.sid);
+  }, [wayfinding, sdkConnected, deepLinkNavigate]);
 
   // Navigate to a specific floor
   const navigateToFloor = useCallback((floorIndex: number) => {
@@ -1186,7 +1227,7 @@ const TourViewer = () => {
         )}
 
         {/* Wayfinding Navigate */}
-        {sdkConnected && allMatterportTags.length > 0 && (
+        {(allMatterportTags.length > 0 || tourItems.some(i => !!i.tagSid)) && (
           <button
             onClick={() => setShowTagsPanel(!showTagsPanel)}
             className={`flex items-center gap-1.5 px-2 sm:px-3 py-2 sm:py-2.5 rounded-xl backdrop-blur-xl border text-xs font-medium transition-all ${
@@ -1867,7 +1908,7 @@ const TourViewer = () => {
                         AJOUTER AU PANIER
                       </button>
                     )}
-                    {sdkConnected && selectedItem?.tagSid && (
+                    {selectedItem?.tagSid && (
                       <button
                         onClick={() => { const item = selectedItem; setSelectedItem(null); setSelectedTag(null); if (item) startWayfindingTo(item, "auto"); }}
                         className="py-3.5 px-5 bg-cyan-600 hover:bg-cyan-500 text-white font-semibold rounded-xl transition-all hover:shadow-lg flex items-center justify-center gap-2 text-sm"
@@ -1967,7 +2008,7 @@ const TourViewer = () => {
                         </button>
                       )}
                       {/* Wayfinding compass */}
-                      {sdkConnected && item.tagSid && (
+                      {item.tagSid && (
                         <button
                           onClick={(e) => { e.stopPropagation(); setShowProducts(false); startWayfindingTo(item, "auto"); }}
                           className="w-8 h-8 rounded-lg bg-cyan-600/80 hover:bg-cyan-500 flex items-center justify-center text-white shrink-0 opacity-0 group-hover:opacity-100 transition-all"
@@ -2016,7 +2057,7 @@ const TourViewer = () => {
 
       {/* ===== WAYFINDING TAGS PANEL (right side) ===== */}
       <AnimatePresence>
-        {showTagsPanel && allMatterportTags.length > 0 && (
+        {showTagsPanel && (allMatterportTags.length > 0 || tourItems.some(i => !!i.tagSid)) && (
           <>
             <motion.div
               initial={{ opacity: 0 }}
@@ -2036,13 +2077,14 @@ const TourViewer = () => {
                 <div className="p-4 border-b border-white/[0.06] flex items-center justify-between shrink-0">
                   <h2 className="text-cyan-300 font-semibold text-sm flex items-center gap-2">
                     <Navigation className="w-4 h-4" />
-                    Navigation ({allMatterportTags.length})
+                    Navigation
                   </h2>
                   <button onClick={() => setShowTagsPanel(false)} className="w-7 h-7 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/50 hover:text-white transition-all">
                     <X className="w-3.5 h-3.5" />
                   </button>
                 </div>
                 <div className="flex-1 overflow-y-auto p-3 space-y-2">
+                  {/* SDK tags (full wayfinding with arrows) */}
                   {allMatterportTags.map((tag) => (
                     <div
                       key={tag.sid}
@@ -2056,21 +2098,48 @@ const TourViewer = () => {
                         {tag.description && <p className="text-white/30 text-[10px] truncate">{tag.description}</p>}
                       </div>
                       <div className="flex items-center gap-1.5 shrink-0">
-                        <button
-                          onClick={() => { setShowTagsPanel(false); startWayfindingToTag(tag, "manual"); }}
-                          className="px-2.5 py-1.5 rounded-lg bg-white/[0.06] hover:bg-white/10 text-white/60 hover:text-white text-[10px] font-semibold transition-all"
-                          title="Suivez les flèches"
-                        >
-                          Je marche
-                        </button>
+                        {sdkConnected && (
+                          <button
+                            onClick={() => { setShowTagsPanel(false); startWayfindingToTag(tag, "manual"); }}
+                            className="px-2.5 py-1.5 rounded-lg bg-white/[0.06] hover:bg-white/10 text-white/60 hover:text-white text-[10px] font-semibold transition-all"
+                            title="Suivez les flèches"
+                          >
+                            Je marche
+                          </button>
+                        )}
                         <button
                           onClick={() => { setShowTagsPanel(false); startWayfindingToTag(tag, "auto"); }}
                           className="px-2.5 py-1.5 rounded-lg bg-cyan-600/80 hover:bg-cyan-500 text-white text-[10px] font-semibold transition-all"
                           title="Navigation automatique"
                         >
-                          Guidez-moi
+                          {sdkConnected ? "Guidez-moi" : "Y aller"}
                         </button>
                       </div>
+                    </div>
+                  ))}
+                  {/* Products with tagSid (fallback navigation targets) */}
+                  {tourItems.filter(i => !!i.tagSid && !allMatterportTags.some(t => t.sid === i.tagSid)).map((item) => (
+                    <div
+                      key={`item-${item.id}`}
+                      className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.08] transition-all group"
+                    >
+                      <div className="w-10 h-10 rounded-lg bg-purple-500/15 flex items-center justify-center shrink-0 overflow-hidden">
+                        {item.imageUrl ? (
+                          <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <ShoppingBag className="w-4 h-4 text-purple-400" />
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-white/80 text-sm font-medium truncate group-hover:text-white transition-colors">{item.name}</p>
+                        {item.brand && <p className="text-white/30 text-[10px] uppercase tracking-wider">{item.brand}</p>}
+                      </div>
+                      <button
+                        onClick={() => { setShowTagsPanel(false); startWayfindingTo(item, "auto"); }}
+                        className="px-2.5 py-1.5 rounded-lg bg-cyan-600/80 hover:bg-cyan-500 text-white text-[10px] font-semibold transition-all shrink-0"
+                      >
+                        Y aller
+                      </button>
                     </div>
                   ))}
                 </div>
@@ -2494,7 +2563,7 @@ const TourViewer = () => {
 
       {/* ===== WAYFINDING NAVIGATION BANNER (floating, bottom center) ===== */}
       <AnimatePresence>
-        {wayfinding.isNavigating && (
+        {(wayfinding.isNavigating || deepLinkNav.active) && (
           <motion.div
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
@@ -2506,10 +2575,14 @@ const TourViewer = () => {
               {/* Progress bar */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between mb-1.5">
-                  <p className="text-white/90 text-xs font-semibold truncate">{wayfinding.destination}</p>
-                  <span className="text-white/50 text-[10px] font-medium shrink-0 ml-2">
-                    {wayfinding.distanceRemaining > 0 ? `${wayfinding.distanceRemaining}m` : ""}
-                  </span>
+                  <p className="text-white/90 text-xs font-semibold truncate">
+                    {wayfinding.isNavigating ? wayfinding.destination : deepLinkNav.destination}
+                  </p>
+                  {wayfinding.isNavigating && wayfinding.distanceRemaining > 0 && (
+                    <span className="text-white/50 text-[10px] font-medium shrink-0 ml-2">
+                      {wayfinding.distanceRemaining}m
+                    </span>
+                  )}
                 </div>
                 {/* Animated progress bar */}
                 <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
@@ -2517,23 +2590,37 @@ const TourViewer = () => {
                     className="h-full rounded-full"
                     style={{ background: "linear-gradient(90deg, #06b6d4, #22d3ee, #67e8f9)" }}
                     initial={{ width: "0%" }}
-                    animate={{ width: `${wayfinding.progress * 100}%` }}
+                    animate={{
+                      width: wayfinding.isNavigating
+                        ? `${wayfinding.progress * 100}%`
+                        : deepLinkNav.arrived ? "100%" : "60%"
+                    }}
                     transition={{ duration: 0.3 }}
                   />
                 </div>
                 <p className="text-white/40 text-[10px] mt-1.5 font-medium">
-                  {wayfinding.arrived
+                  {wayfinding.isNavigating
+                    ? wayfinding.arrived
+                      ? "✅ Vous êtes arrivé !"
+                      : wayfinding.mode === "auto"
+                      ? "🚀 Navigation automatique"
+                      : "➤ Suivez les flèches rouges"
+                    : deepLinkNav.arrived
                     ? "✅ Vous êtes arrivé !"
-                    : wayfinding.mode === "auto"
-                    ? "🚀 Navigation automatique"
-                    : "➤ Suivez les flèches rouges"}
+                    : "🧭 Navigation en cours..."}
                 </p>
               </div>
               {/* Cancel / Close button */}
               <button
-                onClick={() => wayfinding.cancelNavigation()}
+                onClick={() => {
+                  if (wayfinding.isNavigating) wayfinding.cancelNavigation();
+                  if (deepLinkNav.active) {
+                    if (deepLinkTimerRef.current) clearTimeout(deepLinkTimerRef.current);
+                    setDeepLinkNav({ active: false, destination: "", arrived: false });
+                  }
+                }}
                 className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-all ${
-                  wayfinding.arrived
+                  (wayfinding.isNavigating && wayfinding.arrived) || deepLinkNav.arrived
                     ? "bg-green-500/20 hover:bg-green-500/30 text-green-400"
                     : "bg-white/5 hover:bg-white/10 text-white/50 hover:text-white"
                 }`}
