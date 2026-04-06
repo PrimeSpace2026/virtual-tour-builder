@@ -1025,22 +1025,7 @@ const TourViewer = () => {
           PrimeSpace overlay — covers Matterport branding at bottom-right
           Always visible (including clean mode) to hide Matterport logo
         */}
-        <div className="absolute bottom-0 right-0 z-[6] pointer-events-none sm:left-0 flex flex-col items-end px-0 sm:px-4 pb-0 sm:pb-3 lg:pb-3 sm:flex-row sm:justify-end sm:items-end">
-          {/* Mobile: Share & Fullscreen buttons above branding */}
-          <div className="sm:hidden flex flex-row gap-1 mb-1 mr-1 pointer-events-auto">
-            <button
-              onClick={() => setShowShare(!showShare)}
-              className="w-8 h-8 rounded-lg bg-black/60 backdrop-blur-xl border border-white/10 flex items-center justify-center text-white/70 hover:text-white hover:bg-black/80 transition-all"
-            >
-              <Share2 className="w-3.5 h-3.5" />
-            </button>
-            <button
-              onClick={toggleFullscreen}
-              className="w-8 h-8 rounded-lg bg-black/60 backdrop-blur-xl border border-white/10 flex items-center justify-center text-white/70 hover:text-white hover:bg-black/80 transition-all"
-            >
-              {isFullscreen ? <Minimize className="w-3.5 h-3.5" /> : <Maximize className="w-3.5 h-3.5" />}
-            </button>
-          </div>
+        <div className="absolute bottom-0 right-0 z-[6] pointer-events-none sm:left-0 flex justify-end px-0 sm:px-4 pb-0 sm:pb-3 lg:pb-3">
           <Link
             to="/"
             className="pointer-events-auto flex items-center gap-2 sm:gap-3
@@ -1057,8 +1042,21 @@ const TourViewer = () => {
             </div>
           </Link>
         </div>
-        {/* Cover Matterport native buttons (fullscreen/share) on right side — mobile only */}
-        <div className="sm:hidden absolute right-0 top-[40%] z-[6] w-[44px] h-[120px] bg-black/0 pointer-events-auto" />
+        {/* Mobile: overlay Matterport native fullscreen & share buttons with our own */}
+        <div className="sm:hidden absolute right-[6px] bottom-[52px] z-[6] flex flex-col gap-[4px] pointer-events-auto">
+          <button
+            onClick={toggleFullscreen}
+            className="w-[36px] h-[36px] rounded-md bg-[#333333] flex items-center justify-center text-white/80 hover:text-white transition-all"
+          >
+            {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
+          </button>
+          <button
+            onClick={() => setShowShare(!showShare)}
+            className="w-[36px] h-[36px] rounded-md bg-[#333333] flex items-center justify-center text-white/80 hover:text-white transition-all"
+          >
+            <Share2 className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
       {/* ===== TOP-LEFT: Back Button ===== */}
