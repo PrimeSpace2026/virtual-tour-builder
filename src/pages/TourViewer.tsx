@@ -314,8 +314,6 @@ const TourViewer = () => {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const sdkRef = useRef<any>(null);
   const sdkAttemptsRef = useRef(0);
-  const sdkKeyRetryRef = useRef(false); // true if we already retried without SDK key
-  const sdkKeyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const tagsMapRef = useRef<Map<string, string>>(new Map()); // tagName (lowercase) → SID
   const savedTagsMapRef = useRef<Map<string, string>>(new Map()); // saved tags from DB: name (lowercase) → SID
   const visitIdRef = useRef<number | null>(null);
@@ -457,8 +455,6 @@ const TourViewer = () => {
     setSdkConnected(false);
     setSdkFailed(false);
     sdkAttemptsRef.current = 0;
-    sdkKeyRetryRef.current = false;
-    if (sdkKeyTimerRef.current) { clearTimeout(sdkKeyTimerRef.current); sdkKeyTimerRef.current = null; }
     Promise.all([
       fetch(`/api/tours/${id}`).then((r) => {
         if (!r.ok) throw new Error("Not found");
@@ -502,9 +498,8 @@ const TourViewer = () => {
           }
         }
         savedTagsMapRef.current = savedMap;
-        // Try loading iframe WITH SDK key first (enables markers/wayfinding)
-        // If it fails to load within 4s, retry WITHOUT key (normal viewing only)
-        setIframeSrc(buildEmbedUrl(tourData.tourUrl, true));
+        // Load iframe without SDK key (Matterport rejects key on non-authorized domains)
+        setIframeSrc(buildEmbedUrl(tourData.tourUrl, false));
         setLoading(false);
         setShowCard(true);
       })
@@ -556,23 +551,6 @@ const TourViewer = () => {
     window.addEventListener("beforeunload", sendDuration);
     return () => { sendDuration(); window.removeEventListener("beforeunload", sendDuration); };
   }, [tour?.id]);
-
-  // SDK key iframe fallback: if iframe with key doesn't load in 5s, retry without key
-  useEffect(() => {
-    if (!iframeSrc || iframeLoaded || sdkKeyRetryRef.current) return;
-    if (!iframeSrc.includes("applicationKey=")) return;
-    // Only start timer if iframe has SDK key and hasn't loaded yet
-    sdkKeyTimerRef.current = setTimeout(() => {
-      if (!iframeLoaded && tour?.tourUrl) {
-        console.log("⚠️ Iframe avec clé SDK timeout — rechargement sans clé");
-        sdkKeyRetryRef.current = true;
-        setIframeSrc(buildEmbedUrl(tour.tourUrl, false));
-        setIframeKey((k) => k + 1);
-        setIframeLoaded(false);
-      }
-    }, 5000);
-    return () => { if (sdkKeyTimerRef.current) { clearTimeout(sdkKeyTimerRef.current); sdkKeyTimerRef.current = null; } };
-  }, [iframeSrc, iframeLoaded, tour?.tourUrl]);
 
   // SDK: attempt connection on any domain
   const isLocalDev = typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
@@ -1121,11 +1099,7 @@ const TourViewer = () => {
           style={{ opacity: iframeLoaded ? 1 : 0 }}
           allow="xr-spatial-tracking; fullscreen; autoplay; encrypted-media; picture-in-picture; clipboard-write; accelerometer; gyroscope; camera; microphone"
           referrerPolicy="no-referrer-when-downgrade"
-          onLoad={() => {
-            // SDK key retry: if iframe loaded successfully, cancel the fallback timer
-            if (sdkKeyTimerRef.current) { clearTimeout(sdkKeyTimerRef.current); sdkKeyTimerRef.current = null; }
-            setIframeLoaded(true);
-          }}
+          onLoad={() => setIframeLoaded(true)}
         />
         {/* 
           PrimeSpace overlay — covers Matterport branding at bottom-right
