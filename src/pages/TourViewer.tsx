@@ -495,10 +495,9 @@ const TourViewer = () => {
           }
         }
         savedTagsMapRef.current = savedMap;
-        // Set initial iframe URL
+        // Set initial iframe URL (SDK key only on localhost — Matterport rejects it on other domains)
         const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
-        const needsSdkKey = isLocal || window.location.hostname.includes("primespace");
-        setIframeSrc(buildEmbedUrl(tourData.tourUrl, needsSdkKey));
+        setIframeSrc(buildEmbedUrl(tourData.tourUrl, isLocal));
         setLoading(false);
         setShowCard(true);
       })
@@ -551,13 +550,12 @@ const TourViewer = () => {
     return () => { sendDuration(); window.removeEventListener("beforeunload", sendDuration); };
   }, [tour?.id]);
 
-  // SDK: connect on localhost and production domain
+  // SDK: only works on localhost (Matterport key not authorized for primespace.studio)
   const isLocalDev = typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
-  const isSdkAllowed = isLocalDev || (typeof window !== "undefined" && window.location.hostname.includes("primespace"));
 
-  // SDK: connect when allowed
+  // SDK: only on localhost
   useEffect(() => {
-    if (!isSdkAllowed) { setSdkFailed(true); return; }
+    if (!isLocalDev) { setSdkFailed(true); return; }
     if (!iframeLoaded || !iframeRef.current || !tour?.tourUrl) return;
     if (sdkAttemptsRef.current >= 1) return;
     sdkAttemptsRef.current = 1;
