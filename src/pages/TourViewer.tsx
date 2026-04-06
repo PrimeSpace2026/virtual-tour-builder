@@ -1025,9 +1025,9 @@ const TourViewer = () => {
           PrimeSpace overlay — covers Matterport branding at bottom-right
           Always visible (including clean mode) to hide Matterport logo
         */}
-        <div className="absolute bottom-0 right-0 z-[6] pointer-events-none sm:left-0 flex justify-end items-end px-0 sm:px-4 pb-0 sm:pb-3 lg:pb-3">
-          {/* Mobile: Share & Fullscreen buttons next to branding */}
-          <div className="sm:hidden flex flex-col gap-1 mr-1 mb-0.5 pointer-events-auto">
+        <div className="absolute bottom-0 right-0 z-[6] pointer-events-none sm:left-0 flex flex-col items-end px-0 sm:px-4 pb-0 sm:pb-3 lg:pb-3 sm:flex-row sm:justify-end sm:items-end">
+          {/* Mobile: Share & Fullscreen buttons above branding */}
+          <div className="sm:hidden flex flex-row gap-1 mb-1 mr-1 pointer-events-auto">
             <button
               onClick={() => setShowShare(!showShare)}
               className="w-8 h-8 rounded-lg bg-black/60 backdrop-blur-xl border border-white/10 flex items-center justify-center text-white/70 hover:text-white hover:bg-black/80 transition-all"
