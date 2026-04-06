@@ -1059,7 +1059,6 @@ const TourViewer = () => {
           className="absolute inset-0 w-full h-full border-0 transition-opacity duration-700 ease-in-out"
           style={{ opacity: iframeLoaded ? 1 : 0 }}
           allow="xr-spatial-tracking; fullscreen; autoplay; encrypted-media; picture-in-picture; clipboard-write; accelerometer; gyroscope; camera; microphone"
-          allowFullScreen
           referrerPolicy="no-referrer-when-downgrade"
           onLoad={() => setIframeLoaded(true)}
         />
