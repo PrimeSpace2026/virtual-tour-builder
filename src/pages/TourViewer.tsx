@@ -1025,19 +1025,19 @@ const TourViewer = () => {
           PrimeSpace overlay — covers Matterport branding at bottom-right
           Always visible (including clean mode) to hide Matterport logo
         */}
-        <div className="absolute bottom-[44px] sm:bottom-0 left-0 right-0 z-[6] pointer-events-none flex justify-end px-3 sm:px-4 pb-0 sm:pb-3 lg:pb-3">
+        <div className="absolute bottom-0 left-0 right-0 z-[6] pointer-events-none flex justify-end px-1 sm:px-4 pb-0 sm:pb-3 lg:pb-3">
           <Link
             to="/"
-            className="pointer-events-auto w-auto sm:min-w-[320px] lg:w-[420px] flex items-center gap-3 px-3 py-5 sm:py-4
+            className="pointer-events-auto w-auto sm:min-w-[320px] lg:w-[420px] flex items-center gap-2 sm:gap-3 px-2 sm:px-3 py-2 sm:py-4
               bg-black/70 backdrop-blur-xl border border-white/15 shadow-2xl
-              rounded-t-2xl sm:rounded-2xl
+              rounded-t-xl sm:rounded-2xl
               border-b-0 sm:border-b
               hover:bg-black/80 hover:border-white/25 transition-all group"
           >
-            <img src="/logo.jpg" alt="PrimeSpace" className="w-12 h-12 shrink-0 rounded-xl object-cover shadow-lg shadow-purple-500/20 group-hover:shadow-purple-500/40 transition-shadow" />
+            <img src="/logo.jpg" alt="PrimeSpace" className="w-8 h-8 sm:w-12 sm:h-12 shrink-0 rounded-lg sm:rounded-xl object-cover shadow-lg shadow-purple-500/20 group-hover:shadow-purple-500/40 transition-shadow" />
             <div className="flex-grow min-w-0">
-              <p className="text-white/90 text-sm sm:text-base font-bold tracking-tight group-hover:text-white transition-colors">PrimeSpace</p>
-              <p className="text-white/40 text-[10px] sm:text-[11px] font-medium">Studio 3D immersif</p>
+              <p className="text-white/90 text-[11px] sm:text-base font-bold tracking-tight group-hover:text-white transition-colors">PrimeSpace</p>
+              <p className="text-white/40 text-[8px] sm:text-[11px] font-medium hidden sm:block">Studio 3D immersif</p>
             </div>
           </Link>
         </div>
