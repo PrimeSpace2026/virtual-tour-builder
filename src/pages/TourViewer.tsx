@@ -922,7 +922,7 @@ const TourViewer = () => {
   const cardManuallyToggled = useRef(false);
   useEffect(() => {
     if (showCard && iframeLoaded && !cardManuallyToggled.current) {
-      const t = setTimeout(() => setShowCard(false), 8000);
+      const t = setTimeout(() => setShowCard(false), 2000);
       return () => clearTimeout(t);
     }
   }, [showCard, iframeLoaded]);
