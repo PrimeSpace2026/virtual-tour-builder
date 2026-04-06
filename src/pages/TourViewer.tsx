@@ -1029,16 +1029,16 @@ const TourViewer = () => {
           <Link
             to="/"
             className="pointer-events-auto flex items-center gap-2 sm:gap-3
-              px-2 py-1.5 sm:px-3 sm:py-4 sm:min-w-[320px] lg:w-[420px]
-              bg-black/80 sm:bg-black/70 backdrop-blur-xl border border-white/15 shadow-2xl
+              px-3 py-1.5 sm:px-3 sm:py-4 min-w-[160px] sm:min-w-[320px] lg:w-[420px]
+              bg-black/90 sm:bg-black/70 backdrop-blur-xl border border-white/15 shadow-2xl
               rounded-tl-xl sm:rounded-2xl
               border-b-0 border-r-0 sm:border-b sm:border-r
               hover:bg-black/80 hover:border-white/25 transition-all group"
           >
-            <img src="/logo.jpg" alt="PrimeSpace" className="w-6 h-6 sm:w-12 sm:h-12 shrink-0 rounded-md sm:rounded-xl object-cover shadow-lg shadow-purple-500/20 group-hover:shadow-purple-500/40 transition-shadow" />
+            <img src="/logo.jpg" alt="PrimeSpace" className="w-7 h-7 sm:w-12 sm:h-12 shrink-0 rounded-md sm:rounded-xl object-cover shadow-lg shadow-purple-500/20 group-hover:shadow-purple-500/40 transition-shadow" />
             <div className="flex-grow min-w-0">
-              <p className="text-white/90 text-[10px] sm:text-base font-bold tracking-tight group-hover:text-white transition-colors leading-tight">PrimeSpace</p>
-              <p className="text-white/40 text-[11px] font-medium hidden sm:block">Studio 3D immersif</p>
+              <p className="text-white/90 text-[11px] sm:text-base font-bold tracking-tight group-hover:text-white transition-colors leading-tight">PrimeSpace</p>
+              <p className="text-white/40 text-[9px] sm:text-[11px] font-medium">Studio 3D immersif</p>
             </div>
           </Link>
         </div>
