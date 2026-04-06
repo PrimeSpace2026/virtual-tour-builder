@@ -497,7 +497,8 @@ const TourViewer = () => {
         savedTagsMapRef.current = savedMap;
         // Set initial iframe URL
         const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
-        setIframeSrc(buildEmbedUrl(tourData.tourUrl, isLocal));
+        const needsSdkKey = isLocal || window.location.hostname.includes("primespace");
+        setIframeSrc(buildEmbedUrl(tourData.tourUrl, needsSdkKey));
         setLoading(false);
         setShowCard(true);
       })
@@ -550,12 +551,13 @@ const TourViewer = () => {
     return () => { sendDuration(); window.removeEventListener("beforeunload", sendDuration); };
   }, [tour?.id]);
 
-  // SDK: only works on localhost (Matterport free plan restricts to local domains)
+  // SDK: connect on localhost and production domain
   const isLocalDev = typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
+  const isSdkAllowed = isLocalDev || (typeof window !== "undefined" && window.location.hostname.includes("primespace"));
 
-  // SDK: only on localhost (Matterport free plan rejects on other domains)
+  // SDK: connect when allowed
   useEffect(() => {
-    if (!isLocalDev) { setSdkFailed(true); return; }
+    if (!isSdkAllowed) { setSdkFailed(true); return; }
     if (!iframeLoaded || !iframeRef.current || !tour?.tourUrl) return;
     if (sdkAttemptsRef.current >= 1) return;
     sdkAttemptsRef.current = 1;
