@@ -1030,7 +1030,7 @@ const TourViewer = () => {
             to="/"
             className="pointer-events-auto flex items-center gap-2 sm:gap-3
               px-3 py-1.5 sm:px-3 sm:py-4 min-w-[160px] sm:min-w-[320px] lg:w-[420px]
-              bg-black/90 sm:bg-black/70 backdrop-blur-xl border border-white/15 shadow-2xl
+              bg-black/60 sm:bg-black/70 backdrop-blur-2xl border border-white/10 shadow-2xl
               rounded-tl-xl sm:rounded-2xl
               border-b-0 border-r-0 sm:border-b sm:border-r
               hover:bg-black/80 hover:border-white/25 transition-all group"
