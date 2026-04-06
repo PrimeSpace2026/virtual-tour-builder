@@ -299,7 +299,7 @@ const CURRENCY_SYMBOLS: Record<string, string> = { EUR: "€", USD: "$", TND: "T
 function buildEmbedUrl(tourUrl: string, withSdkKey = false): string {
   const modelId = extractModelId(tourUrl);
   if (!modelId) return tourUrl;
-  const base = `https://my.matterport.com/show/?m=${modelId}&play=1&qs=1&sr=0&brand=0&title=0&mls=2&vr=0&dh=0&gt=0&hr=0&help=0&lp=0&log=0&f=0&search=0&wh=0&lang=fr&mt=1&pin=1&nt=1&ts=0&guides=0&hl=0`;
+  const base = `https://my.matterport.com/show/?m=${modelId}&play=1&qs=1&sr=0&brand=0&title=0&mls=1&vr=0&dh=0&gt=0&hr=0&help=0&lp=0&log=0&f=0&search=0&wh=0&lang=fr&mt=1&pin=1&nt=1&ts=0&guides=0&hl=0`;
   return withSdkKey ? `${base}&applicationKey=${SDK_KEY}` : base;
 }
 
