@@ -553,12 +553,11 @@ const TourViewer = () => {
     return () => { sendDuration(); window.removeEventListener("beforeunload", sendDuration); };
   }, [tour?.id]);
 
-  // SDK: only works on localhost (Matterport key not authorized for primespace.studio)
+  // SDK: attempt connection on any domain (iframe loads without key, setupSdk tries separately)
   const isLocalDev = typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
 
-  // SDK: only on localhost
+  // SDK: attempt on all domains — falls back gracefully if key is rejected
   useEffect(() => {
-    if (!isLocalDev) { setSdkFailed(true); return; }
     if (!iframeLoaded || !iframeRef.current || !tour?.tourUrl) return;
     if (sdkAttemptsRef.current >= 1) return;
     sdkAttemptsRef.current = 1;
@@ -633,7 +632,7 @@ const TourViewer = () => {
         if (cancelled) return;
         sdkRef.current = sdk;
         setSdkConnected(true);
-        console.log("✅ SDK connecté (localhost)");
+        console.log("✅ SDK connecté");
 
         // Navigate to the first sweep (exterior/entrance) on load
         try {
@@ -741,7 +740,7 @@ const TourViewer = () => {
         }
       } catch (err) {
         if (cancelled) return;
-        console.log("⚠️ SDK échoué sur localhost:", err);
+        console.log("⚠️ SDK échoué:", err);
         setSdkFailed(true);
       }
     };
