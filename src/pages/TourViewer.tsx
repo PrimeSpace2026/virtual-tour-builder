@@ -1204,10 +1204,10 @@ const TourViewer = () => {
           </AnimatePresence>
         </div>
 
-        {/* Fullscreen */}
+        {/* Fullscreen — hidden on mobile (phones have unreliable fullscreen UX) */}
         <button
           onClick={toggleFullscreen}
-          className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-black/60 backdrop-blur-xl border border-white/10 text-white/70 hover:text-white hover:bg-black/80 transition-all"
+          className="hidden sm:flex items-center justify-center w-10 h-10 rounded-xl bg-black/60 backdrop-blur-xl border border-white/10 text-white/70 hover:text-white hover:bg-black/80 transition-all"
         >
           {isFullscreen ? (
             <Minimize className="w-4 h-4" />
