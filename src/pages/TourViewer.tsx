@@ -899,11 +899,67 @@ const TourViewer = () => {
     }, 3000);
   }, [tour?.tourUrl]);
 
-  // Wayfinding: navigate to a product's tag
-  const startWayfindingTo = useCallback(async (item: TourItemData, mode: "manual" | "auto" = "auto") => {
+  // Fly directly to a 3D position (find nearest sweep → FLY transition)
+  const flyToPosition = useCallback(async (anchorPos: { x: number; y: number; z: number }, label: string) => {
+    const sdk = sdkRef.current;
+    if (!sdk) return false;
+    try {
+      // Show banner
+      if (deepLinkTimerRef.current) clearTimeout(deepLinkTimerRef.current);
+      setDeepLinkNav({ active: true, destination: label, arrived: false });
+
+      // Get all sweeps
+      const sweeps = await new Promise<any[]>((resolve) => {
+        const sub = sdk.Sweep.data.subscribe({ onCollectionUpdated: (collection: any) => {
+          const items: any[] = [];
+          if (collection && typeof collection.forEach === "function") {
+            collection.forEach((item: any, key: any) => items.push({ ...item, sid: key }));
+          } else if (Array.isArray(collection)) {
+            collection.forEach((item: any) => items.push({ ...item, sid: item.sid || item.id }));
+          }
+          if (items.length > 0) { sub?.cancel?.(); resolve(items); }
+        }});
+      });
+
+      // Find nearest sweep to anchor position
+      let nearest = sweeps[0];
+      let minDist = Infinity;
+      for (const s of sweeps) {
+        if (!s.position) continue;
+        const dx = s.position.x - anchorPos.x;
+        const dy = s.position.y - anchorPos.y;
+        const dz = s.position.z - anchorPos.z;
+        const dist = dx * dx + dy * dy + dz * dz;
+        if (dist < minDist) { minDist = dist; nearest = s; }
+      }
+
+      // Fly there with camera pointing at the tag
+      await sdk.Sweep.moveTo(nearest.sid, {
+        rotation: {
+          x: Math.atan2(anchorPos.y - nearest.position.y, Math.sqrt((anchorPos.x - nearest.position.x) ** 2 + (anchorPos.z - nearest.position.z) ** 2)) * (180 / Math.PI),
+          y: Math.atan2(anchorPos.x - nearest.position.x, anchorPos.z - nearest.position.z) * (180 / Math.PI),
+        },
+        transition: sdk.Sweep.Transition?.FLY || "transition.fly",
+      });
+
+      // Arrived
+      setDeepLinkNav({ active: true, destination: label, arrived: true });
+      deepLinkTimerRef.current = setTimeout(() => {
+        setDeepLinkNav({ active: false, destination: "", arrived: false });
+      }, 2500);
+      return true;
+    } catch (e) {
+      console.log("Fly to position error:", e);
+      setDeepLinkNav({ active: false, destination: "", arrived: false });
+      return false;
+    }
+  }, []);
+
+  // Navigate to a product's tag — direct fly
+  const startWayfindingTo = useCallback(async (item: TourItemData) => {
     if (!item.tagSid) return;
     const sdk = sdkRef.current;
-    // SDK path: full wayfinding with arrows
+    // SDK path: fly directly to nearest sweep
     if (sdk && sdkConnected) {
       try {
         let anchorPos: { x: number; y: number; z: number } | null = null;
@@ -914,27 +970,23 @@ const TourViewer = () => {
           const found = tags.find((t: any) => t.sid === resolvedSid);
           if (found?.anchorPosition) anchorPos = found.anchorPosition;
         }
-        if (anchorPos) {
-          await wayfinding.startNavigation({ label: item.name, position: anchorPos }, mode);
-          return;
-        }
-      } catch (e) { console.log("SDK wayfinding error:", e); }
+        if (anchorPos && await flyToPosition(anchorPos, item.name)) return;
+      } catch (e) { console.log("Navigation error:", e); }
     }
     // Fallback: iframe deep-link
     deepLinkNavigate(item.tagSid, item.name);
-  }, [wayfinding, sdkConnected, deepLinkNavigate]);
+  }, [sdkConnected, deepLinkNavigate, flyToPosition]);
 
-  // Wayfinding: navigate to a Mattertag directly
-  const startWayfindingToTag = useCallback(async (tag: TagItem, mode: "manual" | "auto" = "auto") => {
+  // Navigate to a Mattertag directly — direct fly
+  const startWayfindingToTag = useCallback(async (tag: TagItem) => {
     const sdk = sdkRef.current;
-    // SDK path
+    // SDK path: fly directly
     if (sdk && sdkConnected && tag.anchorPosition) {
-      await wayfinding.startNavigation({ label: tag.label || tag.sid, position: tag.anchorPosition }, mode);
-      return;
+      if (await flyToPosition(tag.anchorPosition, tag.label || tag.sid)) return;
     }
     // Fallback: iframe deep-link
     deepLinkNavigate(tag.sid, tag.label || tag.sid);
-  }, [wayfinding, sdkConnected, deepLinkNavigate]);
+  }, [sdkConnected, deepLinkNavigate, flyToPosition]);
 
   // Navigate to a specific floor
   const navigateToFloor = useCallback((floorIndex: number) => {
@@ -1909,7 +1961,7 @@ const TourViewer = () => {
                     )}
                     {selectedItem?.tagSid && (
                       <button
-                        onClick={() => { const item = selectedItem; setSelectedItem(null); setSelectedTag(null); if (item) startWayfindingTo(item, "manual"); }}
+                        onClick={() => { const item = selectedItem; setSelectedItem(null); setSelectedTag(null); if (item) startWayfindingTo(item); }}
                         className="py-3.5 px-5 bg-cyan-600 hover:bg-cyan-500 text-white font-semibold rounded-xl transition-all hover:shadow-lg flex items-center justify-center gap-2 text-sm"
                       >
                         <Navigation className="w-4 h-4" />
@@ -2009,7 +2061,7 @@ const TourViewer = () => {
                       {/* Wayfinding compass */}
                       {item.tagSid && (
                         <button
-                          onClick={(e) => { e.stopPropagation(); setShowProducts(false); startWayfindingTo(item, "manual"); }}
+                          onClick={(e) => { e.stopPropagation(); setShowProducts(false); startWayfindingTo(item); }}
                           className="w-8 h-8 rounded-lg bg-cyan-600/80 hover:bg-cyan-500 flex items-center justify-center text-white shrink-0 opacity-0 group-hover:opacity-100 transition-all"
                           title="Naviguer vers ce produit"
                         >
@@ -2097,7 +2149,7 @@ const TourViewer = () => {
                         {tag.description && <p className="text-white/30 text-[10px] truncate">{tag.description}</p>}
                       </div>
                       <button
-                        onClick={() => { setShowTagsPanel(false); startWayfindingToTag(tag, "manual"); }}
+                        onClick={() => { setShowTagsPanel(false); startWayfindingToTag(tag); }}
                         className="px-2.5 py-1.5 rounded-lg bg-cyan-600/80 hover:bg-cyan-500 text-white text-[10px] font-semibold transition-all shrink-0"
                       >
                         Y aller
@@ -2122,7 +2174,7 @@ const TourViewer = () => {
                         {item.brand && <p className="text-white/30 text-[10px] uppercase tracking-wider">{item.brand}</p>}
                       </div>
                       <button
-                        onClick={() => { setShowTagsPanel(false); startWayfindingTo(item, "manual"); }}
+                        onClick={() => { setShowTagsPanel(false); startWayfindingTo(item); }}
                         className="px-2.5 py-1.5 rounded-lg bg-cyan-600/80 hover:bg-cyan-500 text-white text-[10px] font-semibold transition-all shrink-0"
                       >
                         Y aller
