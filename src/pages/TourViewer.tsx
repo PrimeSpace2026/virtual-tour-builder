@@ -1196,11 +1196,10 @@ const TourViewer = () => {
           </AnimatePresence>
         </div>
 
-        {/* Fullscreen — disabled (causes UI issues with browser chrome) */}
-        {/*
+        {/* Fullscreen */}
         <button
           onClick={toggleFullscreen}
-          className="hidden sm:flex items-center justify-center w-10 h-10 rounded-xl bg-black/60 backdrop-blur-xl border border-white/10 text-white/70 hover:text-white hover:bg-black/80 transition-all"
+          className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-black/60 backdrop-blur-xl border border-white/10 text-white/70 hover:text-white hover:bg-black/80 transition-all"
         >
           {isFullscreen ? (
             <Minimize className="w-4 h-4" />
@@ -1208,7 +1207,6 @@ const TourViewer = () => {
             <Maximize className="w-4 h-4" />
           )}
         </button>
-        */}
       </motion.div>
 
       {/* ===== RIGHT SIDE: INFO CARD ===== */}
