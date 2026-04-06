@@ -899,67 +899,11 @@ const TourViewer = () => {
     }, 3000);
   }, [tour?.tourUrl]);
 
-  // Fly directly to a 3D position (find nearest sweep → FLY transition)
-  const flyToPosition = useCallback(async (anchorPos: { x: number; y: number; z: number }, label: string) => {
-    const sdk = sdkRef.current;
-    if (!sdk) return false;
-    try {
-      // Show banner
-      if (deepLinkTimerRef.current) clearTimeout(deepLinkTimerRef.current);
-      setDeepLinkNav({ active: true, destination: label, arrived: false });
-
-      // Get all sweeps
-      const sweeps = await new Promise<any[]>((resolve) => {
-        const sub = sdk.Sweep.data.subscribe({ onCollectionUpdated: (collection: any) => {
-          const items: any[] = [];
-          if (collection && typeof collection.forEach === "function") {
-            collection.forEach((item: any, key: any) => items.push({ ...item, sid: key }));
-          } else if (Array.isArray(collection)) {
-            collection.forEach((item: any) => items.push({ ...item, sid: item.sid || item.id }));
-          }
-          if (items.length > 0) { sub?.cancel?.(); resolve(items); }
-        }});
-      });
-
-      // Find nearest sweep to anchor position
-      let nearest = sweeps[0];
-      let minDist = Infinity;
-      for (const s of sweeps) {
-        if (!s.position) continue;
-        const dx = s.position.x - anchorPos.x;
-        const dy = s.position.y - anchorPos.y;
-        const dz = s.position.z - anchorPos.z;
-        const dist = dx * dx + dy * dy + dz * dz;
-        if (dist < minDist) { minDist = dist; nearest = s; }
-      }
-
-      // Fly there with camera pointing at the tag
-      await sdk.Sweep.moveTo(nearest.sid, {
-        rotation: {
-          x: Math.atan2(anchorPos.y - nearest.position.y, Math.sqrt((anchorPos.x - nearest.position.x) ** 2 + (anchorPos.z - nearest.position.z) ** 2)) * (180 / Math.PI),
-          y: Math.atan2(anchorPos.x - nearest.position.x, anchorPos.z - nearest.position.z) * (180 / Math.PI),
-        },
-        transition: sdk.Sweep.Transition?.FLY || "transition.fly",
-      });
-
-      // Arrived
-      setDeepLinkNav({ active: true, destination: label, arrived: true });
-      deepLinkTimerRef.current = setTimeout(() => {
-        setDeepLinkNav({ active: false, destination: "", arrived: false });
-      }, 2500);
-      return true;
-    } catch (e) {
-      console.log("Fly to position error:", e);
-      setDeepLinkNav({ active: false, destination: "", arrived: false });
-      return false;
-    }
-  }, []);
-
-  // Navigate to a product's tag — direct fly
+  // Navigate to a product's tag — show red path markers on ground
   const startWayfindingTo = useCallback(async (item: TourItemData) => {
     if (!item.tagSid) return;
     const sdk = sdkRef.current;
-    // SDK path: fly directly to nearest sweep
+    // SDK path: place markers from current position to tag
     if (sdk && sdkConnected) {
       try {
         let anchorPos: { x: number; y: number; z: number } | null = null;
@@ -970,23 +914,27 @@ const TourViewer = () => {
           const found = tags.find((t: any) => t.sid === resolvedSid);
           if (found?.anchorPosition) anchorPos = found.anchorPosition;
         }
-        if (anchorPos && await flyToPosition(anchorPos, item.name)) return;
+        if (anchorPos) {
+          await wayfinding.startNavigation({ label: item.name, position: anchorPos }, "manual");
+          return;
+        }
       } catch (e) { console.log("Navigation error:", e); }
     }
     // Fallback: iframe deep-link
     deepLinkNavigate(item.tagSid, item.name);
-  }, [sdkConnected, deepLinkNavigate, flyToPosition]);
+  }, [wayfinding, sdkConnected, deepLinkNavigate]);
 
-  // Navigate to a Mattertag directly — direct fly
+  // Navigate to a Mattertag directly — show red path markers on ground
   const startWayfindingToTag = useCallback(async (tag: TagItem) => {
     const sdk = sdkRef.current;
-    // SDK path: fly directly
+    // SDK path: place markers
     if (sdk && sdkConnected && tag.anchorPosition) {
-      if (await flyToPosition(tag.anchorPosition, tag.label || tag.sid)) return;
+      await wayfinding.startNavigation({ label: tag.label || tag.sid, position: tag.anchorPosition }, "manual");
+      return;
     }
     // Fallback: iframe deep-link
     deepLinkNavigate(tag.sid, tag.label || tag.sid);
-  }, [sdkConnected, deepLinkNavigate, flyToPosition]);
+  }, [wayfinding, sdkConnected, deepLinkNavigate]);
 
   // Navigate to a specific floor
   const navigateToFloor = useCallback((floorIndex: number) => {
