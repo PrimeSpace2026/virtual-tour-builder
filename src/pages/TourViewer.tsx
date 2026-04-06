@@ -1025,7 +1025,22 @@ const TourViewer = () => {
           PrimeSpace overlay — covers Matterport branding at bottom-right
           Always visible (including clean mode) to hide Matterport logo
         */}
-        <div className="absolute bottom-0 right-0 z-[6] pointer-events-none sm:left-0 flex justify-end px-0 sm:px-4 pb-0 sm:pb-3 lg:pb-3">
+        <div className="absolute bottom-0 right-0 z-[6] pointer-events-none sm:left-0 flex justify-end items-end px-0 sm:px-4 pb-0 sm:pb-3 lg:pb-3">
+          {/* Mobile: Share & Fullscreen buttons next to branding */}
+          <div className="sm:hidden flex flex-col gap-1 mr-1 mb-0.5 pointer-events-auto">
+            <button
+              onClick={() => setShowShare(!showShare)}
+              className="w-8 h-8 rounded-lg bg-black/60 backdrop-blur-xl border border-white/10 flex items-center justify-center text-white/70 hover:text-white hover:bg-black/80 transition-all"
+            >
+              <Share2 className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={toggleFullscreen}
+              className="w-8 h-8 rounded-lg bg-black/60 backdrop-blur-xl border border-white/10 flex items-center justify-center text-white/70 hover:text-white hover:bg-black/80 transition-all"
+            >
+              {isFullscreen ? <Minimize className="w-3.5 h-3.5" /> : <Maximize className="w-3.5 h-3.5" />}
+            </button>
+          </div>
           <Link
             to="/"
             className="pointer-events-auto flex items-center gap-2 sm:gap-3
@@ -1042,6 +1057,8 @@ const TourViewer = () => {
             </div>
           </Link>
         </div>
+        {/* Cover Matterport native buttons (fullscreen/share) on right side — mobile only */}
+        <div className="sm:hidden absolute right-0 top-[40%] z-[6] w-[44px] h-[120px] bg-black/0 pointer-events-auto" />
       </div>
 
       {/* ===== TOP-LEFT: Back Button ===== */}
@@ -1159,8 +1176,8 @@ const TourViewer = () => {
           </button>
         )}
 
-        {/* Share */}
-        <div className="relative">
+        {/* Share — hidden on mobile, moved to bottom bar */}
+        <div className="relative hidden sm:block">
           <button
             onClick={() => setShowShare(!showShare)}
             className={`flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-xl backdrop-blur-xl border transition-all ${
@@ -1206,10 +1223,10 @@ const TourViewer = () => {
           </AnimatePresence>
         </div>
 
-        {/* Fullscreen */}
+        {/* Fullscreen — hidden on mobile, moved to bottom bar */}
         <button
           onClick={toggleFullscreen}
-          className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-black/60 backdrop-blur-xl border border-white/10 text-white/70 hover:text-white hover:bg-black/80 transition-all"
+          className="hidden sm:flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-black/60 backdrop-blur-xl border border-white/10 text-white/70 hover:text-white hover:bg-black/80 transition-all"
         >
           {isFullscreen ? (
             <Minimize className="w-4 h-4" />
