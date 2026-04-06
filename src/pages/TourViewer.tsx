@@ -1910,7 +1910,7 @@ const TourViewer = () => {
                     )}
                     {selectedItem?.tagSid && (
                       <button
-                        onClick={() => { const item = selectedItem; setSelectedItem(null); setSelectedTag(null); if (item) startWayfindingTo(item, "auto"); }}
+                        onClick={() => { const item = selectedItem; setSelectedItem(null); setSelectedTag(null); if (item) startWayfindingTo(item, "manual"); }}
                         className="py-3.5 px-5 bg-cyan-600 hover:bg-cyan-500 text-white font-semibold rounded-xl transition-all hover:shadow-lg flex items-center justify-center gap-2 text-sm"
                       >
                         <Navigation className="w-4 h-4" />
@@ -2010,7 +2010,7 @@ const TourViewer = () => {
                       {/* Wayfinding compass */}
                       {item.tagSid && (
                         <button
-                          onClick={(e) => { e.stopPropagation(); setShowProducts(false); startWayfindingTo(item, "auto"); }}
+                          onClick={(e) => { e.stopPropagation(); setShowProducts(false); startWayfindingTo(item, "manual"); }}
                           className="w-8 h-8 rounded-lg bg-cyan-600/80 hover:bg-cyan-500 flex items-center justify-center text-white shrink-0 opacity-0 group-hover:opacity-100 transition-all"
                           title="Naviguer vers ce produit"
                         >
@@ -2097,24 +2097,12 @@ const TourViewer = () => {
                         <p className="text-white/80 text-sm font-medium truncate group-hover:text-white transition-colors">{tag.label || tag.sid}</p>
                         {tag.description && <p className="text-white/30 text-[10px] truncate">{tag.description}</p>}
                       </div>
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        {sdkConnected && (
-                          <button
-                            onClick={() => { setShowTagsPanel(false); startWayfindingToTag(tag, "manual"); }}
-                            className="px-2.5 py-1.5 rounded-lg bg-white/[0.06] hover:bg-white/10 text-white/60 hover:text-white text-[10px] font-semibold transition-all"
-                            title="Suivez les flèches"
-                          >
-                            Je marche
-                          </button>
-                        )}
-                        <button
-                          onClick={() => { setShowTagsPanel(false); startWayfindingToTag(tag, "auto"); }}
-                          className="px-2.5 py-1.5 rounded-lg bg-cyan-600/80 hover:bg-cyan-500 text-white text-[10px] font-semibold transition-all"
-                          title="Navigation automatique"
-                        >
-                          {sdkConnected ? "Guidez-moi" : "Y aller"}
-                        </button>
-                      </div>
+                      <button
+                        onClick={() => { setShowTagsPanel(false); startWayfindingToTag(tag, "manual"); }}
+                        className="px-2.5 py-1.5 rounded-lg bg-cyan-600/80 hover:bg-cyan-500 text-white text-[10px] font-semibold transition-all shrink-0"
+                      >
+                        Y aller
+                      </button>
                     </div>
                   ))}
                   {/* Products with tagSid (fallback navigation targets) */}
@@ -2135,7 +2123,7 @@ const TourViewer = () => {
                         {item.brand && <p className="text-white/30 text-[10px] uppercase tracking-wider">{item.brand}</p>}
                       </div>
                       <button
-                        onClick={() => { setShowTagsPanel(false); startWayfindingTo(item, "auto"); }}
+                        onClick={() => { setShowTagsPanel(false); startWayfindingTo(item, "manual"); }}
                         className="px-2.5 py-1.5 rounded-lg bg-cyan-600/80 hover:bg-cyan-500 text-white text-[10px] font-semibold transition-all shrink-0"
                       >
                         Y aller
