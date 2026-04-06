@@ -855,21 +855,30 @@ const TourViewer = () => {
     sdk.Floor.moveTo(floorIndex).catch(() => {});
   }, []);
 
-  // Fullscreen
+  // Fullscreen (with webkit/mobile fallback)
   const toggleFullscreen = useCallback(() => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen();
+    const doc = document as any;
+    const el = document.documentElement as any;
+    const isFS = !!(doc.fullscreenElement || doc.webkitFullscreenElement);
+    if (!isFS) {
+      const req = el.requestFullscreen || el.webkitRequestFullscreen;
+      if (req) req.call(el).catch(() => {});
       setIsFullscreen(true);
     } else {
-      document.exitFullscreen();
+      const exit = doc.exitFullscreen || doc.webkitExitFullscreen;
+      if (exit) exit.call(doc).catch(() => {});
       setIsFullscreen(false);
     }
   }, []);
 
   useEffect(() => {
-    const handler = () => setIsFullscreen(!!document.fullscreenElement);
+    const handler = () => setIsFullscreen(!!(document.fullscreenElement || (document as any).webkitFullscreenElement));
     document.addEventListener("fullscreenchange", handler);
-    return () => document.removeEventListener("fullscreenchange", handler);
+    document.addEventListener("webkitfullscreenchange", handler);
+    return () => {
+      document.removeEventListener("fullscreenchange", handler);
+      document.removeEventListener("webkitfullscreenchange", handler);
+    };
   }, []);
 
   // Copy link
