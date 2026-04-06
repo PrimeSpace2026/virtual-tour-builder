@@ -19,7 +19,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Plus, Pencil, Trash2, Upload, X, Image as ImageIcon, LogOut, Search, MapPin, Loader2, ShoppingBag, ExternalLink, BarChart3, Briefcase, Phone, MessageCircle, Tag, Scan, Wifi, Snowflake, Tv, Wine, Bath, DoorOpen, Lock, BedDouble, ChevronDown, ChevronUp, GripVertical, Sparkles, UtensilsCrossed, Dumbbell, CalendarDays, Heart, Home, Users, Star, Coffee, Music, Palmtree, ShieldCheck, PlayCircle, Layers, Clock, Banknote, Trophy, Droplets, Award, Mail, User } from "lucide-react";
+import { Plus, Pencil, Trash2, Upload, X, Image as ImageIcon, LogOut, Search, MapPin, Loader2, ShoppingBag, ExternalLink, BarChart3, Briefcase, Phone, MessageCircle, Tag, Scan, Wifi, Snowflake, Tv, Wine, Bath, DoorOpen, Lock, BedDouble, ChevronDown, ChevronUp, GripVertical, Sparkles, UtensilsCrossed, Dumbbell, CalendarDays, Heart, Home, Users, Star, Coffee, Music, Palmtree, ShieldCheck, PlayCircle, Layers, Clock, Banknote, Trophy, Droplets, Award, Mail, User, Link2, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from "react-leaflet";
 import L from "leaflet";
@@ -922,6 +922,14 @@ const Admin = () => {
                   <div className="flex justify-between items-center mt-4">
                     <span className="text-sm text-muted-foreground">{tour.surface ? `${tour.surface} m²` : ""}</span>
                     <div className="flex gap-2">
+                      <Button variant="outline" size="sm" onClick={() => {
+                        const url = `${window.location.origin}/view/${tour.id}?clean=true`;
+                        navigator.clipboard.writeText(url).then(() => {
+                          toast({ title: "Lien copié", description: url });
+                        });
+                      }} title="Copier le lien direct (sans Retour / autres visites)">
+                        <Link2 className="w-4 h-4" />
+                      </Button>
                       <Button variant="outline" size="sm" onClick={() => openItems(tour)} title="Gérer les produits">
                         <ShoppingBag className="w-4 h-4" />
                       </Button>

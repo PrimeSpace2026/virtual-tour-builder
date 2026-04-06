@@ -307,6 +307,7 @@ const TourViewer = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const isClean = searchParams.get("clean") === "true";
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const sdkRef = useRef<any>(null);
   const sdkAttemptsRef = useRef(0);
@@ -896,8 +897,8 @@ const TourViewer = () => {
         else setShowCard(false);
       }
       if ((e.key === "f" || e.key === "F") && !(e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement)) toggleFullscreen();
-      if (e.key === "ArrowLeft" && prevTour) navigate(`/view/${prevTour.id}`);
-      if (e.key === "ArrowRight" && nextTour)
+      if (!isClean && e.key === "ArrowLeft" && prevTour) navigate(`/view/${prevTour.id}`);
+      if (!isClean && e.key === "ArrowRight" && nextTour)
         navigate(`/view/${nextTour.id}`);
     };
     window.addEventListener("keydown", handler);
@@ -914,6 +915,7 @@ const TourViewer = () => {
     prevTour,
     nextTour,
     navigate,
+    isClean,
   ]);
 
   // Auto-hide card only on initial load, not on manual toggle
@@ -1041,20 +1043,22 @@ const TourViewer = () => {
       </div>
 
       {/* ===== TOP-LEFT: Back Button ===== */}
-      <motion.div
-        initial={{ opacity: 0, x: -20 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ delay: 0.3 }}
-        className="absolute top-4 left-4 z-30 pointer-events-auto"
-      >
-        <button
-          onClick={() => navigate("/portfolio")}
-          className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-black/60 backdrop-blur-xl border border-white/10 text-white/80 hover:text-white hover:bg-black/80 transition-all group"
+      {!isClean && (
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.3 }}
+          className="absolute top-4 left-4 z-30 pointer-events-auto"
         >
-          <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
-          <span className="text-xs font-medium hidden sm:inline">Retour</span>
-        </button>
-      </motion.div>
+          <button
+            onClick={() => navigate("/portfolio")}
+            className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-black/60 backdrop-blur-xl border border-white/10 text-white/80 hover:text-white hover:bg-black/80 transition-all group"
+          >
+            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
+            <span className="text-xs font-medium hidden sm:inline">Retour</span>
+          </button>
+        </motion.div>
+      )}
 
       {/* ===== FLOOR SELECTOR (left side, vertically centered) ===== */}
       <AnimatePresence>
@@ -1467,7 +1471,7 @@ const TourViewer = () => {
                 })()}
 
                 {/* Navigation - Other tours */}
-                {(prevTour || nextTour) && (
+                {!isClean && (prevTour || nextTour) && (
                   <div className="pt-2 border-t border-white/[0.06]">
                     <p className="text-white/25 text-[10px] uppercase tracking-widest font-semibold mb-2">
                       Autres visites
@@ -1699,7 +1703,7 @@ const TourViewer = () => {
                   );
                 } catch { return null; }
               })()}
-              {(prevTour || nextTour) && (
+              {!isClean && (prevTour || nextTour) && (
                 <div className="flex border-t border-white/[0.06]">
                   {prevTour ? (
                     <Link
