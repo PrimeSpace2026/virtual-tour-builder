@@ -1025,19 +1025,20 @@ const TourViewer = () => {
           PrimeSpace overlay — covers Matterport branding at bottom-right
           Always visible (including clean mode) to hide Matterport logo
         */}
-        <div className="absolute bottom-0 left-0 right-0 z-[6] pointer-events-none flex justify-end px-1 sm:px-4 pb-0 sm:pb-3 lg:pb-3">
+        <div className="absolute bottom-0 right-0 z-[6] pointer-events-none sm:left-0 flex justify-end px-0 sm:px-4 pb-0 sm:pb-3 lg:pb-3">
           <Link
             to="/"
-            className="pointer-events-auto w-auto sm:min-w-[320px] lg:w-[420px] flex items-center gap-2 sm:gap-3 px-2 sm:px-3 py-2 sm:py-4
-              bg-black/70 backdrop-blur-xl border border-white/15 shadow-2xl
-              rounded-t-xl sm:rounded-2xl
-              border-b-0 sm:border-b
+            className="pointer-events-auto flex items-center gap-2 sm:gap-3
+              px-2 py-1.5 sm:px-3 sm:py-4 sm:min-w-[320px] lg:w-[420px]
+              bg-black/80 sm:bg-black/70 backdrop-blur-xl border border-white/15 shadow-2xl
+              rounded-tl-xl sm:rounded-2xl
+              border-b-0 border-r-0 sm:border-b sm:border-r
               hover:bg-black/80 hover:border-white/25 transition-all group"
           >
-            <img src="/logo.jpg" alt="PrimeSpace" className="w-8 h-8 sm:w-12 sm:h-12 shrink-0 rounded-lg sm:rounded-xl object-cover shadow-lg shadow-purple-500/20 group-hover:shadow-purple-500/40 transition-shadow" />
+            <img src="/logo.jpg" alt="PrimeSpace" className="w-6 h-6 sm:w-12 sm:h-12 shrink-0 rounded-md sm:rounded-xl object-cover shadow-lg shadow-purple-500/20 group-hover:shadow-purple-500/40 transition-shadow" />
             <div className="flex-grow min-w-0">
-              <p className="text-white/90 text-[11px] sm:text-base font-bold tracking-tight group-hover:text-white transition-colors">PrimeSpace</p>
-              <p className="text-white/40 text-[8px] sm:text-[11px] font-medium hidden sm:block">Studio 3D immersif</p>
+              <p className="text-white/90 text-[10px] sm:text-base font-bold tracking-tight group-hover:text-white transition-colors leading-tight">PrimeSpace</p>
+              <p className="text-white/40 text-[11px] font-medium hidden sm:block">Studio 3D immersif</p>
             </div>
           </Link>
         </div>
