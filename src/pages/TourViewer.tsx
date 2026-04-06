@@ -26,6 +26,7 @@ import {
   Phone,
   MessageCircle,
   Briefcase,
+  Move,
   BedDouble,
   Users,
   Wifi,
@@ -1000,13 +1001,13 @@ const TourViewer = () => {
             </motion.div>
           )}
         </AnimatePresence>
-        {/* iframe fills container exactly — no height offset so Matterport native buttons stay in view and clickable */}
+        {/* iframe — on mobile, extend 44px below container to clip native Matterport toolbar */}
         <iframe
           ref={iframeRef}
           key={iframeKey}
           id="showcase-iframe"
           src={iframeSrc}
-          className="absolute inset-0 w-full h-full border-0 transition-opacity duration-700 ease-in-out"
+          className="absolute inset-0 w-full border-0 transition-opacity duration-700 ease-in-out h-[calc(100%+44px)] md:h-full"
           style={{ opacity: iframeLoaded ? 1 : 0 }}
           allow="xr-spatial-tracking; fullscreen; autoplay; encrypted-media; picture-in-picture; clipboard-write; accelerometer; gyroscope; camera; microphone"
           referrerPolicy="no-referrer-when-downgrade"
@@ -1031,6 +1032,58 @@ const TourViewer = () => {
               <p className="text-white/40 text-[10px] sm:text-[11px] font-medium">Studio 3D immersif</p>
             </div>
           </Link>
+        </div>
+
+        {/* ===== MOBILE VERTICAL TOOLBAR (right side, replaces clipped Matterport toolbar) ===== */}
+        <div className="md:hidden absolute right-2 bottom-20 z-[7] pointer-events-auto">
+          <div className="flex flex-col gap-1.5 p-1.5 rounded-2xl bg-black/60 backdrop-blur-xl border border-white/10">
+            <button
+              onClick={toggleFullscreen}
+              className="w-9 h-9 rounded-xl flex items-center justify-center bg-white/5 text-white/60 hover:bg-white/15 hover:text-white transition-all"
+              title="Plein écran"
+            >
+              {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
+            </button>
+            {floors.length > 1 && sdkConnected && (
+              <button
+                onClick={() => {
+                  const nextFloor = currentFloor + 1 >= floors.length ? 0 : currentFloor + 1;
+                  navigateToFloor(nextFloor);
+                }}
+                className="w-9 h-9 rounded-xl flex items-center justify-center bg-white/5 text-white/60 hover:bg-white/15 hover:text-white transition-all"
+                title="Changer d'étage"
+              >
+                <Layers className="w-4 h-4" />
+              </button>
+            )}
+            <button
+              onClick={() => setShowCard(!showCard)}
+              className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all ${
+                showCard ? "bg-purple-600/40 text-purple-300" : "bg-white/5 text-white/60 hover:bg-white/15 hover:text-white"
+              }`}
+              title="Informations"
+            >
+              <Eye className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setShowShare(true)}
+              className="w-9 h-9 rounded-xl flex items-center justify-center bg-white/5 text-white/60 hover:bg-white/15 hover:text-white transition-all"
+              title="Partager"
+            >
+              <Share2 className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => {
+                if (sdkRef.current?.Mode?.moveTo) {
+                  sdkRef.current.Mode.moveTo(sdkRef.current.Mode.Mode.DOLLHOUSE).catch(() => {});
+                }
+              }}
+              className="w-9 h-9 rounded-xl flex items-center justify-center bg-white/5 text-white/60 hover:bg-white/15 hover:text-white transition-all"
+              title="Vue 3D"
+            >
+              <Move className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </div>
 
