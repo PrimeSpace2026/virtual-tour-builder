@@ -1025,7 +1025,7 @@ const TourViewer = () => {
               border-b-0 sm:border-b
               hover:bg-black/80 hover:border-white/25 transition-all group"
           >
-            <img src="/logo.jpg" alt="PrimeSpace" className="w-10 h-10 shrink-0 rounded-xl object-cover shadow-lg shadow-purple-500/20 group-hover:shadow-purple-500/40 transition-shadow" />
+            <img src="/logo.jpg" alt="PrimeSpace" className="w-12 h-12 shrink-0 rounded-xl object-cover shadow-lg shadow-purple-500/20 group-hover:shadow-purple-500/40 transition-shadow" />
             <div className="flex-grow min-w-0">
               <p className="text-white/90 text-sm sm:text-base font-bold tracking-tight group-hover:text-white transition-colors">PrimeSpace</p>
               <p className="text-white/40 text-[10px] sm:text-[11px] font-medium">Studio 3D immersif</p>
