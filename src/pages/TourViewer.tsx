@@ -1025,7 +1025,7 @@ const TourViewer = () => {
           PrimeSpace overlay — covers Matterport branding at bottom-right
           Always visible (including clean mode) to hide Matterport logo
         */}
-        <div className="absolute bottom-0 left-0 right-0 z-[6] pointer-events-none flex justify-end px-3 sm:px-4 pb-0 sm:pb-3 lg:pb-3">
+        <div className="absolute bottom-[44px] sm:bottom-0 left-0 right-0 z-[6] pointer-events-none flex justify-end px-3 sm:px-4 pb-0 sm:pb-3 lg:pb-3">
           <Link
             to="/"
             className="pointer-events-auto w-auto sm:min-w-[320px] lg:w-[420px] flex items-center gap-3 px-3 py-5 sm:py-4
