@@ -1009,13 +1009,13 @@ const TourViewer = () => {
             </motion.div>
           )}
         </AnimatePresence>
-        {/* iframe fills container exactly — no height offset so Matterport native buttons stay in view and clickable */}
+        {/* iframe — on mobile, extend 44px wider to push Matterport native right-side buttons off-screen */}
         <iframe
           ref={iframeRef}
           key={iframeKey}
           id="showcase-iframe"
           src={iframeSrc}
-          className="absolute inset-0 w-full h-full border-0 transition-opacity duration-700 ease-in-out"
+          className="absolute inset-0 h-full border-0 transition-opacity duration-700 ease-in-out w-[calc(100%+44px)] sm:w-full"
           style={{ opacity: iframeLoaded ? 1 : 0 }}
           allow="xr-spatial-tracking; fullscreen; autoplay; encrypted-media; picture-in-picture; clipboard-write; accelerometer; gyroscope; camera; microphone"
           referrerPolicy="no-referrer-when-downgrade"
@@ -1042,21 +1042,20 @@ const TourViewer = () => {
             </div>
           </Link>
         </div>
-        {/* Mobile: overlay Matterport native fullscreen, share & menu buttons with our own */}
-        <div className="sm:hidden absolute right-[2px] bottom-[46px] z-[6] flex flex-col gap-0 pointer-events-auto">
+        {/* Mobile: our own fullscreen & share buttons on right side (native ones are off-screen) */}
+        <div className="sm:hidden absolute right-1 bottom-[52px] z-[6] flex flex-col gap-1.5 pointer-events-auto">
           <button
             onClick={toggleFullscreen}
-            className="w-[40px] h-[40px] rounded-[4px] bg-[#1a1a1a]/95 flex items-center justify-center text-white/90 hover:text-white transition-all"
+            className="w-9 h-9 rounded-xl bg-black/60 backdrop-blur-xl border border-white/10 flex items-center justify-center text-white/70 hover:text-white hover:bg-black/80 transition-all"
           >
-            {isFullscreen ? <Minimize className="w-[18px] h-[18px]" /> : <Maximize className="w-[18px] h-[18px]" />}
+            {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
           </button>
           <button
             onClick={() => setShowShare(!showShare)}
-            className="w-[40px] h-[40px] rounded-[4px] bg-[#1a1a1a]/95 flex items-center justify-center text-white/90 hover:text-white transition-all"
+            className="w-9 h-9 rounded-xl bg-black/60 backdrop-blur-xl border border-white/10 flex items-center justify-center text-white/70 hover:text-white hover:bg-black/80 transition-all"
           >
-            <Share2 className="w-[18px] h-[18px]" />
+            <Share2 className="w-4 h-4" />
           </button>
-          <div className="w-[40px] h-[40px] rounded-[4px] bg-[#1a1a1a]/95" />
         </div>
       </div>
 
