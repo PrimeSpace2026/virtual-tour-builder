@@ -412,6 +412,7 @@ const Admin = () => {
   }, [locationQuery]);
 
   // Auto-fetch Matterport tags when tour URL changes in dialog
+  const stripMdLinks = (s: string) => s.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
   const fetchDialogTags = async (tourUrl?: string, tourId?: number, editing?: boolean) => {
     const url = tourUrl ?? editTour.tourUrl;
     const id = tourId ?? editTour.id;
@@ -445,7 +446,7 @@ const Admin = () => {
       if (res.ok) {
         const data = await res.json();
         const liveTags = (data.tags || []).map((t: any, i: number) => ({
-          name: t.label || t.description || `Tag ${i + 1}`,
+          name: stripMdLinks(t.label || t.description || `Tag ${i + 1}`),
           sid: t.sid,
         })).filter((t: { name: string; sid: string }) => t.sid);
         if (liveTags.length > 0) {
@@ -676,7 +677,7 @@ const Admin = () => {
             if (res.ok) {
               const data = await res.json();
               const liveTags: { name: string; sid: string }[] = (data.tags || []).map((t: any, i: number) => ({
-                name: t.label || t.description || `Tag ${i + 1}`,
+                name: stripMdLinks(t.label || t.description || `Tag ${i + 1}`),
                 sid: t.sid,
               }));
               if (liveTags.length > 0) {
@@ -780,7 +781,7 @@ const Admin = () => {
 
       const allTags: TagInfo[] = (data.tags || []).map((t: any) => ({
         sid: t.sid,
-        label: t.label || "(sans nom)",
+        label: stripMdLinks(t.label || "(sans nom)"),
         description: (t.description || "").slice(0, 100),
       }));
 
