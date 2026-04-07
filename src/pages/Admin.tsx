@@ -1672,11 +1672,6 @@ const Admin = () => {
                   </Button>
                 )}
               </div>
-              {editTour.tourUrl && (
-                <p className="text-xs text-muted-foreground mt-1">
-                  {dialogTagsLoading ? "Récupération des tags..." : dialogTags.length > 0 ? `${dialogTags.length} tag(s) trouvé(s)` : "Aucun tag — cliquez le bouton pour réessayer"}
-                </p>
-              )}
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
