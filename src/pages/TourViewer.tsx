@@ -867,6 +867,7 @@ const TourViewer = () => {
     }
 
     const tagKey = tagSid.trim().toLowerCase();
+    const resolvedSid = tagsMapRef.current.get(tagKey) || savedTagsMapRef.current.get(tagKey) || tagSid;
     const tagUrl = `https://my.matterport.com/show/?m=${modelId}&play=1&qs=1&brand=0&title=0&mls=2&help=0&hl=0&tag=${encodeURIComponent(resolvedSid)}&mt=1&pin=1`;
     console.log(`🏷️ Menu tag → iframe deep link: ${resolvedSid}`);
     setIframeSrc(tagUrl);
