@@ -440,25 +440,36 @@ const Admin = () => {
       } catch {}
     }
 
-    // Fetch live from Matterport
+    // Fetch live from Matterport (tags + sweeps)
     try {
-      const res = await fetch(`/api/matterport/tags?modelId=${encodeURIComponent(modelId)}`);
-      if (res.ok) {
-        const data = await res.json();
-        const liveTags = (data.tags || []).map((t: any, i: number) => ({
+      const [tagsRes, sweepsRes] = await Promise.all([
+        fetch(`/api/matterport/tags?modelId=${encodeURIComponent(modelId)}`),
+        fetch(`/api/matterport/sweeps?modelId=${encodeURIComponent(modelId)}`),
+      ]);
+      let combined: { name: string; sid: string }[] = [];
+      if (tagsRes.ok) {
+        const data = await tagsRes.json();
+        combined = (data.tags || []).map((t: any, i: number) => ({
           name: stripMdLinks(t.label || t.description || `Tag ${i + 1}`),
           sid: t.sid,
         })).filter((t: { name: string; sid: string }) => t.sid);
-        if (liveTags.length > 0) {
-          setDialogTags(liveTags);
-          // Save for future use
-          if (isEdit && id) {
-            fetch(`/api/tours/${id}/tags`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(liveTags),
-            }).catch(() => {});
-          }
+      }
+      if (sweepsRes.ok) {
+        const sData = await sweepsRes.json();
+        const sweepOptions = (sData.sweeps || []).map((s: any) => ({
+          name: `360° Vue ${s.index}${s.floorLabel ? ` (${s.floorLabel})` : ""}`,
+          sid: `sweep:${s.index}`,
+        }));
+        combined = [...combined, ...sweepOptions];
+      }
+      if (combined.length > 0) {
+        setDialogTags(combined);
+        if (isEdit && id) {
+          fetch(`/api/tours/${id}/tags`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(combined.filter(t => !t.sid.startsWith("sweep:"))),
+          }).catch(() => {});
         }
       }
     } catch {}
@@ -670,30 +681,48 @@ const Admin = () => {
           setTourTags(saved);
           setTourTagsLoading(false);
         }
-        // Always fetch live tags from Matterport to merge
+        // Always fetch live tags + sweeps from Matterport to merge
         if (modelId) {
           try {
-            const res = await fetch(`/api/matterport/tags?modelId=${encodeURIComponent(modelId)}`);
-            if (res.ok) {
-              const data = await res.json();
-              const liveTags: { name: string; sid: string }[] = (data.tags || []).map((t: any, i: number) => ({
+            const [tagsRes, sweepsRes] = await Promise.all([
+              fetch(`/api/matterport/tags?modelId=${encodeURIComponent(modelId)}`),
+              fetch(`/api/matterport/sweeps?modelId=${encodeURIComponent(modelId)}`),
+            ]);
+            let liveTags: { name: string; sid: string }[] = [];
+            if (tagsRes.ok) {
+              const data = await tagsRes.json();
+              liveTags = (data.tags || []).map((t: any, i: number) => ({
                 name: stripMdLinks(t.label || t.description || `Tag ${i + 1}`),
                 sid: t.sid,
               }));
-              if (liveTags.length > 0) {
-                // Merge: keep names from saved tags, add any new from live
-                const merged = liveTags.map((lt) => {
-                  const existing = saved.find((s) => s.sid === lt.sid);
-                  return existing && existing.name ? existing : lt;
-                });
-                setTourTags(merged);
-                // Save merged tags for future use
-                fetch(`/api/tours/${tour.id}/tags`, {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify(merged),
-                }).catch(() => {});
+            }
+            if (liveTags.length > 0) {
+              const merged = liveTags.map((lt) => {
+                const existing = saved.find((s) => s.sid === lt.sid);
+                return existing && existing.name ? existing : lt;
+              });
+              let combined = [...merged];
+              if (sweepsRes.ok) {
+                const sData = await sweepsRes.json();
+                const sweepOptions = (sData.sweeps || []).map((s: any) => ({
+                  name: `360° Vue ${s.index}${s.floorLabel ? ` (${s.floorLabel})` : ""}`,
+                  sid: `sweep:${s.index}`,
+                }));
+                combined = [...combined, ...sweepOptions];
               }
+              setTourTags(combined);
+              fetch(`/api/tours/${tour.id}/tags`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(merged),
+              }).catch(() => {});
+            } else if (sweepsRes.ok) {
+              const sData = await sweepsRes.json();
+              const sweepOptions = (sData.sweeps || []).map((s: any) => ({
+                name: `360° Vue ${s.index}${s.floorLabel ? ` (${s.floorLabel})` : ""}`,
+                sid: `sweep:${s.index}`,
+              }));
+              if (sweepOptions.length > 0) setTourTags([...saved, ...sweepOptions]);
             }
           } catch {}
         }

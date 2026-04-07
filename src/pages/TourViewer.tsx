@@ -760,6 +760,21 @@ const TourViewer = () => {
     if (tour?.id) trackEvent(tour.id, "product_click", item.name, String(item.id));
 
     if (item.tagSid && tour?.tourUrl) {
+      const modelId = extractModelId(tour.tourUrl);
+
+      // Sweep-based navigation (sweep:<index>)
+      if (item.tagSid.startsWith("sweep:")) {
+        const sweepIndex = item.tagSid.replace("sweep:", "");
+        if (!modelId) { setSelectedItem(item); return; }
+        const sweepUrl = `https://my.matterport.com/show/?m=${modelId}&play=1&qs=1&brand=0&title=0&mls=2&help=0&hl=0&ss=${encodeURIComponent(sweepIndex)}`;
+        console.log(`🔄 Sweep navigation → ss=${sweepIndex}`);
+        setIframeSrc(sweepUrl);
+        setIframeKey((k) => k + 1);
+        setIframeLoaded(false);
+        setTimeout(() => setSelectedItem(item), 1200);
+        return;
+      }
+
       const tagKey = item.tagSid.trim().toLowerCase();
       const resolvedSid = tagsMapRef.current.get(tagKey) || savedTagsMapRef.current.get(tagKey) || item.tagSid;
       const sdk = sdkRef.current;
@@ -837,10 +852,21 @@ const TourViewer = () => {
   // Uses iframe deep-link method (same as product navigation fallback)
   const navigateToMenuTag = useCallback((tagSid: string) => {
     if (!tour?.tourUrl) return;
-    const tagKey = tagSid.trim().toLowerCase();
-    const resolvedSid = tagsMapRef.current.get(tagKey) || savedTagsMapRef.current.get(tagKey) || tagSid;
     const modelId = extractModelId(tour.tourUrl);
     if (!modelId) return;
+
+    // Sweep-based navigation (sweep:<index>)
+    if (tagSid.startsWith("sweep:")) {
+      const sweepIndex = tagSid.replace("sweep:", "");
+      const sweepUrl = `https://my.matterport.com/show/?m=${modelId}&play=1&qs=1&brand=0&title=0&mls=2&help=0&hl=0&ss=${encodeURIComponent(sweepIndex)}`;
+      console.log(`🔄 Menu sweep navigation → ss=${sweepIndex}`);
+      setIframeSrc(sweepUrl);
+      setIframeKey((k) => k + 1);
+      setIframeLoaded(false);
+      return;
+    }
+
+    const tagKey = tagSid.trim().toLowerCase();
     const tagUrl = `https://my.matterport.com/show/?m=${modelId}&play=1&qs=1&brand=0&title=0&mls=2&help=0&hl=0&tag=${encodeURIComponent(resolvedSid)}&mt=1&pin=1`;
     console.log(`🏷️ Menu tag → iframe deep link: ${resolvedSid}`);
     setIframeSrc(tagUrl);
