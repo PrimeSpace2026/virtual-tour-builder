@@ -179,7 +179,7 @@ const Index = () => {
             description={T(t.home.portfolioDesc)}
           />
 
-          <div className="grid md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 justify-items-center">
             {projects.map((project, index) => (
               <div key={project.title} onClick={() => setSelectedProject(project)} className="cursor-pointer">
                 <ProjectCard
