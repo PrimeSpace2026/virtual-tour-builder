@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { useI18n } from "@/i18n";
@@ -19,17 +19,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-import portfolioHotel from "@/assets/portfolio-hotel.jpg";
-import portfolioApartment from "@/assets/portfolio-apartment.jpg";
-import portfolioRetail from "@/assets/portfolio-retail.jpg";
-import westwoodGym from "@/assets/westwood-gym-sandymount-1.jpg.webp";
-
-const projects = [
-  { image: portfolioApartment, title: "Villa Chat Meriem", category: "Immobilier", tourUrl: "https://my.matterport.com/show/?m=t84zwhnXjvJ" },
-  { image: portfolioRetail, title: "Perla Shoes", category: "Retail", tourUrl: "https://my.matterport.com/show/?m=RMhsBq27hzy" },
-  { image: westwoodGym, title: "Jungle Fit Box", category: "Gym", tourUrl: "https://my.matterport.com/show/?m=8VnahNUYHfX" },
-  { image: portfolioHotel, title: "Clayton Hotel", category: "Hôtellerie", tourUrl: "https://my.matterport.com/show/?m=1aWQXDdxWnG" },
-];
+interface HomeTour {
+  id: number;
+  image: string;
+  title: string;
+  category: string;
+  tourUrl: string;
+}
 
 const testimonials = [
   {
@@ -55,10 +51,30 @@ const testimonials = [
   },
 ];
 
+const API_BASE = (import.meta.env.VITE_API_URL ?? "").replace(/\/$/, "");
+
 const Index = () => {
-  const [selectedProject, setSelectedProject] = useState<typeof projects[0] | null>(null);
+  const [selectedProject, setSelectedProject] = useState<HomeTour | null>(null);
+  const [projects, setProjects] = useState<HomeTour[]>([]);
   const { lang, t } = useI18n();
   const T = (obj: { fr: string; en: string }) => obj[lang];
+
+  useEffect(() => {
+    fetch(`${API_BASE}/api/tours`)
+      .then((res) => res.json())
+      .then((tours: any[]) => {
+        setProjects(
+          tours.slice(0, 4).map((t) => ({
+            id: t.id,
+            image: t.imageUrl || "/placeholder.svg",
+            title: t.name,
+            category: t.category || "",
+            tourUrl: t.tourUrl || "",
+          }))
+        );
+      })
+      .catch(() => {});
+  }, []);
 
   const features = [
     { icon: Scan, title: T(t.home.features.capture), description: T(t.home.features.captureDesc) },
@@ -304,6 +320,16 @@ const Index = () => {
               className="w-full h-full"
             />
           </div>
+          {selectedProject && (
+            <div className="p-4 pt-2 text-center">
+              <Button variant="outline" size="sm" asChild>
+                <Link to={`/view/${selectedProject.id}`}>
+                  {lang === "fr" ? "Voir la visite complète" : "View full tour"}
+                  <ArrowRight className="w-4 h-4 ml-1" />
+                </Link>
+              </Button>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </Layout>
