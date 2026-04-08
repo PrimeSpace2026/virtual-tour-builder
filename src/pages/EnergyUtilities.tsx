@@ -10,6 +10,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
+import { useI18n } from "@/i18n";
 
 /* ─── Data ────────────────────────────────────────────────────── */
 
@@ -22,7 +23,7 @@ const fadeUp = {
   }),
 };
 
-const faqs = [
+const getFaqs = (lang: string) => [
   {
     question: "Comment les jumeaux numériques améliorent-ils la gestion des installations énergétiques ?",
     answer: "Les jumeaux numériques PrimeSpace permettent de documenter avec précision chaque infrastructure, d'effectuer des inspections visuelles à distance, de planifier la maintenance préventive et de former les équipes dans des environnements virtuels fidèles — réduisant les temps d'arrêt et les coûts opérationnels.",
@@ -52,6 +53,10 @@ const faqs = [
 /* ─── Page ────────────────────────────────────────────────────── */
 
 const EnergyUtilities = () => {
+  const { lang } = useI18n();
+
+  const faqs = getFaqs(lang);
+
   return (
     <Layout>
       <WhatsAppButton />
@@ -66,10 +71,10 @@ const EnergyUtilities = () => {
             className="text-center max-w-4xl mx-auto"
           >
             <p className="text-xs md:text-sm uppercase tracking-widest text-foreground/40 font-semibold mb-3">
-              Énergie & Utilités
+              {lang === "fr" ? "Énergie & Utilités" : "Energy & Utilities"}
             </p>
             <h1 className="text-2xl md:text-4xl lg:text-5xl font-display font-bold text-[#2c0a71] mb-3 md:mb-4 leading-tight">
-              Numérisez vos infrastructures énergétiques avec la 3D.
+              {lang === "fr" ? "Numérisez vos infrastructures énergétiques avec la 3D." : "Digitize your energy infrastructure with 3D."}
             </h1>
             <p className="text-foreground/70 text-sm md:text-lg max-w-3xl mx-auto">
               Des centrales aux réseaux de distribution, les jumeaux numériques PrimeSpace transforment la gestion, la maintenance et la formation dans le secteur de l'énergie et des utilités.
@@ -109,7 +114,7 @@ const EnergyUtilities = () => {
             className="text-center mb-10 md:mb-16"
           >
             <h2 className="text-2xl md:text-4xl lg:text-5xl font-display font-bold text-foreground mb-3 md:mb-5 leading-tight">
-              Solutions complètes pour le secteur énergétique.
+              {lang === "fr" ? "Solutions complètes pour le secteur énergétique." : "Complete solutions for the energy sector."}
             </h2>
           </motion.div>
 
@@ -131,10 +136,10 @@ const EnergyUtilities = () => {
                 />
               </div>
               <span className="text-xs font-semibold uppercase tracking-widest text-[#2c0a71]">
-                Documentation des Actifs
+                {lang === "fr" ? "Documentation des Actifs" : "Asset Documentation"}
               </span>
               <h3 className="text-xl md:text-2xl font-display font-bold text-foreground mt-2 mb-3">
-                Documentez chaque installation avec précision.
+                {lang === "fr" ? "Documentez chaque installation avec précision." : "Document every facility with precision."}
               </h3>
               <p className="text-foreground/60 text-sm md:text-base leading-relaxed">
                 Créez des relevés 3D détaillés de vos centrales, sous-stations et infrastructures de distribution pour une gestion d'actifs complète et à jour.

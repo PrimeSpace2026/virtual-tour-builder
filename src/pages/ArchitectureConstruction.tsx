@@ -20,96 +20,97 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
+import { useI18n } from "@/i18n";
 
-const faqs = [
+const getFaqs = (lang: string) => [
   {
-    question: "Quels fichiers de capture de réalité puis-je exporter depuis un jumeau numérique PrimeSpace ?",
+    question: lang === "fr" ? "Quels fichiers de capture de réalité puis-je exporter depuis un jumeau numérique PrimeSpace ?" : "What reality capture files can I export from a PrimeSpace digital twin?",
     answer: "Vous pouvez exporter les fichiers suivants : fichiers OBJ, nuages de points colorisés, plans de plafond réfléchi (JPG/PDF), plans d'étage 2D haute résolution (SVG/JPG/PDF), fichiers E57, exports BIM (.RVT et IFC) et formats CAD (DWG et XYZ). Ces exports s'intègrent directement dans des outils comme Autodesk ReCap, Revit, AutoCAD et d'autres applications BIM/CAD pour accélérer le développement de modèles.",
   },
   {
-    question: "PrimeSpace s'intègre-t-il à Autodesk Construction Cloud ou Procore pour les RFI et le suivi des problèmes ?",
+    question: lang === "fr" ? "PrimeSpace s'intègre-t-il à Autodesk Construction Cloud ou Procore pour les RFI et le suivi des problèmes ?" : "Does PrimeSpace integrate with Autodesk Construction Cloud or Procore for RFIs and issue tracking?",
     answer: "Oui, PrimeSpace s'intègre à Autodesk Construction Cloud et Procore pour apporter un contexte visuel du site dans les workflows de RFI et de suivi des problèmes. Ces intégrations permettent aux équipes de placer des marqueurs RFI ou des indicateurs de problèmes à des emplacements précis dans le jumeau numérique afin que les parties prenantes puissent visualiser et résoudre les problèmes avec un contexte visuel clair.",
   },
   {
-    question: "Comment le scan 3D PrimeSpace gère-t-il les extérieurs, les longues lignes de vue ou la lumière vive ?",
+    question: lang === "fr" ? "Comment le scan 3D PrimeSpace gère-t-il les extérieurs, les longues lignes de vue ou la lumière vive ?" : "How does PrimeSpace 3D scanning handle exteriors, long lines of sight, or bright light?",
     answer: "PrimeSpace est une solution complète de lidar et de photogrammétrie qui prend en charge le scan 3D intérieur et extérieur pour la documentation architecturale et de construction, souvent utilisée pour les projets à grande échelle. La caméra Pro3 est conçue pour capturer des espaces avec une portée étendue et une grande précision, ce qui la rend adaptée aux grandes surfaces et aux longues lignes de vue.",
   },
   {
-    question: "Quelle densité et couverture de nuage de points puis-je attendre d'une capture PrimeSpace Pro3 ?",
+    question: lang === "fr" ? "Quelle densité et couverture de nuage de points puis-je attendre d'une capture PrimeSpace Pro3 ?" : "What point cloud density and coverage can I expect from a PrimeSpace Pro3 capture?",
     answer: "Le Pro3 produit des nuages de points haute densité, capturant plus de 5 millions de points de profondeur filtrés par scan. Trois options de densité sont disponibles :\n\n• Standard : 800 000 points réels par scan en 20 secondes ou moins.\n• Moyenne : 1,5 million de points réels par scan en 45 secondes ou moins.\n• Haute : 5 millions de points réels par scan en 2 minutes.",
   },
   {
-    question: "Quelle est la précision des modèles scan-to-BIM de PrimeSpace pour les projets AEC ?",
+    question: lang === "fr" ? "Quelle est la précision des modèles scan-to-BIM de PrimeSpace pour les projets AEC ?" : "How accurate are PrimeSpace scan-to-BIM models for AEC projects?",
     answer: "Les scans PrimeSpace activés par LiDAR répondent aux spécifications LOD 200 pour les éléments structurels et architecturaux, fournissant une base fiable pour la modélisation as-built. De nombreuses équipes AEC utilisent ces nuages de points et exports BIM pour réduire le travail de relevé manuel et accélérer la création de modèles.",
   },
   {
-    question: "PrimeSpace convient-il aux tolérances de fabrication, ou ai-je encore besoin d'un scanner laser terrestre ?",
+    question: lang === "fr" ? "PrimeSpace convient-il aux tolérances de fabrication, ou ai-je encore besoin d'un scanner laser terrestre ?" : "Is PrimeSpace suitable for fabrication tolerances, or do I still need a terrestrial laser scanner?",
     answer: "PrimeSpace est bien adapté à la vérification de layout, aux as-builts, à la coordination et au QA/QC. Pour les tolérances de fabrication ou le contrôle de qualité survey-grade nécessitant une précision submillimétrique, un scanner laser terrestre peut encore être nécessaire. De nombreuses équipes utilisent PrimeSpace comme méthode de capture principale et le complètent par un scan de plus haute précision si nécessaire.",
   },
   {
-    question: "Quel est le délai typique entre le téléchargement de la capture et la réception d'un export E57 ou d'un livrable BIM ?",
+    question: lang === "fr" ? "Quel est le délai typique entre le téléchargement de la capture et la réception d'un export E57 ou d'un livrable BIM ?" : "What is the typical turnaround from capture upload to receiving an E57 export or BIM deliverable?",
     answer: "Les services de capture PrimeSpace peuvent scanner les sites avec des techniciens professionnels, livrant souvent les scans initiaux sous 48 heures. Les délais pour les exports E57, MatterPak et BIM varient selon la taille du projet et les options sélectionnées. Contactez votre représentant commercial pour confirmer les délais pour vos livrables spécifiques.",
   },
   {
-    question: "Comment PrimeSpace aide-t-il à réduire les visites de site et les reprises pendant la conception et la construction ?",
+    question: lang === "fr" ? "Comment PrimeSpace aide-t-il à réduire les visites de site et les reprises pendant la conception et la construction ?" : "How does PrimeSpace help reduce site visits and rework during design and construction?",
     answer: "Les jumeaux numériques PrimeSpace offrent un accès distant 24h/24 à des modèles 3D précis et photoréalistes, permettant aux équipes d'inspecter les conditions, de mesurer à distance et de résoudre les problèmes sans visites de site répétées. Les clients rapportent moins de déplacements, une résolution plus rapide des RFI avec contexte visuel et une réduction des reprises.",
   },
   {
-    question: "Quels sont les pièges courants lors du scan de chantiers actifs ?",
+    question: lang === "fr" ? "Quels sont les pièges courants lors du scan de chantiers actifs ?" : "What are common pitfalls when scanning active construction sites?",
     answer: "Les pièges courants incluent : ne pas coordonner les fenêtres de capture avec les corps de métier, scanner des zones avec des équipements ou des personnes en mouvement créant des artefacts, un mauvais éclairage dans des conditions temporaires, et ne pas taguer ou documenter les éléments clés pendant la capture. Planifier des temps de capture à faible activité et suivre une checklist de capture aide à prévenir les lacunes dans la documentation.",
   },
   {
-    question: "Quel ROI et gain de temps les équipes AEC peuvent-elles attendre avec PrimeSpace ?",
+    question: lang === "fr" ? "Quel ROI et gain de temps les équipes AEC peuvent-elles attendre avec PrimeSpace ?" : "What ROI and time savings can AEC teams expect with PrimeSpace?",
     answer: "Les équipes AEC utilisant le scan 3D PrimeSpace rapportent des économies substantielles : jusqu'à 75% de diminution des visites de site en personne, environ 70% de réduction du temps de relevé et de création de référence BIM. Les avantages supplémentaires incluent une livraison de documentation plus rapide, des coûts de déplacement et de main-d'œuvre réduits, et des gains de temps mesurables lors des inspections et de la coordination.",
   },
 ];
 
-const stats = [
-  { value: "75%", label: "de visites sur site en moins pour les parties prenantes" },
-  { value: "70%", label: "de réduction des coûts de relevés et création BIM" },
-  { value: "30%", label: "d'économies grâce à une meilleure collaboration" },
-  { value: "75%", label: "des problèmes résolus sans escalade" },
+const getStats = (lang: string) => [
+  { value: "75%", label: lang === "fr" ? "de visites sur site en moins pour les parties prenantes" : "fewer site visits for stakeholders" },
+  { value: "70%", label: lang === "fr" ? "de réduction des coûts de relevés et création BIM" : "reduction in survey and BIM creation costs" },
+  { value: "30%", label: lang === "fr" ? "d'économies grâce à une meilleure collaboration" : "savings through better collaboration" },
+  { value: "75%", label: lang === "fr" ? "des problèmes résolus sans escalade" : "of issues resolved without escalation" },
 ];
 
-const phases = [
+const getPhases = (lang: string) => [
   {
     id: "design",
     icon: Ruler,
-    title: "Conception",
+    title: lang === "fr" ? "Conception" : "Design",
     features: [
-      "Documentation as-built",
-      "Évaluation des conditions",
-      "Évaluation conception / risques",
-      "Conception détaillée",
-      "Planification de chantier",
-      "Scan-to-CAD / fichier BIM",
-      "Estimation",
+      lang === "fr" ? "Documentation as-built" : "As-built documentation",
+      lang === "fr" ? "Évaluation des conditions" : "Condition assessment",
+      lang === "fr" ? "Évaluation conception / risques" : "Design / risk assessment",
+      lang === "fr" ? "Conception détaillée" : "Detailed design",
+      lang === "fr" ? "Planification de chantier" : "Site planning",
+      lang === "fr" ? "Scan-to-CAD / fichier BIM" : "Scan-to-CAD / BIM file",
+      lang === "fr" ? "Estimation" : "Cost estimation",
     ],
   },
   {
     id: "construction",
     icon: Hammer,
-    title: "Construction",
+    title: lang === "fr" ? "Construction" : "Construction",
     features: [
-      "Suivi d'avancement",
-      "QA / QC",
-      "Coordination des problèmes & RFI",
-      "Validation des lots de travaux",
-      "Documentation des jalons",
-      "Formation sécurité",
+      lang === "fr" ? "Suivi d'avancement" : "Progress tracking",
+      lang === "fr" ? "QA / QC" : "QA / QC",
+      lang === "fr" ? "Coordination des problèmes & RFI" : "Issue coordination & RFI",
+      lang === "fr" ? "Validation des lots de travaux" : "Work package validation",
+      lang === "fr" ? "Documentation des jalons" : "Milestone documentation",
+      lang === "fr" ? "Formation sécurité" : "Safety training",
     ],
   },
   {
     id: "handover",
     icon: BadgeCheck,
-    title: "Réception / Livraison",
+    title: lang === "fr" ? "Réception / Livraison" : "Handover / Delivery",
     features: [
-      "Réception & livraison",
-      "Documentation de clôture",
-      "Base de données FM",
-      "Documentation specs & garanties",
-      "Support de formation / onboarding",
-      "Promotion du bâtiment",
+      lang === "fr" ? "Réception & livraison" : "Handover & delivery",
+      lang === "fr" ? "Documentation de clôture" : "Closeout documentation",
+      lang === "fr" ? "Base de données FM" : "FM database",
+      lang === "fr" ? "Documentation specs & garanties" : "Specs & warranty documentation",
+      lang === "fr" ? "Support de formation / onboarding" : "Training / onboarding support",
+      lang === "fr" ? "Promotion du bâtiment" : "Building promotion",
     ],
   },
 ];
@@ -135,6 +136,12 @@ const fadeUpStagger = {
 
 
 const ArchitectureConstruction = () => {
+  const { lang } = useI18n();
+
+  const stats = getStats(lang);
+  const phases = getPhases(lang);
+  const faqs = getFaqs(lang);
+
   return (
     <Layout>
       <WhatsAppButton />
@@ -149,13 +156,12 @@ const ArchitectureConstruction = () => {
             className="text-center max-w-4xl mx-auto"
           >
             <h2 className="text-2xl md:text-4xl lg:text-5xl font-display font-bold text-[#2c0a71] mb-3 md:mb-4">
-              Détectez les problèmes avant{" "}
-              qu'ils ne surviennent.
+              {lang === "fr" ? "Détectez les problèmes avant qu'ils ne surviennent." : "Detect issues before they arise."}
             </h2>
             <p className="text-foreground/70 text-sm md:text-lg max-w-2xl mx-auto">
-              Intégrez la plateforme de jumeaux numériques 3D dans vos flux de
-              conception et de construction pour améliorer la communication,
-              gagner du temps et réduire les risques.
+              {lang === "fr"
+                ? "Intégrez la plateforme de jumeaux numériques 3D dans vos flux de conception et de construction pour améliorer la communication, gagner du temps et réduire les risques."
+                : "Integrate the 3D digital twin platform into your design and construction workflows to improve communication, save time, and reduce risk."}
             </p>
           </motion.div>
         </div>
@@ -205,10 +211,10 @@ const ArchitectureConstruction = () => {
                 </div>
                 <div>
                   <h3 className="text-lg md:text-xl font-display font-bold">
-                    Gros Œuvre (Framing)
+  {lang === "fr" ? "Gros Œuvre (Framing)" : "Framing"}
                   </h3>
                   <p className="text-sm text-muted-foreground">
-                    Structure, charpente et ossature du bâtiment
+  {lang === "fr" ? "Structure, charpente et ossature du bâtiment" : "Building structure and framework"}
                   </p>
                 </div>
               </div>
@@ -236,10 +242,10 @@ const ArchitectureConstruction = () => {
                 </div>
                 <div>
                   <h3 className="text-lg md:text-xl font-display font-bold">
-                    Aménagement (Fit-Out)
+  {lang === "fr" ? "Aménagement (Fit-Out)" : "Fit-Out"}
                   </h3>
                   <p className="text-sm text-muted-foreground">
-                    Finitions, agencement et aménagement intérieur
+  {lang === "fr" ? "Finitions, agencement et aménagement intérieur" : "Finishes, layout, and interior design"}
                   </p>
                 </div>
               </div>
@@ -259,7 +265,7 @@ const ArchitectureConstruction = () => {
               transition={{ duration: 0.6 }}
             >
               <h2 className="text-2xl md:text-4xl lg:text-5xl font-display font-bold mb-4 md:mb-6">
-                Simplifiez la création de modèles as-built.
+                {lang === "fr" ? "Simplifiez la création de modèles as-built." : "Streamline as-built model creation."}
               </h2>
               <p className="text-muted-foreground text-base md:text-lg leading-relaxed mb-6 md:mb-8">
                 Éliminez les mesures manuelles et accélérez la création de
@@ -365,8 +371,7 @@ const ArchitectureConstruction = () => {
             className="text-center mb-10 md:mb-16"
           >
             <h2 className="text-2xl md:text-4xl lg:text-5xl font-display font-bold">
-              Capturez, documentez et collaborez avec une{" "}
-              <span className="text-[#2c0a71]">clarté 3D inégalée</span>
+              {lang === "fr" ? (<>Capturez, documentez et collaborez avec une{" "}<span className="text-[#2c0a71]">clarté 3D inégalée</span></>) : (<>Capture, document, and collaborate with{" "}<span className="text-[#2c0a71]">unmatched 3D clarity</span></>)}
             </h2>
           </motion.div>
 
@@ -414,10 +419,10 @@ const ArchitectureConstruction = () => {
             className="text-center mb-8 md:mb-12"
           >
             <span className="text-sm font-semibold uppercase tracking-wide text-[#2c0a71]">
-              En chiffres
+              {lang === "fr" ? "En chiffres" : "By the numbers"}
             </span>
             <h2 className="text-2xl md:text-4xl font-display font-bold mt-2">
-              Les clients PrimeSpace ont constaté :
+              {lang === "fr" ? "Les clients PrimeSpace ont constaté :" : "PrimeSpace clients have seen:"}
             </h2>
           </motion.div>
 
@@ -471,7 +476,7 @@ const ArchitectureConstruction = () => {
               className="order-1 lg:order-2"
             >
               <h2 className="text-2xl md:text-4xl lg:text-5xl font-display font-bold mb-4 md:mb-6">
-                Réduisez les visites sur site.
+                {lang === "fr" ? "Réduisez les visites sur site." : "Reduce site visits."}
               </h2>
               <p className="text-muted-foreground text-base md:text-lg leading-relaxed mb-6 md:mb-8">
                 Qu'il s'agisse de formations à la sécurité ou d'inspections
@@ -501,7 +506,7 @@ const ArchitectureConstruction = () => {
               transition={{ duration: 0.6 }}
             >
               <h2 className="text-2xl md:text-4xl lg:text-5xl font-display font-bold mb-4 md:mb-6">
-                Collaborez en contexte.
+                {lang === "fr" ? "Collaborez en contexte." : "Collaborate in context."}
               </h2>
               <p className="text-muted-foreground text-base md:text-lg leading-relaxed mb-6 md:mb-8">
                 Digitalisez votre processus QA/QC et éliminez les erreurs de
@@ -546,7 +551,7 @@ const ArchitectureConstruction = () => {
               transition={{ duration: 0.6 }}
             >
               <h2 className="text-2xl md:text-4xl lg:text-5xl font-display font-bold mb-4 md:mb-6">
-                Intégrez vos outils existants.
+                {lang === "fr" ? "Intégrez vos outils existants." : "Integrate your existing tools."}
               </h2>
               <p className="text-muted-foreground text-base md:text-lg leading-relaxed mb-6 md:mb-8">
                 Connectez la plateforme de jumeaux numériques PrimeSpace à vos
@@ -604,7 +609,7 @@ const ArchitectureConstruction = () => {
             className="text-center mb-10 md:mb-16"
           >
             <h2 className="text-2xl md:text-4xl lg:text-5xl font-display font-bold">
-              Les bons outils pour le chantier.
+              {lang === "fr" ? "Les bons outils pour le chantier." : "The right tools for the job."}
             </h2>
           </motion.div>
 
@@ -677,8 +682,7 @@ const ArchitectureConstruction = () => {
             className="text-center mb-8 md:mb-12"
           >
             <h2 className="text-2xl md:text-4xl lg:text-5xl font-display font-bold">
-              FAQ — Scan 3D pour l'Architecture,{" "}
-              <span className="text-[#2c0a71]">l'Ingénierie et la Construction</span>
+              {lang === "fr" ? (<>FAQ — Scan 3D pour l'Architecture,{" "}<span className="text-[#2c0a71]">l'Ingénierie et la Construction</span></>) : (<>FAQ — 3D Scanning for Architecture,{" "}<span className="text-[#2c0a71]">Engineering & Construction</span></>)}
             </h2>
           </motion.div>
 
@@ -719,9 +723,9 @@ const ArchitectureConstruction = () => {
               transition={{ duration: 0.6 }}
             >
               <blockquote className="text-xl md:text-3xl font-display font-medium text-foreground leading-relaxed mb-6 md:mb-8">
-                "Grâce aux jumeaux numériques, nous avons réduit les retouches
-                de 45% et économisé des semaines de travail sur chaque projet.
-                La coordination entre nos équipes n'a jamais été aussi fluide."
+                {lang === "fr"
+                  ? "Grâce aux jumeaux numériques, nous avons réduit les retouches de 45% et économisé des semaines de travail sur chaque projet. La coordination entre nos équipes n'a jamais été aussi fluide."
+                  : "Thanks to digital twins, we reduced rework by 45% and saved weeks of work on every project. Coordination between our teams has never been smoother."}
               </blockquote>
               <div className="flex items-center justify-center gap-4">
                 <div className="w-12 h-12 rounded-full bg-[#2c0a71]/10 flex items-center justify-center">
@@ -732,7 +736,7 @@ const ArchitectureConstruction = () => {
                     Karim Benali
                   </div>
                   <div className="text-sm text-muted-foreground">
-                    Directeur de Projets, Cabinet d'Architecture
+                    {lang === "fr" ? "Directeur de Projets, Cabinet d'Architecture" : "Project Director, Architecture Firm"}
                   </div>
                 </div>
               </div>
@@ -754,7 +758,7 @@ const ArchitectureConstruction = () => {
             <div className="absolute inset-0 bg-gradient-accent" />
             <div className="relative z-10 py-12 md:py-20 px-5 md:px-8 text-center">
               <h2 className="text-2xl md:text-4xl font-display font-bold text-primary-foreground mb-4 md:mb-6">
-                Prêt à transformer vos projets de construction?
+                {lang === "fr" ? "Prêt à transformer vos projets de construction?" : "Ready to transform your construction projects?"}
               </h2>
               <p className="text-base md:text-lg text-primary-foreground/80 max-w-2xl mx-auto mb-8 md:mb-10">
                 Rejoignez les architectes et constructeurs qui utilisent déjà
@@ -768,7 +772,7 @@ const ArchitectureConstruction = () => {
                   asChild
                 >
                   <Link to="/contact" className="flex items-center gap-2">
-                    Demander un Devis Gratuit
+                    {lang === "fr" ? "Demander un Devis Gratuit" : "Request a Free Quote"}
                     <ArrowRight className="w-5 h-5" />
                   </Link>
                 </Button>
@@ -778,7 +782,7 @@ const ArchitectureConstruction = () => {
                   className="border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10"
                   asChild
                 >
-                  <Link to="/portfolio">Voir le Portfolio</Link>
+                  <Link to="/portfolio">{lang === "fr" ? "Voir le Portfolio" : "View Portfolio"}</Link>
                 </Button>
               </div>
             </div>

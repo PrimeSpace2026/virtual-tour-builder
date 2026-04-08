@@ -10,6 +10,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
+import { useI18n } from "@/i18n";
 
 /* ─── Data ────────────────────────────────────────────────────── */
 
@@ -22,46 +23,53 @@ const fadeUp = {
   }),
 };
 
-const faqs = [
+const getFaqs = (lang: string) => [
   {
-    question:
-      "Comment les visites virtuelles influencent-elles la conversion des réservations pour les hôtels et attractions ?",
+    question: lang === "fr"
+      ? "Comment les visites virtuelles influencent-elles la conversion des réservations pour les hôtels et attractions ?"
+      : "How do virtual tours influence booking conversion for hotels and attractions?",
     answer:
       "Les visites virtuelles 3D permettent aux voyageurs de découvrir l'espace avant de réserver, ce qui renforce la confiance et réduit les hésitations. Les établissements constatent en moyenne 25% d'engagement en ligne supplémentaire et une hausse significative des réservations directes.",
   },
   {
-    question:
-      "Puis-je intégrer une visite virtuelle sur mon site web ou mes pages de réservation sans développement personnalisé ?",
+    question: lang === "fr"
+      ? "Puis-je intégrer une visite virtuelle sur mon site web ou mes pages de réservation sans développement personnalisé ?"
+      : "Can I embed a virtual tour on my website or booking pages without custom development?",
     answer:
       "Oui. Les visites virtuelles PrimeSpace s'intègrent facilement via un simple code d'intégration iframe. Aucune compétence technique avancée n'est requise — copiez-collez le code sur votre site, Booking.com, Airbnb ou toute autre plateforme.",
   },
   {
-    question:
-      "Proposez-vous des services de capture professionnelle si nous n'avons pas d'équipement ?",
+    question: lang === "fr"
+      ? "Proposez-vous des services de capture professionnelle si nous n'avons pas d'équipement ?"
+      : "Do you offer professional capture services if we don't have equipment?",
     answer:
       "Absolument. PrimeSpace Capture Services met à votre disposition des techniciens certifiés qui se déplacent dans votre établissement pour créer des jumeaux numériques de haute qualité, généralement livrés en 48 heures.",
   },
   {
-    question:
-      "Combien de temps faut-il pour créer une visite virtuelle du scan à la publication ?",
+    question: lang === "fr"
+      ? "Combien de temps faut-il pour créer une visite virtuelle du scan à la publication ?"
+      : "How long does it take to create a virtual tour from scan to publication?",
     answer:
       "Le temps varie selon la taille de l'établissement :\n\n• Chambre standard : 15-20 minutes de scan\n• Suite / espace commun : 30-60 minutes\n• Hôtel complet (100 chambres) : 2-3 jours\n\nLe traitement et la publication sont généralement réalisés sous 24-48 heures après le scan.",
   },
   {
-    question:
-      "Les visites virtuelles peuvent-elles soutenir l'entretien et la maintenance ?",
+    question: lang === "fr"
+      ? "Les visites virtuelles peuvent-elles soutenir l'entretien et la maintenance ?"
+      : "Can virtual tours support upkeep and maintenance?",
     answer:
       "Oui. Les jumeaux numériques permettent aux équipes de maintenance d'inspecter les espaces à distance, de planifier les interventions, de documenter l'état des installations et de coordonner les rénovations sans multiplier les déplacements sur site.",
   },
   {
-    question:
-      "Quelles options d'abonnement et d'hébergement proposez-vous pour les portefeuilles multi-établissements ?",
+    question: lang === "fr"
+      ? "Quelles options d'abonnement et d'hébergement proposez-vous pour les portefeuilles multi-établissements ?"
+      : "What subscription and hosting options do you offer for multi-property portfolios?",
     answer:
       "PrimeSpace propose des plans adaptés à toutes les tailles de portefeuille, du plan gratuit pour commencer jusqu'aux plans entreprise personnalisés. Gérez facilement plusieurs propriétés, utilisateurs et équipes depuis un seul tableau de bord.",
   },
   {
-    question:
-      "Quelles bonnes pratiques d'accessibilité suivre pour les visites virtuelles ?",
+    question: lang === "fr"
+      ? "Quelles bonnes pratiques d'accessibilité suivre pour les visites virtuelles ?"
+      : "What accessibility best practices should be followed for virtual tours?",
     answer:
       "Les visites virtuelles PrimeSpace sont accessibles sur tous les appareils (desktop, mobile, tablette) et peuvent être partagées via un simple lien. Pour l'accessibilité avancée, des descriptions textuelles et des parcours guidés peuvent être ajoutés pour accompagner tous les utilisateurs.",
   },
@@ -70,6 +78,10 @@ const faqs = [
 /* ─── Page ────────────────────────────────────────────────────── */
 
 const TravelHospitality = () => {
+  const { lang } = useI18n();
+
+  const faqs = getFaqs(lang);
+
   return (
     <Layout>
       <WhatsAppButton />
@@ -84,17 +96,15 @@ const TravelHospitality = () => {
             className="text-center max-w-4xl mx-auto"
           >
             <p className="text-xs md:text-sm uppercase tracking-widest text-foreground/40 font-semibold mb-3">
-              Tourisme & Hôtellerie
+              {lang === "fr" ? "Tourisme & Hôtellerie" : "Travel & Hospitality"}
             </p>
             <h1 className="text-2xl md:text-4xl lg:text-5xl font-display font-bold text-[#2c0a71] mb-3 md:mb-4 leading-tight">
-              Boostez vos réservations avec les visites virtuelles 3D pour le
-              tourisme & l'hôtellerie.
+              {lang === "fr" ? "Boostez vos réservations avec les visites virtuelles 3D pour le tourisme & l'hôtellerie." : "Boost your bookings with 3D virtual tours for travel & hospitality."}
             </h1>
             <p className="text-foreground/70 text-sm md:text-lg max-w-3xl mx-auto">
-              Découvrez comment les visites virtuelles 3D et les jumeaux
-              numériques PrimeSpace révolutionnent le marketing et les
-              opérations dans l'ensemble du secteur du tourisme et de
-              l'hôtellerie.
+              {lang === "fr"
+                ? "Découvrez comment les visites virtuelles 3D et les jumeaux numériques PrimeSpace révolutionnent le marketing et les opérations dans l'ensemble du secteur du tourisme et de l'hôtellerie."
+                : "Discover how PrimeSpace 3D virtual tours and digital twins are revolutionizing marketing and operations across the travel and hospitality industry."}
             </p>
           </motion.div>
         </div>
@@ -131,7 +141,7 @@ const TravelHospitality = () => {
             className="text-center mb-10 md:mb-16"
           >
             <h2 className="text-2xl md:text-4xl lg:text-5xl font-display font-bold text-foreground mb-3 md:mb-5 leading-tight">
-              Améliorez l'expérience client.
+              {lang === "fr" ? "Améliorez l'expérience client." : "Enhance the guest experience."}
             </h2>
           </motion.div>
 
@@ -153,10 +163,10 @@ const TravelHospitality = () => {
                 />
               </div>
               <span className="text-xs font-semibold uppercase tracking-widest text-[#2c0a71]">
-                Marketing Immersif
+                {lang === "fr" ? "Marketing Immersif" : "Immersive Marketing"}
               </span>
               <h3 className="text-xl md:text-2xl font-display font-bold text-foreground mt-2 mb-3">
-                L'expérience la plus proche de la réalité.
+                {lang === "fr" ? "L'expérience la plus proche de la réalité." : "The closest experience to reality."}
               </h3>
               <p className="text-foreground/60 text-sm md:text-base leading-relaxed">
                 Donnez vie aux hôtels, resorts et lieux événementiels avec des
@@ -184,10 +194,10 @@ const TravelHospitality = () => {
                 />
               </div>
               <span className="text-xs font-semibold uppercase tracking-widest text-[#2c0a71]">
-                Points de Contact Client
+                {lang === "fr" ? "Points de Contact Client" : "Guest Experience Touchpoints"}
               </span>
               <h3 className="text-xl md:text-2xl font-display font-bold text-foreground mt-2 mb-3">
-                Le confort à chaque étape.
+                {lang === "fr" ? "Le confort à chaque étape." : "Comfort at every step."}
               </h3>
               <p className="text-foreground/60 text-sm md:text-base leading-relaxed">
                 Utilisez les jumeaux numériques pour guider les clients,
@@ -214,10 +224,10 @@ const TravelHospitality = () => {
                 />
               </div>
               <span className="text-xs font-semibold uppercase tracking-widest text-[#2c0a71]">
-                Formation & Intégration à Distance
+                {lang === "fr" ? "Formation & Intégration à Distance" : "Remote Training & Onboarding"}
               </span>
               <h3 className="text-xl md:text-2xl font-display font-bold text-foreground mt-2 mb-3">
-                Formez votre personnel plus vite.
+                {lang === "fr" ? "Formez votre personnel plus vite." : "Train your staff faster."}
               </h3>
               <p className="text-foreground/60 text-sm md:text-base leading-relaxed">
                 Standardisez la formation à travers vos propriétés en plongeant
@@ -257,10 +267,10 @@ const TravelHospitality = () => {
               transition={{ duration: 0.6, delay: 0.15 }}
             >
               <span className="text-xs font-semibold uppercase tracking-widest text-[#2c0a71]">
-                Gestion des Installations & Maintenance
+                {lang === "fr" ? "Gestion des Installations & Maintenance" : "Facility Management & Maintenance"}
               </span>
               <h2 className="text-2xl md:text-4xl lg:text-5xl font-display font-bold text-foreground mt-2 mb-4 md:mb-6">
-                Optimisez les opérations de vos lieux et installations.
+                {lang === "fr" ? "Optimisez les opérations de vos lieux et installations." : "Optimize venue and facility operations."}
               </h2>
               <p className="text-foreground/60 text-sm md:text-lg leading-relaxed max-w-lg">
                 Documentez chaque étage, chambre et espace technique avec un
@@ -284,7 +294,7 @@ const TravelHospitality = () => {
               transition={{ duration: 0.6 }}
             >
               <h2 className="text-2xl md:text-4xl lg:text-5xl font-display font-bold text-foreground mb-4 md:mb-6">
-                Gérez les réparations et améliorations en temps réel.
+                {lang === "fr" ? "Gérez les réparations et améliorations en temps réel." : "Manage repairs and improvements in real time."}
               </h2>
               <p className="text-foreground/60 text-sm md:text-lg leading-relaxed max-w-lg">
                 Évaluez les conditions en temps réel à travers votre portefeuille
@@ -337,10 +347,10 @@ const TravelHospitality = () => {
               transition={{ duration: 0.6, delay: 0.15 }}
             >
               <span className="text-xs font-semibold uppercase tracking-widest text-[#2c0a71]">
-                Suivi des Rénovations & Construction
+                {lang === "fr" ? "Suivi des Rénovations & Construction" : "Renovation & Construction Tracking"}
               </span>
               <h2 className="text-2xl md:text-4xl lg:text-5xl font-display font-bold text-foreground mt-2 mb-4 md:mb-6">
-                Respectez les délais et le budget.
+                {lang === "fr" ? "Respectez les délais et le budget." : "Stay on schedule and on budget."}
               </h2>
               <p className="text-foreground/60 text-sm md:text-lg leading-relaxed max-w-lg">
                 Capturez, documentez et collaborez sur les rénovations d'hôtels
@@ -365,10 +375,10 @@ const TravelHospitality = () => {
               transition={{ duration: 0.6 }}
             >
               <span className="text-xs font-semibold uppercase tracking-widest text-[#2c0a71]">
-                Conformité & Standards
+                {lang === "fr" ? "Conformité & Standards" : "Compliance & Standards"}
               </span>
               <h2 className="text-2xl md:text-4xl lg:text-5xl font-display font-bold text-foreground mt-2 mb-4 md:mb-6">
-                Assurez des standards cohérents dans tout votre portefeuille.
+                {lang === "fr" ? "Assurez des standards cohérents dans tout votre portefeuille." : "Ensure consistent standards across your portfolio."}
               </h2>
               <p className="text-foreground/60 text-sm md:text-lg leading-relaxed max-w-lg">
                 Maintenez la conformité et les standards de marque dans vos
@@ -406,7 +416,7 @@ const TravelHospitality = () => {
             transition={{ duration: 0.5 }}
             className="text-2xl md:text-4xl lg:text-5xl font-display font-bold text-foreground text-center mb-10 md:mb-16"
           >
-            Accélérez les décisions à travers votre équipe.
+            {lang === "fr" ? "Accélérez les décisions à travers votre équipe." : "Accelerate decisions across your team."}
           </motion.h2>
 
           <motion.div
@@ -448,13 +458,13 @@ const TravelHospitality = () => {
             className="text-center mt-10 md:mt-14"
           >
             <p className="text-xs md:text-sm uppercase tracking-widest text-foreground/40 font-semibold mb-2">
-              Les clients PrimeSpace ont constaté :
+              {lang === "fr" ? "Les clients PrimeSpace ont constaté :" : "PrimeSpace clients have seen:"}
             </p>
             <p className="text-3xl md:text-5xl font-display font-bold text-[#2c0a71]">
               25%
             </p>
             <p className="text-sm md:text-base text-foreground/60 max-w-md mx-auto mt-2">
-              d'engagement en ligne supplémentaire grâce aux visites virtuelles.
+              {lang === "fr" ? "d'engagement en ligne supplémentaire grâce aux visites virtuelles." : "additional online engagement thanks to virtual tours."}
             </p>
           </motion.div>
         </div>
@@ -470,7 +480,7 @@ const TravelHospitality = () => {
             transition={{ duration: 0.5 }}
             className="text-2xl md:text-4xl lg:text-5xl font-display font-bold text-foreground text-center mb-10 md:mb-16"
           >
-            Tout ce dont vous avez besoin pour améliorer vos opérations.
+            {lang === "fr" ? "Tout ce dont vous avez besoin pour améliorer vos opérations." : "Everything you need to improve your operations."}
           </motion.h2>
 
           <motion.div
@@ -544,8 +554,7 @@ const TravelHospitality = () => {
             <div className="absolute inset-0 bg-gradient-accent" />
             <div className="relative z-10 py-12 md:py-20 px-5 md:px-8 text-center">
               <h2 className="text-2xl md:text-4xl font-display font-bold text-primary-foreground mb-4 md:mb-6">
-                Découvrez ce que les visites virtuelles peuvent faire pour votre
-                établissement.
+                {lang === "fr" ? "Découvrez ce que les visites virtuelles peuvent faire pour votre établissement." : "Discover what virtual tours can do for your property."}
               </h2>
               <p className="text-base md:text-lg text-primary-foreground/80 max-w-2xl mx-auto mb-8 md:mb-10">
                 Rejoignez les hôtels, resorts et lieux touristiques qui utilisent
@@ -559,7 +568,7 @@ const TravelHospitality = () => {
                   asChild
                 >
                   <Link to="/contact" className="flex items-center gap-2">
-                    Demander une Démo
+                    {lang === "fr" ? "Demander une Démo" : "Request a Demo"}
                     <ArrowRight className="w-5 h-5" />
                   </Link>
                 </Button>
@@ -569,7 +578,7 @@ const TravelHospitality = () => {
                   className="border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10"
                   asChild
                 >
-                  <Link to="/portfolio">Voir le Portfolio</Link>
+                  <Link to="/portfolio">{lang === "fr" ? "Voir le Portfolio" : "View Portfolio"}</Link>
                 </Button>
               </div>
             </div>
@@ -588,10 +597,10 @@ const TravelHospitality = () => {
               transition={{ duration: 0.6 }}
             >
               <span className="text-xs font-semibold uppercase tracking-widest text-[#2c0a71]">
-                Service de Capture
+                {lang === "fr" ? "Service de Capture" : "Capture Service"}
               </span>
               <h2 className="text-2xl md:text-4xl lg:text-5xl font-display font-bold text-foreground mt-2 mb-4 md:mb-6">
-                Laissez-nous créer votre jumeau numérique pour vous.
+                {lang === "fr" ? "Laissez-nous créer votre jumeau numérique pour vous." : "Let us create your digital twin for you."}
               </h2>
               <p className="text-foreground/60 text-sm md:text-lg leading-relaxed max-w-lg mb-6 md:mb-8">
                 Pour tout type d'établissement hôtelier, quelle que soit sa
@@ -635,7 +644,7 @@ const TravelHospitality = () => {
             transition={{ duration: 0.5 }}
             className="text-2xl md:text-4xl lg:text-5xl font-display font-bold text-white text-center mb-10 md:mb-16"
           >
-            FAQ — Visites Virtuelles Tourisme & Hôtellerie
+            {lang === "fr" ? "FAQ — Visites Virtuelles Tourisme & Hôtellerie" : "FAQ — Travel & Hospitality Virtual Tours"}
           </motion.h2>
 
           <Accordion type="single" collapsible className="w-full">

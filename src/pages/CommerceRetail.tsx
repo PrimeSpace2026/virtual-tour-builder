@@ -10,6 +10,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
+import { useI18n } from "@/i18n";
 
 /* ─── Data ────────────────────────────────────────────────────── */
 
@@ -22,7 +23,7 @@ const fadeUp = {
   }),
 };
 
-const faqs = [
+const getFaqs = (lang: string) => [
   {
     question: "Quels livrables les scans 3D et jumeaux numériques PrimeSpace fournissent-ils pour les projets retail ?",
     answer: "PrimeSpace fournit une gamme de livrables précieux pour les équipes retail, alimentant directement les workflows de conception de magasins et de gestion d'espace :\n\n• Plans d'étage schématiques\n• Mesures dimensionnellement précises\n• Fichiers E57\n• Exports BIM (.RVT et IFC)\n• Formats CAO (DWG et XYZ)\n• Tags et Notes intégrés",
@@ -72,6 +73,10 @@ const faqs = [
 /* ─── Page ────────────────────────────────────────────────────── */
 
 const CommerceRetail = () => {
+  const { lang } = useI18n();
+
+  const faqs = getFaqs(lang);
+
   return (
     <Layout>
       <WhatsAppButton />
@@ -86,10 +91,10 @@ const CommerceRetail = () => {
             className="text-center max-w-4xl mx-auto"
           >
             <p className="text-xs md:text-sm uppercase tracking-widest text-foreground/40 font-semibold mb-3">
-              Commerce & Retail
+              {lang === "fr" ? "Commerce & Retail" : "Commerce & Retail"}
             </p>
             <h1 className="text-2xl md:text-4xl lg:text-5xl font-display font-bold text-[#2c0a71] mb-3 md:mb-4 leading-tight">
-              Réinventez le commerce avec la 3D immersive.
+              {lang === "fr" ? "Réinventez le commerce avec la 3D immersive." : "Reinvent retail with immersive 3D."}
             </h1>
             <p className="text-foreground/70 text-sm md:text-lg max-w-3xl mx-auto">
               Des pop-ups aux flagships, les jumeaux numériques PrimeSpace offrent aux équipes retail une visibilité totale sur chaque emplacement, chaque rayon et chaque mètre carré.
@@ -129,7 +134,7 @@ const CommerceRetail = () => {
             className="text-center mb-10 md:mb-16"
           >
             <h2 className="text-2xl md:text-4xl lg:text-5xl font-display font-bold text-foreground mb-3 md:mb-5 leading-tight">
-              Des solutions innovantes pour chaque étape du parcours retail.
+              {lang === "fr" ? "Des solutions innovantes pour chaque étape du parcours retail." : "Innovative solutions for every step of the retail journey."}
             </h2>
           </motion.div>
 

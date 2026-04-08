@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Lock, Mail, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useI18n } from "@/i18n";
 
 const Register = () => {
   const [name, setName] = useState("");
@@ -15,17 +16,19 @@ const Register = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { lang, t } = useI18n();
+  const T = (obj: { fr: string; en: string }) => obj[lang];
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (password !== confirmPassword) {
-      toast({ title: "Erreur", description: "Les mots de passe ne correspondent pas", variant: "destructive" });
+      toast({ title: lang === "fr" ? "Erreur" : "Error", description: lang === "fr" ? "Les mots de passe ne correspondent pas" : "Passwords do not match", variant: "destructive" });
       return;
     }
 
     if (password.length < 6) {
-      toast({ title: "Erreur", description: "Le mot de passe doit contenir au moins 6 caractères", variant: "destructive" });
+      toast({ title: lang === "fr" ? "Erreur" : "Error", description: lang === "fr" ? "Le mot de passe doit contenir au moins 6 caractères" : "Password must be at least 6 characters", variant: "destructive" });
       return;
     }
 
@@ -39,13 +42,13 @@ const Register = () => {
       const data = await res.json();
       if (res.ok && data.token) {
         sessionStorage.setItem("admin_token", data.token);
-        toast({ title: "Succès", description: "Compte créé avec succès !" });
+        toast({ title: lang === "fr" ? "Succès" : "Success", description: lang === "fr" ? "Compte créé avec succès !" : "Account created successfully!" });
         navigate("/admin");
       } else {
-        toast({ title: "Erreur", description: data.error || "Erreur lors de l'inscription", variant: "destructive" });
+        toast({ title: lang === "fr" ? "Erreur" : "Error", description: data.error || (lang === "fr" ? "Erreur lors de l'inscription" : "Registration error"), variant: "destructive" });
       }
     } catch {
-      toast({ title: "Erreur", description: "Impossible de se connecter au serveur", variant: "destructive" });
+      toast({ title: lang === "fr" ? "Erreur" : "Error", description: lang === "fr" ? "Impossible de se connecter au serveur" : "Unable to connect to the server", variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -64,27 +67,27 @@ const Register = () => {
               <div className="w-16 h-16 bg-secondary/10 rounded-full flex items-center justify-center mx-auto mb-4">
                 <User className="w-8 h-8 text-secondary" />
               </div>
-              <h1 className="text-2xl font-display font-bold text-foreground">Créer un compte</h1>
-              <p className="text-muted-foreground mt-2">Inscrivez-vous pour accéder à l'administration</p>
+              <h1 className="text-2xl font-display font-bold text-foreground">{T(t.auth.createAccount)}</h1>
+              <p className="text-muted-foreground mt-2">{T(t.auth.registerSubtitle)}</p>
             </div>
 
             <form onSubmit={handleRegister} className="space-y-4">
               <div>
-                <label className="text-sm font-medium mb-1 block">Nom complet</label>
+                <label className="text-sm font-medium mb-1 block">{T(t.auth.fullName)}</label>
                 <div className="relative">
                   <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder="Votre nom"
+                    placeholder={lang === "fr" ? "Votre nom" : "Your name"}
                     className="pl-10"
                     required
                   />
                 </div>
               </div>
               <div>
-                <label className="text-sm font-medium mb-1 block">Email</label>
+                <label className="text-sm font-medium mb-1 block">{T(t.auth.email)}</label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
@@ -98,21 +101,21 @@ const Register = () => {
                 </div>
               </div>
               <div>
-                <label className="text-sm font-medium mb-1 block">Mot de passe</label>
+                <label className="text-sm font-medium mb-1 block">{T(t.auth.password)}</label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Minimum 6 caractères"
+                    placeholder={lang === "fr" ? "Minimum 6 caractères" : "Minimum 6 characters"}
                     className="pl-10"
                     required
                   />
                 </div>
               </div>
               <div>
-                <label className="text-sm font-medium mb-1 block">Confirmer le mot de passe</label>
+                <label className="text-sm font-medium mb-1 block">{T(t.auth.confirmPassword)}</label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
@@ -126,15 +129,15 @@ const Register = () => {
                 </div>
               </div>
               <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? "Création..." : "Créer mon compte"}
+                {loading ? T(t.auth.creating) : T(t.auth.createMyAccount)}
               </Button>
             </form>
 
             <div className="mt-6 text-center">
               <p className="text-sm text-muted-foreground">
-                Déjà un compte ?{" "}
+                {T(t.auth.hasAccount)}{" "}
                 <Link to="/login" className="text-secondary font-medium hover:underline">
-                  Se connecter
+                  {T(t.auth.signIn)}
                 </Link>
               </p>
             </div>

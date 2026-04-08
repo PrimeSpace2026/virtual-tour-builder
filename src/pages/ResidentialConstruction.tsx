@@ -4,6 +4,7 @@ import { ArrowRight } from "lucide-react";
 import { Layout } from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
+import { useI18n } from "@/i18n";
 
 /* ─── Data ────────────────────────────────────────────────────── */
 
@@ -19,6 +20,8 @@ const fadeUp = {
 /* ─── Page ────────────────────────────────────────────────────── */
 
 const ResidentialConstruction = () => {
+  const { lang } = useI18n();
+
   return (
     <Layout>
       <WhatsAppButton />
@@ -33,10 +36,10 @@ const ResidentialConstruction = () => {
             className="text-center max-w-4xl mx-auto"
           >
             <p className="text-xs md:text-sm uppercase tracking-widest text-foreground/40 font-semibold mb-3">
-              Construction Résidentielle
+              {lang === "fr" ? "Construction Résidentielle" : "Residential Construction"}
             </p>
             <h1 className="text-2xl md:text-4xl lg:text-5xl font-display font-bold text-[#2c0a71] mb-3 md:mb-4 leading-tight">
-              La référence numérique pour la construction de maisons.
+              {lang === "fr" ? "La référence numérique pour la construction de maisons." : "The digital standard for home construction."}
             </h1>
             <p className="text-foreground/70 text-sm md:text-lg max-w-3xl mx-auto">
               Du début de la construction à la vente finale, PrimeSpace aide à
@@ -80,7 +83,7 @@ const ResidentialConstruction = () => {
             className="text-center mb-10 md:mb-16"
           >
             <h2 className="text-2xl md:text-4xl lg:text-5xl font-display font-bold text-foreground mb-3 md:mb-5 leading-tight">
-              Gérez votre chantier et valorisez votre marque.
+              {lang === "fr" ? "Gérez votre chantier et valorisez votre marque." : "Manage your build and market your brand."}
             </h2>
             <p className="text-foreground/60 text-sm md:text-lg max-w-3xl mx-auto">
               PrimeSpace connecte vos jalons de construction à vos objectifs
@@ -107,10 +110,10 @@ const ResidentialConstruction = () => {
                 />
               </div>
               <span className="text-xs font-semibold uppercase tracking-widest text-[#2c0a71]">
-                Maisons Neuves
+                {lang === "fr" ? "Maisons Neuves" : "New Homes"}
               </span>
               <h3 className="text-xl md:text-2xl font-display font-bold text-foreground mt-2 mb-3">
-                Créez une radiographie numérique avant la fermeture des murs.
+                {lang === "fr" ? "Créez une radiographie numérique avant la fermeture des murs." : "Create a digital X-ray before walls close."}
               </h3>
               <p className="text-foreground/60 text-sm md:text-base leading-relaxed">
                 Vérifiez le travail des corps de métier à distance, documentez les
@@ -136,10 +139,10 @@ const ResidentialConstruction = () => {
                 />
               </div>
               <span className="text-xs font-semibold uppercase tracking-widest text-[#2c0a71]">
-                Valorisez la Marque
+                {lang === "fr" ? "Valorisez la Marque" : "Market the Brand"}
               </span>
               <h3 className="text-xl md:text-2xl font-display font-bold text-foreground mt-2 mb-3">
-                Transformez chaque maison terminée en visite virtuelle 24/7.
+                {lang === "fr" ? "Transformez chaque maison terminée en visite virtuelle 24/7." : "Turn every finished home into a 24/7 virtual tour."}
               </h3>
               <p className="text-foreground/60 text-sm md:text-base leading-relaxed">
                 Maintenez la cohérence de votre marque avec la référence du
@@ -175,7 +178,7 @@ const ResidentialConstruction = () => {
               transition={{ duration: 0.6, delay: 0.15 }}
             >
               <h2 className="text-2xl md:text-4xl lg:text-5xl font-display font-bold text-foreground mb-4 md:mb-6">
-                Obtenez un relevé permanent avant la pose des cloisons.
+                {lang === "fr" ? "Obtenez un relevé permanent avant la pose des cloisons." : "Get a permanent record before drywall goes up."}
               </h2>
               <p className="text-foreground/60 text-sm md:text-lg leading-relaxed max-w-lg">
                 Créez un relevé 3D permanent et pré-cloisons de chaque
@@ -199,7 +202,7 @@ const ResidentialConstruction = () => {
               transition={{ duration: 0.6 }}
             >
               <h2 className="text-2xl md:text-4xl lg:text-5xl font-display font-bold text-foreground mb-4 md:mb-6">
-                Débloquez les inspections de chantier à distance.
+                {lang === "fr" ? "Débloquez les inspections de chantier à distance." : "Unlock remote job site inspections."}
               </h2>
               <p className="text-foreground/60 text-sm md:text-lg leading-relaxed max-w-lg">
                 Permettez à votre équipe d'inspecter virtuellement 15 chantiers
@@ -251,7 +254,7 @@ const ResidentialConstruction = () => {
               transition={{ duration: 0.6, delay: 0.15 }}
             >
               <h2 className="text-2xl md:text-4xl lg:text-5xl font-display font-bold text-foreground mb-4 md:mb-6">
-                Mettez votre contenu social en pilote automatique.
+                {lang === "fr" ? "Mettez votre contenu social en pilote automatique." : "Put your social content on autopilot."}
               </h2>
               <p className="text-foreground/60 text-sm md:text-lg leading-relaxed max-w-lg">
                 Notre IA transforme automatiquement vos scans 3D en visites
@@ -274,7 +277,7 @@ const ResidentialConstruction = () => {
               transition={{ duration: 0.6 }}
             >
               <h2 className="text-2xl md:text-4xl lg:text-5xl font-display font-bold text-foreground mb-4 md:mb-6">
-                Élevez votre standard, partout.
+                {lang === "fr" ? "Élevez votre standard, partout." : "Elevate your standard, everywhere."}
               </h2>
               <p className="text-foreground/60 text-sm md:text-lg leading-relaxed max-w-lg">
                 Utilisez les visites 3D pour présenter chaque modèle unique,
@@ -326,7 +329,7 @@ const ResidentialConstruction = () => {
               transition={{ duration: 0.6, delay: 0.15 }}
             >
               <h2 className="text-2xl md:text-4xl lg:text-5xl font-display font-bold text-foreground mb-4 md:mb-6">
-                Dirigez le trafic exactement là où vous avez besoin de ventes.
+                {lang === "fr" ? "Dirigez le trafic exactement là où vous avez besoin de ventes." : "Direct traffic exactly where you need sales."}
               </h2>
               <p className="text-foreground/60 text-sm md:text-lg leading-relaxed max-w-lg mb-6 md:mb-8">
                 Arrêtez de gaspiller votre budget publicitaire sur des
@@ -357,7 +360,7 @@ const ResidentialConstruction = () => {
             transition={{ duration: 0.5 }}
             className="text-2xl md:text-4xl lg:text-5xl font-display font-bold text-foreground text-center mb-10 md:mb-16"
           >
-            Vous serez en bonne compagnie.
+            {lang === "fr" ? "Vous serez en bonne compagnie." : "You'll be in good company."}
           </motion.h2>
 
           <motion.div
@@ -403,7 +406,7 @@ const ResidentialConstruction = () => {
             className="text-center mt-10 md:mt-14"
           >
             <p className="text-xs md:text-sm uppercase tracking-widest text-foreground/40 font-semibold mb-2">
-              Les clients PrimeSpace ont constaté :
+              {lang === "fr" ? "Les clients PrimeSpace ont constaté :" : "PrimeSpace clients have seen:"}
             </p>
             <p className="text-3xl md:text-5xl font-display font-bold text-[#2c0a71]">
               30%
@@ -426,7 +429,7 @@ const ResidentialConstruction = () => {
             transition={{ duration: 0.5 }}
             className="text-2xl md:text-4xl lg:text-5xl font-display font-bold text-foreground text-center mb-10 md:mb-16"
           >
-            Vos projets, maîtrisés en 3D.
+            {lang === "fr" ? "Vos projets, maîtrisés en 3D." : "Your projects, mastered in 3D."}
           </motion.h2>
 
           <div className="grid md:grid-cols-3 gap-5 md:gap-6">
@@ -492,7 +495,7 @@ const ResidentialConstruction = () => {
             <div className="absolute inset-0 bg-gradient-accent" />
             <div className="relative z-10 py-12 md:py-20 px-5 md:px-8 text-center">
               <h2 className="text-2xl md:text-4xl font-display font-bold text-primary-foreground mb-4 md:mb-6">
-                Prêt à protéger vos marges et accélérer vos ventes ?
+                {lang === "fr" ? "Prêt à protéger vos marges et accélérer vos ventes ?" : "Ready to protect your margins and accelerate sales?"}
               </h2>
               <p className="text-base md:text-lg text-primary-foreground/80 max-w-2xl mx-auto mb-8 md:mb-10">
                 Rejoignez les constructeurs qui utilisent déjà les jumeaux
@@ -506,7 +509,7 @@ const ResidentialConstruction = () => {
                   asChild
                 >
                   <Link to="/contact" className="flex items-center gap-2">
-                    Demander une Démo
+                    {lang === "fr" ? "Demander une Démo" : "Request a Demo"}
                     <ArrowRight className="w-5 h-5" />
                   </Link>
                 </Button>
@@ -516,7 +519,7 @@ const ResidentialConstruction = () => {
                   className="border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10"
                   asChild
                 >
-                  <Link to="/portfolio">Voir le Portfolio</Link>
+                  <Link to="/portfolio">{lang === "fr" ? "Voir le Portfolio" : "View Portfolio"}</Link>
                 </Button>
               </div>
             </div>
@@ -535,10 +538,10 @@ const ResidentialConstruction = () => {
               transition={{ duration: 0.6 }}
             >
               <span className="text-xs font-semibold uppercase tracking-widest text-[#2c0a71]">
-                Service de Capture
+                {lang === "fr" ? "Service de Capture" : "Capture Service"}
               </span>
               <h2 className="text-2xl md:text-4xl lg:text-5xl font-display font-bold text-foreground mt-2 mb-4 md:mb-6">
-                Laissez-nous créer vos jumeaux numériques pour vous.
+                {lang === "fr" ? "Laissez-nous créer vos jumeaux numériques pour vous." : "Let us create your digital twins for you."}
               </h2>
               <p className="text-foreground/60 text-sm md:text-lg leading-relaxed max-w-lg mb-6 md:mb-8">
                 Le réseau mondial de techniciens PrimeSpace Capture Services peut

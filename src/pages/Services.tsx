@@ -22,37 +22,38 @@ import { SectionHeading } from "@/components/SectionHeading";
 import { FeatureCard } from "@/components/FeatureCard";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
 import { ProductBannerPopup } from "@/components/ProductBannerPopup";
+import { useI18n } from "@/i18n";
 
 const services = [
   {
     icon: Camera,
-    title: "Scan 3D Haute Précision",
-    description: "Scanner haute précision capturant chaque détail de votre espace avec une résolution 4K et des mesures exactes.",
+    title: { fr: "Scan 3D Haute Précision", en: "High-Precision 3D Scanning" },
+    description: { fr: "Scanner haute précision capturant chaque détail de votre espace avec une résolution 4K et des mesures exactes.", en: "High-precision scanner capturing every detail of your space with 4K resolution and exact measurements." },
   },
   {
     icon: Move3d,
-    title: "Visite Virtuelle 3D",
-    description: "Expérience immersive permettant aux visiteurs de se déplacer librement dans votre espace comme s'ils y étaient.",
+    title: { fr: "Visite Virtuelle 3D", en: "3D Virtual Tour" },
+    description: { fr: "Expérience immersive permettant aux visiteurs de se déplacer librement dans votre espace comme s'ils y étaient.", en: "Immersive experience allowing visitors to move freely through your space as if they were there." },
   },
   {
     icon: Layout,
-    title: "Plans 2D & 3D",
-    description: "Plans d'étage détaillés et maquettes 3D générés automatiquement à partir de nos scans.",
+    title: { fr: "Plans 2D & 3D", en: "2D & 3D Floor Plans" },
+    description: { fr: "Plans d'étage détaillés et maquettes 3D générés automatiquement à partir de nos scans.", en: "Detailed floor plans and 3D models automatically generated from our scans." },
   },
   {
     icon: Image,
-    title: "Photographie HDR",
-    description: "Photos haute résolution de qualité professionnelle extraites directement de la visite virtuelle.",
+    title: { fr: "Photographie HDR", en: "HDR Photography" },
+    description: { fr: "Photos haute résolution de qualité professionnelle extraites directement de la visite virtuelle.", en: "High-resolution professional quality photos extracted directly from the virtual tour." },
   },
   {
     icon: Video,
-    title: "Vidéos Cinématiques",
-    description: "Vidéos de présentation animées pour vos réseaux sociaux et supports marketing.",
+    title: { fr: "Vidéos Cinématiques", en: "Cinematic Videos" },
+    description: { fr: "Vidéos de présentation animées pour vos réseaux sociaux et supports marketing.", en: "Animated presentation videos for your social media and marketing materials." },
   },
   {
     icon: FileText,
-    title: "Documentation Technique",
-    description: "Rapports détaillés avec mesures, annotations et analyses pour vos projets.",
+    title: { fr: "Documentation Technique", en: "Technical Documentation" },
+    description: { fr: "Rapports détaillés avec mesures, annotations et analyses pour vos projets.", en: "Detailed reports with measurements, annotations, and analyses for your projects." },
   },
 ];
 
@@ -101,38 +102,41 @@ const packages = [
 ];
 
 const industries = [
-  { icon: Building2, name: "Immobilier", description: "Villas, appartements, terrains" },
-  { icon: Hotel, name: "Hôtellerie", description: "Hôtels, riads, maisons d'hôtes" },
-  { icon: Store, name: "Commerce", description: "Boutiques, showrooms, centres commerciaux" },
-  { icon: Landmark, name: "Culture", description: "Musées, galeries, sites historiques" },
-  { icon: Building, name: "Entreprise", description: "Bureaux, usines, entrepôts" },
-  { icon: Utensils, name: "Restauration", description: "Restaurants, cafés, espaces événementiels" },
+  { icon: Building2, name: { fr: "Immobilier", en: "Real Estate" }, description: { fr: "Villas, appartements, terrains", en: "Villas, apartments, land" } },
+  { icon: Hotel, name: { fr: "Hôtellerie", en: "Hospitality" }, description: { fr: "Hôtels, riads, maisons d'hôtes", en: "Hotels, riads, guesthouses" } },
+  { icon: Store, name: { fr: "Commerce", en: "Commerce" }, description: { fr: "Boutiques, showrooms, centres commerciaux", en: "Shops, showrooms, malls" } },
+  { icon: Landmark, name: { fr: "Culture", en: "Culture" }, description: { fr: "Musées, galeries, sites historiques", en: "Museums, galleries, historic sites" } },
+  { icon: Building, name: { fr: "Entreprise", en: "Business" }, description: { fr: "Bureaux, usines, entrepôts", en: "Offices, factories, warehouses" } },
+  { icon: Utensils, name: { fr: "Restauration", en: "Dining" }, description: { fr: "Restaurants, cafés, espaces événementiels", en: "Restaurants, cafés, event spaces" } },
 ];
 
 const processSteps = [
   {
     step: "01",
-    title: "Consultation",
-    description: "Discussion de vos besoins et planification de l'intervention. Nous définissons ensemble les objectifs et le périmètre du projet.",
+    title: { fr: "Consultation", en: "Consultation" },
+    description: { fr: "Discussion de vos besoins et planification de l'intervention. Nous définissons ensemble les objectifs et le périmètre du projet.", en: "Discussion of your needs and planning the intervention. Together we define the objectives and scope of the project." },
   },
   {
     step: "02",
-    title: "Capture",
-    description: "Notre équipe se déplace avec le  Pro 3 pour scanner votre espace. Rapide et non-intrusif.",
+    title: { fr: "Capture", en: "Capture" },
+    description: { fr: "Notre équipe se déplace avec le  Pro 3 pour scanner votre espace. Rapide et non-intrusif.", en: "Our team arrives with the Pro 3 to scan your space. Quick and non-intrusive." },
   },
   {
     step: "03",
-    title: "Traitement",
-    description: "Traitement professionnel des données capturées. Optimisation de la qualité et ajout des fonctionnalités.",
+    title: { fr: "Traitement", en: "Processing" },
+    description: { fr: "Traitement professionnel des données capturées. Optimisation de la qualité et ajout des fonctionnalités.", en: "Professional processing of captured data. Quality optimization and feature additions." },
   },
   {
     step: "04",
-    title: "Livraison",
-    description: "Vous recevez votre visite virtuelle avec tous les livrables convenus. Formation à l'utilisation incluse.",
+    title: { fr: "Livraison", en: "Delivery" },
+    description: { fr: "Vous recevez votre visite virtuelle avec tous les livrables convenus. Formation à l'utilisation incluse.", en: "You receive your virtual tour with all agreed deliverables. Usage training included." },
   },
 ];
 
 const Services = () => {
+  const { lang, t } = useI18n();
+  const T = (obj: { fr: string; en: string }) => obj[lang];
+
   return (
     <PageLayout>
       <WhatsAppButton />
@@ -147,7 +151,7 @@ const Services = () => {
               animate={{ opacity: 1, y: 0 }}
               className="inline-block px-4 py-2 rounded-full bg-primary-foreground/10 text-primary-foreground text-sm font-medium mb-6 backdrop-blur-sm border border-primary-foreground/20"
             >
-              Nos Services
+              {T(t.services.title)}
             </motion.span>
             <motion.h1
               initial={{ opacity: 0, y: 20 }}
@@ -155,7 +159,7 @@ const Services = () => {
               transition={{ delay: 0.1 }}
               className="text-3xl md:text-5xl lg:text-6xl font-display font-bold text-primary-foreground mb-4 md:mb-6"
             >
-              Solutions de Visites Virtuelles 3D
+              {lang === "fr" ? "Solutions de Visites Virtuelles 3D" : "3D Virtual Tour Solutions"}
             </motion.h1>
             <motion.p
               initial={{ opacity: 0, y: 20 }}
@@ -163,8 +167,9 @@ const Services = () => {
               transition={{ delay: 0.2 }}
               className="text-base md:text-lg text-primary-foreground/70"
             >
-              Des solutions adaptées à tous vos besoins, de la simple visite virtuelle 
-              aux projets de documentation technique les plus complexes.
+              {lang === "fr"
+                ? "Des solutions adaptées à tous vos besoins, de la simple visite virtuelle aux projets de documentation technique les plus complexes."
+                : "Solutions tailored to all your needs, from simple virtual tours to the most complex technical documentation projects."}
             </motion.p>
           </div>
         </div>
@@ -174,18 +179,18 @@ const Services = () => {
       <section className="py-12 md:py-24 bg-background">
         <div className="container mx-auto px-4 lg:px-8">
           <SectionHeading
-            badge="Ce que nous offrons"
-            title="Services Complets"
-            description="Une gamme complète de services pour digitaliser vos espaces"
+            badge={lang === "fr" ? "Ce que nous offrons" : "What We Offer"}
+            title={lang === "fr" ? "Services Complets" : "Complete Services"}
+            description={lang === "fr" ? "Une gamme complète de services pour digitaliser vos espaces" : "A full range of services to digitize your spaces"}
           />
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {services.map((service, index) => (
               <FeatureCard
-                key={service.title}
+                key={T(service.title)}
                 icon={service.icon}
-                title={service.title}
-                description={service.description}
+                title={T(service.title)}
+                description={T(service.description)}
                 delay={index * 0.1}
               />
             ))}
@@ -203,27 +208,27 @@ const Services = () => {
               viewport={{ once: true }}
             >
               <span className="inline-block px-4 py-1.5 rounded-full bg-secondary/10 text-secondary text-sm font-medium mb-4">
-                Technologie de Pointe
+                {lang === "fr" ? "Technologie de Pointe" : "Cutting-Edge Technology"}
               </span>
               <h2 className="text-2xl md:text-4xl font-display font-bold text-foreground mb-4 md:mb-6">
                 
               </h2>
               <p className="text-muted-foreground mb-6">
-                Notre scanner 3D le plus avancé du marché. Grâce à ses capteurs 
-                LiDAR et ses caméras haute résolution, il capture chaque espace avec une précision 
-                millimétrique et une qualité d'image exceptionnelle.
+                {lang === "fr"
+                  ? "Notre scanner 3D le plus avancé du marché. Grâce à ses capteurs LiDAR et ses caméras haute résolution, il capture chaque espace avec une précision millimétrique et une qualité d'image exceptionnelle."
+                  : "Our most advanced 3D scanner on the market. With its LiDAR sensors and high-resolution cameras, it captures every space with millimetric precision and exceptional image quality."}
               </p>
               <ul className="space-y-3">
                 {[
-                  "Résolution 4K pour des images d'une netteté parfaite",
-                  "Capteur LiDAR pour des mesures ultra-précises",
-                  "Capture rapide: jusqu'à 300m²/heure",
-                  "Compatible réalité virtuelle et augmentée",
-                  "Format universel exportable vers CAO/BIM",
+                  { fr: "Résolution 4K pour des images d'une netteté parfaite", en: "4K resolution for perfectly sharp images" },
+                  { fr: "Capteur LiDAR pour des mesures ultra-précises", en: "LiDAR sensor for ultra-precise measurements" },
+                  { fr: "Capture rapide: jusqu'à 300m²/heure", en: "Fast capture: up to 300m²/hour" },
+                  { fr: "Compatible réalité virtuelle et augmentée", en: "Compatible with virtual and augmented reality" },
+                  { fr: "Format universel exportable vers CAO/BIM", en: "Universal format exportable to CAD/BIM" },
                 ].map((item) => (
-                  <li key={item} className="flex items-start gap-3">
+                  <li key={T(item)} className="flex items-start gap-3">
                     <Check className="w-5 h-5 text-secondary mt-0.5 flex-shrink-0" />
-                    <span className="text-foreground">{item}</span>
+                    <span className="text-foreground">{T(item)}</span>
                   </li>
                 ))}
               </ul>
@@ -239,10 +244,10 @@ const Services = () => {
                 <div className="text-center">
                   <Move3d className="w-24 h-24 text-secondary mx-auto mb-6" />
                   <h3 className="text-2xl font-display font-bold text-primary-foreground mb-2">
-                    Précision Exceptionnelle
+                    {lang === "fr" ? "Précision Exceptionnelle" : "Exceptional Precision"}
                   </h3>
                   <p className="text-primary-foreground/70">
-                    ±1% de marge d'erreur sur les mesures
+                    {lang === "fr" ? "±1% de marge d'erreur sur les mesures" : "±1% margin of error on measurements"}
                   </p>
                 </div>
               </div>
@@ -326,15 +331,15 @@ const Services = () => {
       <section className="py-12 md:py-24 bg-muted/50">
         <div className="container mx-auto px-4 lg:px-8">
           <SectionHeading
-            badge="Secteurs d'Activité"
-            title="Solutions Pour Tous Les Secteurs"
-            description="Nos visites virtuelles s'adaptent à tous les types d'espaces et d'industries"
+            badge={lang === "fr" ? "Secteurs d'Activité" : "Industries"}
+            title={lang === "fr" ? "Solutions Pour Tous Les Secteurs" : "Solutions for All Industries"}
+            description={lang === "fr" ? "Nos visites virtuelles s'adaptent à tous les types d'espaces et d'industries" : "Our virtual tours adapt to all types of spaces and industries"}
           />
 
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4">
             {industries.map((industry, index) => (
               <motion.div
-                key={industry.name}
+                key={T(industry.name)}
                 initial={{ opacity: 0, scale: 0.95 }}
                 whileInView={{ opacity: 1, scale: 1 }}
                 viewport={{ once: true }}
@@ -342,8 +347,8 @@ const Services = () => {
                 className="bg-card rounded-xl p-4 md:p-6 text-center shadow-soft hover:shadow-elevated transition-all duration-300 hover:-translate-y-1"
               >
                 <industry.icon className="w-8 h-8 md:w-10 md:h-10 text-secondary mx-auto mb-2 md:mb-3" />
-                <h3 className="font-semibold text-foreground mb-1">{industry.name}</h3>
-                <p className="text-xs text-muted-foreground">{industry.description}</p>
+                <h3 className="font-semibold text-foreground mb-1">{T(industry.name)}</h3>
+                <p className="text-xs text-muted-foreground">{T(industry.description)}</p>
               </motion.div>
             ))}
           </div>
@@ -354,9 +359,9 @@ const Services = () => {
       <section className="py-12 md:py-24 bg-background">
         <div className="container mx-auto px-4 lg:px-8">
           <SectionHeading
-            badge="Notre Processus"
-            title="Comment Ça Marche?"
-            description="Un processus simple et efficace de la prise de contact à la livraison"
+            badge={lang === "fr" ? "Notre Processus" : "Our Process"}
+            title={lang === "fr" ? "Comment Ça Marche?" : "How It Works?"}
+            description={lang === "fr" ? "Un processus simple et efficace de la prise de contact à la livraison" : "A simple and efficient process from initial contact to delivery"}
           />
 
           <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
@@ -373,9 +378,9 @@ const Services = () => {
                   {step.step}
                 </div>
                 <h3 className="font-display font-semibold text-lg md:text-xl text-foreground mb-2">
-                  {step.title}
+                  {T(step.title)}
                 </h3>
-                <p className="text-muted-foreground">{step.description}</p>
+                <p className="text-muted-foreground">{T(step.description)}</p>
                 
                 {index < processSteps.length - 1 && (
                   <ArrowRight className="hidden lg:block absolute top-12 -right-3 w-6 h-6 text-secondary/30" />
@@ -396,7 +401,7 @@ const Services = () => {
               viewport={{ once: true }}
               className="text-2xl md:text-4xl font-display font-bold text-primary-foreground mb-4 md:mb-6"
             >
-              Prêt à Digitaliser Votre Espace?
+              {lang === "fr" ? "Prêt à Digitaliser Votre Espace?" : "Ready to Digitize Your Space?"}
             </motion.h2>
             <motion.p
               initial={{ opacity: 0, y: 20 }}
@@ -405,8 +410,9 @@ const Services = () => {
               transition={{ delay: 0.1 }}
               className="text-base md:text-lg text-primary-foreground/70 mb-8 md:mb-10"
             >
-              Contactez-nous pour un devis personnalisé gratuit. Notre équipe vous 
-              accompagne de A à Z dans votre projet.
+              {lang === "fr"
+                ? "Contactez-nous pour un devis personnalisé gratuit. Notre équipe vous accompagne de A à Z dans votre projet."
+                : "Contact us for a free personalized quote. Our team supports you from A to Z in your project."}
             </motion.p>
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -416,7 +422,7 @@ const Services = () => {
             >
               <Button variant="hero" size="lg" asChild>
                 <Link to="/contact" className="flex items-center gap-2">
-                  Obtenir un Devis Gratuit
+                  {lang === "fr" ? "Obtenir un Devis Gratuit" : "Get a Free Quote"}
                   <ArrowRight className="w-5 h-5" />
                 </Link>
               </Button>

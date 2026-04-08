@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useI18n } from "@/i18n";
 import { motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowRight, Play, ExternalLink, Filter, Loader2, MapPin, LayoutGrid } from "lucide-react";
@@ -80,6 +81,13 @@ interface Project {
 
 const Portfolio = () => {
   const navigate = useNavigate();
+  const { lang, t } = useI18n();
+  const T = (obj: { fr: string; en: string }) => obj[lang];
+  const categoryLabel = (cat: string) => {
+    if (cat === "Tous") return T(t.portfolio.allCategories);
+    const map: Record<string, string> = { "Hôtellerie": "Hospitality", "Immobilier": "Real Estate", "Commerce": "Commerce", "Culture": "Culture", "Restaurant": "Restaurant", "Entreprise": "Business", "Wedding venue": "Wedding Venue" };
+    return lang === "fr" ? cat : (map[cat] || cat);
+  };
   const [activeCategory, setActiveCategory] = useState("Tous");
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
@@ -142,7 +150,7 @@ const Portfolio = () => {
               animate={{ opacity: 1, y: 0 }}
               className="inline-block px-4 py-2 rounded-full bg-primary-foreground/10 text-primary-foreground text-sm font-medium mb-6 backdrop-blur-sm border border-primary-foreground/20"
             >
-              Nos Réalisations
+              {lang === "fr" ? "Nos Réalisations" : "Our Projects"}
             </motion.span>
             <motion.h1
               initial={{ opacity: 0, y: 20 }}
@@ -150,7 +158,7 @@ const Portfolio = () => {
               transition={{ delay: 0.1 }}
               className="text-3xl md:text-5xl lg:text-6xl font-display font-bold text-primary-foreground mb-4 md:mb-6"
             >
-              Portfolio
+              {T(t.portfolio.title)}
             </motion.h1>
             <motion.p
               initial={{ opacity: 0, y: 20 }}
@@ -158,8 +166,9 @@ const Portfolio = () => {
               transition={{ delay: 0.2 }}
               className="text-base md:text-lg text-primary-foreground/70"
             >
-              Explorez nos visites virtuelles 3D réalisées pour des clients 
-              dans toute la Tunisie et découvrez la qualité de notre travail.
+              {lang === "fr"
+                ? "Explorez nos visites virtuelles 3D réalisées pour des clients dans toute la Tunisie et découvrez la qualité de notre travail."
+                : "Explore our 3D virtual tours created for clients across Tunisia and discover the quality of our work."}
             </motion.p>
           </div>
         </div>
@@ -185,7 +194,7 @@ const Portfolio = () => {
                 }`}
               >
                 <LayoutGrid className="w-4 h-4" />
-                Grille
+                {lang === "fr" ? "Grille" : "Grid"}
               </button>
               <button
                 onClick={() => setViewMode("map")}
@@ -196,7 +205,7 @@ const Portfolio = () => {
                 }`}
               >
                 <MapPin className="w-4 h-4" />
-                Carte
+                {lang === "fr" ? "Carte" : "Map"}
               </button>
             </div>
 
@@ -213,7 +222,7 @@ const Portfolio = () => {
                     : "bg-muted text-muted-foreground hover:bg-muted/80"
                 }`}
               >
-                {category}
+                {categoryLabel(category)}
               </button>
             ))}
             </div>
@@ -260,7 +269,7 @@ const Portfolio = () => {
                             {project.location && (
                               <><span className="text-xs text-gray-600">{project.location}</span><br /></>
                             )}
-                            <span className="text-xs">{project.category} • {project.size}</span>
+                            <span className="text-xs">{categoryLabel(project.category)} • {project.size}</span>
                           </div>
                         </Popup>
                       </Marker>
@@ -293,7 +302,7 @@ const Portfolio = () => {
                           {project.location}
                         </p>
                       )}
-                      <p className="text-xs text-muted-foreground">{project.category}</p>
+                      <p className="text-xs text-muted-foreground">{categoryLabel(project.category)}</p>
                       <p className="text-xs text-secondary font-medium">{project.size}</p>
                     </div>
                   </motion.div>
@@ -322,12 +331,12 @@ const Portfolio = () => {
                     <div className="flex gap-3">
                       <Button variant="hero" size="sm" className="flex items-center gap-2">
                         <Play className="w-4 h-4" />
-                        Explorer
+                        {lang === "fr" ? "Explorer" : "Explore"}
                       </Button>
                     </div>
                   </div>
                   <span className="absolute top-4 left-4 px-3 py-1 bg-card/90 backdrop-blur-sm rounded-full text-sm font-medium text-foreground">
-                    {project.category}
+                    {categoryLabel(project.category)}
                   </span>
                 </div>
                 
@@ -349,7 +358,7 @@ const Portfolio = () => {
                       {project.size}
                     </span>
                     <span className="text-sm text-foreground hover:text-secondary transition-colors flex items-center gap-1">
-                      Voir la visite
+                      {T(t.portfolio.viewTour)}
                       {project.tourUrl?.startsWith("http") && !project.tourUrl.includes("my.matterport.com/show/?m=") ? (
                         <ExternalLink className="w-4 h-4" />
                       ) : (
@@ -368,10 +377,10 @@ const Portfolio = () => {
             <div className="text-center py-20">
               <Filter className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-xl font-semibold text-foreground mb-2">
-                Aucun projet dans cette catégorie
+                {lang === "fr" ? "Aucun projet dans cette catégorie" : "No projects in this category"}
               </h3>
               <p className="text-muted-foreground">
-                Sélectionnez une autre catégorie ou contactez-nous pour un projet similaire.
+                {lang === "fr" ? "Sélectionnez une autre catégorie ou contactez-nous pour un projet similaire." : "Select another category or contact us for a similar project."}
               </p>
             </div>
           )}
@@ -390,7 +399,7 @@ const Portfolio = () => {
               viewport={{ once: true }}
               className="text-2xl md:text-4xl font-display font-bold text-primary-foreground mb-4 md:mb-6"
             >
-              Votre Espace Mérite D'être Vu
+              {lang === "fr" ? "Votre Espace Mérite D'être Vu" : "Your Space Deserves to Be Seen"}
             </motion.h2>
             <motion.p
               initial={{ opacity: 0, y: 20 }}
@@ -399,8 +408,9 @@ const Portfolio = () => {
               transition={{ delay: 0.1 }}
               className="text-base md:text-lg text-primary-foreground/70 mb-8 md:mb-10"
             >
-              Rejoignez nos clients satisfaits et offrez une expérience unique 
-              à vos visiteurs avec une visite virtuelle professionnelle.
+              {lang === "fr"
+                ? "Rejoignez nos clients satisfaits et offrez une expérience unique à vos visiteurs avec une visite virtuelle professionnelle."
+                : "Join our satisfied clients and offer a unique experience to your visitors with a professional virtual tour."}
             </motion.p>
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -410,7 +420,7 @@ const Portfolio = () => {
             >
               <Button variant="hero" size="lg" asChild>
                 <Link to="/contact" className="flex items-center gap-2">
-                  Démarrer Mon Projet
+                  {lang === "fr" ? "Démarrer Mon Projet" : "Start My Project"}
                   <ArrowRight className="w-5 h-5" />
                 </Link>
               </Button>

@@ -1,25 +1,6 @@
 import { Link } from "react-router-dom";
 import { MapPin, Phone, Mail, Facebook, Instagram } from "lucide-react";
-
-const footerLinks = {
-  services: [
-    { label: "Visites Virtuelles 360°", href: "/services" },
-    { label: "Plans 2D/3D", href: "/services" },
-    { label: "Photographie HDR", href: "/services" },
-    { label: "Vidéos Immersives", href: "/services" },
-  ],
-  company: [
-    { label: "À Propos", href: "/about" },
-    { label: "Portfolio", href: "/portfolio" },
-    { label: "Contact", href: "/contact" },
-  ],
-  industries: [
-    { label: "Immobilier", href: "/portfolio" },
-    { label: "Hôtellerie", href: "/portfolio" },
-    { label: "Commerce", href: "/portfolio" },
-    { label: "Culture", href: "/portfolio" },
-  ],
-};
+import { useI18n } from "@/i18n";
 
 const socialLinks = [
   { icon: Facebook, href: "https://www.facebook.com/profile.php?id=61587746914175", label: "Facebook" },
@@ -28,6 +9,28 @@ const socialLinks = [
 ];
 
 export const Footer = () => {
+  const { lang, t } = useI18n();
+  const T = (obj: { fr: string; en: string }) => obj[lang];
+
+  const footerLinks = {
+    services: [
+      { label: T(t.footer.virtualTours), href: "/services" },
+      { label: T(t.footer.plans2d3d), href: "/services" },
+      { label: T(t.footer.hdrPhoto), href: "/services" },
+      { label: T(t.footer.immersiveVideos), href: "/services" },
+    ],
+    company: [
+      { label: T(t.footer.aboutLink), href: "/about" },
+      { label: T(t.footer.portfolioLink), href: "/portfolio" },
+      { label: T(t.footer.contactLink), href: "/contact" },
+    ],
+    industries: [
+      { label: T(t.footer.realEstate), href: "/portfolio" },
+      { label: T(t.footer.hospitality), href: "/portfolio" },
+      { label: T(t.footer.commerce), href: "/portfolio" },
+      { label: T(t.footer.culture), href: "/portfolio" },
+    ],
+  };
   return (
     <footer className="bg-primary text-primary-foreground">
       <div className="container mx-auto px-4 lg:px-8 py-10 md:py-16">
@@ -39,8 +42,7 @@ export const Footer = () => {
               <span className="font-display font-bold text-xl">PrimeSpace</span>
             </Link>
             <p className="text-primary-foreground/70 mb-6 max-w-sm">
-              Transformez vos espaces en expériences immersives. 
-              Visites virtuelles 3D professionnelles en Tunisie.
+              {T(t.footer.brand)}
             </p>
             <div className="space-y-3">
               <a href="tel:+21652664495" className="flex items-center gap-3 text-primary-foreground/70 hover:text-secondary transition-colors">
@@ -60,7 +62,7 @@ export const Footer = () => {
 
           {/* Services */}
           <div>
-            <h4 className="font-display font-semibold text-lg mb-4">Services</h4>
+            <h4 className="font-display font-semibold text-lg mb-4">{T(t.footer.services)}</h4>
             <ul className="space-y-3">
               {footerLinks.services.map((link) => (
                 <li key={link.label}>
@@ -77,7 +79,7 @@ export const Footer = () => {
 
           {/* Company */}
           <div>
-            <h4 className="font-display font-semibold text-lg mb-4">Entreprise</h4>
+            <h4 className="font-display font-semibold text-lg mb-4">{T(t.footer.company)}</h4>
             <ul className="space-y-3">
               {footerLinks.company.map((link) => (
                 <li key={link.label}>
@@ -94,7 +96,7 @@ export const Footer = () => {
 
           {/* Industries */}
           <div>
-            <h4 className="font-display font-semibold text-lg mb-4">Secteurs</h4>
+            <h4 className="font-display font-semibold text-lg mb-4">{T(t.footer.sectors)}</h4>
             <ul className="space-y-3">
               {footerLinks.industries.map((link) => (
                 <li key={link.label}>
@@ -113,7 +115,7 @@ export const Footer = () => {
         {/* Bottom Bar */}
         <div className="mt-8 md:mt-12 pt-6 md:pt-8 border-t border-primary-foreground/10 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-primary-foreground/50 text-sm">
-            © {new Date().getFullYear()} Visite3D. Tous droits réservés.
+            © {new Date().getFullYear()} Visite3D. {lang === "fr" ? "Tous droits réservés." : "All rights reserved."}
           </p>
           <div className="flex items-center gap-4">
             {socialLinks.map((social) => (

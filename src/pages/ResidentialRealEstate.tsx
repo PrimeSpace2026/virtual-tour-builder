@@ -10,6 +10,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
+import { useI18n } from "@/i18n";
 
 /* ─── Data ────────────────────────────────────────────────────── */
 
@@ -22,7 +23,7 @@ const fadeUp = {
   }),
 };
 
-const faqs = [
+const getFaqs = (lang: string) => [
   {
     question: "Les visites virtuelles aident-elles les annonces à obtenir plus d'engagement et des visites mieux qualifiées ?",
     answer: "Oui. Les annonces avec visites virtuelles 3D génèrent en moyenne 49% de leads qualifiés supplémentaires. Les acheteurs peuvent explorer chaque pièce en détail avant de se déplacer, ce qui réduit les visites non pertinentes et accélère le processus de vente.",
@@ -56,6 +57,10 @@ const faqs = [
 /* ─── Page ────────────────────────────────────────────────────── */
 
 const ResidentialRealEstate = () => {
+  const { lang } = useI18n();
+
+  const faqs = getFaqs(lang);
+
   return (
     <Layout>
       <WhatsAppButton />
@@ -70,10 +75,10 @@ const ResidentialRealEstate = () => {
             className="text-center max-w-4xl mx-auto"
           >
             <p className="text-xs md:text-sm uppercase tracking-widest text-foreground/40 font-semibold mb-3">
-              Immobilier Résidentiel
+              {lang === "fr" ? "Immobilier Résidentiel" : "Residential Real Estate"}
             </p>
             <h1 className="text-2xl md:text-4xl lg:text-5xl font-display font-bold text-[#2c0a71] mb-3 md:mb-4 leading-tight">
-              Des solutions complètes de la capture à la conclusion.
+              {lang === "fr" ? "Des solutions complètes de la capture à la conclusion." : "Complete solutions from capture to closing."}
             </h1>
             <p className="text-foreground/70 text-sm md:text-lg max-w-3xl mx-auto">
               Sublimez vos annonces avec des journées portes ouvertes virtuelles 24/7, immersives, informatives et conçues pour l'exploration — depuis n'importe quel appareil.
@@ -113,7 +118,7 @@ const ResidentialRealEstate = () => {
             className="text-center mb-10 md:mb-16"
           >
             <h2 className="text-2xl md:text-4xl lg:text-5xl font-display font-bold text-foreground mb-3 md:mb-5 leading-tight">
-              Parfaites vos présentations. Concluez plus vite.
+              {lang === "fr" ? "Parfaites vos présentations. Concluez plus vite." : "Perfect your presentations. Close faster."}
             </h2>
           </motion.div>
 
@@ -135,10 +140,10 @@ const ResidentialRealEstate = () => {
                 />
               </div>
               <span className="text-xs font-semibold uppercase tracking-widest text-[#2c0a71]">
-                Gagnez Plus de Mandats
+                {lang === "fr" ? "Gagnez Plus de Mandats" : "Win More Listings"}
               </span>
               <h3 className="text-xl md:text-2xl font-display font-bold text-foreground mt-2 mb-3">
-                Impressionnez les vendeurs avec vos visites interactives 3D.
+                {lang === "fr" ? "Impressionnez les vendeurs avec vos visites interactives 3D." : "Impress sellers with your interactive 3D tours."}
               </h3>
               <p className="text-foreground/60 text-sm md:text-base leading-relaxed">
                 Démarquez-vous de la concurrence avec une approche innovante du marketing immobilier. Offrez des visites virtuelles immersives qui mettent en valeur chaque espace du bien.
@@ -162,10 +167,10 @@ const ResidentialRealEstate = () => {
                 />
               </div>
               <span className="text-xs font-semibold uppercase tracking-widest text-[#2c0a71]">
-                Boostez l'Engagement
+                {lang === "fr" ? "Boostez l'Engagement" : "Boost Engagement"}
               </span>
               <h3 className="text-xl md:text-2xl font-display font-bold text-foreground mt-2 mb-3">
-                Transformez l'exploration en action.
+                {lang === "fr" ? "Transformez l'exploration en action." : "Turn exploration into action."}
               </h3>
               <p className="text-foreground/60 text-sm md:text-base leading-relaxed">
                 Permettez aux acheteurs de comparer les biens en détail. Partagez les plans d'étage et les dimensions des pièces en un clic.
@@ -200,10 +205,10 @@ const ResidentialRealEstate = () => {
               transition={{ duration: 0.6, delay: 0.15 }}
             >
               <span className="text-xs font-semibold uppercase tracking-widest text-[#2c0a71]">
-                Contenu Premium
+                {lang === "fr" ? "Contenu Premium" : "Premium Content"}
               </span>
               <h2 className="text-2xl md:text-4xl lg:text-5xl font-display font-bold text-foreground mt-2 mb-4 md:mb-6">
-                Démarquez vos propriétés.
+                {lang === "fr" ? "Démarquez vos propriétés." : "Make your properties stand out."}
               </h2>
               <p className="text-foreground/60 text-sm md:text-lg leading-relaxed max-w-lg">
                 Ajoutez du contenu interactif accrocheur à vos visites 3D que vous pouvez publier sur les réseaux sociaux ou intégrer sur n'importe quel site web. Générez des photos, plans d'étage et vidéos à partir d'un seul scan.
@@ -224,7 +229,7 @@ const ResidentialRealEstate = () => {
               transition={{ duration: 0.6 }}
             >
               <h2 className="text-2xl md:text-4xl lg:text-5xl font-display font-bold text-foreground mb-4 md:mb-6">
-                Attirez des acheteurs qualifiés.
+                {lang === "fr" ? "Attirez des acheteurs qualifiés." : "Attract qualified buyers."}
               </h2>
               <p className="text-foreground/60 text-sm md:text-lg leading-relaxed max-w-lg">
                 Permettez aux clients de se projeter dans l'espace, leur donnant une confiance accrue dans leurs décisions d'achat. Les visites virtuelles filtrent naturellement les prospects et attirent des acheteurs véritablement intéressés.
@@ -273,10 +278,10 @@ const ResidentialRealEstate = () => {
               transition={{ duration: 0.6, delay: 0.15 }}
             >
               <span className="text-xs font-semibold uppercase tracking-widest text-[#2c0a71]">
-                Plateforme Marketing
+                {lang === "fr" ? "Plateforme Marketing" : "Marketing Platform"}
               </span>
               <h2 className="text-2xl md:text-4xl lg:text-5xl font-display font-bold text-foreground mt-2 mb-4 md:mb-6">
-                Créez, stockez et partagez vos médias en un seul endroit.
+                {lang === "fr" ? "Créez, stockez et partagez vos médias en un seul endroit." : "Create, store, and share your media in one place."}
               </h2>
               <p className="text-foreground/60 text-sm md:text-lg leading-relaxed max-w-lg mb-6 md:mb-8">
                 Obtenez des photos haute qualité, des visites 3D, des plans d'étage et des vidéos via une plateforme unique — puis améliorez-les avec des automatisations intégrées. Accédez aux analytics, partagez les insights avec vos clients et gérez chaque aspect de vos annonces en quelques clics.
@@ -303,7 +308,7 @@ const ResidentialRealEstate = () => {
             transition={{ duration: 0.5 }}
             className="text-2xl md:text-4xl lg:text-5xl font-display font-bold text-foreground text-center mb-10 md:mb-16"
           >
-            Vous serez en bonne compagnie.
+            {lang === "fr" ? "Vous serez en bonne compagnie." : "You'll be in good company."}
           </motion.h2>
 
           <motion.div
@@ -342,7 +347,7 @@ const ResidentialRealEstate = () => {
             className="text-center mt-10 md:mt-14"
           >
             <p className="text-xs md:text-sm uppercase tracking-widest text-foreground/40 font-semibold mb-2">
-              SELON LES ACHETEURS
+              {lang === "fr" ? "SELON LES ACHETEURS" : "ACCORDING TO BUYERS"}
             </p>
             <p className="text-3xl md:text-5xl font-display font-bold text-[#2c0a71]">
               63%
@@ -364,7 +369,7 @@ const ResidentialRealEstate = () => {
             transition={{ duration: 0.5 }}
             className="text-2xl md:text-4xl lg:text-5xl font-display font-bold text-foreground text-center mb-10 md:mb-16"
           >
-            Une vue complète de chaque propriété.
+            {lang === "fr" ? "Une vue complète de chaque propriété." : "A complete view of every property."}
           </motion.h2>
 
           <div className="grid md:grid-cols-3 gap-5 md:gap-6">
@@ -427,7 +432,7 @@ const ResidentialRealEstate = () => {
             <div className="absolute inset-0 bg-gradient-accent" />
             <div className="relative z-10 py-12 md:py-20 px-5 md:px-8 text-center">
               <h2 className="text-2xl md:text-4xl font-display font-bold text-primary-foreground mb-4 md:mb-6">
-                Prêt à transformer votre marketing immobilier ?
+                {lang === "fr" ? "Prêt à transformer votre marketing immobilier ?" : "Ready to transform your real estate marketing?"}
               </h2>
               <p className="text-base md:text-lg text-primary-foreground/80 max-w-2xl mx-auto mb-8 md:mb-10">
                 Rejoignez les agents et agences qui utilisent déjà les visites virtuelles 3D pour gagner plus de mandats, vendre plus vite et impressionner leurs clients.
@@ -439,7 +444,7 @@ const ResidentialRealEstate = () => {
                   asChild
                 >
                   <Link to="/contact" className="flex items-center gap-2">
-                    Demander une Démo
+                    {lang === "fr" ? "Demander une Démo" : "Request a Demo"}
                     <ArrowRight className="w-5 h-5" />
                   </Link>
                 </Button>
@@ -449,7 +454,7 @@ const ResidentialRealEstate = () => {
                   className="border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10"
                   asChild
                 >
-                  <Link to="/portfolio">Voir le Portfolio</Link>
+                  <Link to="/portfolio">{lang === "fr" ? "Voir le Portfolio" : "View Portfolio"}</Link>
                 </Button>
               </div>
             </div>
@@ -468,10 +473,10 @@ const ResidentialRealEstate = () => {
               transition={{ duration: 0.6 }}
             >
               <span className="text-xs font-semibold uppercase tracking-widest text-[#2c0a71]">
-                Service de Capture
+                {lang === "fr" ? "Service de Capture" : "Capture Service"}
               </span>
               <h2 className="text-2xl md:text-4xl lg:text-5xl font-display font-bold text-foreground mt-2 mb-4 md:mb-6">
-                Laissez-nous créer vos visites virtuelles pour vous.
+                {lang === "fr" ? "Laissez-nous créer vos visites virtuelles pour vous." : "Let us create your virtual tours for you."}
               </h2>
               <p className="text-foreground/60 text-sm md:text-lg leading-relaxed max-w-lg mb-6 md:mb-8">
                 PrimeSpace Capture Services met à votre disposition des techniciens professionnels pour scanner vos propriétés et livrer des visites virtuelles de haute qualité — généralement en 48 heures.

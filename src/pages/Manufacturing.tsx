@@ -10,67 +10,68 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
+import { useI18n } from "@/i18n";
 
 /* ─── Data ────────────────────────────────────────────────────── */
 
-const stats = [
-  { value: "53%", label: "Réduction des déplacements et coûts" },
-  { value: "70%", label: "Réduction du temps sur site" },
-  { value: "30%", label: "Amélioration de l'efficacité de la formation" },
-  { value: "75%", label: "Réduction des coûts de planification" },
+const getStats = (lang: string) => [
+  { value: "53%", label: lang === "fr" ? "Réduction des déplacements et coûts" : "Reduction in travel and costs" },
+  { value: "70%", label: lang === "fr" ? "Réduction du temps sur site" : "Reduction in on-site time" },
+  { value: "30%", label: lang === "fr" ? "Amélioration de l'efficacité de la formation" : "Improvement in training efficiency" },
+  { value: "75%", label: lang === "fr" ? "Réduction des coûts de planification" : "Reduction in planning costs" },
 ];
 
 
-const features = [
+const getFeatures = (lang: string) => [
   {
     image: "https://images.ctfassets.net/icnj41gkyohw/7gjCfnPhgHkfaKlSnH8KU9/0127c7458eec99dd01b3b6c33bb04e5e/Enterprise_Security_W.svg",
-    title: "Sécurité.",
-    description: "Gardez vos données privées et sécurisées, avec différents niveaux de permissions utilisateur.",
+    title: lang === "fr" ? "Sécurité." : "Security.",
+    description: lang === "fr" ? "Gardez vos données privées et sécurisées, avec différents niveaux de permissions utilisateur." : "Keep your data private and secure, with different levels of user permissions.",
     link: "https://matterport.com/trust",
   },
   {
     image: "https://images.ctfassets.net/icnj41gkyohw/3wDimHkJbmUkjuEb1u4KI6/17362a119c18d6047bf6fa6af7111422/Partners_W_1.png",
-    title: "Partenariats.",
-    description: "Améliorez et personnalisez vos flux de travail existants grâce aux intégrations partenaires.",
+    title: lang === "fr" ? "Partenariats." : "Partnerships.",
+    description: lang === "fr" ? "Améliorez et personnalisez vos flux de travail existants grâce aux intégrations partenaires." : "Enhance and customize your existing workflows with partner integrations.",
     link: "https://matterport.com/partners",
   },
   {
     image: "https://images.ctfassets.net/icnj41gkyohw/4qvYWm4EYPVWJEajTtYLpZ/4ebba13dc61eee9132af536f817daf62/MFG_Collab_W.svg",
-    title: "Outils collaboratifs.",
-    description: "Collaborez, planifiez et partagez avec votre équipe, vos prestataires et vos partenaires.",
+    title: lang === "fr" ? "Outils collaboratifs." : "Collaborative tools.",
+    description: lang === "fr" ? "Collaborez, planifiez et partagez avec votre équipe, vos prestataires et vos partenaires." : "Collaborate, plan, and share with your team, contractors, and partners.",
     link: "https://matterport.com/digital-twin-features",
   },
   {
     image: "https://images.ctfassets.net/icnj41gkyohw/3whzXGGKUK4la4hZifhAUe/dd6ecaf4e31ff442587469d5b1f1ab01/ACC_Simple_W_1.png",
-    title: "Intégrations.",
-    description: "Obtenez des fichiers BIM et des nuages de points pour la planification, la vérification et l'ingénierie.",
+    title: lang === "fr" ? "Intégrations." : "Integrations.",
+    description: lang === "fr" ? "Obtenez des fichiers BIM et des nuages de points pour la planification, la vérification et l'ingénierie." : "Get BIM files and point clouds for planning, verification, and engineering.",
     link: "https://matterport.com/digital-twin-features",
   },
 ];
 
-const faqs = [
+const getFaqs = (lang: string) => [
   {
-    question: "Quels problèmes PrimeSpace aide-t-il les fabricants à résoudre dans leurs installations ?",
+    question: lang === "fr" ? "Quels problèmes PrimeSpace aide-t-il les fabricants à résoudre dans leurs installations ?" : "What problems does PrimeSpace help manufacturers solve in their facilities?",
     answer: "PrimeSpace aide les fabricants à réduire les temps d'arrêt et les reprises en créant des jumeaux numériques 3D précis qui documentent visuellement les conditions existantes dans les usines, ateliers et entrepôts. Ces jumeaux numériques améliorent la planification des espaces, la visibilité des actifs et la coordination de la maintenance.\n\nPrimeSpace réduit également la perte de connaissances et améliore l'intégration des nouveaux employés grâce à des formations immersives et une documentation contextuelle complète.",
   },
   {
-    question: "Quel niveau de précision de scan 3D est généralement requis pour l'agencement d'usine et la détection de conflits ?",
+    question: lang === "fr" ? "Quel niveau de précision de scan 3D est généralement requis pour l'agencement d'usine et la détection de conflits ?" : "What level of 3D scan accuracy is typically required for factory layout and clash detection?",
     answer: "Pour l'agencement d'usine et la détection de conflits, les équipes visent généralement une précision de 1 à 2 %, selon l'échelle de l'équipement. Cela suffit pour vérifier les dégagements, planifier les tracés et repérer les conflits avant l'installation. Une précision plus stricte peut être nécessaire dans les zones à tuyauterie dense ou avec des tolérances mécaniques strictes.",
   },
   {
-    question: "Quelle précision de mesure et quelles tolérances les scans 3D PrimeSpace peuvent-ils atteindre sur un sol d'usine ?",
+    question: lang === "fr" ? "Quelle précision de mesure et quelles tolérances les scans 3D PrimeSpace peuvent-ils atteindre sur un sol d'usine ?" : "What measurement accuracy and tolerances can PrimeSpace 3D scans achieve on a factory floor?",
     answer: "Les scans haute précision de PrimeSpace prennent en charge les fichiers BIM LOD 200 et les nuages de points prêts pour l'ingénierie, adaptés à la plupart des tâches d'agencement, de vérification et de planification. Si votre projet nécessite des tolérances plus strictes ou une certification métrologique formelle, confirmez ces exigences avant la capture.",
   },
   {
-    question: "PrimeSpace peut-il capturer de très grandes installations industrielles, y compris les mezzanines et longues lignes de production ?",
+    question: lang === "fr" ? "PrimeSpace peut-il capturer de très grandes installations industrielles, y compris les mezzanines et longues lignes de production ?" : "Can PrimeSpace capture very large industrial facilities, including mezzanines and long production lines?",
     answer: "Oui. PrimeSpace peut capturer des installations étendues, y compris les mezzanines et les longues lignes de production, grâce à la caméra Pro3 ou le service PrimeSpace Capture Services. Les clients ont documenté des dizaines de milliers de mètres carrés pour la révision à distance, la planification et la formation, avec des outils de confidentialité disponibles pour les zones sensibles.",
   },
   {
-    question: "Comment PrimeSpace s'intègre-t-il avec Autodesk Revit, Navisworks ou Procore pour les cas d'usage manufacturiers ?",
+    question: lang === "fr" ? "Comment PrimeSpace s'intègre-t-il avec Autodesk Revit, Navisworks ou Procore pour les cas d'usage manufacturiers ?" : "How does PrimeSpace integrate with Autodesk Revit, Navisworks, or Procore for manufacturing use cases?",
     answer: "PrimeSpace s'intègre directement avec Autodesk Revit et Navisworks, permettant d'importer des nuages de points et des fichiers BIM dans vos flux de travail existants. L'intégration Procore facilite la gestion de projet et la documentation du site. Ces intégrations permettent aux équipes de planification et d'ingénierie de travailler avec des données spatiales précises sans changer leurs outils habituels.",
   },
   {
-    question: "Comment les modèles 3D sont-ils hébergés et sécurisés ?",
+    question: lang === "fr" ? "Comment les modèles 3D sont-ils hébergés et sécurisés ?" : "How are 3D models hosted and secured?",
     answer: "Les modèles sont hébergés sur la plateforme cloud sécurisée de PrimeSpace avec des contrôles entreprise comme le SSO SAML 2.0, les permissions basées sur les rôles, la conformité SOC 2 Type II et l'alignement RGPD/CCPA. Les administrateurs peuvent gérer les utilisateurs, auditer l'activité et contrôler le partage.",
   },
 ];
@@ -87,6 +88,12 @@ const fadeUp = {
 /* ─── Page ────────────────────────────────────────────────────── */
 
 const Manufacturing = () => {
+  const { lang } = useI18n();
+
+  const stats = getStats(lang);
+  const features = getFeatures(lang);
+  const faqs = getFaqs(lang);
+
   return (
     <Layout>
       <WhatsAppButton />
@@ -101,7 +108,7 @@ const Manufacturing = () => {
             className="text-center max-w-4xl mx-auto"
           >
             <h1 className="text-2xl md:text-4xl lg:text-5xl font-display font-bold text-[#2c0a71] mb-3 md:mb-4 leading-tight">
-              Révolutionnez les opérations manufacturières.
+              {lang === "fr" ? "Révolutionnez les opérations manufacturières." : "Revolutionize manufacturing operations."}
             </h1>
             <p className="text-foreground/70 text-sm md:text-lg max-w-3xl mx-auto">
               Assurez des opérations fluides sur site, rationalisez la formation
@@ -143,7 +150,7 @@ const Manufacturing = () => {
             className="text-center mb-10 md:mb-16"
           >
             <h2 className="text-2xl md:text-4xl lg:text-5xl font-display font-bold text-foreground mb-3 md:mb-5 leading-tight">
-              Mieux pour vos équipes, vos processus et la planète.
+              {lang === "fr" ? "Mieux pour vos équipes, vos processus et la planète." : "Better for your people, processes, and the planet."}
             </h2>
             <p className="text-foreground/60 text-sm md:text-lg max-w-3xl mx-auto">
               Découvrez toutes les façons dont les jumeaux numériques PrimeSpace
@@ -167,7 +174,7 @@ const Manufacturing = () => {
                 loading="lazy"
               />
               <h3 className="text-lg md:text-xl font-display font-bold text-foreground mb-4">
-                Formation Intelligente
+                {lang === "fr" ? "Formation Intelligente" : "Smarter Training"}
               </h3>
               <ul className="space-y-2.5">
                 <li className="flex items-start gap-2 text-sm md:text-base text-foreground/70">
@@ -204,7 +211,7 @@ const Manufacturing = () => {
                 loading="lazy"
               />
               <h3 className="text-lg md:text-xl font-display font-bold text-foreground mb-4">
-                Immobilier Industriel
+                {lang === "fr" ? "Immobilier Industriel" : "Industrial Real Estate"}
               </h3>
               <ul className="space-y-2.5">
                 <li className="flex items-start gap-2 text-sm md:text-base text-foreground/70">
@@ -237,7 +244,7 @@ const Manufacturing = () => {
                 loading="lazy"
               />
               <h3 className="text-lg md:text-xl font-display font-bold text-foreground mb-4">
-                Durabilité à Grande Échelle
+                {lang === "fr" ? "Durabilité à Grande Échelle" : "Far-Reaching Sustainability"}
               </h3>
               <ul className="space-y-2.5">
                 <li className="flex items-start gap-2 text-sm md:text-base text-foreground/70">
@@ -289,7 +296,7 @@ const Manufacturing = () => {
               transition={{ duration: 0.6, delay: 0.15 }}
             >
               <h2 className="text-2xl md:text-4xl lg:text-5xl font-display font-bold text-foreground mb-4 md:mb-6">
-                Augmentez l'efficacité opérationnelle.
+                {lang === "fr" ? "Augmentez l'efficacité opérationnelle." : "Increase operating efficiency."}
               </h2>
               <p className="text-foreground/60 text-sm md:text-lg leading-relaxed max-w-lg">
                 Mettez vos installations manufacturières en ligne pour visualiser
@@ -329,7 +336,7 @@ const Manufacturing = () => {
             transition={{ duration: 0.5, delay: 0.1 }}
           >
             <h2 className="text-2xl md:text-4xl lg:text-5xl font-display font-bold text-foreground mb-4 md:mb-6">
-              Optimisez vos processus.
+              {lang === "fr" ? "Optimisez vos processus." : "Optimize your processes."}
             </h2>
             <p className="text-foreground/60 text-sm md:text-lg leading-relaxed max-w-3xl mb-6 md:mb-8">
               Accélérez la planification d'espace et la modernisation de vos usines
@@ -359,7 +366,7 @@ const Manufacturing = () => {
             viewport={{ once: true }}
             className="text-xs md:text-sm uppercase tracking-widest text-foreground/40 font-semibold mb-2"
           >
-            En chiffres
+            {lang === "fr" ? "En chiffres" : "By the numbers"}
           </motion.p>
           <motion.h3
             initial={{ opacity: 0, y: 12 }}
@@ -367,7 +374,7 @@ const Manufacturing = () => {
             viewport={{ once: true }}
             className="text-xl md:text-3xl font-display font-bold text-foreground mb-8 md:mb-12"
           >
-            Les clients PrimeSpace ont constaté :
+            {lang === "fr" ? "Les clients PrimeSpace ont constaté :" : "PrimeSpace clients have seen:"}
           </motion.h3>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
@@ -421,7 +428,7 @@ const Manufacturing = () => {
               className="order-1 lg:order-2"
             >
               <h2 className="text-2xl md:text-4xl lg:text-5xl font-display font-bold text-foreground mb-4 md:mb-6">
-                Vers une plus grande durabilité.
+                {lang === "fr" ? "Vers une plus grande durabilité." : "Toward greater sustainability."}
               </h2>
               <p className="text-foreground/60 text-sm md:text-lg leading-relaxed mb-6 md:mb-8 max-w-lg">
                 Réduisez les émissions grâce à l'accès à distance aux sites.
@@ -451,7 +458,7 @@ const Manufacturing = () => {
             transition={{ duration: 0.5 }}
             className="text-2xl md:text-4xl lg:text-5xl font-display font-bold text-foreground text-center mb-10 md:mb-16"
           >
-            Vous serez en bonne compagnie.
+            {lang === "fr" ? "Vous serez en bonne compagnie." : "You'll be in good company."}
           </motion.h2>
 
           <div className="grid md:grid-cols-2 gap-6 md:gap-8">
@@ -543,7 +550,7 @@ const Manufacturing = () => {
               transition={{ duration: 0.6 }}
             >
               <h2 className="text-2xl md:text-4xl lg:text-5xl font-display font-bold text-foreground mb-4 md:mb-6">
-                Activez la maintenance prédictive.
+                {lang === "fr" ? "Activez la maintenance prédictive." : "Enable predictive maintenance."}
               </h2>
               <p className="text-foreground/60 text-sm md:text-lg leading-relaxed mb-6 md:mb-8 max-w-lg">
                 Augmentez le temps de fonctionnement des équipements en intégrant
@@ -605,7 +612,7 @@ const Manufacturing = () => {
               transition={{ duration: 0.6, delay: 0.2 }}
             >
               <h2 className="text-2xl md:text-4xl lg:text-5xl font-display font-bold text-foreground mb-4 md:mb-6">
-                Espace de production. Moteur de performance.
+                {lang === "fr" ? "Espace de production. Moteur de performance." : "Production space. Performance engine."}
               </h2>
               <p className="text-foreground/60 text-sm md:text-lg leading-relaxed mb-6 md:mb-8 max-w-lg">
                 Les fabricants utilisent les jumeaux numériques PrimeSpace pour
@@ -637,7 +644,7 @@ const Manufacturing = () => {
             transition={{ duration: 0.5 }}
             className="text-2xl md:text-4xl lg:text-5xl font-display font-bold text-foreground text-center mb-10 md:mb-16"
           >
-            Une suite de fonctionnalités puissantes.
+            {lang === "fr" ? "Une suite de fonctionnalités puissantes." : "A powerful suite of features."}
           </motion.h2>
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 md:gap-6">
@@ -691,7 +698,7 @@ const Manufacturing = () => {
               transition={{ duration: 0.6 }}
             >
               <h2 className="text-2xl md:text-4xl lg:text-5xl font-display font-bold text-foreground mb-4 md:mb-6">
-                Capture à grande échelle, perturbation minimale.
+                {lang === "fr" ? "Capture à grande échelle, perturbation minimale." : "Large-scale capture, minimal disruption."}
               </h2>
               <p className="text-foreground/60 text-sm md:text-lg leading-relaxed mb-6 md:mb-8 max-w-lg">
                 Que vous travailliez avec nos professionnels ou scanniez vos

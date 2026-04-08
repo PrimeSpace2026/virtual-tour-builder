@@ -3,6 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ServerGate } from "@/components/ServerGate";
 import { ServerStatusProvider } from "@/context/ServerStatusContext";
+import { I18nProvider } from "@/i18n";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import Index from "./pages/Index";
@@ -38,6 +39,7 @@ const queryClient = new QueryClient();
 const App = () => (
   <ServerStatusProvider>
     <ServerGate>
+      <I18nProvider>
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
           <Toaster />
@@ -76,6 +78,7 @@ const App = () => (
           </BrowserRouter>
         </TooltipProvider>
       </QueryClientProvider>
+      </I18nProvider>
     </ServerGate>
   </ServerStatusProvider>
 );

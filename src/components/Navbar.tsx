@@ -1,35 +1,36 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, Phone, ChevronDown, Building2, HardHat, Factory, ShieldCheck, Home, Plane, ShoppingCart, Building, Zap, Fuel } from "lucide-react";
+import { Menu, X, Phone, ChevronDown, Building2, HardHat, Factory, ShieldCheck, Home, Plane, ShoppingCart, Building, Zap, Fuel, Globe } from "lucide-react";
 import { Button } from "./ui/button";
 import { cn } from "@/lib/utils";
-
-const navLinks = [
-  { href: "/", label: "Accueil" },
-  { href: "/portfolio", label: "Portfolio" },
-  { href: "/benefits", label: "Solutions", hasMega: true },
-  { href: "/about", label: "À Propos" },
-  { href: "/contact", label: "Contact" },
-];
-
-const megaIndustries = [
-  { icon: Building2, label: "Immobilier Commercial", href: "/industries/commercial-real-estate" },
-  { icon: HardHat, label: "Architecture & Construction", href: "/industries/architecture-construction" },
-  { icon: Factory, label: "Industrie", href: "/industries/manufacturing" },
-  { icon: ShieldCheck, label: "Assurance", href: "/industries/insurance" },
-  { icon: Home, label: "Construction Résidentielle", href: "/industries/residential-construction" },
-  { icon: Plane, label: "Tourisme & Hôtellerie", href: "/industries/travel-hospitality" },
-  { icon: ShoppingCart, label: "Commerce & Retail", href: "/industries/commerce-retail" },
-  { icon: Home, label: "Immobilier Résidentiel", href: "/industries/residential-real-estate" },
-  { icon: Building, label: "Gouvernement", href: "/industries/government" },
-  { icon: Zap, label: "Énergie & Utilités", href: "/industries/energy-utilities" },
-  { icon: Fuel, label: "Pétrole & Gaz", href: "/industries/oil-gas" },
-];
-
-
+import { useI18n } from "@/i18n";
 
 export const Navbar = () => {
+  const { lang, setLang, t } = useI18n();
+  const T = (obj: { fr: string; en: string }) => obj[lang];
+
+  const navLinks = [
+    { href: "/", label: T(t.nav.home) },
+    { href: "/portfolio", label: T(t.nav.portfolio) },
+    { href: "/benefits", label: T(t.nav.solutions), hasMega: true },
+    { href: "/about", label: T(t.nav.about) },
+    { href: "/contact", label: T(t.nav.contact) },
+  ];
+
+  const megaIndustries = [
+    { icon: Building2, label: T(t.nav.industryItems.commercialRealEstate), href: "/industries/commercial-real-estate" },
+    { icon: HardHat, label: T(t.nav.industryItems.architecture), href: "/industries/architecture-construction" },
+    { icon: Factory, label: T(t.nav.industryItems.manufacturing), href: "/industries/manufacturing" },
+    { icon: ShieldCheck, label: T(t.nav.industryItems.insurance), href: "/industries/insurance" },
+    { icon: Home, label: T(t.nav.industryItems.residentialConstruction), href: "/industries/residential-construction" },
+    { icon: Plane, label: T(t.nav.industryItems.travelHospitality), href: "/industries/travel-hospitality" },
+    { icon: ShoppingCart, label: T(t.nav.industryItems.commerceRetail), href: "/industries/commerce-retail" },
+    { icon: Home, label: T(t.nav.industryItems.residentialRealEstate), href: "/industries/residential-real-estate" },
+    { icon: Building, label: T(t.nav.industryItems.government), href: "/industries/government" },
+    { icon: Zap, label: T(t.nav.industryItems.energy), href: "/industries/energy-utilities" },
+    { icon: Fuel, label: T(t.nav.industryItems.oilGas), href: "/industries/oil-gas" },
+  ];
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [megaOpen, setMegaOpen] = useState(false);
@@ -122,7 +123,7 @@ export const Navbar = () => {
                         className="absolute top-full left-1/2 -translate-x-1/2 mt-4 w-[340px] bg-card rounded-2xl shadow-elevated border border-border p-8 z-50"
                       >
                         <div>
-                          <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-4">Pour Votre Secteur</h4>
+                          <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-4">{T(t.nav.industries)}</h4>
                           <div className="space-y-3">
                             {megaIndustries.map((item) => (
                               <Link
@@ -162,8 +163,19 @@ export const Navbar = () => {
             )}
           </div>
 
-          {/* CTA Button */}
+          {/* CTA + Lang Switcher */}
           <div className="hidden lg:flex items-center gap-4">
+            <button
+              onClick={() => setLang(lang === "fr" ? "en" : "fr")}
+              className={cn(
+                "flex items-center gap-1 text-sm font-medium transition-colors",
+                scrolled || lightHero ? "text-foreground hover:text-[#2c0a71]" : "text-primary-foreground hover:text-primary-foreground/80"
+              )}
+              title={lang === "fr" ? "Switch to English" : "Passer en Français"}
+            >
+              <Globe className="w-4 h-4" />
+              {lang === "fr" ? "EN" : "FR"}
+            </button>
             <a href="https://www.instagram.com/_primespacestudio_" target="_blank" rel="noopener noreferrer" className={cn("transition-colors hover:text-[#E1306C]", scrolled || lightHero ? "text-foreground" : "text-primary-foreground")}>
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
             </a>
@@ -176,7 +188,7 @@ export const Navbar = () => {
             <Button variant={scrolled ? "secondary" : lightHero ? "secondary" : "hero"} size="default" asChild>
               <Link to="/contact" className="flex items-center gap-2">
                 <Phone className="w-4 h-4" />
-                Demander un Devis
+                {T(t.nav.cta)}
               </Link>
             </Button>
           </div>
@@ -231,7 +243,7 @@ export const Navbar = () => {
                         >
                           <div className="pl-2 pt-2 pb-3 space-y-4">
                             <div>
-                              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Pour Votre Secteur</p>
+                              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">{T(t.nav.industries)}</p>
                               <div className="space-y-2">
                                 {megaIndustries.map((item) => (
                                   <Link
@@ -268,6 +280,13 @@ export const Navbar = () => {
                 )
               )}
               <div className="flex items-center gap-4 mt-4 justify-center">
+                <button
+                  onClick={() => setLang(lang === "fr" ? "en" : "fr")}
+                  className="flex items-center gap-1 text-sm font-medium text-foreground hover:text-[#2c0a71] transition-colors"
+                >
+                  <Globe className="w-4 h-4" />
+                  {lang === "fr" ? "English" : "Français"}
+                </button>
                 <a href="https://www.instagram.com/_primespacestudio_" target="_blank" rel="noopener noreferrer" className="text-foreground hover:text-[#E1306C] transition-colors">
                   <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
                 </a>
@@ -281,7 +300,7 @@ export const Navbar = () => {
               <Button variant="secondary" className="mt-2 w-full" asChild>
                 <Link to="/contact" className="flex items-center gap-2">
                   <Phone className="w-4 h-4" />
-                  Demander un Devis
+                  {T(t.nav.cta)}
                 </Link>
               </Button>
             </div>

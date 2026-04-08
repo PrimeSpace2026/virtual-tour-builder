@@ -10,80 +10,87 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
+import { useI18n } from "@/i18n";
 
 /* ─── Data ────────────────────────────────────────────────────── */
 
-const stats = [
-  { value: "50%", label: "Réduction du temps de traitement des sinistres" },
-  { value: "40%", label: "Moins de déplacements sur site" },
-  { value: "3x", label: "Plus rapide pour la documentation des biens" },
-  { value: "60%", label: "Amélioration de la précision des évaluations" },
+const getStats = (lang: string) => [
+  { value: "50%", label: lang === "fr" ? "Réduction du temps de traitement des sinistres" : "Reduction in claims processing time" },
+  { value: "40%", label: lang === "fr" ? "Moins de déplacements sur site" : "Fewer on-site visits" },
+  { value: "3x", label: lang === "fr" ? "Plus rapide pour la documentation des biens" : "Faster property documentation" },
+  { value: "60%", label: lang === "fr" ? "Amélioration de la précision des évaluations" : "Improvement in assessment accuracy" },
 ];
 
-const useCases = [
+const getUseCases = (lang: string) => [
   {
-    title: "Documentation des sinistres",
-    description:
-      "Capturez l'état complet d'une propriété après un sinistre avec des jumeaux numériques 3D précis. Documentation visuelle irréfutable pour accélérer les règlements.",
+    title: lang === "fr" ? "Documentation des sinistres" : "Claims documentation",
+    description: lang === "fr"
+      ? "Capturez l'état complet d'une propriété après un sinistre avec des jumeaux numériques 3D précis. Documentation visuelle irréfutable pour accélérer les règlements."
+      : "Capture the complete condition of a property after a loss with precise 3D digital twins. Irrefutable visual documentation to accelerate settlements.",
   },
   {
-    title: "Évaluation à distance",
-    description:
-      "Permettez aux experts et ajusteurs d'inspecter les propriétés sans se déplacer. Réduisez les délais et les coûts tout en maintenant une évaluation détaillée.",
+    title: lang === "fr" ? "Évaluation à distance" : "Remote assessment",
+    description: lang === "fr"
+      ? "Permettez aux experts et ajusteurs d'inspecter les propriétés sans se déplacer. Réduisez les délais et les coûts tout en maintenant une évaluation détaillée."
+      : "Enable experts and adjusters to inspect properties without traveling. Reduce timelines and costs while maintaining detailed assessment.",
   },
   {
-    title: "Prévention des fraudes",
-    description:
-      "Les jumeaux numériques fournissent une preuve visuelle horodatée et dimensionnellement précise, réduisant les risques de réclamations frauduleuses.",
+    title: lang === "fr" ? "Prévention des fraudes" : "Fraud prevention",
+    description: lang === "fr"
+      ? "Les jumeaux numériques fournissent une preuve visuelle horodatée et dimensionnellement précise, réduisant les risques de réclamations frauduleuses."
+      : "Digital twins provide timestamped, dimensionally accurate visual evidence, reducing the risk of fraudulent claims.",
   },
   {
-    title: "Inventaire pré-sinistre",
-    description:
-      "Documentez l'état des propriétés avant tout incident pour faciliter les comparaisons et accélérer les processus de réclamation.",
+    title: lang === "fr" ? "Inventaire pré-sinistre" : "Pre-loss inventory",
+    description: lang === "fr"
+      ? "Documentez l'état des propriétés avant tout incident pour faciliter les comparaisons et accélérer les processus de réclamation."
+      : "Document property conditions before any incident to facilitate comparisons and accelerate claims processes.",
   },
   {
-    title: "Restauration & reconstruction",
-    description:
-      "Suivez l'avancement des travaux de restauration avec des captures régulières. Comparez l'état avant/après avec précision dimensionnelle.",
+    title: lang === "fr" ? "Restauration & reconstruction" : "Restoration & reconstruction",
+    description: lang === "fr"
+      ? "Suivez l'avancement des travaux de restauration avec des captures régulières. Comparez l'état avant/après avec précision dimensionnelle."
+      : "Track restoration progress with regular captures. Compare before/after conditions with dimensional accuracy.",
   },
   {
-    title: "Souscription immobilière",
-    description:
-      "Évaluez les risques avec une visite virtuelle complète du bien avant la souscription, sans nécessiter de visite physique.",
+    title: lang === "fr" ? "Souscription immobilière" : "Property underwriting",
+    description: lang === "fr"
+      ? "Évaluez les risques avec une visite virtuelle complète du bien avant la souscription, sans nécessiter de visite physique."
+      : "Assess risk with a complete virtual tour of the property before underwriting, without requiring a physical visit.",
   },
 ];
 
-const faqs = [
+const getFaqs = (lang: string) => [
   {
-    question: "Comment fonctionne la numérisation 3D pour documenter une propriété endommagée ?",
+    question: lang === "fr" ? "Comment fonctionne la numérisation 3D pour documenter une propriété endommagée ?" : "How does 3D scanning work to document a damaged property?",
     answer: "Un technicien ou votre équipe capture l'espace avec un appareil compatible, et l'IA Cortex de PrimeSpace convertit ces images en un jumeau numérique dimensionnellement précis. Une fois traité dans le cloud PrimeSpace, vous pouvez ajouter des tags, notes et mesures, puis partager le scan 3D avec les experts et entrepreneurs pour un examen à distance. Des livrables supplémentaires, comme les plans d'étage schématiques, les fichiers PrimeSpace Sketch ou PrimeSpace TruePlan, peuvent être commandés pour les réclamations et estimations.",
   },
   {
-    question: "La numérisation 3D est-elle préférable aux photos et mesures manuelles pour une réclamation d'assurance ?",
+    question: lang === "fr" ? "La numérisation 3D est-elle préférable aux photos et mesures manuelles pour une réclamation d'assurance ?" : "Is 3D scanning better than photos and manual measurements for an insurance claim?",
     answer: "Oui, la numérisation 3D fournit des données dimensionnellement précises pour un examen à distance qui aide à minimiser les litiges. Elle est particulièrement utile dans les situations dangereuses ou urgentes, les événements catastrophiques, ou lorsque la documentation pré-sinistre et la précision forensique sont importantes.",
   },
   {
-    question: "Quels livrables puis-je exporter d'un scan 3D PrimeSpace pour les réclamations ?",
+    question: lang === "fr" ? "Quels livrables puis-je exporter d'un scan 3D PrimeSpace pour les réclamations ?" : "What deliverables can I export from a PrimeSpace 3D scan for claims?",
     answer: "Les livrables exportables incluent :\n\n• Plans d'étage schématiques 2D (PNG, PDF, SVG)\n• Bundles MatterPak (exports OBJ, nuages de points et imagerie haute résolution)\n• Fichiers Sketch (PrimeSpace Sketch pour Cotality et TruePlan pour Xactimate)\n• Fichiers de nuages de points E57\n• Fichiers BIM/Revit\n\nCes exports s'intègrent aux workflows de conception, d'estimation et de reconstruction pour la planification des réclamations et de la restauration.",
   },
   {
-    question: "PrimeSpace peut-il générer des fichiers sketch pour l'estimation des réclamations ?",
+    question: lang === "fr" ? "PrimeSpace peut-il générer des fichiers sketch pour l'estimation des réclamations ?" : "Can PrimeSpace generate sketch files for claims estimation?",
     answer: "PrimeSpace génère automatiquement des fichiers sketch pour éliminer le dessin manuel et accélérer l'estimation. La numérisation 3D haute résolution produit des diagrammes SKX précis et annotés en dimensions en quelques minutes, avec PrimeSpace Sketch compatible Cotality et TruePlan compatible Xactimate.",
   },
   {
-    question: "Les modèles PrimeSpace sont-ils acceptés par les assureurs pour les inspections à distance ?",
+    question: lang === "fr" ? "Les modèles PrimeSpace sont-ils acceptés par les assureurs pour les inspections à distance ?" : "Are PrimeSpace models accepted by insurers for remote inspections?",
     answer: "Les jumeaux numériques et scans 3D PrimeSpace sont largement utilisés par les assureurs, experts et entreprises de restauration pour les inspections à distance, des examens de réclamations plus rapides et moins de litiges. Le partage des modèles augmente la transparence et améliore la prise de décision tout au long du cycle de vie des sinistres.",
   },
   {
-    question: "Comment PrimeSpace protège-t-il les données de sinistres et contrôle-t-il l'accès aux modèles ?",
+    question: lang === "fr" ? "Comment PrimeSpace protège-t-il les données de sinistres et contrôle-t-il l'accès aux modèles ?" : "How does PrimeSpace protect claims data and control access to models?",
     answer: "Les modèles sont hébergés de manière sécurisée dans le cloud PrimeSpace avec une sécurité de niveau entreprise et des contrôles de permissions au niveau du compte et de l'espace. Les fonctionnalités de confidentialité comme le floutage automatique des visages, l'horodatage et la gestion des utilisateurs par API répondent aux exigences des organisations avec des politiques d'accès strictes.",
   },
   {
-    question: "Proposez-vous des services de capture à la demande si mon équipe ne possède pas de caméra ?",
+    question: lang === "fr" ? "Proposez-vous des services de capture à la demande si mon équipe ne possède pas de caméra ?" : "Do you offer on-demand capture services if my team doesn't own a camera?",
     answer: "Oui. PrimeSpace Capture Services met à disposition des techniciens certifiés dans plus de 700 villes pour effectuer la numérisation 3D en votre nom, généralement avec un délai de 24 à 48 heures. C'est une option rapide et abordable pour les équipes qui ont besoin d'une capture fiable sans investir dans du matériel ou de la formation.",
   },
   {
-    question: "Quelles options d'abonnement sont disponibles pour les assureurs et entrepreneurs en restauration ?",
+    question: lang === "fr" ? "Quelles options d'abonnement sont disponibles pour les assureurs et entrepreneurs en restauration ?" : "What subscription options are available for insurers and restoration contractors?",
     answer: "PrimeSpace propose plusieurs plans tarifaires qui évoluent selon les espaces actifs, les utilisateurs et les fonctionnalités. Les plans Entreprise ajoutent la collaboration avancée, la sécurité, les intégrations et des modules optionnels comme PrimeSpace Sketch, MatterPak, les plans d'étage schématiques et les exports BIM pour soutenir les workflows d'assurance et de restauration.\n\nPour plus d'informations sur les plans individuels, visitez notre page tarifs.",
   },
 ];
@@ -100,6 +107,12 @@ const fadeUp = {
 /* ─── Page ────────────────────────────────────────────────────── */
 
 const Insurance = () => {
+  const { lang } = useI18n();
+
+  const stats = getStats(lang);
+  const useCases = getUseCases(lang);
+  const faqs = getFaqs(lang);
+
   return (
     <Layout>
       <WhatsAppButton />
@@ -114,7 +127,7 @@ const Insurance = () => {
             className="text-center max-w-4xl mx-auto"
           >
             <h1 className="text-2xl md:text-4xl lg:text-5xl font-display font-bold text-[#2c0a71] mb-3 md:mb-4 leading-tight">
-              Numérisation 3D pour l'Assurance et la Restauration.
+              {lang === "fr" ? "Numérisation 3D pour l'Assurance et la Restauration." : "3D Scanning for Insurance and Restoration."}
             </h1>
             <p className="text-foreground/70 text-sm md:text-lg max-w-3xl mx-auto">
               PrimeSpace fournit une documentation et des évaluations précises,
@@ -358,7 +371,7 @@ const Insurance = () => {
             className="text-center max-w-3xl mx-auto mb-12 md:mb-16"
           >
             <h2 className="text-2xl md:text-4xl lg:text-5xl font-display font-bold text-foreground mb-3 md:mb-4">
-              L'Avantage PrimeSpace.
+              {lang === "fr" ? "L'Avantage PrimeSpace." : "The PrimeSpace Advantage."}
             </h2>
             <p className="text-foreground/60 text-sm md:text-lg">
               Notre plateforme vous aide à réduire le temps passé sur le terrain, à corriger les écarts dans les réclamations de dommages et à gagner du temps.
@@ -602,7 +615,7 @@ const Insurance = () => {
             transition={{ duration: 0.5 }}
             className="text-2xl md:text-4xl lg:text-5xl font-display font-bold text-foreground text-center mb-10 md:mb-16"
           >
-            Une suite de fonctionnalités puissantes.
+            {lang === "fr" ? "Une suite de fonctionnalités puissantes." : "A powerful suite of features."}
           </motion.h2>
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 md:gap-6">
@@ -679,7 +692,7 @@ const Insurance = () => {
             transition={{ duration: 0.5 }}
             className="text-2xl md:text-4xl lg:text-5xl font-display font-bold text-center mb-12 md:mb-16"
           >
-            La différence PrimeSpace pour l'Assurance et la Restauration
+            {lang === "fr" ? "La différence PrimeSpace pour l'Assurance et la Restauration" : "The PrimeSpace Difference for Insurance and Restoration"}
           </motion.h2>
 
           <div className="grid md:grid-cols-3 gap-8">

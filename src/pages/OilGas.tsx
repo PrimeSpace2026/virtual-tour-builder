@@ -10,6 +10,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
+import { useI18n } from "@/i18n";
 
 /* ─── Data ────────────────────────────────────────────────────── */
 
@@ -22,7 +23,7 @@ const fadeUp = {
   }),
 };
 
-const faqs = [
+const getFaqs = (lang: string) => [
   {
     question: "Comment les jumeaux numériques peuvent-ils améliorer la sécurité sur les installations pétrolières et gazières ?",
     answer: "Les jumeaux numériques PrimeSpace permettent de réaliser des inspections visuelles détaillées à distance, de former les employés dans des environnements virtuels fidèles et de documenter l'état des équipements critiques — réduisant l'exposition aux risques et améliorant la préparation aux situations d'urgence.",
@@ -52,6 +53,10 @@ const faqs = [
 /* ─── Page ────────────────────────────────────────────────────── */
 
 const OilGas = () => {
+  const { lang } = useI18n();
+
+  const faqs = getFaqs(lang);
+
   return (
     <Layout>
       <WhatsAppButton />
@@ -66,10 +71,10 @@ const OilGas = () => {
             className="text-center max-w-4xl mx-auto"
           >
             <p className="text-xs md:text-sm uppercase tracking-widest text-foreground/40 font-semibold mb-3">
-              Pétrole & Gaz
+              {lang === "fr" ? "Pétrole & Gaz" : "Oil & Gas"}
             </p>
             <h1 className="text-2xl md:text-4xl lg:text-5xl font-display font-bold text-[#2c0a71] mb-3 md:mb-4 leading-tight">
-              Jumeaux numériques pour l'industrie pétrolière et gazière.
+              {lang === "fr" ? "Jumeaux numériques pour l'industrie pétrolière et gazière." : "Digital twins for the oil and gas industry."}
             </h1>
             <p className="text-foreground/70 text-sm md:text-lg max-w-3xl mx-auto">
               Des plateformes offshore aux raffineries, les jumeaux numériques PrimeSpace révolutionnent la documentation, la maintenance et la sécurité des installations pétrolières et gazières.
@@ -109,7 +114,7 @@ const OilGas = () => {
             className="text-center mb-10 md:mb-16"
           >
             <h2 className="text-2xl md:text-4xl lg:text-5xl font-display font-bold text-foreground mb-3 md:mb-5 leading-tight">
-              Solutions 3D pour toute la chaîne de valeur.
+              {lang === "fr" ? "Solutions 3D pour toute la chaîne de valeur." : "3D solutions for the entire value chain."}
             </h2>
           </motion.div>
 
@@ -131,10 +136,10 @@ const OilGas = () => {
                 />
               </div>
               <span className="text-xs font-semibold uppercase tracking-widest text-[#2c0a71]">
-                Installations Offshore & Onshore
+                {lang === "fr" ? "Installations Offshore & Onshore" : "Offshore & Onshore Facilities"}
               </span>
               <h3 className="text-xl md:text-2xl font-display font-bold text-foreground mt-2 mb-3">
-                Documentez vos installations critiques.
+                {lang === "fr" ? "Documentez vos installations critiques." : "Document your critical facilities."}
               </h3>
               <p className="text-foreground/60 text-sm md:text-base leading-relaxed">
                 Créez des relevés 3D détaillés de plateformes, raffineries et stations de compression pour une gestion d'actifs complète et une planification efficace des interventions.
@@ -158,10 +163,10 @@ const OilGas = () => {
                 />
               </div>
               <span className="text-xs font-semibold uppercase tracking-widest text-[#2c0a71]">
-                Inspections de Sécurité
+                {lang === "fr" ? "Inspections de Sécurité" : "Safety Inspections"}
               </span>
               <h3 className="text-xl md:text-2xl font-display font-bold text-foreground mt-2 mb-3">
-                Renforcez la sécurité HSE.
+                {lang === "fr" ? "Renforcez la sécurité HSE." : "Strengthen HSE safety."}
               </h3>
               <p className="text-foreground/60 text-sm md:text-base leading-relaxed">
                 Effectuez des inspections visuelles à distance, documentez les conditions de sécurité et préparez les audits réglementaires sans multiplier les déplacements en zone à risque.
@@ -185,10 +190,10 @@ const OilGas = () => {
                 />
               </div>
               <span className="text-xs font-semibold uppercase tracking-widest text-[#2c0a71]">
-                Arrêts Techniques
+                {lang === "fr" ? "Arrêts Techniques" : "Turnarounds"}
               </span>
               <h3 className="text-xl md:text-2xl font-display font-bold text-foreground mt-2 mb-3">
-                Optimisez vos turnarounds.
+                {lang === "fr" ? "Optimisez vos turnarounds." : "Optimize your turnarounds."}
               </h3>
               <p className="text-foreground/60 text-sm md:text-base leading-relaxed">
                 Planifiez et coordonnez les arrêts techniques avec une visualisation 3D complète. Réduisez la durée des interventions et minimisez les temps d'arrêt coûteux.
@@ -208,7 +213,7 @@ const OilGas = () => {
             transition={{ duration: 0.5 }}
             className="text-2xl md:text-4xl lg:text-5xl font-display font-bold text-foreground text-center mb-10 md:mb-16"
           >
-            Faites plus avec les jumeaux numériques.
+            {lang === "fr" ? "Faites plus avec les jumeaux numériques." : "Do more with digital twins."}
           </motion.h2>
 
           <div className="grid md:grid-cols-2 gap-6 md:gap-8">
@@ -229,7 +234,7 @@ const OilGas = () => {
                 />
               </div>
               <h3 className="text-xl md:text-2xl font-display font-bold text-foreground mb-3">
-                Planifiez avec précision.
+                {lang === "fr" ? "Planifiez avec précision." : "Plan with precision."}
               </h3>
               <p className="text-foreground/60 text-sm md:text-base leading-relaxed">
                 Utilisez des modèles 3D précis pour mesurer les dégagements d'équipements en quelques clics, planifier les structures d'échafaudage et coordonner plus de 500 sous-traitants avant le début d'un arrêt technique.
@@ -253,7 +258,7 @@ const OilGas = () => {
                 />
               </div>
               <h3 className="text-xl md:text-2xl font-display font-bold text-foreground mb-3">
-                Accédez aux sites 24/7.
+                {lang === "fr" ? "Accédez aux sites 24/7." : "Access sites 24/7."}
               </h3>
               <p className="text-foreground/60 text-sm md:text-base leading-relaxed">
                 Offrez aux parties prenantes un accès 3D immersif à tout moment pour inspecter les plateformes offshore, les raffineries et les installations de pipeline sans coûts de déplacement ni exposition aux risques.
@@ -277,7 +282,7 @@ const OilGas = () => {
                 />
               </div>
               <h3 className="text-xl md:text-2xl font-display font-bold text-foreground mb-3">
-                Éliminez les incertitudes.
+                {lang === "fr" ? "Éliminez les incertitudes." : "Eliminate the guesswork."}
               </h3>
               <p className="text-foreground/60 text-sm md:text-base leading-relaxed">
                 Rationalisez les workflows en communiquant et en collaborant au sein d'une source unique de vérité dimensionnellement précise pour livrer les projets d'investissement dans les délais et le budget.
@@ -301,7 +306,7 @@ const OilGas = () => {
                 />
               </div>
               <h3 className="text-xl md:text-2xl font-display font-bold text-foreground mb-3">
-                Rendez la formation sécurité encore plus sûre.
+                {lang === "fr" ? "Rendez la formation sécurité encore plus sûre." : "Make safety training even safer."}
               </h3>
               <p className="text-foreground/60 text-sm md:text-base leading-relaxed">
                 Plongez les intervenants dans des répliques fidèles d'installations où ils peuvent s'entraîner sur des scénarios, apprendre les agencements et se préparer aux urgences à distance, sans les risques de la formation sur site.
@@ -336,10 +341,10 @@ const OilGas = () => {
               transition={{ duration: 0.6, delay: 0.15 }}
             >
               <span className="text-xs font-semibold uppercase tracking-widest text-[#2c0a71]">
-                Collaboration à Distance
+                {lang === "fr" ? "Collaboration à Distance" : "Remote Collaboration"}
               </span>
               <h2 className="text-2xl md:text-4xl lg:text-5xl font-display font-bold text-foreground mt-2 mb-4 md:mb-6">
-                Connectez les experts du monde entier.
+                {lang === "fr" ? "Connectez les experts du monde entier." : "Connect experts from around the world."}
               </h2>
               <p className="text-foreground/60 text-sm md:text-lg leading-relaxed max-w-lg">
                 Permettez aux ingénieurs, inspecteurs et équipes de maintenance de collaborer virtuellement au sein du jumeau numérique. Annotez les problèmes, partagez les observations et prenez des décisions éclairées — où que vous soyez.
@@ -360,7 +365,7 @@ const OilGas = () => {
               transition={{ duration: 0.6 }}
             >
               <h2 className="text-2xl md:text-4xl lg:text-5xl font-display font-bold text-foreground mb-4 md:mb-6">
-                Maîtrisez la gestion de vos actifs.
+                {lang === "fr" ? "Maîtrisez la gestion de vos actifs." : "Master your asset management."}
               </h2>
               <p className="text-foreground/60 text-sm md:text-lg leading-relaxed max-w-lg">
                 Créez un inventaire numérique complet de vos installations. Localisez chaque équipement, suivez les modifications et maintenez une documentation à jour pour l'ensemble de votre parc industriel.
@@ -409,10 +414,10 @@ const OilGas = () => {
               transition={{ duration: 0.6, delay: 0.15 }}
             >
               <span className="text-xs font-semibold uppercase tracking-widest text-[#2c0a71]">
-                Formation & Plans d'Urgence
+                {lang === "fr" ? "Formation & Plans d'Urgence" : "Training & Emergency Plans"}
               </span>
               <h2 className="text-2xl md:text-4xl lg:text-5xl font-display font-bold text-foreground mt-2 mb-4 md:mb-6">
-                Préparez vos équipes à toute éventualité.
+                {lang === "fr" ? "Préparez vos équipes à toute éventualité." : "Prepare your teams for any eventuality."}
               </h2>
               <p className="text-foreground/60 text-sm md:text-lg leading-relaxed max-w-lg mb-6 md:mb-8">
                 Utilisez les jumeaux numériques pour former vos équipes aux procédures d'urgence, simuler des scénarios de crise et préparer les plans d'évacuation — dans un environnement virtuel sûr et contrôlé.
@@ -439,7 +444,7 @@ const OilGas = () => {
             transition={{ duration: 0.5 }}
             className="text-2xl md:text-4xl lg:text-5xl font-display font-bold text-foreground text-center mb-10 md:mb-16"
           >
-            Vous serez en bonne compagnie.
+            {lang === "fr" ? "Vous serez en bonne compagnie." : "You'll be in good company."}
           </motion.h2>
 
           <motion.div
@@ -475,7 +480,7 @@ const OilGas = () => {
             className="text-center mt-10 md:mt-14"
           >
             <p className="text-xs md:text-sm uppercase tracking-widest text-foreground/40 font-semibold mb-2">
-              Les clients PrimeSpace ont constaté :
+              {lang === "fr" ? "Les clients PrimeSpace ont constaté :" : "PrimeSpace clients have seen:"}
             </p>
             <p className="text-3xl md:text-5xl font-display font-bold text-[#2c0a71]">
               60%
@@ -497,7 +502,7 @@ const OilGas = () => {
             transition={{ duration: 0.5 }}
             className="text-2xl md:text-4xl lg:text-5xl font-display font-bold text-foreground text-center mb-10 md:mb-16"
           >
-            Vos installations, maîtrisées en 3D.
+            {lang === "fr" ? "Vos installations, maîtrisées en 3D." : "Your facilities, mastered in 3D."}
           </motion.h2>
 
           <div className="grid md:grid-cols-3 gap-5 md:gap-6">

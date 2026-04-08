@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Lock, Mail } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useI18n } from "@/i18n";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -13,6 +14,8 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { lang, t } = useI18n();
+  const T = (obj: { fr: string; en: string }) => obj[lang];
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,10 +31,10 @@ const Login = () => {
         sessionStorage.setItem("admin_token", data.token);
         navigate("/admin");
       } else {
-        toast({ title: "Erreur", description: data.error || "Identifiants incorrects", variant: "destructive" });
+        toast({ title: lang === "fr" ? "Erreur" : "Error", description: data.error || (lang === "fr" ? "Identifiants incorrects" : "Invalid credentials"), variant: "destructive" });
       }
     } catch {
-      toast({ title: "Erreur", description: "Impossible de se connecter au serveur", variant: "destructive" });
+      toast({ title: lang === "fr" ? "Erreur" : "Error", description: lang === "fr" ? "Impossible de se connecter au serveur" : "Unable to connect to the server", variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -50,13 +53,13 @@ const Login = () => {
               <div className="w-16 h-16 bg-secondary/10 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Lock className="w-8 h-8 text-secondary" />
               </div>
-              <h1 className="text-2xl font-display font-bold text-foreground">Connexion</h1>
-              <p className="text-muted-foreground mt-2">Connectez-vous pour gérer les visites</p>
+              <h1 className="text-2xl font-display font-bold text-foreground">{T(t.auth.login)}</h1>
+              <p className="text-muted-foreground mt-2">{T(t.auth.loginSubtitle)}</p>
             </div>
 
             <form onSubmit={handleLogin} className="space-y-4">
               <div>
-                <label className="text-sm font-medium mb-1 block">Email</label>
+                <label className="text-sm font-medium mb-1 block">{T(t.auth.email)}</label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
@@ -70,7 +73,7 @@ const Login = () => {
                 </div>
               </div>
               <div>
-                <label className="text-sm font-medium mb-1 block">Mot de passe</label>
+                <label className="text-sm font-medium mb-1 block">{T(t.auth.password)}</label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
@@ -86,12 +89,12 @@ const Login = () => {
 
               <div className="flex justify-end">
                 <Link to="/forgot-password" className="text-sm text-secondary hover:underline">
-                  Mot de passe oublié ?
+                  {T(t.auth.forgotPasswordLink)}
                 </Link>
               </div>
 
               <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? "Connexion..." : "Se connecter"}
+                {loading ? T(t.auth.signingIn) : T(t.auth.signIn)}
               </Button>
             </form>
 

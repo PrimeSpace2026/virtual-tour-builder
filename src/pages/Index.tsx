@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
+import { useI18n } from "@/i18n";
 import { ArrowRight, Play, Scan, Eye, Smartphone, Globe, Zap, Shield } from "lucide-react";
 import { Layout } from "@/components/Layout";
 import { Button } from "@/components/ui/button";
@@ -22,39 +23,6 @@ import portfolioHotel from "@/assets/portfolio-hotel.jpg";
 import portfolioApartment from "@/assets/portfolio-apartment.jpg";
 import portfolioRetail from "@/assets/portfolio-retail.jpg";
 import westwoodGym from "@/assets/westwood-gym-sandymount-1.jpg.webp";
-
-const features = [
-  {
-    icon: Scan,
-    title: "Capture 3D Précise",
-    description: "Technologie intelligente pour une reproduction fidèle de chaque détail de votre espace.",
-  },
-  {
-    icon: Eye,
-    title: "Immersion Totale",
-    description: "Expérience de visite fluide et interactive permettant une exploration libre en 360°.",
-  },
-  {
-    icon: Smartphone,
-    title: "Compatible Tous Appareils",
-    description: "Accès depuis n'importe quel navigateur, smartphone, tablette ou casque VR.",
-  },
-  {
-    icon: Globe,
-    title: "Partage Facile",
-    description: "Intégration simple sur votre site web et partage via un lien unique.",
-  },
-  {
-    icon: Zap,
-    title: "Livraison Rapide",
-    description: "Traitement professionnel et livraison de votre visite virtuelle sous 24-48h.",
-  },
-  {
-    icon: Shield,
-    title: "Qualité Garantie",
-    description: "Résolution 4K, mesures précises et rendu photoréaliste de haute qualité.",
-  },
-];
 
 const projects = [
   { image: portfolioApartment, title: "Villa Chat Meriem", category: "Immobilier", tourUrl: "https://my.matterport.com/show/?m=t84zwhnXjvJ" },
@@ -89,6 +57,17 @@ const testimonials = [
 
 const Index = () => {
   const [selectedProject, setSelectedProject] = useState<typeof projects[0] | null>(null);
+  const { lang, t } = useI18n();
+  const T = (obj: { fr: string; en: string }) => obj[lang];
+
+  const features = [
+    { icon: Scan, title: T(t.home.features.capture), description: T(t.home.features.captureDesc) },
+    { icon: Eye, title: T(t.home.features.immersion), description: T(t.home.features.immersionDesc) },
+    { icon: Smartphone, title: T(t.home.features.compatible), description: T(t.home.features.compatibleDesc) },
+    { icon: Globe, title: T(t.home.features.sharing), description: T(t.home.features.sharingDesc) },
+    { icon: Zap, title: T(t.home.features.delivery), description: T(t.home.features.deliveryDesc) },
+    { icon: Shield, title: T(t.home.features.quality), description: T(t.home.features.qualityDesc) },
+  ];
 
   return (
     <Layout>
@@ -125,8 +104,8 @@ const Index = () => {
               transition={{ duration: 0.6, delay: 0.1 }}
               className="text-3xl md:text-5xl lg:text-7xl font-display font-bold text-primary-foreground mb-4 md:mb-6 leading-tight"
             >
-              Offrez la visite{" "}
-              <span className="text-gradient-accent">avant la réservation</span>
+              {T(t.home.heroTitle).split("**")[0]}
+              <span className="text-gradient-accent">{T(t.home.heroTitle).split("**")[1]}</span>
             </motion.h1>
 
             <motion.p
@@ -135,7 +114,7 @@ const Index = () => {
               transition={{ duration: 0.6, delay: 0.2 }}
               className="text-base md:text-xl text-white/90 mb-8 md:mb-10 max-w-2xl mx-auto"
             >
-             Augmentez vos réservations et facilitez les visites grâce à nos visites virtuelles 3D.
+              {T(t.home.heroSubtitle)}
             </motion.p>
 
             <motion.div
@@ -146,7 +125,7 @@ const Index = () => {
             >
               <Button variant="hero" size="lg" asChild>
                 <Link to="/contact" className="flex items-center gap-2">
-                  Demander un Devis
+                  {T(t.home.heroCta)}
                   <ArrowRight className="w-5 h-5" />
                 </Link>
               </Button>
@@ -179,9 +158,9 @@ const Index = () => {
       <section className="py-12 md:py-24 bg-background">
         <div className="container mx-auto px-4 lg:px-8">
           <SectionHeading
-            badge="Portfolio"
-            title="Nos Dernières Réalisations"
-            description="Découvrez quelques-unes de nos visites virtuelles les plus récentes"
+            badge={T(t.home.portfolioBadge)}
+            title={T(t.home.portfolioTitle)}
+            description={T(t.home.portfolioDesc)}
           />
 
           <div className="grid md:grid-cols-2 gap-6">
@@ -206,7 +185,7 @@ const Index = () => {
           >
             <Button variant="outline" size="lg" asChild>
               <Link to="/portfolio" className="flex items-center gap-2">
-                Voir Tout le Portfolio
+                {T(t.home.viewPortfolio)}
                 <ArrowRight className="w-5 h-5" />
               </Link>
             </Button>
@@ -217,8 +196,8 @@ const Index = () => {
       <section className="py-12 md:py-24 bg-background">
         <div className="container mx-auto px-4 lg:px-8">
           <SectionHeading
-            badge="Nos Avantages"
-            title="Pourquoi Choisir PrimeSpace ?"
+            badge={T(t.home.featuresBadge)}
+            title={T(t.home.featuresTitle)}
             description="Notre technologie offre une qualité inégalée pour vos visites virtuelles"
           />
 
@@ -245,8 +224,8 @@ const Index = () => {
       <section className="py-12 md:py-24 bg-muted/50">
         <div className="container mx-auto px-4 lg:px-8">
           <SectionHeading
-            badge="Témoignages"
-            title="Ce Que Disent Nos Clients"
+            badge={T(t.home.testimonialsBadge)}
+            title={T(t.home.testimonialsTitle)}
             description="Découvrez l'impact de nos visites virtuelles sur leur activité"
           />
 
@@ -275,7 +254,7 @@ const Index = () => {
               viewport={{ once: true }}
               className="text-2xl md:text-4xl lg:text-5xl font-display font-bold text-primary-foreground mb-4 md:mb-6"
             >
-              Prêt à Transformer Votre Espace?
+              {T(t.home.ctaTitle)}
             </motion.h2>
             <motion.p
               initial={{ opacity: 0, y: 20 }}
@@ -284,8 +263,7 @@ const Index = () => {
               transition={{ delay: 0.1 }}
               className="text-base md:text-lg text-primary-foreground/70 mb-8 md:mb-10"
             >
-              Contactez-nous dès aujourd'hui pour un devis gratuit et découvrez 
-              comment nos visites virtuelles peuvent booster votre activité.
+              {T(t.home.ctaSubtitle)}
             </motion.p>
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -296,12 +274,12 @@ const Index = () => {
             >
               <Button variant="hero" size="lg" asChild>
                 <Link to="/contact" className="flex items-center gap-2">
-                  Demander un Devis Gratuit
+                  {T(t.home.ctaButton)}
                   <ArrowRight className="w-5 h-5" />
                 </Link>
               </Button>
               <Button variant="hero-outline" size="lg" asChild>
-                <Link to="/services">Découvrir Nos Services</Link>
+                <Link to="/services">{T(t.home.ctaButton2)}</Link>
               </Button>
             </motion.div>
           </div>

@@ -10,6 +10,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
+import { useI18n } from "@/i18n";
 
 /* ─── Data ────────────────────────────────────────────────────── */
 
@@ -22,7 +23,7 @@ const fadeUp = {
   }),
 };
 
-const faqs = [
+const getFaqs = (lang: string) => [
   {
     question: "Quels problèmes de gestion des installations PrimeSpace résout-il pour les bâtiments gouvernementaux ?",
     answer: "PrimeSpace aide les équipes des installations gouvernementales à documenter, gérer et planifier les espaces physiques à l'aide de jumeaux numériques 3D photoréalistes et dimensionnellement précis. Ces jumeaux numériques soutiennent la planification des espaces et des investissements (CAPEX) en suivant clairement les actifs, en organisant les workflows de maintenance et en documentant les projets de rénovation avec une source unique de vérité visuelle.",
@@ -64,6 +65,10 @@ const faqs = [
 /* ─── Page ────────────────────────────────────────────────────── */
 
 const Government = () => {
+  const { lang } = useI18n();
+
+  const faqs = getFaqs(lang);
+
   return (
     <Layout>
       <WhatsAppButton />
@@ -78,10 +83,10 @@ const Government = () => {
             className="text-center max-w-4xl mx-auto"
           >
             <p className="text-xs md:text-sm uppercase tracking-widest text-foreground/40 font-semibold mb-3">
-              Gouvernement
+              {lang === "fr" ? "Gouvernement" : "Government"}
             </p>
             <h1 className="text-2xl md:text-4xl lg:text-5xl font-display font-bold text-[#2c0a71] mb-3 md:mb-4 leading-tight">
-              PrimeSpace pour les organismes publics.
+              {lang === "fr" ? "PrimeSpace pour les organismes publics." : "PrimeSpace for government agencies."}
             </h1>
             <p className="text-foreground/70 text-sm md:text-lg max-w-3xl mx-auto">
               Avec PrimeSpace pour les organismes publics, vous pouvez utiliser n'importe quelle caméra compatible pour créer des modèles 3D interactifs, photoréalistes et aux dimensions précises et les héberger dans un cloud conforme à la réglementation.
@@ -124,7 +129,7 @@ const Government = () => {
                 className="p-6 md:p-10 rounded-2xl bg-muted/40"
               >
                 <h3 className="text-xl md:text-2xl font-display font-bold text-foreground mb-2">
-                  Pouvoir central
+                  {lang === "fr" ? "Pouvoir central" : "Central government"}
                 </h3>
                 <div className="w-12 h-1 bg-[#e53935] rounded-full mb-5" />
                 <p className="text-foreground/60 text-sm md:text-base leading-relaxed">
@@ -144,7 +149,7 @@ const Government = () => {
                 className="p-6 md:p-10 rounded-2xl bg-muted/40"
               >
                 <h3 className="text-xl md:text-2xl font-display font-bold text-foreground mb-2">
-                  Pouvoirs locaux
+                  {lang === "fr" ? "Pouvoirs locaux" : "Local government"}
                 </h3>
                 <div className="w-12 h-1 bg-[#e53935] rounded-full mb-5" />
                 <p className="text-foreground/60 text-sm md:text-base leading-relaxed">
@@ -184,10 +189,10 @@ const Government = () => {
               transition={{ duration: 0.6, delay: 0.15 }}
             >
               <span className="text-xs font-semibold uppercase tracking-widest text-[#2c0a71]">
-                Sécurité Publique
+                {lang === "fr" ? "Sécurité Publique" : "Public Safety"}
               </span>
               <h2 className="text-2xl md:text-4xl lg:text-5xl font-display font-bold text-foreground mt-2 mb-4 md:mb-6">
-                Renforcez la sécurité publique.
+                {lang === "fr" ? "Renforcez la sécurité publique." : "Enhance public safety."}
               </h2>
               <p className="text-foreground/60 text-sm md:text-lg leading-relaxed max-w-lg">
                 Les agences de sécurité publique peuvent créer des représentations 3D complètes des scènes d'incidents pour améliorer la collaboration, rationaliser les workflows et renforcer la sécurité physique. Réduisez les risques en passant moins de temps sur le terrain, minimisez les erreurs et effectuez des formations virtuelles.
@@ -208,7 +213,7 @@ const Government = () => {
               transition={{ duration: 0.6 }}
             >
               <h2 className="text-2xl md:text-4xl lg:text-5xl font-display font-bold text-foreground mb-4 md:mb-6">
-                Engagez les citoyens et la communauté.
+                {lang === "fr" ? "Engagez les citoyens et la communauté." : "Engage citizens and the community."}
               </h2>
               <p className="text-foreground/60 text-sm md:text-lg leading-relaxed max-w-lg">
                 Élargissez la présence physique de vos programmes avec une dimension numérique. Offrez un accès virtuel aux monuments, lieux historiques et sites d'intérêt 24/7, maintenez la continuité des opérations et améliorez l'accessibilité pour tous les visiteurs.
@@ -257,10 +262,10 @@ const Government = () => {
               transition={{ duration: 0.6, delay: 0.15 }}
             >
               <span className="text-xs font-semibold uppercase tracking-widest text-[#2c0a71]">
-                Gestion des Installations
+                {lang === "fr" ? "Gestion des Installations" : "Facility Management"}
               </span>
               <h2 className="text-2xl md:text-4xl lg:text-5xl font-display font-bold text-foreground mt-2 mb-4 md:mb-6">
-                Améliorez la gestion des installations et des opérations.
+                {lang === "fr" ? "Améliorez la gestion des installations et des opérations." : "Improve facility and operations management."}
               </h2>
               <p className="text-foreground/60 text-sm md:text-lg leading-relaxed max-w-lg mb-6 md:mb-8">
                 Les jumeaux numériques fournissent des informations critiques sur les bâtiments : mesures, dimensions, agencement et localisation des équipements. Réduisez les coûts de relevés sur site, automatisez la reconnaissance des actifs et optimisez la planification d'urgence pour augmenter la conscience situationnelle.
@@ -287,7 +292,7 @@ const Government = () => {
             transition={{ duration: 0.5 }}
             className="text-2xl md:text-4xl lg:text-5xl font-display font-bold text-foreground text-center mb-10 md:mb-16"
           >
-            Une suite de fonctionnalités puissante.
+            {lang === "fr" ? "Une suite de fonctionnalités puissante." : "A powerful suite of features."}
           </motion.h2>
 
           <div className="grid md:grid-cols-2 gap-5 md:gap-6">
@@ -355,7 +360,7 @@ const Government = () => {
             <div className="absolute inset-0 bg-gradient-accent" />
             <div className="relative z-10 py-12 md:py-20 px-5 md:px-8 text-center">
               <h2 className="text-2xl md:text-4xl font-display font-bold text-primary-foreground mb-4 md:mb-6">
-                Modernisez la gestion de vos installations publiques.
+                {lang === "fr" ? "Modernisez la gestion de vos installations publiques." : "Modernize your public facility management."}
               </h2>
               <p className="text-base md:text-lg text-primary-foreground/80 max-w-2xl mx-auto mb-8 md:mb-10">
                 Découvrez comment les jumeaux numériques 3D peuvent améliorer l'efficacité, la sécurité et la collaboration au sein de vos administrations.
@@ -367,7 +372,7 @@ const Government = () => {
                   asChild
                 >
                   <Link to="/contact" className="flex items-center gap-2">
-                    Demander une Démo
+                    {lang === "fr" ? "Demander une Démo" : "Request a Demo"}
                     <ArrowRight className="w-5 h-5" />
                   </Link>
                 </Button>
@@ -377,7 +382,7 @@ const Government = () => {
                   className="border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10"
                   asChild
                 >
-                  <Link to="/portfolio">Voir le Portfolio</Link>
+                  <Link to="/portfolio">{lang === "fr" ? "Voir le Portfolio" : "View Portfolio"}</Link>
                 </Button>
               </div>
             </div>
@@ -396,10 +401,10 @@ const Government = () => {
               transition={{ duration: 0.6 }}
             >
               <span className="text-xs font-semibold uppercase tracking-widest text-[#2c0a71]">
-                Service de Capture
+                {lang === "fr" ? "Service de Capture" : "Capture Service"}
               </span>
               <h2 className="text-2xl md:text-4xl lg:text-5xl font-display font-bold text-foreground mt-2 mb-4 md:mb-6">
-                Laissez-nous numériser vos installations.
+                {lang === "fr" ? "Laissez-nous numériser vos installations." : "Let us digitize your facilities."}
               </h2>
               <p className="text-foreground/60 text-sm md:text-lg leading-relaxed max-w-lg mb-6 md:mb-8">
                 Les techniciens PrimeSpace Capture Services peuvent scanner professionnellement vos bâtiments gouvernementaux en respectant les protocoles de sécurité requis. Livraison rapide et qualité garantie.
@@ -440,7 +445,7 @@ const Government = () => {
             transition={{ duration: 0.5 }}
             className="text-2xl md:text-4xl lg:text-5xl font-display font-bold text-white text-center mb-10 md:mb-16"
           >
-            FAQ — Scan 3D pour les Installations Gouvernementales
+            {lang === "fr" ? "FAQ — Scan 3D pour les Installations Gouvernementales" : "FAQ — 3D Scanning for Government Facilities"}
           </motion.h2>
 
           <Accordion type="single" collapsible className="w-full">

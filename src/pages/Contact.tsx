@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useI18n } from "@/i18n";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Phone, Mail, MapPin, Clock, Send, Check, ArrowRight } from "lucide-react";
@@ -18,46 +19,21 @@ import { SectionHeading } from "@/components/SectionHeading";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
 import { useToast } from "@/hooks/use-toast";
 
-const contactInfo = [
-  {
-    icon: Phone,
-    title: "Téléphone",
-    value: "+216 52 664 495",
-    link: "tel:+21652664495",
-  },
-  {
-    icon: Mail,
-    title: "Email",
-    value: "info@primespace.studio",
-    link: "mailto:info@primespace.studio",
-  },
-  {
-    icon: MapPin,
-    title: "Adresse",
-    value: "Tunis, Tunisie",
-    link: null,
-  },
-  {
-    icon: Clock,
-    title: "Horaires",
-    value: "Lun-Sam: 8h-18h",
-    link: null,
-  },
-];
-
-const projectTypes = [
-  "Immobilier résidentiel",
-  "Immobilier commercial",
-  "Hôtellerie & Tourisme",
-  "Commerce & Retail",
-  "Culture & Musées",
-  "Entreprise & Bureaux",
-  "Restaurant & Événementiel",
-  "Autre",
-];
-
 const Contact = () => {
+  const { lang, t } = useI18n();
+  const T = (obj: { fr: string; en: string }) => obj[lang];
   const { toast } = useToast();
+
+  const contactInfo = [
+    { icon: Phone, title: T(t.contact.phoneLabel), value: "+216 52 664 495", link: "tel:+21652664495" },
+    { icon: Mail, title: T(t.contact.emailLabel), value: "info@primespace.studio", link: "mailto:info@primespace.studio" },
+    { icon: MapPin, title: T(t.contact.address), value: lang === "fr" ? "Tunis, Tunisie" : "Tunis, Tunisia", link: null as string | null },
+    { icon: Clock, title: lang === "fr" ? "Horaires" : "Hours", value: lang === "fr" ? "Lun-Sam: 8h-18h" : "Mon-Sat: 8am-6pm", link: null as string | null },
+  ];
+
+  const projectTypes = lang === "fr"
+    ? ["Immobilier résidentiel", "Immobilier commercial", "Hôtellerie & Tourisme", "Commerce & Retail", "Culture & Musées", "Entreprise & Bureaux", "Restaurant & Événementiel", "Autre"]
+    : ["Residential Real Estate", "Commercial Real Estate", "Hospitality & Tourism", "Commerce & Retail", "Culture & Museums", "Business & Offices", "Restaurant & Events", "Other"];
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
@@ -81,8 +57,8 @@ const Contact = () => {
 
       if (res.ok) {
         toast({
-          title: "Message envoyé! ✅",
-          description: "Nous vous répondrons dans les plus brefs délais.",
+          title: T(t.contact.success),
+          description: lang === "fr" ? "Nous vous répondrons dans les plus brefs délais." : "We will get back to you as soon as possible.",
         });
         setFormData({
           name: "",
@@ -93,15 +69,15 @@ const Contact = () => {
         });
       } else {
         toast({
-          title: "Erreur",
-          description: data.error || "Échec de l'envoi",
+          title: lang === "fr" ? "Erreur" : "Error",
+          description: data.error || T(t.contact.error),
           variant: "destructive",
         });
       }
     } catch {
       toast({
-        title: "Erreur",
-        description: "Échec de l'envoi, veuillez réessayer.",
+        title: lang === "fr" ? "Erreur" : "Error",
+        description: T(t.contact.error),
         variant: "destructive",
       });
     } finally {
@@ -128,7 +104,7 @@ const Contact = () => {
               animate={{ opacity: 1, y: 0 }}
               className="inline-block px-4 py-2 rounded-full bg-primary-foreground/10 text-primary-foreground text-sm font-medium mb-6 backdrop-blur-sm border border-primary-foreground/20"
             >
-              Contactez-Nous
+              {T(t.contact.title)}
             </motion.span>
             <motion.h1
               initial={{ opacity: 0, y: 20 }}
@@ -136,7 +112,7 @@ const Contact = () => {
               transition={{ delay: 0.1 }}
               className="text-3xl md:text-5xl lg:text-6xl font-display font-bold text-primary-foreground mb-4 md:mb-6"
             >
-              Parlons de Votre Projet
+              {lang === "fr" ? "Parlons de Votre Projet" : "Let's Talk About Your Project"}
             </motion.h1>
             <motion.p
               initial={{ opacity: 0, y: 20 }}
@@ -144,8 +120,9 @@ const Contact = () => {
               transition={{ delay: 0.2 }}
               className="text-base md:text-lg text-primary-foreground/70"
             >
-              Demandez un devis gratuit ou posez-nous vos questions. 
-              Notre équipe vous répond sous 24 heures.
+              {lang === "fr"
+                ? "Demandez un devis gratuit ou posez-nous vos questions. Notre équipe vous répond sous 24 heures."
+                : "Request a free quote or ask us your questions. Our team responds within 24 hours."}
             </motion.p>
           </div>
         </div>
@@ -163,7 +140,7 @@ const Contact = () => {
               className="lg:col-span-1"
             >
               <h2 className="font-display font-bold text-2xl text-foreground mb-6">
-                Informations de Contact
+                {lang === "fr" ? "Informations de Contact" : "Contact Information"}
               </h2>
               
               <div className="space-y-6 mb-10">
@@ -192,10 +169,10 @@ const Contact = () => {
               {/* Quick Actions */}
               <div className="bg-muted/50 rounded-2xl p-6">
                 <h3 className="font-display font-semibold text-foreground mb-4">
-                  Réponse Rapide
+                  {lang === "fr" ? "Réponse Rapide" : "Quick Response"}
                 </h3>
                 <p className="text-sm text-muted-foreground mb-4">
-                  Besoin d'une réponse immédiate? Contactez-nous sur WhatsApp!
+                  {lang === "fr" ? "Besoin d'une réponse immédiate? Contactez-nous sur WhatsApp!" : "Need an immediate response? Contact us on WhatsApp!"}
                 </p>
                 <Button variant="secondary" className="w-full" asChild>
                   <a
@@ -204,7 +181,7 @@ const Contact = () => {
                     rel="noopener noreferrer"
                     className="flex items-center justify-center gap-2"
                   >
-                    Ouvrir WhatsApp
+                    {lang === "fr" ? "Ouvrir WhatsApp" : "Open WhatsApp"}
                     <ArrowRight className="w-4 h-4" />
                   </a>
                 </Button>
@@ -220,32 +197,32 @@ const Contact = () => {
             >
               <div className="bg-card rounded-2xl p-5 md:p-8 shadow-soft">
                 <h2 className="font-display font-bold text-2xl text-foreground mb-6">
-                  Demande de Devis Gratuit
+                  {lang === "fr" ? "Demande de Devis Gratuit" : "Free Quote Request"}
                 </h2>
 
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div className="grid md:grid-cols-2 gap-6">
                     <div className="space-y-2">
-                      <Label htmlFor="name">Nom Complet *</Label>
+                      <Label htmlFor="name">{T(t.contact.name)} *</Label>
                       <Input
                         id="name"
                         name="name"
                         value={formData.name}
                         onChange={handleChange}
-                        placeholder="Votre nom"
+                        placeholder={lang === "fr" ? "Votre nom" : "Your name"}
                         required
                         className="h-12"
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="email">Email *</Label>
+                      <Label htmlFor="email">{T(t.contact.email)} *</Label>
                       <Input
                         id="email"
                         name="email"
                         type="email"
                         value={formData.email}
                         onChange={handleChange}
-                        placeholder="votre@email.com"
+                        placeholder={lang === "fr" ? "votre@email.com" : "your@email.com"}
                         required
                         className="h-12"
                       />
@@ -254,7 +231,7 @@ const Contact = () => {
 
                   <div className="grid md:grid-cols-2 gap-6">
                     <div className="space-y-2">
-                      <Label htmlFor="phone">Téléphone</Label>
+                      <Label htmlFor="phone">{T(t.contact.phone)}</Label>
                       <Input
                         id="phone"
                         name="phone"
@@ -266,7 +243,7 @@ const Contact = () => {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="projectType">Type de Projet *</Label>
+                      <Label htmlFor="projectType">{lang === "fr" ? "Type de Projet" : "Project Type"} *</Label>
                       <Select
                         value={formData.projectType}
                         onValueChange={(value) =>
@@ -275,7 +252,7 @@ const Contact = () => {
                         required
                       >
                         <SelectTrigger className="h-12">
-                          <SelectValue placeholder="Sélectionnez un type" />
+                          <SelectValue placeholder={lang === "fr" ? "Sélectionnez un type" : "Select a type"} />
                         </SelectTrigger>
                         <SelectContent>
                           {projectTypes.map((type) => (
@@ -289,13 +266,13 @@ const Contact = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="message">Décrivez votre projet *</Label>
+                    <Label htmlFor="message">{lang === "fr" ? "Décrivez votre projet" : "Describe your project"} *</Label>
                     <Textarea
                       id="message"
                       name="message"
                       value={formData.message}
                       onChange={handleChange}
-                      placeholder="Décrivez votre espace, sa superficie approximative, et vos besoins spécifiques..."
+                      placeholder={lang === "fr" ? "Décrivez votre espace, sa superficie approximative, et vos besoins spécifiques..." : "Describe your space, its approximate area, and your specific needs..."}
                       required
                       className="min-h-[150px] resize-none"
                     />
@@ -311,19 +288,19 @@ const Contact = () => {
                     {isSubmitting ? (
                       <>
                         <span className="animate-spin mr-2">⏳</span>
-                        Envoi en cours...
+                        {T(t.contact.sending)}
                       </>
                     ) : (
                       <>
                         <Send className="w-5 h-5 mr-2" />
-                        Envoyer Ma Demande
+                        {lang === "fr" ? "Envoyer Ma Demande" : "Send My Request"}
                       </>
                     )}
                   </Button>
                 </form>
 
                 <p className="text-sm text-muted-foreground mt-6 text-center">
-                  En soumettant ce formulaire, vous acceptez d'être contacté par notre équipe.
+                  {lang === "fr" ? "En soumettant ce formulaire, vous acceptez d'être contacté par notre équipe." : "By submitting this form, you agree to be contacted by our team."}
                 </p>
               </div>
             </motion.div>
@@ -335,9 +312,9 @@ const Contact = () => {
       <section className="py-12 md:py-24 bg-muted/50">
         <div className="container mx-auto px-4 lg:px-8">
           <SectionHeading
-            badge="Localisation"
-            title="Basés à Tunis, Nous Intervenons Partout"
-            description="Notre équipe se déplace sur tout le territoire tunisien pour vos projets"
+            badge={lang === "fr" ? "Localisation" : "Location"}
+            title={lang === "fr" ? "Basés à Tunis, Nous Intervenons Partout" : "Based in Tunis, We Operate Everywhere"}
+            description={lang === "fr" ? "Notre équipe se déplace sur tout le territoire tunisien pour vos projets" : "Our team travels across Tunisia for your projects"}
           />
 
         
@@ -354,7 +331,7 @@ const Contact = () => {
               viewport={{ once: true }}
               className="text-xl md:text-3xl font-display font-bold text-primary-foreground mb-3 md:mb-4"
             >
-              Des Questions Fréquentes?
+              {lang === "fr" ? "Des Questions Fréquentes?" : "Frequently Asked Questions?"}
             </motion.h2>
             <motion.p
               initial={{ opacity: 0, y: 20 }}
@@ -363,7 +340,7 @@ const Contact = () => {
               transition={{ delay: 0.1 }}
               className="text-primary-foreground/70 mb-6"
             >
-              Consultez notre FAQ pour trouver rapidement des réponses à vos questions
+              {lang === "fr" ? "Consultez notre FAQ pour trouver rapidement des réponses à vos questions" : "Check our FAQ to quickly find answers to your questions"}
             </motion.p>
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -373,7 +350,7 @@ const Contact = () => {
             >
               <Button variant="hero" asChild>
                 <Link to="/#faq" className="flex items-center gap-2">
-                  Voir la FAQ
+                  {lang === "fr" ? "Voir la FAQ" : "View FAQ"}
                   <ArrowRight className="w-4 h-4" />
                 </Link>
               </Button>
