@@ -340,6 +340,8 @@ const Admin = () => {
   const [editService, setEditService] = useState<TourServiceItem>(emptyService);
   const [serviceFormOpen, setServiceFormOpen] = useState(false);
   const [isEditingService, setIsEditingService] = useState(false);
+  const [serviceUploading, setServiceUploading] = useState(false);
+  const [serviceDragOver, setServiceDragOver] = useState(false);
   const [activeEntityTab, setActiveEntityTab] = useState<"products" | "services">("products");
   // Tags for dropdown
   const [tourTags, setTourTags] = useState<{ name: string; sid: string }[]>([]);
@@ -554,6 +556,49 @@ const Admin = () => {
   const onFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) handleImageUpload(file);
+  };
+
+  const handleServiceImageUpload = async (file: File) => {
+    if (!file.type.startsWith("image/")) {
+      toast({ title: "Erreur", description: "Le fichier doit être une image", variant: "destructive" });
+      return;
+    }
+    setServiceUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/upload", { method: "POST", body: formData });
+      const data = await res.json();
+      if (data.url) {
+        setEditService((prev) => ({ ...prev, imageUrl: data.url }));
+        toast({ title: "Image uploadée" });
+      } else {
+        toast({ title: "Erreur upload", description: data.error || "Erreur inconnue", variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "Erreur", description: "Échec de l'upload", variant: "destructive" });
+    } finally {
+      setServiceUploading(false);
+    }
+  };
+
+  const onServiceDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setServiceDragOver(false);
+    const file = e.dataTransfer.files[0];
+    if (file) handleServiceImageUpload(file);
+  }, []);
+
+  const onServiceDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setServiceDragOver(true);
+  }, []);
+
+  const onServiceDragLeave = useCallback(() => setServiceDragOver(false), []);
+
+  const onServiceFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) handleServiceImageUpload(file);
   };
 
   const openCreate = () => {
@@ -2061,11 +2106,35 @@ const Admin = () => {
                     <Textarea value={editService.description} onChange={(e) => setEditService({ ...editService, description: e.target.value })} rows={3} placeholder="Description du service..." />
                   </div>
                   <div>
-                    <label className="text-sm font-medium mb-1 block">Image (URL)</label>
-                    <Input value={editService.imageUrl} onChange={(e) => setEditService({ ...editService, imageUrl: e.target.value })} placeholder="https://..." />
-                    {editService.imageUrl && (
-                      <img src={editService.imageUrl} alt="preview" className="w-24 h-24 object-cover rounded-lg mt-2 border" />
-                    )}
+                    <label className="text-sm font-medium mb-1 block">Image</label>
+                    <div
+                      onDrop={onServiceDrop}
+                      onDragOver={onServiceDragOver}
+                      onDragLeave={onServiceDragLeave}
+                      className={`relative border-2 border-dashed rounded-xl p-6 text-center transition-colors cursor-pointer ${
+                        serviceDragOver ? "border-secondary bg-secondary/10" : "border-muted-foreground/30 hover:border-secondary/50"
+                      }`}
+                    >
+                      {editService.imageUrl ? (
+                        <div className="relative">
+                          <img src={editService.imageUrl} alt="preview" className="w-full h-40 object-cover rounded-lg" />
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setEditService({ ...editService, imageUrl: "" }); }}
+                            className="absolute top-2 right-2 bg-destructive text-destructive-foreground rounded-full p-1"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ) : (
+                        <label className="cursor-pointer block">
+                          <Upload className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
+                          <p className="text-sm text-muted-foreground">
+                            {serviceUploading ? "Upload en cours..." : "Glisser-déposer une image ici ou cliquer"}
+                          </p>
+                          <input type="file" accept="image/*" className="hidden" onChange={onServiceFileSelect} />
+                        </label>
+                      )}
+                    </div>
                   </div>
 
                   {/* Contact fields */}
