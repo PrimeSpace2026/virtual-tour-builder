@@ -1711,7 +1711,6 @@ const Admin = () => {
                   value={editTour.latitude ?? ""}
                   onChange={(e) => setEditTour({ ...editTour, latitude: e.target.value ? Number(e.target.value) : null })}
                   placeholder="36.8065"
-                  readOnly
                 />
               </div>
               <div>
@@ -1722,7 +1721,6 @@ const Admin = () => {
                   value={editTour.longitude ?? ""}
                   onChange={(e) => setEditTour({ ...editTour, longitude: e.target.value ? Number(e.target.value) : null })}
                   placeholder="10.1815"
-                  readOnly
                 />
               </div>
             </div>
