@@ -309,7 +309,7 @@ const Index = () => {
               {selectedProject?.title}
             </DialogTitle>
           </DialogHeader>
-          <div className="aspect-video w-full">
+          <div className="aspect-video w-full relative">
             <iframe
               src={selectedProject?.tourUrl}
               width="100%"
@@ -319,6 +319,14 @@ const Index = () => {
               allow="xr-spatial-tracking"
               className="w-full h-full"
             />
+            {/* Overlay PrimeSpace branding over Matterport footer */}
+            <div className="absolute bottom-0 left-0 right-0 h-14 bg-gradient-to-t from-black/95 via-black/85 to-transparent flex items-end justify-center pb-2 pointer-events-none">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] uppercase tracking-widest text-white/50">Powered by</span>
+                <img src="/logo.jpg" alt="PrimeSpace" className="h-6 w-6 rounded-sm" />
+                <span className="text-sm font-semibold text-white tracking-tight">PrimeSpace</span>
+              </div>
+            </div>
           </div>
           {selectedProject && (
             <div className="p-4 pt-2 text-center">
