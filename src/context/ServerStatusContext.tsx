@@ -24,6 +24,7 @@ const API_BASE = (import.meta.env.VITE_API_URL ?? "").replace(/\/$/, "");
 const WAKE_URL = API_BASE ? `${API_BASE}/api/wake` : "/api/wake";
 const PING_INTERVAL_MS = 4000;
 const PING_TIMEOUT_MS = 5000;
+const KEEPALIVE_INTERVAL_MS = 600_000; // background ping every 10 min once awake
 const SHOULD_BYPASS_GATE =
   import.meta.env.DEV && import.meta.env.VITE_ENABLE_SERVER_GATE !== "true";
 
@@ -87,11 +88,22 @@ export function ServerStatusProvider({ children }: { children: ReactNode }) {
     };
   }, [ping]);
 
+  const keepAliveRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Once awake, clear wake-up intervals and start background keep-alive
   useEffect(() => {
     if (isServerAwake) {
       if (intervalRef.current) window.clearInterval(intervalRef.current);
       if (timerRef.current) window.clearInterval(timerRef.current);
+
+      // Background keep-alive: ping every 10 min to prevent Render shutdown
+      keepAliveRef.current = window.setInterval(() => {
+        fetch(WAKE_URL, { method: "GET", cache: "no-store" }).catch(() => {});
+      }, KEEPALIVE_INTERVAL_MS);
     }
+    return () => {
+      if (keepAliveRef.current) window.clearInterval(keepAliveRef.current);
+    };
   }, [isServerAwake]);
 
   return (
