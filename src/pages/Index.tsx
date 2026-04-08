@@ -12,12 +12,7 @@ import { TestimonialCard } from "@/components/TestimonialCard";
 import { StatsSection } from "@/components/StatsSection";
 import { FAQSection } from "@/components/FAQSection";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+
 
 interface HomeTour {
   id: number;
@@ -54,7 +49,6 @@ const testimonials = [
 const API_BASE = (import.meta.env.VITE_API_URL ?? "").replace(/\/$/, "");
 
 const Index = () => {
-  const [selectedProject, setSelectedProject] = useState<HomeTour | null>(null);
   const [projects, setProjects] = useState<HomeTour[]>([]);
   const { lang, t } = useI18n();
   const T = (obj: { fr: string; en: string }) => obj[lang];
@@ -181,14 +175,14 @@ const Index = () => {
 
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 justify-items-center">
             {projects.map((project, index) => (
-              <div key={project.title} onClick={() => setSelectedProject(project)} className="cursor-pointer">
+              <Link key={project.id} to={`/view/${project.id}`} className="cursor-pointer">
                 <ProjectCard
                   image={project.image}
                   title={project.title}
                   category={project.category}
                   delay={index * 0.1}
                 />
-              </div>
+              </Link>
             ))}
           </div>
 
@@ -301,45 +295,7 @@ const Index = () => {
           </div>
         </div>
       </section>
-      {/* Matterport Tour Modal */}
-      <Dialog open={!!selectedProject} onOpenChange={(open) => !open && setSelectedProject(null)}>
-        <DialogContent className="max-w-5xl w-[95vw] p-0 gap-0 overflow-hidden">
-          <DialogHeader className="p-4 pb-2">
-            <DialogTitle className="font-display">
-              {selectedProject?.title}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="aspect-video w-full relative">
-            <iframe
-              src={selectedProject?.tourUrl}
-              width="100%"
-              height="100%"
-              frameBorder="0"
-              allowFullScreen
-              allow="xr-spatial-tracking"
-              className="w-full h-full"
-            />
-            {/* Overlay PrimeSpace branding over Matterport footer */}
-            <div className="absolute bottom-0 left-0 right-0 h-[3.75rem] bg-gradient-to-t from-black from-50% via-black/95 to-transparent flex items-end justify-center pb-3 pointer-events-none">
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] uppercase tracking-widest text-white/50">Powered by</span>
-                <img src="/logo.jpg" alt="PrimeSpace" className="h-6 w-6 rounded-sm" />
-                <span className="text-sm font-semibold text-white tracking-tight">PrimeSpace</span>
-              </div>
-            </div>
-          </div>
-          {selectedProject && (
-            <div className="p-4 pt-2 text-center">
-              <Button variant="outline" size="sm" asChild>
-                <Link to={`/view/${selectedProject.id}`}>
-                  {lang === "fr" ? "Voir la visite complète" : "View full tour"}
-                  <ArrowRight className="w-4 h-4 ml-1" />
-                </Link>
-              </Button>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+
     </Layout>
   );
 };
