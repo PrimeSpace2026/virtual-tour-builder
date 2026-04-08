@@ -320,7 +320,7 @@ const Index = () => {
               className="w-full h-full"
             />
             {/* Overlay PrimeSpace branding over Matterport footer */}
-            <div className="absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-t from-black from-50% via-black/95 to-transparent flex items-end justify-center pb-3 pointer-events-none">
+            <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-black from-50% via-black/95 to-transparent flex items-end justify-center pb-3 pointer-events-none">
               <div className="flex items-center gap-2">
                 <span className="text-[10px] uppercase tracking-widest text-white/50">Powered by</span>
                 <img src="/logo.jpg" alt="PrimeSpace" className="h-6 w-6 rounded-sm" />
