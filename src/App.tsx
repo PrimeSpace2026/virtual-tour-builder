@@ -5,7 +5,7 @@ import { ServerGate } from "@/components/ServerGate";
 import { ServerStatusProvider } from "@/context/ServerStatusContext";
 import { I18nProvider } from "@/i18n";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Navigate, Route, Routes, useParams } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes, useParams, useSearchParams } from "react-router-dom";
 import Index from "./pages/Index";
 import Services from "./pages/Services";
 import Portfolio from "./pages/Portfolio";
@@ -36,7 +36,9 @@ import AddTourForm from "@/components/AddTourForm";
 
 const ShareRedirect = () => {
   const { id } = useParams();
-  return <Navigate to={`/view/${id}?clean=true`} replace />;
+  const [searchParams] = useSearchParams();
+  const query = searchParams.toString();
+  return <Navigate to={`/view/${id}${query ? `?${query}` : ""}`} replace />;
 };
 
 const queryClient = new QueryClient();
