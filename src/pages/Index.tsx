@@ -180,6 +180,7 @@ const Index = () => {
                   image={project.image}
                   title={project.title}
                   category={project.category}
+                  label={`Tour ${index + 1}`}
                   delay={index * 0.1}
                 />
               </Link>

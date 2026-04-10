@@ -5,6 +5,7 @@ interface ProjectCardProps {
   image: string;
   title: string;
   category: string;
+  label?: string;
   delay?: number;
 }
 
@@ -12,6 +13,7 @@ export const ProjectCard = ({
   image,
   title,
   category,
+  label,
   delay = 0,
 }: ProjectCardProps) => {
   return (
@@ -28,14 +30,19 @@ export const ProjectCard = ({
           alt={title}
           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
         />
-        {/* Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-primary/80 via-primary/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-center justify-center">
-          <Play className="w-10 h-10 text-white drop-shadow-lg" />
+        {/* Play button — always visible */}
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="w-14 h-14 rounded-full bg-white/90 group-hover:bg-white flex items-center justify-center shadow-lg transition-all duration-300 group-hover:scale-110">
+            <Play className="w-6 h-6 text-primary ml-0.5" fill="currentColor" />
+          </div>
         </div>
+        {/* Hover overlay */}
+        <div className="absolute inset-0 bg-primary/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
       </div>
       <div className="text-center">
-        <span className="text-secondary text-xs font-medium uppercase tracking-wider">{category}</span>
-        <h3 className="text-foreground font-display font-semibold text-lg mt-1">{title}</h3>
+        {label && <span className="text-muted-foreground text-[11px] font-medium uppercase tracking-widest">{label}</span>}
+        <h3 className="text-foreground font-display font-semibold text-lg mt-0.5">{title}</h3>
+        <span className="text-secondary text-xs font-medium">{category}</span>
       </div>
     </motion.div>
   );
