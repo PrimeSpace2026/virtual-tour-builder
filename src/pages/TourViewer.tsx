@@ -773,6 +773,8 @@ const TourViewer = () => {
     const resolvedSid = tagsMapRef.current.get(tagKey) || savedTagsMapRef.current.get(tagKey) || item.tagSid;
     const sdk = sdkRef.current;
 
+    console.log(`🔍 navigateToProduct: sdk=${!!sdk}, resolvedSid=${resolvedSid}, tagSid=${item.tagSid}`);
+
     // Primary: SDK FLY_IN (only works when SDK is connected)
     if (sdk) {
       (async () => {
