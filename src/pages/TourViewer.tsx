@@ -384,6 +384,13 @@ const TourViewer = () => {
   const [gymCoaches, setGymCoaches] = useState<GymCoachData[]>([]);
   const [bottomTab, setBottomTab] = useState<"products" | "services" | "coaches">("products");
   const [bottomOpen, setBottomOpen] = useState(true);
+  const [tabAnimKey, setTabAnimKey] = useState(0);
+
+  const switchTab = (tab: "products" | "services" | "coaches") => {
+    if (tab === bottomTab) return;
+    setBottomTab(tab);
+    setTabAnimKey((k) => k + 1);
+  };
 
   // Match a product by name/id/tagSid from a URL param
   const matchProduct = useCallback((param: string) => {
@@ -2411,15 +2418,15 @@ const TourViewer = () => {
           </button>
           <div
             className="overflow-hidden transition-all duration-300 ease-in-out"
-            style={{ maxHeight: bottomOpen ? "300px" : "0px" }}
+            style={{ maxHeight: bottomOpen ? "400px" : "0px" }}
           >
           <div className="px-3 pb-3">
-            {/* Tab switcher when both exist */}
+            {/* Tab switcher */}
             {(tourItems.length > 0 ? 1 : 0) + (tourServices.length > 0 ? 1 : 0) + (gymCoaches.length > 0 ? 1 : 0) > 1 && (
-              <div className="flex items-center justify-center gap-1 mb-2.5">
+              <div className="flex items-center justify-center gap-1 mb-2.5 flex-wrap">
                 {tourItems.length > 0 && (
                   <button
-                    onClick={() => setBottomTab("products")}
+                    onClick={() => switchTab("products")}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold uppercase tracking-wider transition-all ${bottomTab === "products" ? "bg-white/15 text-white" : "text-white/40 hover:text-white/70"}`}
                   >
                     <ShoppingBag className="w-3 h-3" /> Produits ({tourItems.length})
@@ -2427,7 +2434,7 @@ const TourViewer = () => {
                 )}
                 {tourServices.length > 0 && (
                   <button
-                    onClick={() => setBottomTab("services")}
+                    onClick={() => switchTab("services")}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold uppercase tracking-wider transition-all ${bottomTab === "services" ? "bg-white/15 text-white" : "text-white/40 hover:text-white/70"}`}
                   >
                     <Briefcase className="w-3 h-3" /> Services ({tourServices.length})
@@ -2435,7 +2442,7 @@ const TourViewer = () => {
                 )}
                 {gymCoaches.length > 0 && (
                   <button
-                    onClick={() => setBottomTab("coaches")}
+                    onClick={() => switchTab("coaches")}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold uppercase tracking-wider transition-all ${bottomTab === "coaches" ? "bg-white/15 text-white" : "text-white/40 hover:text-white/70"}`}
                   >
                     <User className="w-3 h-3" /> Coachs ({gymCoaches.length})
@@ -2457,28 +2464,31 @@ const TourViewer = () => {
               </div>
             )}
 
+            {/* Animated tab content */}
+            <div key={tabAnimKey} className="animate-[slideUp_0.3s_ease-out]">
+
             {/* Products strip */}
             {(bottomTab === "products" || (tourServices.length === 0 && gymCoaches.length === 0)) && tourItems.length > 0 && (
-              <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide justify-center">
+              <div className="grid grid-cols-2 sm:flex sm:items-center gap-2 sm:gap-3 sm:overflow-x-auto scrollbar-hide sm:justify-center">
                 {tourItems
                   .filter(i => !activeTagFilter || i.tagSid?.trim().toLowerCase() === activeTagFilter.trim().toLowerCase())
                   .map((item) => (
                   <button
                     key={item.id}
                     onClick={() => navigateToProduct(item)}
-                    className="flex-shrink-0 flex items-center gap-2.5 bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.08] rounded-xl p-2 pr-4 transition-all group"
+                    className="flex items-center gap-2 sm:gap-2.5 bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.08] rounded-xl p-2 sm:pr-4 transition-all group sm:flex-shrink-0"
                   >
-                    <div className="w-12 h-12 rounded-lg bg-white overflow-hidden flex items-center justify-center shrink-0">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-white overflow-hidden flex items-center justify-center shrink-0">
                       {item.imageUrl ? (
                         <img src={item.imageUrl} alt={item.name} className="w-full h-full object-contain p-1" />
                       ) : (
-                        <ShoppingBag className="w-5 h-5 text-gray-300" />
+                        <ShoppingBag className="w-4 h-4 sm:w-5 sm:h-5 text-gray-300" />
                       )}
                     </div>
                     <div className="min-w-0">
-                      <p className="text-white/80 text-xs font-semibold truncate max-w-[120px] group-hover:text-white transition-colors">{item.name}</p>
+                      <p className="text-white/80 text-[11px] sm:text-xs font-semibold truncate max-w-[90px] sm:max-w-[120px] group-hover:text-white transition-colors">{item.name}</p>
                       {item.price != null && (
-                        <p className="text-purple-300 text-xs font-bold mt-0.5">
+                        <p className="text-purple-300 text-[11px] sm:text-xs font-bold mt-0.5">
                           {item.price} <span className="text-white/30 text-[10px]">{CURRENCY_SYMBOLS[item.currency] || item.currency}</span>
                         </p>
                       )}
@@ -2488,7 +2498,7 @@ const TourViewer = () => {
                 {!activeTagFilter && tourItems.length > 3 && (
                   <button
                     onClick={() => setShowProducts(true)}
-                    className="flex-shrink-0 px-3 py-2 rounded-xl bg-white/[0.05] border border-white/[0.08] text-white/50 hover:text-white hover:bg-white/[0.1] transition-all text-xs font-medium"
+                    className="col-span-2 sm:col-span-1 sm:flex-shrink-0 px-3 py-2 rounded-xl bg-white/[0.05] border border-white/[0.08] text-white/50 hover:text-white hover:bg-white/[0.1] transition-all text-xs font-medium"
                   >
                     Voir tout
                   </button>
@@ -2498,22 +2508,22 @@ const TourViewer = () => {
 
             {/* Services strip */}
             {bottomTab === "services" && tourServices.length > 0 && (
-              <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide justify-center">
+              <div className="grid grid-cols-1 sm:flex sm:items-center gap-2 sm:gap-3 sm:overflow-x-auto scrollbar-hide sm:justify-center">
                 {tourServices.map((svc) => (
                   <button
                     key={svc.id}
                     onClick={() => setSelectedService(svc)}
-                    className="flex-shrink-0 flex items-center gap-2.5 bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.08] rounded-xl p-2 pr-3 transition-all group"
+                    className="flex items-center gap-2 sm:gap-2.5 bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.08] rounded-xl p-2 sm:pr-3 transition-all group sm:flex-shrink-0"
                   >
-                    <div className="w-12 h-12 rounded-lg bg-white overflow-hidden flex items-center justify-center shrink-0">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-white overflow-hidden flex items-center justify-center shrink-0">
                       {svc.imageUrl ? (
                         <img src={svc.imageUrl} alt={svc.name} className="w-full h-full object-cover" />
                       ) : (
-                        <Briefcase className="w-5 h-5 text-gray-300" />
+                        <Briefcase className="w-4 h-4 sm:w-5 sm:h-5 text-gray-300" />
                       )}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="text-white/80 text-xs font-semibold truncate max-w-[110px] group-hover:text-white transition-colors">{svc.name}</p>
+                      <p className="text-white/80 text-[11px] sm:text-xs font-semibold truncate max-w-[140px] sm:max-w-[110px] group-hover:text-white transition-colors">{svc.name}</p>
                     </div>
                     {/* Quick action icons */}
                     <div className="flex items-center gap-1 shrink-0">
@@ -2554,7 +2564,7 @@ const TourViewer = () => {
                 {tourServices.length > 3 && (
                   <button
                     onClick={() => setShowServices(true)}
-                    className="flex-shrink-0 px-3 py-2 rounded-xl bg-white/[0.05] border border-white/[0.08] text-white/50 hover:text-white hover:bg-white/[0.1] transition-all text-xs font-medium"
+                    className="sm:flex-shrink-0 px-3 py-2 rounded-xl bg-white/[0.05] border border-white/[0.08] text-white/50 hover:text-white hover:bg-white/[0.1] transition-all text-xs font-medium"
                   >
                     Voir tout
                   </button>
@@ -2564,29 +2574,31 @@ const TourViewer = () => {
 
             {/* Coaches strip */}
             {bottomTab === "coaches" && gymCoaches.length > 0 && (
-              <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide justify-center">
+              <div className="grid grid-cols-1 sm:flex sm:items-center gap-2 sm:gap-3 sm:overflow-x-auto scrollbar-hide sm:justify-center">
                 {gymCoaches.map((coach, ci) => (
                   <button
                     key={ci}
                     onClick={() => setSelectedCoach(coach)}
-                    className="flex-shrink-0 flex items-center gap-2.5 bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.08] rounded-xl p-2 pr-4 transition-all group"
+                    className="flex items-center gap-2 sm:gap-2.5 bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.08] rounded-xl p-2 sm:pr-4 transition-all group sm:flex-shrink-0"
                   >
                     {coach.imageUrl ? (
-                      <img src={coach.imageUrl} alt={coach.name} className="w-12 h-12 rounded-full object-cover border-2 border-purple-400/30" />
+                      <img src={coach.imageUrl} alt={coach.name} className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover border-2 border-purple-400/30" />
                     ) : (
-                      <div className="w-12 h-12 rounded-full bg-purple-500/20 flex items-center justify-center border-2 border-purple-400/30">
-                        <User className="w-5 h-5 text-purple-300" />
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-purple-500/20 flex items-center justify-center border-2 border-purple-400/30">
+                        <User className="w-4 h-4 sm:w-5 sm:h-5 text-purple-300" />
                       </div>
                     )}
                     <div className="min-w-0">
-                      <p className="text-white/80 text-xs font-semibold truncate max-w-[120px] group-hover:text-white transition-colors">{coach.name}</p>
-                      {coach.title && <p className="text-white/40 text-[10px] truncate max-w-[120px]">{coach.title}</p>}
-                      {coach.price && <p className="text-purple-300 text-xs font-bold mt-0.5">{coach.price}</p>}
+                      <p className="text-white/80 text-[11px] sm:text-xs font-semibold truncate max-w-[140px] sm:max-w-[120px] group-hover:text-white transition-colors">{coach.name}</p>
+                      {coach.title && <p className="text-white/40 text-[10px] truncate max-w-[140px] sm:max-w-[120px]">{coach.title}</p>}
+                      {coach.price && <p className="text-purple-300 text-[11px] sm:text-xs font-bold mt-0.5">{coach.price}</p>}
                     </div>
                   </button>
                 ))}
               </div>
             )}
+
+            </div>{/* end animated tab content */}
           </div>
           </div>
         </div>
