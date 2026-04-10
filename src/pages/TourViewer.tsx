@@ -383,6 +383,7 @@ const TourViewer = () => {
   const [selectedCoach, setSelectedCoach] = useState<GymCoachData | null>(null);
   const [gymCoaches, setGymCoaches] = useState<GymCoachData[]>([]);
   const [bottomTab, setBottomTab] = useState<"products" | "services" | "coaches">("products");
+  const [bottomOpen, setBottomOpen] = useState(true);
 
   // Match a product by name/id/tagSid from a URL param
   const matchProduct = useCallback((param: string) => {
@@ -2401,7 +2402,18 @@ const TourViewer = () => {
       {/* ===== BOTTOM: PRODUCT & SERVICE STRIP ===== */}
       {(tourItems.length > 0 || tourServices.length > 0 || gymCoaches.length > 0) && (
         <div className="shrink-0 bg-[#0d0d1a] border-t border-white/10">
-          <div className="px-3 py-3">
+          {/* Toggle handle */}
+          <button
+            onClick={() => setBottomOpen((prev) => !prev)}
+            className="w-full flex items-center justify-center py-1.5 hover:bg-white/5 transition-colors"
+          >
+            <ChevronDown className={`w-4 h-4 text-white/50 transition-transform duration-300 ${bottomOpen ? "rotate-180" : ""}`} />
+          </button>
+          <div
+            className="overflow-hidden transition-all duration-300 ease-in-out"
+            style={{ maxHeight: bottomOpen ? "300px" : "0px" }}
+          >
+          <div className="px-3 pb-3">
             {/* Tab switcher when both exist */}
             {(tourItems.length > 0 ? 1 : 0) + (tourServices.length > 0 ? 1 : 0) + (gymCoaches.length > 0 ? 1 : 0) > 1 && (
               <div className="flex items-center justify-center gap-1 mb-2.5">
@@ -2575,6 +2587,7 @@ const TourViewer = () => {
                 ))}
               </div>
             )}
+          </div>
           </div>
         </div>
       )}
