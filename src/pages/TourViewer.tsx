@@ -767,98 +767,81 @@ const TourViewer = () => {
     setShowProducts(false);
     if (tour?.id) trackEvent(tour.id, "product_click", item.name, String(item.id));
 
-    if (item.tagSid && tour?.tourUrl) {
-      const modelId = extractModelId(tour.tourUrl);
+    if (!item.tagSid || !tour?.tourUrl) return;
 
-      // Sweep-based navigation (sweep:<index>)
-      if (item.tagSid.startsWith("sweep:")) {
-        const sweepIndex = item.tagSid.replace("sweep:", "");
-        if (!modelId) { setSelectedItem(item); return; }
-        const sweepUrl = `https://my.matterport.com/show/?m=${modelId}&play=1&qs=1&brand=0&title=0&mls=2&help=0&hl=0&ss=${encodeURIComponent(sweepIndex)}`;
-        console.log(`🔄 Sweep navigation → ss=${sweepIndex}`);
-        setIframeSrc(sweepUrl);
-        setIframeKey((k) => k + 1);
-        setIframeLoaded(false);
-        setTimeout(() => setSelectedItem(item), 1200);
-        return;
-      }
+    const tagKey = item.tagSid.trim().toLowerCase();
+    const resolvedSid = tagsMapRef.current.get(tagKey) || savedTagsMapRef.current.get(tagKey) || item.tagSid;
+    const sdk = sdkRef.current;
 
-      const tagKey = item.tagSid.trim().toLowerCase();
-      const resolvedSid = tagsMapRef.current.get(tagKey) || savedTagsMapRef.current.get(tagKey) || item.tagSid;
-      const sdk = sdkRef.current;
-
-      // Primary: use SDK to navigate smoothly (no iframe reload)
-      if (sdk) {
-        const tryNavigate = async () => {
-          try {
-            // Get tag anchor position to find nearest sweep
-            let anchorPos: any = null;
-            if (sdk.Mattertag?.getData) {
-              const tags = await sdk.Mattertag.getData();
-              const found = tags.find((t: any) => t.sid === resolvedSid);
-              if (found?.anchorPosition) anchorPos = found.anchorPosition;
-            }
-            if (!anchorPos && sdk.Tag?.getData) {
-              const tags = await sdk.Tag.getData();
-              const found = tags.find((t: any) => t.sid === resolvedSid);
-              if (found?.anchorPosition) anchorPos = found.anchorPosition;
-            }
-            if (anchorPos) {
-              // Move to nearest sweep using FLY_IN transition
-              const sweeps = await new Promise<any[]>((resolve) => {
-                const sub = sdk.Sweep.data.subscribe({ onCollectionUpdated: (collection: any) => {
-                  const items: any[] = [];
-                  if (collection && typeof collection.forEach === 'function') {
-                    collection.forEach((item: any, key: any) => items.push({ ...item, sid: key }));
-                  } else if (Array.isArray(collection)) {
-                    collection.forEach((item: any) => items.push({ ...item, sid: item.sid || item.id }));
-                  }
-                  if (items.length > 0) { sub?.cancel?.(); resolve(items); }
-                }});
-              });
-              if (sweeps.length > 0) {
-                let nearest = sweeps[0];
-                let minDist = Infinity;
-                for (const s of sweeps) {
-                  if (!s.position) continue;
-                  const dx = s.position.x - anchorPos.x;
-                  const dy = s.position.y - anchorPos.y;
-                  const dz = s.position.z - anchorPos.z;
-                  const dist = dx * dx + dy * dy + dz * dz;
-                  if (dist < minDist) { minDist = dist; nearest = s; }
-                }
-                // Calculate look-at rotation toward the tag
-                const lookX = Math.atan2(anchorPos.y - nearest.position.y, Math.sqrt((anchorPos.x - nearest.position.x) ** 2 + (anchorPos.z - nearest.position.z) ** 2)) * (180 / Math.PI);
-                const lookY = Math.atan2(anchorPos.x - nearest.position.x, anchorPos.z - nearest.position.z) * (180 / Math.PI);
-                // Fly to sweep with smooth transition
-                const flyTransition = sdk.Sweep.Transition?.FLY_IN || sdk.Sweep.Transition?.MOVE || "transition.fly";
-                await sdk.Sweep.moveTo(nearest.sid, {
-                  rotation: { x: lookX, y: lookY },
-                  transition: flyTransition,
-                  transitionTime: 1500,
-                });
-                console.log(`🎯 Flew to nearest sweep for tag: ${nearest.sid}`);
-              }
-            }
-          } catch (err) {
-            console.log("Tag sweep navigation failed:", err);
+    // Primary: SDK FLY_IN (only works when SDK is connected)
+    if (sdk) {
+      (async () => {
+        try {
+          // Get tag anchor position to find nearest sweep
+          let anchorPos: any = null;
+          if (sdk.Mattertag?.getData) {
+            const tags = await sdk.Mattertag.getData();
+            const found = tags.find((t: any) => t.sid === resolvedSid);
+            if (found?.anchorPosition) anchorPos = found.anchorPosition;
           }
-        };
-        tryNavigate();
-        setSelectedItem(item);
-      } else {
-        // Fallback: no SDK — reload iframe with tag deep link
-        const modelId = extractModelId(tour.tourUrl);
-        if (!modelId) { setSelectedItem(item); return; }
-        const tagUrl = `https://my.matterport.com/show/?m=${modelId}&play=1&qs=1&brand=0&title=0&mls=2&help=0&hl=0&tag=${encodeURIComponent(resolvedSid)}&mt=1&pin=1`;
-        console.log(`🎯 Iframe deep link to tag: ${resolvedSid}`);
-        setIframeSrc(tagUrl);
-        setIframeKey((k) => k + 1);
-        setIframeLoaded(false);
-        setTimeout(() => setSelectedItem(item), 1200);
-      }
+          if (!anchorPos && sdk.Tag?.getData) {
+            const tags = await sdk.Tag.getData();
+            const found = tags.find((t: any) => t.sid === resolvedSid);
+            if (found?.anchorPosition) anchorPos = found.anchorPosition;
+          }
+          if (!anchorPos) return;
+
+          // Collect all sweeps
+          const sweeps = await new Promise<any[]>((resolve) => {
+            const sub = sdk.Sweep.data.subscribe({ onCollectionUpdated: (collection: any) => {
+              const arr: any[] = [];
+              if (collection && typeof collection.forEach === 'function') {
+                collection.forEach((s: any, key: any) => arr.push({ ...s, sid: key }));
+              } else if (Array.isArray(collection)) {
+                collection.forEach((s: any) => arr.push({ ...s, sid: s.sid || s.id }));
+              }
+              if (arr.length > 0) { sub?.cancel?.(); resolve(arr); }
+            }});
+          });
+          if (sweeps.length === 0) return;
+
+          // Find nearest sweep to tag
+          let nearest = sweeps[0];
+          let minDist = Infinity;
+          for (const s of sweeps) {
+            if (!s.position) continue;
+            const dx = s.position.x - anchorPos.x;
+            const dy = s.position.y - anchorPos.y;
+            const dz = s.position.z - anchorPos.z;
+            const dist = dx * dx + dy * dy + dz * dz;
+            if (dist < minDist) { minDist = dist; nearest = s; }
+          }
+
+          // Calculate look-at rotation toward the tag
+          const lookX = Math.atan2(anchorPos.y - nearest.position.y, Math.sqrt((anchorPos.x - nearest.position.x) ** 2 + (anchorPos.z - nearest.position.z) ** 2)) * (180 / Math.PI);
+          const lookY = Math.atan2(anchorPos.x - nearest.position.x, anchorPos.z - nearest.position.z) * (180 / Math.PI);
+
+          // Fly directly to nearest sweep
+          const flyTransition = sdk.Sweep.Transition?.FLY_IN || sdk.Sweep.Transition?.MOVE || "transition.fly";
+          await sdk.Sweep.moveTo(nearest.sid, {
+            rotation: { x: lookX, y: lookY },
+            transition: flyTransition,
+            transitionTime: 1500,
+          });
+          console.log(`🎯 Flew to nearest sweep for tag: ${nearest.sid}`);
+        } catch (err) {
+          console.log("SDK fly-to failed:", err);
+        }
+      })();
     } else {
-      setSelectedItem(item);
+      // Fallback: no SDK (e.g. deployed without authorized key) — iframe deep link
+      const modelId = extractModelId(tour.tourUrl);
+      if (!modelId) return;
+      const tagUrl = `https://my.matterport.com/show/?m=${modelId}&play=1&qs=1&brand=0&title=0&mls=2&help=0&hl=0&tag=${encodeURIComponent(resolvedSid)}&mt=1&pin=1`;
+      console.log(`🎯 Iframe deep link to tag: ${resolvedSid}`);
+      setIframeSrc(tagUrl);
+      setIframeKey((k) => k + 1);
+      setIframeLoaded(false);
     }
   }, [tour?.id, tour?.tourUrl, trackEvent]);
 
