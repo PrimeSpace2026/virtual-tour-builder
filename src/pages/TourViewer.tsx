@@ -299,8 +299,8 @@ const CURRENCY_SYMBOLS: Record<string, string> = { EUR: "€", USD: "$", TND: "T
 function buildEmbedUrl(tourUrl: string, withSdkKey = false): string {
   const modelId = extractModelId(tourUrl);
   if (!modelId) return tourUrl;
-  const base = `https://my.matterport.com/show/?m=${modelId}&play=1&qs=1&title=0&vr=0&dh=1&f=1&search=0&lang=fr`;
-  return withSdkKey ? `${base}&applicationKey=${SDK_KEY}` : base;
+  const base = `https://my.matterport.com/show/?m=${modelId}&play=1&qs=1&title=0&vr=0&dh=0&f=0&search=0&lang=fr&applicationKey=${SDK_KEY}`;
+  return base;
 }
 
 const TourViewer = () => {
@@ -383,14 +383,6 @@ const TourViewer = () => {
   const [selectedCoach, setSelectedCoach] = useState<GymCoachData | null>(null);
   const [gymCoaches, setGymCoaches] = useState<GymCoachData[]>([]);
   const [bottomTab, setBottomTab] = useState<"products" | "services" | "coaches">("products");
-  const [bottomOpen, setBottomOpen] = useState(true);
-  const [tabAnimKey, setTabAnimKey] = useState(0);
-
-  const switchTab = (tab: "products" | "services" | "coaches") => {
-    if (tab === bottomTab) return;
-    setBottomTab(tab);
-    setTabAnimKey((k) => k + 1);
-  };
 
   // Match a product by name/id/tagSid from a URL param
   const matchProduct = useCallback((param: string) => {
@@ -495,8 +487,9 @@ const TourViewer = () => {
           }
         }
         savedTagsMapRef.current = savedMap;
-        // Load iframe without SDK key — SDK connects separately via setupSdk()
-        setIframeSrc(buildEmbedUrl(tourData.tourUrl, false));
+        // Set initial iframe URL
+        const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+        setIframeSrc(buildEmbedUrl(tourData.tourUrl, isLocal));
         setLoading(false);
         setShowCard(true);
       })
@@ -530,13 +523,7 @@ const TourViewer = () => {
       }).then(r => r.json()).then(v => { visitIdRef.current = v.id; }).catch(() => {});
     };
 
-    fetch("https://ipapi.co/json/")
-      .then(r => r.ok ? r.json() : null)
-      .then(geo => {
-        if (geo?.country_name) sendVisit(geo.country_name, geo.city || "", geo.latitude ?? null, geo.longitude ?? null);
-        else sendVisit();
-      })
-      .catch(() => sendVisit());
+    sendVisit();
 
     const sendDuration = () => {
       if (!visitIdRef.current) return;
@@ -549,10 +536,10 @@ const TourViewer = () => {
     return () => { sendDuration(); window.removeEventListener("beforeunload", sendDuration); };
   }, [tour?.id]);
 
-  // SDK: attempt connection on any domain
+  // SDK: only works on localhost (Matterport free plan restricts to local domains)
   const isLocalDev = typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
 
-  // SDK: attempt on all domains — falls back gracefully if key is rejected
+  // SDK: connect on any domain (key authorized in Matterport portal)
   useEffect(() => {
     if (!iframeLoaded || !iframeRef.current || !tour?.tourUrl) return;
     if (sdkAttemptsRef.current >= 1) return;
@@ -566,27 +553,14 @@ const TourViewer = () => {
         let tagLabel = "";
         let tagData: TagItem | null = null;
 
-        if (sdk.Mattertag?.getData) {
-          const tags = await sdk.Mattertag.getData();
+        if (sdk.Tag?.getData) {
+          const tags = await sdk.Tag.getData();
           const found = tags.find((t: any) => t.sid === tagSid);
           if (found) {
             tagLabel = found.label || "";
             tagData = {
               sid: found.sid, label: found.label || "", description: found.description || "",
               mediaUrl: found.media?.src || "", mediaSrc: found.mediaSrc || found.media?.src || "",
-              anchorPosition: found.anchorPosition,
-            };
-          }
-        }
-
-        if (!tagData && (sdk as any).Tag?.getData) {
-          const tags = await (sdk as any).Tag.getData();
-          const found = tags.find((t: any) => t.sid === tagSid);
-          if (found) {
-            tagLabel = found.label || "";
-            tagData = {
-              sid: found.sid, label: found.label || "", description: found.description || "",
-              mediaUrl: found.media?.src || "", mediaSrc: found.mediaSrc || "",
               anchorPosition: found.anchorPosition,
             };
           }
@@ -628,27 +602,17 @@ const TourViewer = () => {
         if (cancelled) return;
         sdkRef.current = sdk;
         setSdkConnected(true);
-        console.log("✅ SDK connecté");
+        console.log("✅ SDK connecté (localhost)");
 
-        // Navigate to the first sweep (exterior/entrance) on load
-        try {
-          const sweeps = await new Promise<any[]>((resolve) => {
-            const sub = sdk.Sweep.data.subscribe({ onCollectionUpdated: (collection: any) => {
-              const items: any[] = [];
-              if (collection && typeof collection.forEach === 'function') {
-                collection.forEach((item: any, key: any) => items.push({ ...item, sid: key }));
-              } else if (Array.isArray(collection)) {
-                collection.forEach((item: any) => items.push({ ...item, sid: item.sid || item.id }));
-              }
-              if (items.length > 0) { sub?.cancel?.(); resolve(items); }
-            }});
+        // Wait for model to be fully loaded (PLAYING phase) before querying data
+        await new Promise<void>((resolve) => {
+          const sub = sdk.App.state.subscribe((appState: any) => {
+            if (appState.phase === sdk.App.Phase.PLAYING) {
+              sub?.cancel?.();
+              resolve();
+            }
           });
-          if (sweeps && sweeps.length > 0) {
-            console.log("📍 Available sweeps:", sweeps.map((s: any, i: number) => ({ index: i, sid: s.sid, position: s.position })));
-            await sdk.Sweep.moveTo(sweeps[0].sid, { transition: sdk.Sweep.Transition?.INSTANT || "transition.instant" });
-            console.log("🏠 Moved to starting sweep:", sweeps[0].sid);
-          }
-        } catch (err) { console.log("Sweep navigation error:", err); }
+        });
 
         // Get floor data for custom floor selector
         try {
@@ -665,15 +629,14 @@ const TourViewer = () => {
         } catch (err) { console.log("Floor data error:", err); }
 
         try {
-          if (sdk.Mattertag?.getData) {
-            const allTags = await sdk.Mattertag.getData();
+          if (sdk.Tag?.getData) {
+            const allTags = await sdk.Tag.getData();
             console.log("🏷️ Tags:", allTags.map((t: any) => ({ sid: t.sid, label: t.label })));
             // Cache tag name → SID mapping
             allTags.forEach((t: any) => {
               if (t.label) tagsMapRef.current.set(t.label.trim().toLowerCase(), t.sid);
               if (t.sid) tagsMapRef.current.set(t.sid, t.sid);
             });
-
           }
         } catch {}
 
@@ -684,8 +647,8 @@ const TourViewer = () => {
               // Small delay to let Matterport finish state transition
               await new Promise(r => setTimeout(r, 1500));
               // Re-read tags to refresh visibility
-              if (sdk.Mattertag?.getData) {
-                const tags = await sdk.Mattertag.getData();
+              if (sdk.Tag?.getData) {
+                const tags = await sdk.Tag.getData();
                 console.log("🔄 Tags restored after state change:", tags.length);
                 tags.forEach((t: any) => {
                   if (t.label) tagsMapRef.current.set(t.label.trim().toLowerCase(), t.sid);
@@ -714,15 +677,12 @@ const TourViewer = () => {
           }
         } catch (e) { console.log("Mode listener error:", e); }
 
-        if (sdk.Mattertag?.Event?.CLICK) {
-          sdk.on(sdk.Mattertag.Event.CLICK, (tagSid: string) => handleTagClick(sdk, tagSid));
-        }
-        if ((sdk as any).Tag?.Event?.CLICK) {
-          sdk.on((sdk as any).Tag.Event.CLICK, (tagSid: string) => handleTagClick(sdk, tagSid));
+        if (sdk.Tag?.Event?.CLICK) {
+          sdk.on(sdk.Tag.Event.CLICK, (tagSid: string) => handleTagClick(sdk, tagSid));
         }
       } catch (err) {
         if (cancelled) return;
-        console.log("⚠️ SDK échoué:", err);
+        console.log("⚠️ SDK échoué sur localhost:", err);
         setSdkFailed(true);
       }
     };
@@ -767,83 +727,56 @@ const TourViewer = () => {
     setShowProducts(false);
     if (tour?.id) trackEvent(tour.id, "product_click", item.name, String(item.id));
 
-    if (!item.tagSid || !tour?.tourUrl) return;
+    if (item.tagSid && tour?.tourUrl) {
+      const tagKey = item.tagSid.trim().toLowerCase();
+      const resolvedSid = tagsMapRef.current.get(tagKey) || savedTagsMapRef.current.get(tagKey) || item.tagSid;
+      const sdk = sdkRef.current;
 
-    const tagKey = item.tagSid.trim().toLowerCase();
-    const resolvedSid = tagsMapRef.current.get(tagKey) || savedTagsMapRef.current.get(tagKey) || item.tagSid;
-    const sdk = sdkRef.current;
+      // Helper: iframe deep-link fallback
+      const iframeFallback = () => {
+        const modelId = extractModelId(tour.tourUrl);
+        if (!modelId) return;
+        const tagUrl = `https://my.matterport.com/show/?m=${modelId}&play=1&qs=1&brand=0&title=0&mls=2&help=0&hl=0&tag=${encodeURIComponent(resolvedSid)}&mt=1&pin=1`;
+        console.log(`🎯 Iframe deep link to tag: ${resolvedSid}`);
+        setIframeSrc(tagUrl);
+        setIframeKey((k) => k + 1);
+        setIframeLoaded(false);
+      };
 
-    console.log(`🔍 navigateToProduct: sdk=${!!sdk}, resolvedSid=${resolvedSid}, tagSid=${item.tagSid}`);
+      // Primary: use SDK Mattertag.navigateToTag for direct fly-to
+      if (sdk) {
+        const tryNavigate = async () => {
+          try {
+            // Try direct Mattertag.navigateToTag (fly transition)
+            if (sdk.Mattertag?.navigateToTag) {
+              const flyTransition = sdk.Mattertag.Transition?.FLY_IN || sdk.Mattertag.Transition?.FLYOVER || "transition.fly";
+              console.log(`🎯 Mattertag.navigateToTag("${resolvedSid}", ${flyTransition})`);
+              await sdk.Mattertag.navigateToTag(resolvedSid, flyTransition);
+              console.log(`✅ Flew to tag: ${resolvedSid}`);
+              return;
+            }
 
-    // Primary: SDK FLY_IN (only works when SDK is connected)
-    if (sdk) {
-      (async () => {
-        try {
-          // Get tag anchor position to find nearest sweep
-          let anchorPos: any = null;
-          if (sdk.Mattertag?.getData) {
-            const tags = await sdk.Mattertag.getData();
-            const found = tags.find((t: any) => t.sid === resolvedSid);
-            if (found?.anchorPosition) anchorPos = found.anchorPosition;
+            // Fallback: try Tag.open if Mattertag API not available
+            if (sdk.Tag?.open) {
+              console.log(`🎯 Tag.open("${resolvedSid}")`);
+              await sdk.Tag.open(resolvedSid);
+              console.log(`✅ Opened tag: ${resolvedSid}`);
+              return;
+            }
+
+            // Last resort: iframe
+            console.log("⚠️ No SDK fly method available, using iframe");
+            iframeFallback();
+          } catch (err) {
+            console.log("SDK fly failed, falling back to iframe:", err);
+            iframeFallback();
           }
-          if (!anchorPos && sdk.Tag?.getData) {
-            const tags = await sdk.Tag.getData();
-            const found = tags.find((t: any) => t.sid === resolvedSid);
-            if (found?.anchorPosition) anchorPos = found.anchorPosition;
-          }
-          if (!anchorPos) return;
-
-          // Collect all sweeps
-          const sweeps = await new Promise<any[]>((resolve) => {
-            const sub = sdk.Sweep.data.subscribe({ onCollectionUpdated: (collection: any) => {
-              const arr: any[] = [];
-              if (collection && typeof collection.forEach === 'function') {
-                collection.forEach((s: any, key: any) => arr.push({ ...s, sid: key }));
-              } else if (Array.isArray(collection)) {
-                collection.forEach((s: any) => arr.push({ ...s, sid: s.sid || s.id }));
-              }
-              if (arr.length > 0) { sub?.cancel?.(); resolve(arr); }
-            }});
-          });
-          if (sweeps.length === 0) return;
-
-          // Find nearest sweep to tag
-          let nearest = sweeps[0];
-          let minDist = Infinity;
-          for (const s of sweeps) {
-            if (!s.position) continue;
-            const dx = s.position.x - anchorPos.x;
-            const dy = s.position.y - anchorPos.y;
-            const dz = s.position.z - anchorPos.z;
-            const dist = dx * dx + dy * dy + dz * dz;
-            if (dist < minDist) { minDist = dist; nearest = s; }
-          }
-
-          // Calculate look-at rotation toward the tag
-          const lookX = Math.atan2(anchorPos.y - nearest.position.y, Math.sqrt((anchorPos.x - nearest.position.x) ** 2 + (anchorPos.z - nearest.position.z) ** 2)) * (180 / Math.PI);
-          const lookY = Math.atan2(anchorPos.x - nearest.position.x, anchorPos.z - nearest.position.z) * (180 / Math.PI);
-
-          // Fly directly to nearest sweep
-          const flyTransition = sdk.Sweep.Transition?.FLY_IN || sdk.Sweep.Transition?.MOVE || "transition.fly";
-          await sdk.Sweep.moveTo(nearest.sid, {
-            rotation: { x: lookX, y: lookY },
-            transition: flyTransition,
-            transitionTime: 1500,
-          });
-          console.log(`🎯 Flew to nearest sweep for tag: ${nearest.sid}`);
-        } catch (err) {
-          console.log("SDK fly-to failed:", err);
-        }
-      })();
-    } else {
-      // Fallback: no SDK (e.g. deployed without authorized key) — iframe deep link
-      const modelId = extractModelId(tour.tourUrl);
-      if (!modelId) return;
-      const tagUrl = `https://my.matterport.com/show/?m=${modelId}&play=1&qs=1&brand=0&title=0&mls=2&help=0&hl=0&tag=${encodeURIComponent(resolvedSid)}&mt=1&pin=1`;
-      console.log(`🎯 Iframe deep link to tag: ${resolvedSid}`);
-      setIframeSrc(tagUrl);
-      setIframeKey((k) => k + 1);
-      setIframeLoaded(false);
+        };
+        tryNavigate();
+      } else {
+        // No SDK — use iframe deep link
+        iframeFallback();
+      }
     }
   }, [tour?.id, tour?.tourUrl, trackEvent]);
 
@@ -851,22 +784,10 @@ const TourViewer = () => {
   // Uses iframe deep-link method (same as product navigation fallback)
   const navigateToMenuTag = useCallback((tagSid: string) => {
     if (!tour?.tourUrl) return;
-    const modelId = extractModelId(tour.tourUrl);
-    if (!modelId) return;
-
-    // Sweep-based navigation (sweep:<index>)
-    if (tagSid.startsWith("sweep:")) {
-      const sweepIndex = tagSid.replace("sweep:", "");
-      const sweepUrl = `https://my.matterport.com/show/?m=${modelId}&play=1&qs=1&brand=0&title=0&mls=2&help=0&hl=0&ss=${encodeURIComponent(sweepIndex)}`;
-      console.log(`🔄 Menu sweep navigation → ss=${sweepIndex}`);
-      setIframeSrc(sweepUrl);
-      setIframeKey((k) => k + 1);
-      setIframeLoaded(false);
-      return;
-    }
-
     const tagKey = tagSid.trim().toLowerCase();
     const resolvedSid = tagsMapRef.current.get(tagKey) || savedTagsMapRef.current.get(tagKey) || tagSid;
+    const modelId = extractModelId(tour.tourUrl);
+    if (!modelId) return;
     const tagUrl = `https://my.matterport.com/show/?m=${modelId}&play=1&qs=1&brand=0&title=0&mls=2&help=0&hl=0&tag=${encodeURIComponent(resolvedSid)}&mt=1&pin=1`;
     console.log(`🏷️ Menu tag → iframe deep link: ${resolvedSid}`);
     setIframeSrc(tagUrl);
@@ -881,30 +802,21 @@ const TourViewer = () => {
     sdk.Floor.moveTo(floorIndex).catch(() => {});
   }, []);
 
-  // Fullscreen (with webkit/mobile fallback)
+  // Fullscreen
   const toggleFullscreen = useCallback(() => {
-    const doc = document as any;
-    const el = document.documentElement as any;
-    const isFS = !!(doc.fullscreenElement || doc.webkitFullscreenElement);
-    if (!isFS) {
-      const req = el.requestFullscreen || el.webkitRequestFullscreen;
-      if (req) req.call(el).catch(() => {});
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen();
       setIsFullscreen(true);
     } else {
-      const exit = doc.exitFullscreen || doc.webkitExitFullscreen;
-      if (exit) exit.call(doc).catch(() => {});
+      document.exitFullscreen();
       setIsFullscreen(false);
     }
   }, []);
 
   useEffect(() => {
-    const handler = () => setIsFullscreen(!!(document.fullscreenElement || (document as any).webkitFullscreenElement));
+    const handler = () => setIsFullscreen(!!document.fullscreenElement);
     document.addEventListener("fullscreenchange", handler);
-    document.addEventListener("webkitfullscreenchange", handler);
-    return () => {
-      document.removeEventListener("fullscreenchange", handler);
-      document.removeEventListener("webkitfullscreenchange", handler);
-    };
+    return () => document.removeEventListener("fullscreenchange", handler);
   }, []);
 
   // Copy link
@@ -1035,15 +947,16 @@ const TourViewer = () => {
             </motion.div>
           )}
         </AnimatePresence>
-        {/* iframe — on mobile, extend 44px wider to push Matterport native right-side buttons off-screen */}
+        {/* iframe fills container exactly — no height offset so Matterport native buttons stay in view and clickable */}
         <iframe
           ref={iframeRef}
           key={iframeKey}
           id="showcase-iframe"
           src={iframeSrc}
-          className="absolute inset-0 h-full border-0 transition-opacity duration-700 ease-in-out w-[calc(100%+44px)] sm:w-full"
+          className="absolute inset-0 w-full h-full border-0 transition-opacity duration-700 ease-in-out"
           style={{ opacity: iframeLoaded ? 1 : 0 }}
-          allow="xr-spatial-tracking; fullscreen; autoplay; encrypted-media; picture-in-picture; clipboard-write; accelerometer; gyroscope; camera; microphone"
+          allow="xr-spatial-tracking; xr; fullscreen; autoplay; encrypted-media; picture-in-picture; clipboard-write; accelerometer; gyroscope; camera; microphone"
+          allowFullScreen
           referrerPolicy="no-referrer-when-downgrade"
           onLoad={() => setIframeLoaded(true)}
         />
@@ -1051,37 +964,21 @@ const TourViewer = () => {
           PrimeSpace overlay — covers Matterport branding at bottom-right
           Always visible (including clean mode) to hide Matterport logo
         */}
-        <div className="absolute bottom-0 right-0 z-[6] pointer-events-none sm:left-0 flex justify-end px-0 sm:px-4 pb-0 sm:pb-3 lg:pb-3">
+        <div className="absolute bottom-0 left-0 right-0 z-[6] pointer-events-none flex justify-end px-3 sm:px-4 pb-0 sm:pb-3 lg:pb-3">
           <Link
             to="/"
-            className="pointer-events-auto flex items-center gap-2 sm:gap-3
-              px-3 py-1.5 sm:px-3 sm:py-4 min-w-[160px] sm:min-w-[320px] lg:w-[420px]
-              bg-black/60 sm:bg-black/70 backdrop-blur-2xl border border-white/10 shadow-2xl
-              rounded-tl-xl sm:rounded-2xl
-              border-b-0 border-r-0 sm:border-b sm:border-r
+            className="pointer-events-auto w-auto sm:min-w-[320px] lg:w-[420px] flex items-center gap-3 px-3 py-5 sm:py-4
+              bg-black/70 backdrop-blur-xl border border-white/15 shadow-2xl
+              rounded-t-2xl sm:rounded-2xl
+              border-b-0 sm:border-b
               hover:bg-black/80 hover:border-white/25 transition-all group"
           >
-            <img src="/logo.jpg" alt="PrimeSpace" className="w-7 h-7 sm:w-12 sm:h-12 shrink-0 rounded-md sm:rounded-xl object-cover shadow-lg shadow-purple-500/20 group-hover:shadow-purple-500/40 transition-shadow" />
+            <img src="/logo.jpg" alt="PrimeSpace" className="w-12 h-12 shrink-0 rounded-xl object-cover shadow-lg shadow-purple-500/20 group-hover:shadow-purple-500/40 transition-shadow" />
             <div className="flex-grow min-w-0">
-              <p className="text-white/90 text-[11px] sm:text-base font-bold tracking-tight group-hover:text-white transition-colors leading-tight">PrimeSpace</p>
-              <p className="text-white/40 text-[9px] sm:text-[11px] font-medium">Studio 3D immersif</p>
+              <p className="text-white/90 text-sm sm:text-base font-bold tracking-tight group-hover:text-white transition-colors">PrimeSpace</p>
+              <p className="text-white/40 text-[10px] sm:text-[11px] font-medium">Studio 3D immersif</p>
             </div>
           </Link>
-        </div>
-        {/* Mobile: our own fullscreen & share buttons on right side (native ones are off-screen) */}
-        <div className="sm:hidden absolute right-1 bottom-[52px] z-[6] flex flex-col gap-1.5 pointer-events-auto">
-          <button
-            onClick={toggleFullscreen}
-            className="w-9 h-9 rounded-xl bg-black/60 backdrop-blur-xl border border-white/10 flex items-center justify-center text-white/70 hover:text-white hover:bg-black/80 transition-all"
-          >
-            {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
-          </button>
-          <button
-            onClick={() => setShowShare(!showShare)}
-            className="w-9 h-9 rounded-xl bg-black/60 backdrop-blur-xl border border-white/10 flex items-center justify-center text-white/70 hover:text-white hover:bg-black/80 transition-all"
-          >
-            <Share2 className="w-4 h-4" />
-          </button>
         </div>
       </div>
 
@@ -1200,8 +1097,8 @@ const TourViewer = () => {
           </button>
         )}
 
-        {/* Share — hidden on mobile, moved to bottom bar */}
-        <div className="relative hidden sm:block">
+        {/* Share */}
+        <div className="relative">
           <button
             onClick={() => setShowShare(!showShare)}
             className={`flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-xl backdrop-blur-xl border transition-all ${
@@ -1247,10 +1144,10 @@ const TourViewer = () => {
           </AnimatePresence>
         </div>
 
-        {/* Fullscreen — hidden on mobile, moved to bottom bar */}
+        {/* Fullscreen */}
         <button
           onClick={toggleFullscreen}
-          className="hidden sm:flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-black/60 backdrop-blur-xl border border-white/10 text-white/70 hover:text-white hover:bg-black/80 transition-all"
+          className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-black/60 backdrop-blur-xl border border-white/10 text-white/70 hover:text-white hover:bg-black/80 transition-all"
         >
           {isFullscreen ? (
             <Minimize className="w-4 h-4" />
@@ -2392,32 +2289,18 @@ const TourViewer = () => {
           onClick={() => setShowShare(false)}
         />
       )}
-
-
-
       </div>{/* END TOP: MATTERPORT 3D VIEWER */}
 
       {/* ===== BOTTOM: PRODUCT & SERVICE STRIP ===== */}
       {(tourItems.length > 0 || tourServices.length > 0 || gymCoaches.length > 0) && (
         <div className="shrink-0 bg-[#0d0d1a] border-t border-white/10">
-          {/* Toggle handle */}
-          <button
-            onClick={() => setBottomOpen((prev) => !prev)}
-            className="w-full flex items-center justify-center py-1.5 hover:bg-white/5 transition-colors"
-          >
-            <ChevronDown className={`w-4 h-4 text-white/50 transition-transform duration-300 ${bottomOpen ? "rotate-180" : ""}`} />
-          </button>
-          <div
-            className="overflow-hidden transition-all duration-300 ease-in-out"
-            style={{ maxHeight: bottomOpen ? "400px" : "0px" }}
-          >
-          <div className="px-3 pb-3">
-            {/* Tab switcher */}
+          <div className="px-3 py-3">
+            {/* Tab switcher when both exist */}
             {(tourItems.length > 0 ? 1 : 0) + (tourServices.length > 0 ? 1 : 0) + (gymCoaches.length > 0 ? 1 : 0) > 1 && (
-              <div className="flex items-center justify-center gap-1 mb-2.5 flex-wrap">
+              <div className="flex items-center justify-center gap-1 mb-2.5">
                 {tourItems.length > 0 && (
                   <button
-                    onClick={() => switchTab("products")}
+                    onClick={() => setBottomTab("products")}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold uppercase tracking-wider transition-all ${bottomTab === "products" ? "bg-white/15 text-white" : "text-white/40 hover:text-white/70"}`}
                   >
                     <ShoppingBag className="w-3 h-3" /> Produits ({tourItems.length})
@@ -2425,7 +2308,7 @@ const TourViewer = () => {
                 )}
                 {tourServices.length > 0 && (
                   <button
-                    onClick={() => switchTab("services")}
+                    onClick={() => setBottomTab("services")}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold uppercase tracking-wider transition-all ${bottomTab === "services" ? "bg-white/15 text-white" : "text-white/40 hover:text-white/70"}`}
                   >
                     <Briefcase className="w-3 h-3" /> Services ({tourServices.length})
@@ -2433,7 +2316,7 @@ const TourViewer = () => {
                 )}
                 {gymCoaches.length > 0 && (
                   <button
-                    onClick={() => switchTab("coaches")}
+                    onClick={() => setBottomTab("coaches")}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold uppercase tracking-wider transition-all ${bottomTab === "coaches" ? "bg-white/15 text-white" : "text-white/40 hover:text-white/70"}`}
                   >
                     <User className="w-3 h-3" /> Coachs ({gymCoaches.length})
@@ -2455,31 +2338,28 @@ const TourViewer = () => {
               </div>
             )}
 
-            {/* Animated tab content */}
-            <div key={tabAnimKey} className="animate-[slideUp_0.3s_ease-out]">
-
             {/* Products strip */}
             {(bottomTab === "products" || (tourServices.length === 0 && gymCoaches.length === 0)) && tourItems.length > 0 && (
-              <div className="grid grid-cols-2 sm:flex sm:items-center gap-2 sm:gap-3 sm:overflow-x-auto scrollbar-hide sm:justify-center">
+              <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide justify-center">
                 {tourItems
                   .filter(i => !activeTagFilter || i.tagSid?.trim().toLowerCase() === activeTagFilter.trim().toLowerCase())
                   .map((item) => (
                   <button
                     key={item.id}
                     onClick={() => navigateToProduct(item)}
-                    className="flex items-center gap-2 sm:gap-2.5 bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.08] rounded-xl p-2 sm:pr-4 transition-all group sm:flex-shrink-0"
+                    className="flex-shrink-0 flex items-center gap-2.5 bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.08] rounded-xl p-2 pr-4 transition-all group"
                   >
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-white overflow-hidden flex items-center justify-center shrink-0">
+                    <div className="w-12 h-12 rounded-lg bg-white overflow-hidden flex items-center justify-center shrink-0">
                       {item.imageUrl ? (
                         <img src={item.imageUrl} alt={item.name} className="w-full h-full object-contain p-1" />
                       ) : (
-                        <ShoppingBag className="w-4 h-4 sm:w-5 sm:h-5 text-gray-300" />
+                        <ShoppingBag className="w-5 h-5 text-gray-300" />
                       )}
                     </div>
                     <div className="min-w-0">
-                      <p className="text-white/80 text-[11px] sm:text-xs font-semibold truncate max-w-[90px] sm:max-w-[120px] group-hover:text-white transition-colors">{item.name}</p>
+                      <p className="text-white/80 text-xs font-semibold truncate max-w-[120px] group-hover:text-white transition-colors">{item.name}</p>
                       {item.price != null && (
-                        <p className="text-purple-300 text-[11px] sm:text-xs font-bold mt-0.5">
+                        <p className="text-purple-300 text-xs font-bold mt-0.5">
                           {item.price} <span className="text-white/30 text-[10px]">{CURRENCY_SYMBOLS[item.currency] || item.currency}</span>
                         </p>
                       )}
@@ -2489,7 +2369,7 @@ const TourViewer = () => {
                 {!activeTagFilter && tourItems.length > 3 && (
                   <button
                     onClick={() => setShowProducts(true)}
-                    className="col-span-2 sm:col-span-1 sm:flex-shrink-0 px-3 py-2 rounded-xl bg-white/[0.05] border border-white/[0.08] text-white/50 hover:text-white hover:bg-white/[0.1] transition-all text-xs font-medium"
+                    className="flex-shrink-0 px-3 py-2 rounded-xl bg-white/[0.05] border border-white/[0.08] text-white/50 hover:text-white hover:bg-white/[0.1] transition-all text-xs font-medium"
                   >
                     Voir tout
                   </button>
@@ -2499,22 +2379,22 @@ const TourViewer = () => {
 
             {/* Services strip */}
             {bottomTab === "services" && tourServices.length > 0 && (
-              <div className="grid grid-cols-1 sm:flex sm:items-center gap-2 sm:gap-3 sm:overflow-x-auto scrollbar-hide sm:justify-center">
+              <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide justify-center">
                 {tourServices.map((svc) => (
                   <button
                     key={svc.id}
                     onClick={() => setSelectedService(svc)}
-                    className="flex items-center gap-2 sm:gap-2.5 bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.08] rounded-xl p-2 sm:pr-3 transition-all group sm:flex-shrink-0"
+                    className="flex-shrink-0 flex items-center gap-2.5 bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.08] rounded-xl p-2 pr-3 transition-all group"
                   >
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-white overflow-hidden flex items-center justify-center shrink-0">
+                    <div className="w-12 h-12 rounded-lg bg-white overflow-hidden flex items-center justify-center shrink-0">
                       {svc.imageUrl ? (
                         <img src={svc.imageUrl} alt={svc.name} className="w-full h-full object-cover" />
                       ) : (
-                        <Briefcase className="w-4 h-4 sm:w-5 sm:h-5 text-gray-300" />
+                        <Briefcase className="w-5 h-5 text-gray-300" />
                       )}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="text-white/80 text-[11px] sm:text-xs font-semibold truncate max-w-[140px] sm:max-w-[110px] group-hover:text-white transition-colors">{svc.name}</p>
+                      <p className="text-white/80 text-xs font-semibold truncate max-w-[110px] group-hover:text-white transition-colors">{svc.name}</p>
                     </div>
                     {/* Quick action icons */}
                     <div className="flex items-center gap-1 shrink-0">
@@ -2555,7 +2435,7 @@ const TourViewer = () => {
                 {tourServices.length > 3 && (
                   <button
                     onClick={() => setShowServices(true)}
-                    className="sm:flex-shrink-0 px-3 py-2 rounded-xl bg-white/[0.05] border border-white/[0.08] text-white/50 hover:text-white hover:bg-white/[0.1] transition-all text-xs font-medium"
+                    className="flex-shrink-0 px-3 py-2 rounded-xl bg-white/[0.05] border border-white/[0.08] text-white/50 hover:text-white hover:bg-white/[0.1] transition-all text-xs font-medium"
                   >
                     Voir tout
                   </button>
@@ -2565,32 +2445,29 @@ const TourViewer = () => {
 
             {/* Coaches strip */}
             {bottomTab === "coaches" && gymCoaches.length > 0 && (
-              <div className="grid grid-cols-1 sm:flex sm:items-center gap-2 sm:gap-3 sm:overflow-x-auto scrollbar-hide sm:justify-center">
+              <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide justify-center">
                 {gymCoaches.map((coach, ci) => (
                   <button
                     key={ci}
                     onClick={() => setSelectedCoach(coach)}
-                    className="flex items-center gap-2 sm:gap-2.5 bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.08] rounded-xl p-2 sm:pr-4 transition-all group sm:flex-shrink-0"
+                    className="flex-shrink-0 flex items-center gap-2.5 bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.08] rounded-xl p-2 pr-4 transition-all group"
                   >
                     {coach.imageUrl ? (
-                      <img src={coach.imageUrl} alt={coach.name} className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover border-2 border-purple-400/30" />
+                      <img src={coach.imageUrl} alt={coach.name} className="w-12 h-12 rounded-full object-cover border-2 border-purple-400/30" />
                     ) : (
-                      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-purple-500/20 flex items-center justify-center border-2 border-purple-400/30">
-                        <User className="w-4 h-4 sm:w-5 sm:h-5 text-purple-300" />
+                      <div className="w-12 h-12 rounded-full bg-purple-500/20 flex items-center justify-center border-2 border-purple-400/30">
+                        <User className="w-5 h-5 text-purple-300" />
                       </div>
                     )}
                     <div className="min-w-0">
-                      <p className="text-white/80 text-[11px] sm:text-xs font-semibold truncate max-w-[140px] sm:max-w-[120px] group-hover:text-white transition-colors">{coach.name}</p>
-                      {coach.title && <p className="text-white/40 text-[10px] truncate max-w-[140px] sm:max-w-[120px]">{coach.title}</p>}
-                      {coach.price && <p className="text-purple-300 text-[11px] sm:text-xs font-bold mt-0.5">{coach.price}</p>}
+                      <p className="text-white/80 text-xs font-semibold truncate max-w-[120px] group-hover:text-white transition-colors">{coach.name}</p>
+                      {coach.title && <p className="text-white/40 text-[10px] truncate max-w-[120px]">{coach.title}</p>}
+                      {coach.price && <p className="text-purple-300 text-xs font-bold mt-0.5">{coach.price}</p>}
                     </div>
                   </button>
                 ))}
               </div>
             )}
-
-            </div>{/* end animated tab content */}
-          </div>
           </div>
         </div>
       )}

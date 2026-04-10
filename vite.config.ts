@@ -14,6 +14,9 @@ export default defineConfig(({ mode }) => {
       hmr: {
         overlay: false,
       },
+      headers: {
+        "Permissions-Policy": "xr-spatial-tracking=*, fullscreen=*",
+      },
       proxy: {
         "/api": {
           target: apiProxyTarget,
