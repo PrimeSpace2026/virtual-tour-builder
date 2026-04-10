@@ -5,7 +5,7 @@ import { ServerGate } from "@/components/ServerGate";
 import { ServerStatusProvider } from "@/context/ServerStatusContext";
 import { I18nProvider } from "@/i18n";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes, useParams } from "react-router-dom";
 import Index from "./pages/Index";
 import Services from "./pages/Services";
 import Portfolio from "./pages/Portfolio";
@@ -33,6 +33,11 @@ import TourStats from "./pages/TourStats";
 import TagFinder from "./pages/TagFinder";
 import AnalyticsDashboard from "./pages/AnalyticsDashboard";
 import AddTourForm from "@/components/AddTourForm";
+
+const ShareRedirect = () => {
+  const { id } = useParams();
+  return <Navigate to={`/view/${id}?clean=true`} replace />;
+};
 
 const queryClient = new QueryClient();
 
@@ -64,6 +69,7 @@ const App = () => (
               <Route path="/industries/energy-utilities" element={<EnergyUtilities />} />
               <Route path="/industries/oil-gas" element={<OilGas />} />
               <Route path="/view/:id" element={<TourViewer />} />
+              <Route path="/share/:id" element={<ShareRedirect />} />
               <Route path="/admin/stats/:id" element={<TourStats />} />
               <Route path="/admin/analytics" element={<AnalyticsDashboard />} />
               <Route path="/admin/tags" element={<TagFinder />} />

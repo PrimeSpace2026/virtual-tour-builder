@@ -998,7 +998,7 @@ const Admin = () => {
                     <span className="text-sm text-muted-foreground">{tour.surface ? `${tour.surface} m²` : ""}</span>
                     <div className="flex gap-2">
                       <Button variant="outline" size="sm" onClick={() => {
-                        const url = `${window.location.origin}/view/${tour.id}?clean=true`;
+                        const url = `${window.location.origin}/share/${tour.id}`;
                         navigator.clipboard.writeText(url).then(() => {
                           toast({ title: "Lien copié", description: url });
                         });
