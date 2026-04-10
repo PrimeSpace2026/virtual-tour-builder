@@ -495,8 +495,8 @@ const TourViewer = () => {
           }
         }
         savedTagsMapRef.current = savedMap;
-        // Load iframe without SDK key (Matterport rejects key on non-authorized domains)
-        setIframeSrc(buildEmbedUrl(tourData.tourUrl, false));
+        // Load iframe with SDK key for SDK connection
+        setIframeSrc(buildEmbedUrl(tourData.tourUrl, true));
         setLoading(false);
         setShowCard(true);
       })
