@@ -495,8 +495,8 @@ const TourViewer = () => {
           }
         }
         savedTagsMapRef.current = savedMap;
-        // Load iframe with SDK key for SDK connection
-        setIframeSrc(buildEmbedUrl(tourData.tourUrl, true));
+        // Load iframe without SDK key — SDK connects separately via setupSdk()
+        setIframeSrc(buildEmbedUrl(tourData.tourUrl, false));
         setLoading(false);
         setShowCard(true);
       })
