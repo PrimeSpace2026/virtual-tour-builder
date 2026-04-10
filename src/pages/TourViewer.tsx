@@ -804,7 +804,7 @@ const TourViewer = () => {
               if (found?.anchorPosition) anchorPos = found.anchorPosition;
             }
             if (anchorPos) {
-              // Move to nearest sweep using MOVE transition
+              // Move to nearest sweep using FLY_IN transition
               const sweeps = await new Promise<any[]>((resolve) => {
                 const sub = sdk.Sweep.data.subscribe({ onCollectionUpdated: (collection: any) => {
                   const items: any[] = [];
@@ -827,11 +827,17 @@ const TourViewer = () => {
                   const dist = dx * dx + dy * dy + dz * dz;
                   if (dist < minDist) { minDist = dist; nearest = s; }
                 }
+                // Calculate look-at rotation toward the tag
+                const lookX = Math.atan2(anchorPos.y - nearest.position.y, Math.sqrt((anchorPos.x - nearest.position.x) ** 2 + (anchorPos.z - nearest.position.z) ** 2)) * (180 / Math.PI);
+                const lookY = Math.atan2(anchorPos.x - nearest.position.x, anchorPos.z - nearest.position.z) * (180 / Math.PI);
+                // Fly to sweep with smooth transition
+                const flyTransition = sdk.Sweep.Transition?.FLY_IN || sdk.Sweep.Transition?.MOVE || "transition.fly";
                 await sdk.Sweep.moveTo(nearest.sid, {
-                  rotation: { x: Math.atan2(anchorPos.y - nearest.position.y, Math.sqrt((anchorPos.x - nearest.position.x) ** 2 + (anchorPos.z - nearest.position.z) ** 2)) * (180 / Math.PI), y: Math.atan2(anchorPos.x - nearest.position.x, anchorPos.z - nearest.position.z) * (180 / Math.PI) },
-                  transition: sdk.Sweep.Transition?.MOVE || "transition.move",
+                  rotation: { x: lookX, y: lookY },
+                  transition: flyTransition,
+                  transitionTime: 1500,
                 });
-                console.log(`🎯 Moved to nearest sweep for tag: ${nearest.sid}`);
+                console.log(`🎯 Flew to nearest sweep for tag: ${nearest.sid}`);
               }
             }
           } catch (err) {
