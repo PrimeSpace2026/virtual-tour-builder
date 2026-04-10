@@ -576,7 +576,11 @@ const TourViewer = () => {
         if (matchedItem) {
           // Track tag click
           if (tour?.id) trackEvent(tour.id, "tag_click", matchedItem.name, tagSid);
-          // Filter the bottom strip to show only this product
+          // Close native Matterport popup immediately
+          try { if (sdk.Mattertag?.close) sdk.Mattertag.close(tagSid); } catch {}
+          try { if (sdk.Tag?.close) sdk.Tag.close(tagSid); } catch {}
+          // Show custom product popup instead
+          setSelectedItem(matchedItem);
           setActiveTagFilter(matchedItem.tagSid);
           return;
         }
@@ -680,6 +684,19 @@ const TourViewer = () => {
         if (sdk.Tag?.Event?.CLICK) {
           sdk.on(sdk.Tag.Event.CLICK, (tagSid: string) => handleTagClick(sdk, tagSid));
         }
+
+        // Prevent native Matterport popup from appearing on product tags
+        try {
+          if (sdk.Tag?.allowAction !== undefined) {
+            sdk.Tag.allowAction(false);
+          }
+        } catch {}
+        // Alternative: use Mattertag.preventAction for older SDK
+        try {
+          if (sdk.Mattertag?.preventAction) {
+            sdk.Mattertag.preventAction(true);
+          }
+        } catch {}
       } catch (err) {
         if (cancelled) return;
         console.log("⚠️ SDK échoué sur localhost:", err);
@@ -753,6 +770,9 @@ const TourViewer = () => {
               console.log(`🎯 Mattertag.navigateToTag("${resolvedSid}", ${flyTransition})`);
               await sdk.Mattertag.navigateToTag(resolvedSid, flyTransition);
               console.log(`✅ Flew to tag: ${resolvedSid}`);
+              // Close native Matterport popup and show custom product popup
+              try { sdk.Mattertag.close(resolvedSid); } catch {}
+              setSelectedItem(item);
               return;
             }
 
@@ -761,12 +781,16 @@ const TourViewer = () => {
               console.log(`🎯 Tag.open("${resolvedSid}")`);
               await sdk.Tag.open(resolvedSid);
               console.log(`✅ Opened tag: ${resolvedSid}`);
+              // Close native popup and show custom product popup
+              try { sdk.Tag.close(resolvedSid); } catch {}
+              setSelectedItem(item);
               return;
             }
 
             // Last resort: iframe
             console.log("⚠️ No SDK fly method available, using iframe");
             iframeFallback();
+            setSelectedItem(item);
           } catch (err) {
             console.log("SDK fly failed, falling back to iframe:", err);
             iframeFallback();
