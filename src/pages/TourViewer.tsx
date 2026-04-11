@@ -992,19 +992,24 @@ const TourViewer = () => {
 
       if (!tagPos) { console.log("❌ WALK: No tag position found"); return; }
 
-      // 2. Get all sweeps
+      // 2. Get all sweeps (wait for non-empty collection)
       const sweeps: any[] = [];
       try {
         await new Promise<void>((resolve) => {
-          const timeout = setTimeout(() => { console.log("⏰ Sweep.data timeout"); resolve(); }, 3000);
+          const timeout = setTimeout(() => { console.log("⏰ Sweep.data timeout"); resolve(); }, 5000);
           const sub = sdk.Sweep.data.subscribe({
             onCollectionUpdated: (c: any) => {
               if (c && typeof c.forEach === "function") {
-                c.forEach((v: any, k: any) => { if (v.position) sweeps.push({ ...v, sid: k }); });
+                const arr: any[] = [];
+                c.forEach((v: any, k: any) => { if (v.position) arr.push({ ...v, sid: k }); });
+                if (arr.length > 0) {
+                  sweeps.push(...arr);
+                  clearTimeout(timeout);
+                  try { sub?.cancel?.(); } catch {}
+                  resolve();
+                }
+                // If empty, keep waiting — don't resolve yet
               }
-              clearTimeout(timeout);
-              try { sub?.cancel?.(); } catch {}
-              resolve();
             },
           });
         });
