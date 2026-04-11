@@ -806,149 +806,70 @@ const TourViewer = () => {
         } catch { return null; }
       };
 
-      // Helper: get current sweep SID
-      const getCurrentSweep = (sdk: any): Promise<string | null> =>
-        new Promise((resolve) => {
-          const timeout = setTimeout(() => resolve(null), 2000);
-          const sub = sdk.Sweep.current.subscribe((s: any) => {
-            clearTimeout(timeout);
-            try { sub?.cancel?.(); sub?.unsubscribe?.(); } catch {}
-            resolve(s?.sid || null);
-          });
-        });
-
-      // Helper: build shortest path through sweeps (BFS on neighbor graph)
-      const buildPath = (sweeps: any[], startSid: string, targetPos: {x: number; y: number; z: number}) => {
-        // Find nearest sweep to target
-        let endSid = startSid;
-        let minDist = Infinity;
-        for (const s of sweeps) {
-          const dx = s.position.x - targetPos.x;
-          const dy = s.position.y - targetPos.y;
-          const dz = s.position.z - targetPos.z;
-          const d = dx * dx + dy * dy + dz * dz;
-          if (d < minDist) { minDist = d; endSid = s.sid; }
-        }
-        if (startSid === endSid) return [sweeps.find((s: any) => s.sid === endSid)];
-
-        // Build adjacency graph — connect sweeps within ~5m of each other
-        const sweepMap = new Map(sweeps.map((s: any) => [s.sid, s]));
-        const neighbors = new Map<string, string[]>();
-        for (const a of sweeps) {
-          const adj: string[] = [];
-          for (const b of sweeps) {
-            if (a.sid === b.sid) continue;
-            const dx = a.position.x - b.position.x;
-            const dz = a.position.z - b.position.z;
-            const dy = a.position.y - b.position.y;
-            if (dx * dx + dy * dy + dz * dz < 25) adj.push(b.sid); // 5m radius
-          }
-          neighbors.set(a.sid, adj);
-        }
-
-        // BFS
-        const visited = new Set<string>([startSid]);
-        const parent = new Map<string, string>();
-        const queue = [startSid];
-        while (queue.length > 0) {
-          const cur = queue.shift()!;
-          if (cur === endSid) break;
-          for (const n of (neighbors.get(cur) || [])) {
-            if (!visited.has(n)) {
-              visited.add(n);
-              parent.set(n, cur);
-              queue.push(n);
-            }
-          }
-        }
-
-        // Reconstruct path
-        const path: any[] = [];
-        let cur: string | undefined = endSid;
-        while (cur && cur !== startSid) {
-          const s = sweepMap.get(cur);
-          if (s) path.unshift(s);
-          cur = parent.get(cur);
-        }
-        // Add start
-        const startSweep = sweepMap.get(startSid);
-        if (startSweep) path.unshift(startSweep);
-
-        // If BFS failed (disconnected graph), fallback to direct path
-        if (path.length <= 1) {
-          const end = sweepMap.get(endSid);
-          return end ? [end] : [];
-        }
-        return path;
-      };
-
-      // Primary: walk along sweep path to tag
+      // Primary: FLY directly to nearest sweep near tag
       if (sdk) {
-        const doWalk = async () => {
+        const doFly = async () => {
           try {
             // Cancel any previous navigation
             navCancelledRef.current = true;
             await new Promise((r) => setTimeout(r, 100));
             navCancelledRef.current = false;
 
-            const [tagPos, sweeps, currentSweepSid] = await Promise.all([
+            const [tagPos, sweeps] = await Promise.all([
               getTagPos(sdk, resolvedSid),
               getSweeps(sdk),
-              getCurrentSweep(sdk),
             ]);
 
-            if (!tagPos || sweeps.length === 0 || !currentSweepSid) {
-              console.log("⚠️ Missing data for path navigation, using iframe");
+            if (!tagPos || sweeps.length === 0) {
+              console.log("⚠️ Missing data, using iframe");
               iframeFallback();
               setSelectedItem(item);
               return;
             }
 
-            // Build path
-            const path = buildPath(sweeps, currentSweepSid, tagPos);
-            console.log(`🗺️ Navigation path: ${path.length} sweeps → tag ${resolvedSid}`);
+            // Find nearest sweep to the tag
+            let nearest = sweeps[0];
+            let minDist = Infinity;
+            for (const s of sweeps) {
+              const dx = s.position.x - tagPos.x;
+              const dy = s.position.y - tagPos.y;
+              const dz = s.position.z - tagPos.z;
+              const d = dx * dx + dy * dy + dz * dz;
+              if (d < minDist) { minDist = d; nearest = s; }
+            }
 
-            // Set path state for visual overlay
-            setNavPath(path.map((s: any) => ({ x: s.position.x, y: s.position.y, z: s.position.z, sid: s.sid })));
+            // Calculate camera rotation to look at the tag
+            const dx = tagPos.x - nearest.position.x;
+            const dy = tagPos.y - nearest.position.y;
+            const dz = tagPos.z - nearest.position.z;
+            const yaw = Math.atan2(dx, dz) * (180 / Math.PI);
+            const pitch = Math.atan2(dy, Math.sqrt(dx * dx + dz * dz)) * (180 / Math.PI);
+
+            // Show nav indicator
             setNavTarget(item);
-            setNavStep(0);
+            setNavPath([{ x: nearest.position.x, y: nearest.position.y, z: nearest.position.z, sid: nearest.sid }]);
+            setNavStep(1);
 
-            // Walk sweep by sweep (skip first — we're already there)
             const transition = sdk.Sweep.Transition?.FLY || "transition.fly";
-            for (let i = 1; i < path.length; i++) {
-              if (navCancelledRef.current) { console.log("🚫 Navigation cancelled"); break; }
-              setNavStep(i);
-              console.log(`🚶 Step ${i}/${path.length - 1} → sweep ${path[i].sid}`);
+            console.log(`🎯 FLY to sweep ${nearest.sid} → looking at tag ${resolvedSid}`);
+            await sdk.Sweep.moveTo(nearest.sid, {
+              rotation: { x: pitch, y: yaw },
+              transition: transition as any,
+              transitionTime: 1500,
+            });
+            console.log(`✅ Flew to sweep ${nearest.sid} near tag ${resolvedSid}`);
 
-              // Calculate look direction toward next sweep (or tag at final step)
-              const lookTarget = i < path.length - 1 ? path[i + 1].position : tagPos;
-              const dx = lookTarget.x - path[i].position.x;
-              const dy = lookTarget.y - path[i].position.y;
-              const dz = lookTarget.z - path[i].position.z;
-              const yaw = Math.atan2(dx, dz) * (180 / Math.PI);
-              const pitch = Math.atan2(dy, Math.sqrt(dx * dx + dz * dz)) * (180 / Math.PI);
-
-              await sdk.Sweep.moveTo(path[i].sid, {
-                rotation: { x: pitch, y: yaw },
-                transition: transition as any,
-                transitionTime: 800,
-              });
-            }
-
-            if (!navCancelledRef.current) {
-              console.log(`✅ Arrived near tag ${resolvedSid}`);
-              // Clear nav path and show popup
-              setTimeout(() => { setNavPath([]); setNavTarget(null); setNavStep(0); }, 500);
-              setSelectedItem(item);
-            }
+            // Clear nav and show popup
+            setNavPath([]); setNavTarget(null); setNavStep(0);
+            setSelectedItem(item);
           } catch (err) {
-            console.log("Path navigation failed, using iframe:", err);
+            console.log("SDK fly failed, using iframe:", err);
             setNavPath([]); setNavTarget(null); setNavStep(0);
             iframeFallback();
             setSelectedItem(item);
           }
         };
-        doWalk();
+        doFly();
       } else {
         // No SDK — use iframe deep link + show custom popup
         iframeFallback();
