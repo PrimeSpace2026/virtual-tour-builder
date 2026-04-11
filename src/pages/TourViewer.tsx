@@ -948,14 +948,15 @@ const TourViewer = () => {
     setNavChoice(null);
   }, [navigateToMenuTag]);
 
-  // WALK to a tag — step-by-step through sweep points with 3D dots on floor
+  // WALK to a tag — draw dots on floor, user walks themselves
   const walkToTag = useCallback(async (tagSid: string) => {
     const sdk = sdkRef.current;
     setNavChoice(null);
-    if (!sdk) { navigateToMenuTag(tagSid); return; }
+    if (!sdk) { console.log("❌ WALK: No SDK"); navigateToMenuTag(tagSid); return; }
 
     const tagKey = tagSid.trim().toLowerCase();
     const resolvedSid = tagsMapRef.current.get(tagKey) || savedTagsMapRef.current.get(tagKey) || tagSid;
+    console.log(`🚶 WALK started for tag: ${resolvedSid}`);
 
     try {
       navCancelledRef.current = true;
@@ -964,51 +965,63 @@ const TourViewer = () => {
 
       // 1. Get tag position
       let tagPos: any = null;
-      const tagData = await new Promise<any[]>((resolve) => {
-        const timeout = setTimeout(() => resolve([]), 3000);
-        const sub = sdk.Tag.data.subscribe({
-          onCollectionUpdated: (c: any) => {
-            const arr: any[] = [];
-            if (c && typeof c.forEach === "function") c.forEach((v: any, k: any) => arr.push({ ...v, sid: k }));
-            clearTimeout(timeout);
-            try { sub?.cancel?.(); } catch {}
-            resolve(arr);
-          },
+      try {
+        const tagData = await new Promise<any[]>((resolve) => {
+          const timeout = setTimeout(() => { console.log("⏰ Tag.data timeout"); resolve([]); }, 3000);
+          const sub = sdk.Tag.data.subscribe({
+            onCollectionUpdated: (c: any) => {
+              const arr: any[] = [];
+              if (c && typeof c.forEach === "function") c.forEach((v: any, k: any) => arr.push({ ...v, sid: k }));
+              clearTimeout(timeout);
+              try { sub?.cancel?.(); } catch {}
+              resolve(arr);
+            },
+          });
         });
-      });
-      const foundTag = tagData.find((t: any) => t.sid === resolvedSid);
-      if (foundTag?.anchorPosition) tagPos = foundTag.anchorPosition;
+        console.log(`📊 Tag.data returned ${tagData.length} tags`);
+        const foundTag = tagData.find((t: any) => t.sid === resolvedSid);
+        if (foundTag?.anchorPosition) tagPos = foundTag.anchorPosition;
+        console.log(`📍 Tag position:`, tagPos);
+      } catch (e) { console.log("❌ Tag.data failed:", e); }
 
-      if (!tagPos) { console.log("⚠️ No tag position"); navigateToMenuTag(tagSid); return; }
+      if (!tagPos) { console.log("❌ WALK: No tag position found"); return; }
 
       // 2. Get all sweeps
       const sweeps: any[] = [];
-      await new Promise<void>((resolve) => {
-        const timeout = setTimeout(() => resolve(), 3000);
-        const sub = sdk.Sweep.data.subscribe({
-          onCollectionUpdated: (c: any) => {
-            if (c && typeof c.forEach === "function") {
-              c.forEach((v: any, k: any) => { if (v.position) sweeps.push({ ...v, sid: k }); });
-            }
-            clearTimeout(timeout);
-            try { sub?.cancel?.(); } catch {}
-            resolve();
-          },
+      try {
+        await new Promise<void>((resolve) => {
+          const timeout = setTimeout(() => { console.log("⏰ Sweep.data timeout"); resolve(); }, 3000);
+          const sub = sdk.Sweep.data.subscribe({
+            onCollectionUpdated: (c: any) => {
+              if (c && typeof c.forEach === "function") {
+                c.forEach((v: any, k: any) => { if (v.position) sweeps.push({ ...v, sid: k }); });
+              }
+              clearTimeout(timeout);
+              try { sub?.cancel?.(); } catch {}
+              resolve();
+            },
+          });
         });
-      });
+      } catch (e) { console.log("❌ Sweep.data failed:", e); }
+      console.log(`📊 Got ${sweeps.length} sweeps`);
 
-      if (sweeps.length === 0) { navigateToMenuTag(tagSid); return; }
+      if (sweeps.length === 0) { console.log("❌ WALK: No sweeps"); return; }
 
       // 3. Get current sweep
-      const currentSid = await new Promise<string | null>((resolve) => {
-        const timeout = setTimeout(() => resolve(null), 2000);
-        const sub = sdk.Sweep.current.subscribe((s: any) => {
-          clearTimeout(timeout);
-          try { sub?.cancel?.(); sub?.unsubscribe?.(); } catch {}
-          resolve(s?.sid || null);
+      let currentSid: string | null = null;
+      try {
+        currentSid = await new Promise<string | null>((resolve) => {
+          const timeout = setTimeout(() => { console.log("⏰ Sweep.current timeout"); resolve(null); }, 2000);
+          const sub = sdk.Sweep.current.subscribe((s: any) => {
+            clearTimeout(timeout);
+            try { sub?.cancel?.(); sub?.unsubscribe?.(); } catch {}
+            resolve(s?.sid || null);
+          });
         });
-      });
-      if (!currentSid) { navigateToMenuTag(tagSid); return; }
+      } catch (e) { console.log("❌ Sweep.current failed:", e); }
+      console.log(`📍 Current sweep: ${currentSid}`);
+
+      if (!currentSid) { console.log("❌ WALK: No current sweep"); return; }
 
       // 4. Find nearest sweep to the tag
       let endSweep = sweeps[0];
@@ -1059,8 +1072,10 @@ const TourViewer = () => {
       if (startSweep) path.unshift(startSweep);
 
       if (path.length <= 1) {
-        // Direct fly if BFS fails
-        flyToTag(tagSid);
+        console.log("⚠️ WALK: BFS path too short, placing dot at destination only");
+        // Just place a single dot at the destination
+        createPathDots([{ x: endSweep.position.x, y: endSweep.position.y, z: endSweep.position.z }]);
+        setNavTarget({ id: 0, tourId: 0, name: tagSid, tagSid: resolvedSid } as TourItemData);
         return;
       }
 
@@ -1103,10 +1118,9 @@ const TourViewer = () => {
       }, 120000);
 
     } catch (err) {
-      console.log("Walk failed:", err);
+      console.log("❌ Walk failed:", err);
       clearPathDots();
       setNavPath([]); setNavTarget(null); setNavStep(0);
-      navigateToMenuTag(tagSid);
     }
   }, [navigateToMenuTag, flyToTag, clearPathDots, createPathDots]);
 
