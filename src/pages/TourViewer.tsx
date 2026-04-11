@@ -858,34 +858,42 @@ const TourViewer = () => {
 
     if (!sdk) { console.log("⚠️ No SDK for path dots"); return; }
 
-    // Limit dots to avoid overloading the model (max ~40)
+    // Limit dots to avoid overloading (max ~20 for one-by-one add)
     let dotCoords = coords;
-    if (coords.length > 40) {
-      const step = Math.ceil(coords.length / 40);
+    if (coords.length > 20) {
+      const step = Math.ceil(coords.length / 20);
       dotCoords = coords.filter((_, i) => i % step === 0 || i === coords.length - 1);
     }
+    console.log(`📍 Creating ${dotCoords.length} dots (from ${coords.length} total), Y=${dotCoords[0]?.y.toFixed(2)}, first=(${dotCoords[0]?.x.toFixed(1)},${dotCoords[0]?.z.toFixed(1)})`);
 
     // Use Mattertag.add to place visible dots along the path
     if (sdk.Mattertag?.add) {
       try {
-        const tags = dotCoords.map((c) => ({
-          label: "",
-          description: "",
-          anchorPosition: { x: c.x, y: c.y, z: c.z },
-          stemVector: { x: 0, y: 0, z: 0 }, // no stem — flat on floor
-          color: { r: 0.4, g: 0.6, b: 1.0 }, // blue like Treedis
-          floorIndex: 0,
-          stemVisible: false,
-        }));
-        console.log(`📍 Adding ${tags.length} path dots via Mattertag.add at Y=${dotCoords[0]?.y.toFixed(2)}...`);
-        const sids = await sdk.Mattertag.add(tags);
-        pathNodesRef.current = sids || [];
-        // Store dot SIDs with their positions for progressive removal
-        pathDotDataRef.current = (sids || []).map((sid: string, i: number) => ({
+        // Add dots one-by-one (batch add can silently fail in bundle SDK)
+        const addedSids: string[] = [];
+        for (let i = 0; i < dotCoords.length; i++) {
+          const c = dotCoords[i];
+          try {
+            const sids = await sdk.Mattertag.add([{
+              label: " ",
+              description: "",
+              anchorPosition: { x: c.x, y: c.y, z: c.z },
+              stemVector: { x: 0, y: 0.01, z: 0 }, // minimal stem — nearly flat but visible
+              color: { r: 0.3, g: 0.5, b: 1.0 },
+              floorIndex: 0,
+            }]);
+            if (sids?.[0]) addedSids.push(sids[0]);
+          } catch (e2) {
+            console.log(`❌ Dot ${i} failed:`, e2);
+            break; // stop if add fails
+          }
+        }
+        pathNodesRef.current = addedSids;
+        pathDotDataRef.current = addedSids.map((sid: string, i: number) => ({
           sid, x: dotCoords[i].x, y: dotCoords[i].y, z: dotCoords[i].z,
         }));
-        totalDotsRef.current = sids?.length || 0;
-        console.log(`✅ Created ${sids?.length || 0} path dot tags`, sids);
+        totalDotsRef.current = addedSids.length;
+        console.log(`✅ Created ${addedSids.length} path dot tags (one-by-one)`);
       } catch (e) {
         console.log("❌ Mattertag.add failed:", e);
       }
@@ -895,22 +903,26 @@ const TourViewer = () => {
     // Fallback: Tag.add (newer SDK)
     if (sdk.Tag?.add) {
       try {
-        const tags = dotCoords.map((c) => ({
-          label: "",
-          description: "",
-          anchorPosition: { x: c.x, y: c.y, z: c.z },
-          stemVector: { x: 0, y: 0, z: 0 }, // no stem — flat on floor
-          color: { r: 0.4, g: 0.6, b: 1.0 },
-          stemVisible: false,
-        }));
-        console.log(`📍 Adding ${tags.length} path dots via Tag.add...`);
-        const sids = await sdk.Tag.add(tags);
-        pathNodesRef.current = sids || [];
-        pathDotDataRef.current = (sids || []).map((sid: string, i: number) => ({
+        const addedSids: string[] = [];
+        for (let i = 0; i < dotCoords.length; i++) {
+          const c = dotCoords[i];
+          try {
+            const sids = await sdk.Tag.add([{
+              label: " ",
+              description: "",
+              anchorPosition: { x: c.x, y: c.y, z: c.z },
+              stemVector: { x: 0, y: 0.01, z: 0 },
+              color: { r: 0.3, g: 0.5, b: 1.0 },
+            }]);
+            if (sids?.[0]) addedSids.push(sids[0]);
+          } catch { break; }
+        }
+        pathNodesRef.current = addedSids;
+        pathDotDataRef.current = addedSids.map((sid: string, i: number) => ({
           sid, x: dotCoords[i].x, y: dotCoords[i].y, z: dotCoords[i].z,
         }));
-        totalDotsRef.current = sids?.length || 0;
-        console.log(`✅ Created ${sids?.length || 0} path dot tags (Tag API)`, sids);
+        totalDotsRef.current = addedSids.length;
+        console.log(`✅ Created ${addedSids.length} path dot tags (Tag API, one-by-one)`);
       } catch (e) {
         console.log("❌ Tag.add failed:", e);
       }
