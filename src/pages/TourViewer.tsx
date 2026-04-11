@@ -896,7 +896,7 @@ const TourViewer = () => {
 
     // --- Layer 1: outer glow ---
     ctx.strokeStyle = "rgba(60, 120, 255, 0.25)";
-    ctx.lineWidth = 14;
+    ctx.lineWidth = 22;
     ctx.beginPath();
     let started = false;
     for (let i = startIdx; i < screenPts.length; i++) {
@@ -909,7 +909,7 @@ const TourViewer = () => {
 
     // --- Layer 2: main line ---
     ctx.strokeStyle = "rgba(80, 150, 255, 0.7)";
-    ctx.lineWidth = 5;
+    ctx.lineWidth = 10;
     ctx.beginPath();
     started = false;
     for (let i = startIdx; i < screenPts.length; i++) {
@@ -922,7 +922,7 @@ const TourViewer = () => {
 
     // --- Layer 3: bright core ---
     ctx.strokeStyle = "rgba(160, 200, 255, 0.9)";
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 4;
     ctx.beginPath();
     started = false;
     for (let i = startIdx; i < screenPts.length; i++) {
@@ -935,14 +935,19 @@ const TourViewer = () => {
 
     // --- Animated dots along the visible path ---
     const now = Date.now();
-    for (let i = startIdx; i < screenPts.length; i += 3) {
+    for (let i = startIdx; i < screenPts.length; i += 2) {
       const sp = screenPts[i];
       if (!sp.visible) continue;
       const pulse = 0.5 + 0.5 * Math.sin((now / 400) + i * 0.5);
-      const radius = 3 + pulse * 3;
+      const radius = 7 + pulse * 5;
       ctx.beginPath();
       ctx.arc(sp.x, sp.y, radius, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(100, 170, 255, ${0.3 + pulse * 0.4})`;
+      ctx.fillStyle = `rgba(100, 170, 255, ${0.4 + pulse * 0.4})`;
+      ctx.fill();
+      // White center for each dot
+      ctx.beginPath();
+      ctx.arc(sp.x, sp.y, radius * 0.4, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(220, 235, 255, ${0.6 + pulse * 0.3})`;
       ctx.fill();
     }
 
@@ -951,11 +956,11 @@ const TourViewer = () => {
     if (lastVisible) {
       const pulse = 0.5 + 0.5 * Math.sin(now / 300);
       ctx.beginPath();
-      ctx.arc(lastVisible.x, lastVisible.y, 10 + pulse * 4, 0, Math.PI * 2);
+      ctx.arc(lastVisible.x, lastVisible.y, 16 + pulse * 6, 0, Math.PI * 2);
       ctx.fillStyle = "rgba(80, 150, 255, 0.3)";
       ctx.fill();
       ctx.beginPath();
-      ctx.arc(lastVisible.x, lastVisible.y, 6, 0, Math.PI * 2);
+      ctx.arc(lastVisible.x, lastVisible.y, 10, 0, Math.PI * 2);
       ctx.fillStyle = "rgba(200, 220, 255, 0.9)";
       ctx.fill();
     }
@@ -1259,7 +1264,7 @@ const TourViewer = () => {
       }
 
       // 4. Build interpolated path at floor level for the canvas line
-      const floorY = camPos.y - 1.0; // slightly below eye level for floor projection
+      const floorY = camPos.y - 1.5; // actual floor level (~1.5m below eye)
       const floorPath = pathWaypoints.map(p => ({ x: p.x, y: floorY, z: p.z }));
       const pathPoints = interpolatePath(floorPath, 0.5);
       console.log(`📍 Path: ${pathPoints.length} points along ${pathWaypoints.length} waypoints`);
