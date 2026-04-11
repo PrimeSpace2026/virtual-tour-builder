@@ -1003,26 +1003,46 @@ const TourViewer = () => {
   // Start live navigation line: subscribe to Camera.pose and draw continuously
   const startNavLine = useCallback((pathPoints: { x: number; y: number; z: number }[], destTag: { x: number; y: number; z: number }) => {
     const sdk = sdkRef.current;
-    if (!sdk?.Camera?.pose?.subscribe) { console.log("❌ No Camera.pose for nav line"); return; }
+    if (!sdk) { console.log("❌ No SDK for nav line"); return; }
 
     // Store path points
     navPathPointsRef.current = pathPoints;
     totalDotsRef.current = pathPoints.length;
     setNavStep(pathPoints.length);
 
+    console.log(`🗺️ startNavLine: ${pathPoints.length} points, dest=(${destTag.x.toFixed(1)},${destTag.z.toFixed(1)})`);
+    console.log(`🗺️ SDK Camera available:`, {
+      pose: !!sdk.Camera?.pose,
+      poseSubscribe: !!sdk.Camera?.pose?.subscribe,
+      getPose: !!sdk.Camera?.getPose,
+    });
+
     // Throttled camera pose subscription — redraws line every 200ms
     let lastDraw = 0;
-    let autoCleanupTimer: ReturnType<typeof setTimeout> | null = null;
+    let drawCount = 0;
 
-    const sub = sdk.Camera.pose.subscribe((pose: any) => {
-      if (!pose?.position || !pose?.rotation) return;
+    const handlePose = (pose: any) => {
+      if (!pose) return;
+      // Log first few poses to debug format
+      if (drawCount < 3) {
+        console.log(`📐 Pose #${drawCount}:`, JSON.stringify({
+          position: pose.position,
+          rotation: pose.rotation,
+          sweep: pose.sweep,
+        }));
+      }
+
+      if (!pose.position) return;
+      // If rotation is missing, fabricate a default
+      const rotation = pose.rotation || { x: 0, y: 0 };
 
       const now = Date.now();
       if (now - lastDraw < 200) return; // throttle
       lastDraw = now;
+      drawCount++;
 
       // Draw the line
-      drawNavLine(pose);
+      drawNavLine({ position: pose.position, rotation });
 
       // Check arrival (~3m from destination)
       const dx = pose.position.x - destTag.x;
@@ -1031,12 +1051,39 @@ const TourViewer = () => {
         console.log("✅ Arrived at destination!");
         stopNavigation();
       }
-    });
+    };
 
-    navPoseSubRef.current = sub;
+    // Try subscribing to Camera.pose
+    if (sdk.Camera?.pose?.subscribe) {
+      console.log("📡 Subscribing to Camera.pose...");
+      const sub = sdk.Camera.pose.subscribe(handlePose);
+      navPoseSubRef.current = sub;
+    } else {
+      console.log("⚠️ Camera.pose.subscribe not available");
+    }
+
+    // Fallback: if no pose fires within 2s, try getPose once to at least draw something
+    setTimeout(async () => {
+      if (drawCount === 0 && navPathPointsRef.current.length > 0) {
+        console.log("⚠️ No Camera.pose fired after 2s — trying getPose fallback");
+        try {
+          if (sdk.Camera?.getPose) {
+            const pose = await sdk.Camera.getPose();
+            console.log("📐 getPose result:", JSON.stringify(pose));
+            if (pose?.position) {
+              handlePose(pose);
+            }
+          }
+        } catch (e) { console.log("❌ getPose failed:", e); }
+        // Also try checking Camera.pose as a current-value observable
+        if (drawCount === 0 && sdk.Camera?.pose && typeof sdk.Camera.pose !== 'function') {
+          console.log("📐 Camera.pose raw value:", typeof sdk.Camera.pose, JSON.stringify(sdk.Camera.pose).substring(0, 200));
+        }
+      }
+    }, 2000);
 
     // Auto-cleanup after 3 minutes
-    autoCleanupTimer = setTimeout(() => { stopNavigation(); }, 180000);
+    setTimeout(() => { stopNavigation(); }, 180000);
 
     console.log(`🗺️ Nav line started: ${pathPoints.length} points`);
   }, [drawNavLine, stopNavigation]);
