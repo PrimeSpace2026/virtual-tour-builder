@@ -826,45 +826,66 @@ const TourViewer = () => {
 
   // ===== 3D NAVIGATION PATH HELPERS =====
 
-  // Clear all 3D dot nodes from the scene
-  const clearPathNodes = useCallback(() => {
-    for (const node of pathNodesRef.current) {
-      try { node.stop(); } catch {}
+  // Clear path dots — remove injected Mattertags/Tags
+  const clearPathDots = useCallback(() => {
+    const sdk = sdkRef.current;
+    const sids = pathNodesRef.current;
+    if (sids.length === 0) return;
+
+    if (sdk?.Mattertag?.remove) {
+      sdk.Mattertag.remove(sids).catch(() => {});
+    } else if (sdk?.Tag?.remove) {
+      sdk.Tag.remove(sids).catch(() => {});
     }
     pathNodesRef.current = [];
+    console.log(`🧹 Cleared ${sids.length} path dots`);
   }, []);
 
-  // Create 3D red dots along a path of coordinates
+  // Create visible dots along a path using Mattertag.add (3D markers on floor)
   const createPathDots = useCallback(async (coords: {x: number; y: number; z: number}[]) => {
     const sdk = sdkRef.current;
-    if (!sdk?.Scene?.createNode) return;
+    clearPathDots();
 
-    clearPathNodes();
+    if (!sdk) return;
 
-    for (let i = 0; i < coords.length; i++) {
+    // Method 1: Use Mattertag.add to create small disc markers
+    if (sdk.Mattertag?.add) {
       try {
-        const node = sdk.Scene.createNode();
-        const comp = node.addComponent("mp.objLoader", {
-          url: "", // empty — we use gltfLoader or a built-in
-          localScale: { x: 0.15, y: 0.02, z: 0.15 },
-        });
-
-        // Use a simple sphere/disc via the SDK's built-in primitives
-        // Fallback: use createObjects for a flat disc
-        node.position = {
-          x: coords[i].x,
-          y: coords[i].y + 0.05, // slightly above floor to avoid z-fighting
-          z: coords[i].z,
-        };
-        node.start();
-        pathNodesRef.current.push(node);
+        const tags = coords.map((c) => ({
+          label: "",
+          description: "",
+          anchorPosition: { x: c.x, y: c.y + 0.05, z: c.z },
+          stemVector: { x: 0, y: 0.001, z: 0 }, // nearly flat — sits on floor
+          color: { r: 0.8, g: 0.2, b: 0.3 }, // red/pink dot
+          floorIndex: 0,
+        }));
+        const sids = await sdk.Mattertag.add(tags);
+        pathNodesRef.current = sids || [];
+        console.log(`📍 Created ${sids?.length || 0} path dot tags`);
       } catch (e) {
-        // Scene.createNode may not be available in all SDK versions
-        console.log("Could not create path dot node:", e);
-        break;
+        console.log("Mattertag.add failed for dots:", e);
+      }
+      return;
+    }
+
+    // Method 2: Use Tag.add (newer SDK)
+    if (sdk.Tag?.add) {
+      try {
+        const tags = coords.map((c) => ({
+          label: "",
+          description: "",
+          anchorPosition: { x: c.x, y: c.y + 0.05, z: c.z },
+          stemVector: { x: 0, y: 0.001, z: 0 },
+          color: { r: 0.8, g: 0.2, b: 0.3 },
+        }));
+        const sids = await sdk.Tag.add(tags);
+        pathNodesRef.current = sids || [];
+        console.log(`📍 Created ${sids?.length || 0} path dot tags (Tag API)`);
+      } catch (e) {
+        console.log("Tag.add failed for dots:", e);
       }
     }
-  }, [clearPathNodes]);
+  }, [clearPathDots]);
 
   // Interpolate points along a path for smooth dot placement
   const interpolatePath = (points: {x: number; y: number; z: number}[], spacing: number = 0.8) => {
@@ -1056,7 +1077,7 @@ const TourViewer = () => {
       const sweepSub = sdk.Sweep.current.subscribe((s: any) => {
         if (s?.sid && nearDestSids.has(s.sid)) {
           console.log(`✅ Arrived near destination sweep: ${s.sid}`);
-          clearPathNodes();
+          clearPathDots();
           setNavPath([]); setNavTarget(null); setNavStep(0);
           try { sweepSub?.cancel?.(); sweepSub?.unsubscribe?.(); } catch {}
         }
@@ -1064,18 +1085,18 @@ const TourViewer = () => {
 
       // Auto-cleanup after 2 minutes if user doesn't arrive
       setTimeout(() => {
-        clearPathNodes();
+        clearPathDots();
         setNavPath([]); setNavTarget(null); setNavStep(0);
         try { sweepSub?.cancel?.(); sweepSub?.unsubscribe?.(); } catch {}
       }, 120000);
 
     } catch (err) {
       console.log("Walk failed:", err);
-      clearPathNodes();
+      clearPathDots();
       setNavPath([]); setNavTarget(null); setNavStep(0);
       navigateToMenuTag(tagSid);
     }
-  }, [navigateToMenuTag, flyToTag, clearPathNodes, createPathDots]);
+  }, [navigateToMenuTag, flyToTag, clearPathDots, createPathDots]);
 
   // Show navigation choice modal (called from HotelMenuSection item click)
   const showNavChoice = useCallback((tagSid: string, label?: string) => {
