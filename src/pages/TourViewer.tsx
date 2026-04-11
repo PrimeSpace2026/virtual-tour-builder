@@ -963,26 +963,26 @@ const TourViewer = () => {
       await new Promise((r) => setTimeout(r, 50));
       navCancelledRef.current = false;
 
-      // 1. Get tag position
+      // 1. Get tag position (try multiple methods)
       let tagPos: any = null;
+      let foundTag: any = null;
       try {
-        const tagData = await new Promise<any[]>((resolve) => {
-          const timeout = setTimeout(() => { console.log("⏰ Tag.data timeout"); resolve([]); }, 3000);
-          const sub = sdk.Tag.data.subscribe({
-            onCollectionUpdated: (c: any) => {
-              const arr: any[] = [];
-              if (c && typeof c.forEach === "function") c.forEach((v: any, k: any) => arr.push({ ...v, sid: k }));
-              clearTimeout(timeout);
-              try { sub?.cancel?.(); } catch {}
-              resolve(arr);
-            },
-          });
-        });
-        console.log(`📊 Tag.data returned ${tagData.length} tags`);
-        const foundTag = tagData.find((t: any) => t.sid === resolvedSid);
-        if (foundTag?.anchorPosition) tagPos = foundTag.anchorPosition;
+        // Method A: Mattertag.getData (most reliable, returns all tags)
+        if (sdk.Mattertag?.getData) {
+          const tags = await sdk.Mattertag.getData();
+          console.log(`📊 Mattertag.getData returned ${tags.length} tags`);
+          foundTag = tags.find((t: any) => t.sid === resolvedSid);
+          if (foundTag?.anchorPosition) tagPos = foundTag.anchorPosition;
+        }
+        // Method B: Tag.getData
+        if (!tagPos && sdk.Tag?.getData) {
+          const tags = await sdk.Tag.getData();
+          console.log(`📊 Tag.getData returned ${tags.length} tags`);
+          foundTag = tags.find((t: any) => t.sid === resolvedSid);
+          if (foundTag?.anchorPosition) tagPos = foundTag.anchorPosition;
+        }
         console.log(`📍 Tag position:`, tagPos);
-      } catch (e) { console.log("❌ Tag.data failed:", e); }
+      } catch (e) { console.log("❌ Tag getData failed:", e); }
 
       if (!tagPos) { console.log("❌ WALK: No tag position found"); return; }
 
