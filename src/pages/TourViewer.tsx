@@ -794,12 +794,14 @@ const TourViewer = () => {
           } catch (err) {
             console.log("SDK fly failed, falling back to iframe:", err);
             iframeFallback();
+            setSelectedItem(item);
           }
         };
         tryNavigate();
       } else {
-        // No SDK — use iframe deep link
+        // No SDK — use iframe deep link + show custom popup
         iframeFallback();
+        setSelectedItem(item);
       }
     }
   }, [tour?.id, tour?.tourUrl, trackEvent]);
