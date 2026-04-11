@@ -954,6 +954,7 @@ const TourViewer = () => {
   }, [navigateToMenuTag]);
 
   // WALK to a tag — draw dots on floor, user walks themselves
+  // Uses tag positions as waypoints for pathfinding (tags are in accessible spots)
   const walkToTag = useCallback(async (tagSid: string) => {
     const sdk = sdkRef.current;
     setNavChoice(null);
@@ -968,76 +969,123 @@ const TourViewer = () => {
       await new Promise((r) => setTimeout(r, 50));
       navCancelledRef.current = false;
 
-      // 1. Get tag position (try cache first, then API)
-      let tagPos: any = tagPositionsRef.current.get(resolvedSid) || null;
-      let foundTag: any = null;
-      console.log(`📍 Cached tag position for ${resolvedSid}:`, tagPos);
-      if (!tagPos) {
+      // 1. Get ALL tag positions (refresh from API if cache is small)
+      let allTagPositions = new Map(tagPositionsRef.current);
+      if (allTagPositions.size < 5 && sdk.Mattertag?.getData) {
         try {
-          // Method A: Mattertag.getData
-          if (sdk.Mattertag?.getData) {
-            const tags = await sdk.Mattertag.getData();
-            console.log(`📊 Mattertag.getData returned ${tags.length} tags`);
-            foundTag = tags.find((t: any) => t.sid === resolvedSid);
-            if (foundTag?.anchorPosition) tagPos = foundTag.anchorPosition;
+          const tags = await sdk.Mattertag.getData();
+          for (const t of tags) {
+            if (t.sid && t.anchorPosition) allTagPositions.set(t.sid, t.anchorPosition);
           }
-          // Method B: Tag.getData
-          if (!tagPos && sdk.Tag?.getData) {
-            const tags = await sdk.Tag.getData();
-            console.log(`📊 Tag.getData returned ${tags.length} tags`);
-            foundTag = tags.find((t: any) => t.sid === resolvedSid);
-            if (foundTag?.anchorPosition) tagPos = foundTag.anchorPosition;
-          }
-          console.log(`📍 API tag position:`, tagPos);
-        } catch (e) { console.log("❌ Tag getData failed:", e); }
+          tagPositionsRef.current = allTagPositions;
+          console.log(`📊 Refreshed tag positions: ${allTagPositions.size} tags`);
+        } catch {}
       }
 
+      // Get destination tag position
+      let tagPos: any = allTagPositions.get(resolvedSid) || null;
+      let foundTag: any = null;
+      if (!tagPos && sdk.Mattertag?.getData) {
+        const tags = await sdk.Mattertag.getData();
+        foundTag = tags.find((t: any) => t.sid === resolvedSid);
+        if (foundTag?.anchorPosition) tagPos = foundTag.anchorPosition;
+      }
       if (!tagPos) { console.log("❌ WALK: No tag position found"); return; }
 
-      // 2. Get current camera position (no sweeps needed)
+      // 2. Get current camera position
       let camPos: { x: number; y: number; z: number } | null = null;
       try {
-        // Method A: getPose() one-shot (most reliable)
         if (sdk.Camera?.getPose) {
           const pose = await sdk.Camera.getPose();
           if (pose?.position) camPos = { x: pose.position.x, y: pose.position.y, z: pose.position.z };
-          console.log(`📍 Camera.getPose:`, camPos);
         }
-        // Method B: pose observable subscribe
         if (!camPos && sdk.Camera?.pose?.subscribe) {
           camPos = await new Promise<{ x: number; y: number; z: number } | null>((resolve) => {
-            const timeout = setTimeout(() => { console.log("⏰ Camera.pose timeout"); resolve(null); }, 3000);
+            const timeout = setTimeout(() => resolve(null), 3000);
             const sub = sdk.Camera.pose.subscribe((pose: any) => {
               clearTimeout(timeout);
               try { sub?.cancel?.(); sub?.unsubscribe?.(); } catch {}
               resolve(pose?.position ? { x: pose.position.x, y: pose.position.y, z: pose.position.z } : null);
             });
           });
-          console.log(`📍 Camera.pose.subscribe:`, camPos);
         }
-      } catch (e) { console.log("❌ Camera position failed:", e); }
+      } catch {}
+      console.log(`📍 Camera:`, camPos, `Tag:`, tagPos);
 
       if (!camPos) {
-        // Fallback: use tag position as both start and end (at least show dots near destination)
-        console.log("⚠️ No camera position — placing dots near tag only");
-        camPos = { x: tagPos.x + 3, y: tagPos.y, z: tagPos.z + 3 };
+        console.log("⚠️ No camera position — fallback near tag");
+        camPos = { x: tagPos.x + 2, y: tagPos.y, z: tagPos.z + 2 };
       }
 
-      // 3. Build straight-line path from camera to tag at floor level
-      // Camera Y is typically at eye height (~1.5m above floor)
-      // Subtract 1.3m from camera height to estimate floor level
-      const floorY = camPos.y - 1.3;
-      const startPt = { x: camPos.x, y: floorY, z: camPos.z };
-      const endPt = { x: tagPos.x, y: floorY, z: tagPos.z };
-      console.log(`🗺️ Straight-line path: cam(${startPt.x.toFixed(1)},${startPt.z.toFixed(1)}) → tag(${endPt.x.toFixed(1)},${endPt.z.toFixed(1)})`);
+      // 3. Build waypoint graph from tag positions for pathfinding
+      // Tags are placed in accessible areas (doorways, rooms, corridors)
+      // so a path through tags follows the walkable layout
+      const waypoints: { sid: string; x: number; y: number; z: number }[] = [];
+      allTagPositions.forEach((pos, sid) => {
+        waypoints.push({ sid, x: pos.x, y: pos.y, z: pos.z });
+      });
+      // Add camera position and destination as virtual nodes
+      waypoints.push({ sid: "__cam__", x: camPos.x, y: camPos.y, z: camPos.z });
+      waypoints.push({ sid: "__dest__", x: tagPos.x, y: tagPos.y, z: tagPos.z });
+      console.log(`🗺️ Pathfinding with ${waypoints.length} waypoints (${allTagPositions.size} tags + cam + dest)`);
 
-      // 4. Interpolate and create dots
-      const dots = interpolatePath([startPt, endPt], 0.5);
+      // Build adjacency: connect waypoints within ~10m on same floor (Y within 2m)
+      const neighbors = new Map<string, string[]>();
+      for (const a of waypoints) {
+        const adj: string[] = [];
+        for (const b of waypoints) {
+          if (a.sid === b.sid) continue;
+          const dx = a.x - b.x;
+          const dy = a.y - b.y;
+          const dz = a.z - b.z;
+          const horizDist = dx * dx + dz * dz;
+          if (Math.abs(dy) < 2 && horizDist < 100) adj.push(b.sid); // 10m radius, same floor
+        }
+        neighbors.set(a.sid, adj);
+      }
+
+      // BFS from camera to destination
+      const visited = new Set<string>(["__cam__"]);
+      const parent = new Map<string, string>();
+      const queue = ["__cam__"];
+      let found = false;
+      while (queue.length > 0) {
+        const cur = queue.shift()!;
+        if (cur === "__dest__") { found = true; break; }
+        for (const n of (neighbors.get(cur) || [])) {
+          if (!visited.has(n)) { visited.add(n); parent.set(n, cur); queue.push(n); }
+        }
+      }
+
+      // Reconstruct path
+      const pathWaypoints: { x: number; y: number; z: number }[] = [];
+      if (found) {
+        const pathSids: string[] = [];
+        let cur: string | undefined = "__dest__";
+        while (cur && cur !== "__cam__") { pathSids.unshift(cur); cur = parent.get(cur); }
+        pathSids.unshift("__cam__");
+        const wpMap = new Map(waypoints.map(w => [w.sid, w]));
+        for (const sid of pathSids) {
+          const w = wpMap.get(sid);
+          if (w) pathWaypoints.push({ x: w.x, y: w.y, z: w.z });
+        }
+        console.log(`✅ BFS path: ${pathSids.length} waypoints → ${pathSids.filter(s => !s.startsWith("__")).join(" → ")}`);
+      } else {
+        // No path found — straight line fallback
+        console.log("⚠️ No BFS path found — straight line fallback");
+        pathWaypoints.push({ x: camPos.x, y: camPos.y, z: camPos.z });
+        pathWaypoints.push({ x: tagPos.x, y: tagPos.y, z: tagPos.z });
+      }
+
+      // 4. Place dots at floor level along the path
+      const floorY = camPos.y - 1.3;
+      const floorPath = pathWaypoints.map(p => ({ x: p.x, y: floorY, z: p.z }));
+      const dots = interpolatePath(floorPath, 0.5);
       createPathDots(dots);
-      console.log(`📍 Drew ${dots.length} dots on path`);
+      console.log(`📍 Drew ${dots.length} dots along ${pathWaypoints.length}-waypoint path`);
 
       // 5. Set UI indicator
-      setNavPath([startPt, endPt]);
+      setNavPath(floorPath);
       setNavTarget({ id: 0, tourId: 0, name: foundTag?.label || tagSid, tagSid: resolvedSid } as TourItemData);
       setNavStep(0);
 
