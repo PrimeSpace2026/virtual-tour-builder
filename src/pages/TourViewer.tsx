@@ -765,83 +765,45 @@ const TourViewer = () => {
         setIframeLoaded(false);
       };
 
-      // Primary: fly to nearest sweep near the tag (avoids native Matterport popup)
+      // Primary: fly to tag with SDK, then show custom popup over native one
       if (sdk) {
         const tryNavigate = async () => {
           try {
-            // 1. Get tag position
-            let anchorPos: any = null;
-            if (sdk.Tag?.getData) {
-              const tags = await sdk.Tag.getData();
-              const found = tags.find((t: any) => t.sid === resolvedSid);
-              if (found?.anchorPosition) anchorPos = found.anchorPosition;
-            }
+            // Show custom popup immediately so it covers any native popup
+            setSelectedItem(item);
 
-            if (anchorPos) {
-              // 2. Get all sweeps — use Promise-wrapped observable with immediate check
-              const sweeps: any[] = [];
-              await new Promise<void>((resolve) => {
-                const timeout = setTimeout(() => resolve(), 3000);
-                const sub = sdk.Sweep.data.subscribe({
-                  onCollectionUpdated: (collection: any) => {
-                    if (collection && typeof collection.forEach === "function") {
-                      collection.forEach((v: any, k: any) => {
-                        if (v.position) sweeps.push({ ...v, sid: k });
-                      });
-                    }
-                    clearTimeout(timeout);
-                    try { sub?.cancel?.(); } catch {}
-                    resolve();
-                  },
-                });
-              });
-
-              if (sweeps.length === 0) {
-                console.log("⚠️ No sweeps found, using iframe");
-                iframeFallback();
-                setSelectedItem(item);
-                return;
-              }
-
-              // 3. Find nearest sweep to the tag
-              let nearest = sweeps[0];
-              let minDist = Infinity;
-              for (const s of sweeps) {
-                if (!s.position) continue;
-                const dx = s.position.x - anchorPos.x;
-                const dy = s.position.y - anchorPos.y;
-                const dz = s.position.z - anchorPos.z;
-                const d = dx * dx + dy * dy + dz * dz;
-                if (d < minDist) { minDist = d; nearest = s; }
-              }
-
-              // 4. Calculate camera rotation to look at tag
-              const dy = anchorPos.y - nearest.position.y;
-              const dx = anchorPos.x - nearest.position.x;
-              const dz = anchorPos.z - nearest.position.z;
-              const yaw = Math.atan2(dx, dz) * (180 / Math.PI);
-              const pitch = Math.atan2(dy, Math.sqrt(dx * dx + dz * dz)) * (180 / Math.PI);
-
-              const transition = sdk.Sweep.Transition?.FLY || sdk.Sweep.Transition?.FLY_IN || "transition.fly";
-              console.log(`🎯 Sweep.moveTo(${nearest.sid}) → looking at tag ${resolvedSid}`);
-              await sdk.Sweep.moveTo(nearest.sid, {
-                rotation: { x: pitch, y: yaw },
-                transition: transition as any,
-                transitionTime: 1500,
-              });
-              console.log(`✅ Flew to sweep ${nearest.sid} near tag ${resolvedSid}`);
-              setSelectedItem(item);
+            // Use Mattertag.navigateToTag for the fly (most reliable)
+            if (sdk.Mattertag?.navigateToTag) {
+              const fly = sdk.Mattertag.Transition?.FLY_IN || "transition.fly";
+              console.log(`🎯 Mattertag.navigateToTag("${resolvedSid}", ${fly})`);
+              await sdk.Mattertag.navigateToTag(resolvedSid, fly);
+              console.log(`✅ Flew to tag: ${resolvedSid}`);
+              // Try closing native popup repeatedly (it opens after the fly completes)
+              const closeNative = () => {
+                try { sdk.Mattertag?.close?.(resolvedSid); } catch {}
+                try { sdk.Tag?.close?.(resolvedSid); } catch {}
+              };
+              closeNative();
+              setTimeout(closeNative, 200);
+              setTimeout(closeNative, 500);
+              setTimeout(closeNative, 1000);
               return;
             }
 
-            // No tag position found — iframe fallback
-            console.log("⚠️ No tag position, using iframe");
+            // Fallback: Tag API
+            if (sdk.Tag?.open) {
+              console.log(`🎯 Tag.open("${resolvedSid}")`);
+              await sdk.Tag.open(resolvedSid);
+              try { sdk.Tag.close(resolvedSid); } catch {}
+              return;
+            }
+
+            // Last resort: iframe
+            console.log("⚠️ No SDK fly method, using iframe");
             iframeFallback();
-            setSelectedItem(item);
           } catch (err) {
             console.log("SDK fly failed, falling back to iframe:", err);
             iframeFallback();
-            setSelectedItem(item);
           }
         };
         tryNavigate();
