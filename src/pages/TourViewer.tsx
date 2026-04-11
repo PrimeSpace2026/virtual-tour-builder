@@ -1805,9 +1805,9 @@ const TourViewer = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className="absolute top-4 left-1/2 -translate-x-1/2 z-[15] pointer-events-auto"
+              className="absolute top-4 left-1/2 -translate-x-1/2 z-[15] pointer-events-auto max-w-[calc(100vw-2rem)]"
             >
-              <div className="bg-black/80 backdrop-blur-xl border border-white/20 rounded-2xl px-5 py-3 flex items-center gap-4 shadow-2xl shadow-purple-500/10">
+              <div className="bg-black/80 backdrop-blur-xl border border-white/20 rounded-2xl px-3 sm:px-5 py-3 flex items-center gap-3 sm:gap-4 shadow-2xl shadow-purple-500/10">
                 {/* Animated walking icon */}
                 <div className="relative w-10 h-10 flex items-center justify-center">
                   <motion.div
@@ -1821,15 +1821,15 @@ const TourViewer = () => {
                 </div>
 
                 <div className="flex flex-col">
-                  <span className="text-white/90 text-sm font-semibold truncate max-w-[200px]">
+                  <span className="text-white/90 text-sm font-semibold truncate max-w-[120px] sm:max-w-[200px]">
                     {navTarget.name}
                   </span>
                   <div className="flex items-center gap-2">
-                    <span className="text-white/50 text-xs">
+                    <span className="text-white/50 text-xs whitespace-nowrap">
                       {navStep > 0 ? `${navStep} pas restants` : "Vous y êtes !"}
                     </span>
                     {/* Progress bar */}
-                    <div className="w-20 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                    <div className="w-14 sm:w-20 h-1.5 bg-white/10 rounded-full overflow-hidden">
                       <motion.div
                         className="h-full bg-purple-400 rounded-full"
                         animate={{ width: totalDotsRef.current > 0 ? `${Math.max(5, 100 - (navStep / totalDotsRef.current) * 100)}%` : '100%' }}
@@ -1868,7 +1868,7 @@ const TourViewer = () => {
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.9, y: 20 }}
                 transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[36] w-[280px]"
+                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[36] w-[min(280px,calc(100vw-2rem))]"
               >
                 <div className="bg-gradient-to-b from-[#1a1a2e] to-[#0f0f1a] border border-white/15 rounded-2xl p-5 shadow-2xl shadow-purple-500/10">
                   <p className="text-white/90 text-sm font-semibold text-center mb-1">Navigation</p>
@@ -1931,7 +1931,7 @@ const TourViewer = () => {
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.8, y: 30 }}
                 transition={{ type: "spring", damping: 20, stiffness: 300 }}
-                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[41] w-[300px]"
+                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[41] w-[min(300px,calc(100vw-2rem))]"
               >
                 <div className="bg-gradient-to-b from-[#0d2137] to-[#0a1628] border border-blue-400/30 rounded-2xl p-6 shadow-2xl shadow-blue-500/20 text-center">
                   {/* Success icon */}
@@ -1963,7 +1963,7 @@ const TourViewer = () => {
         <div className="absolute bottom-0 left-0 right-0 z-[6] pointer-events-none flex justify-end px-3 sm:px-4 pb-0 sm:pb-3 lg:pb-3">
           <Link
             to="/"
-            className="pointer-events-auto w-auto sm:min-w-[320px] lg:w-[420px] flex items-center gap-3 px-3 py-5 sm:py-4
+            className="pointer-events-auto w-auto max-w-[calc(100vw-1.5rem)] sm:min-w-[320px] lg:w-[420px] flex items-center gap-3 px-3 py-5 sm:py-4
               bg-black/70 backdrop-blur-xl border border-white/15 shadow-2xl
               rounded-t-2xl sm:rounded-2xl
               border-b-0 sm:border-b
@@ -2004,7 +2004,7 @@ const TourViewer = () => {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
             transition={{ delay: 0.5 }}
-            className="absolute left-4 top-1/2 -translate-y-1/2 z-20 pointer-events-auto"
+            className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-20 pointer-events-auto"
           >
             <div className="flex flex-col gap-1.5 p-1.5 rounded-2xl bg-black/60 backdrop-blur-xl border border-white/10">
               <div className="flex items-center justify-center py-1">
@@ -3231,7 +3231,7 @@ const TourViewer = () => {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 380 }}
               transition={{ type: "spring", damping: 28, stiffness: 250 }}
-              className="absolute top-0 right-0 bottom-0 w-full max-w-[100vw] sm:max-w-sm z-50 pointer-events-auto flex flex-col"
+              className="absolute top-0 right-0 bottom-0 w-full sm:max-w-sm z-50 pointer-events-auto flex flex-col"
             >
               <div className="flex-1 bg-white flex flex-col shadow-2xl">
                 {/* Cart Header */}
