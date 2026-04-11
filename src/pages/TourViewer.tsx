@@ -846,44 +846,56 @@ const TourViewer = () => {
     const sdk = sdkRef.current;
     clearPathDots();
 
-    if (!sdk) return;
+    if (!sdk) { console.log("⚠️ No SDK for path dots"); return; }
 
-    // Method 1: Use Mattertag.add to create small disc markers
+    // Limit dots to avoid overloading the model (max ~40)
+    let dotCoords = coords;
+    if (coords.length > 40) {
+      const step = Math.ceil(coords.length / 40);
+      dotCoords = coords.filter((_, i) => i % step === 0 || i === coords.length - 1);
+    }
+
+    // Use Mattertag.add to place visible red pins along the path
     if (sdk.Mattertag?.add) {
       try {
-        const tags = coords.map((c) => ({
-          label: "",
+        const tags = dotCoords.map((c) => ({
+          label: "•",
           description: "",
-          anchorPosition: { x: c.x, y: c.y + 0.05, z: c.z },
-          stemVector: { x: 0, y: 0.001, z: 0 }, // nearly flat — sits on floor
-          color: { r: 0.8, g: 0.2, b: 0.3 }, // red/pink dot
+          anchorPosition: { x: c.x, y: c.y, z: c.z },
+          stemVector: { x: 0, y: 0.15, z: 0 }, // short stem — small visible pin
+          color: { r: 1, g: 0.2, b: 0.3 }, // bright red
           floorIndex: 0,
+          iconId: undefined,
         }));
+        console.log(`📍 Adding ${tags.length} path dots via Mattertag.add...`);
         const sids = await sdk.Mattertag.add(tags);
         pathNodesRef.current = sids || [];
-        console.log(`📍 Created ${sids?.length || 0} path dot tags`);
+        console.log(`✅ Created ${sids?.length || 0} path dot tags`, sids);
       } catch (e) {
-        console.log("Mattertag.add failed for dots:", e);
+        console.log("❌ Mattertag.add failed:", e);
       }
       return;
     }
 
-    // Method 2: Use Tag.add (newer SDK)
+    // Fallback: Tag.add (newer SDK)
     if (sdk.Tag?.add) {
       try {
-        const tags = coords.map((c) => ({
-          label: "",
+        const tags = dotCoords.map((c) => ({
+          label: "•",
           description: "",
-          anchorPosition: { x: c.x, y: c.y + 0.05, z: c.z },
-          stemVector: { x: 0, y: 0.001, z: 0 },
-          color: { r: 0.8, g: 0.2, b: 0.3 },
+          anchorPosition: { x: c.x, y: c.y, z: c.z },
+          stemVector: { x: 0, y: 0.15, z: 0 },
+          color: { r: 1, g: 0.2, b: 0.3 },
         }));
+        console.log(`📍 Adding ${tags.length} path dots via Tag.add...`);
         const sids = await sdk.Tag.add(tags);
         pathNodesRef.current = sids || [];
-        console.log(`📍 Created ${sids?.length || 0} path dot tags (Tag API)`);
+        console.log(`✅ Created ${sids?.length || 0} path dot tags (Tag API)`, sids);
       } catch (e) {
-        console.log("Tag.add failed for dots:", e);
+        console.log("❌ Tag.add failed:", e);
       }
+    } else {
+      console.log("⚠️ Neither Mattertag.add nor Tag.add available");
     }
   }, [clearPathDots]);
 
