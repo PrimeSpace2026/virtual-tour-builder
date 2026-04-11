@@ -3307,8 +3307,15 @@ const TourViewer = () => {
       </div>{/* END TOP: MATTERPORT 3D VIEWER */}
 
       {/* ===== BOTTOM: PRODUCT & SERVICE STRIP ===== */}
+      <AnimatePresence>
       {(tourItems.length > 0 || tourServices.length > 0 || gymCoaches.length > 0) && (
-        <div className="shrink-0 bg-[#0d0d1a] border-t border-white/10">
+        <motion.div
+          initial={{ y: "100%" }}
+          animate={{ y: 0 }}
+          exit={{ y: "100%" }}
+          transition={{ type: "spring", damping: 28, stiffness: 300 }}
+          className="shrink-0 bg-[#0d0d1a] border-t border-white/10 overflow-hidden"
+        >
           <div className="px-3 py-3">
             {/* Tab switcher when both exist */}
             {(tourItems.length > 0 ? 1 : 0) + (tourServices.length > 0 ? 1 : 0) + (gymCoaches.length > 0 ? 1 : 0) > 1 && (
@@ -3484,8 +3491,9 @@ const TourViewer = () => {
               </div>
             )}
           </div>
-        </div>
+        </motion.div>
       )}
+      </AnimatePresence>
     </div>
   );
 };
