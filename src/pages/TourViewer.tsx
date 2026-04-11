@@ -863,12 +863,13 @@ const TourViewer = () => {
     if (sdk.Mattertag?.add) {
       try {
         const tags = dotCoords.map((c) => ({
-          label: "•",
+          label: "",
           description: "",
           anchorPosition: { x: c.x, y: c.y, z: c.z },
-          stemVector: { x: 0, y: 0.5, z: 0 }, // 50cm stem — visible pin rising from floor
+          stemVector: { x: 0, y: 0, z: 0 }, // no stem — flat on floor
           color: { r: 0.4, g: 0.6, b: 1.0 }, // blue like Treedis
           floorIndex: 0,
+          stemVisible: false,
         }));
         console.log(`📍 Adding ${tags.length} path dots via Mattertag.add at Y=${dotCoords[0]?.y.toFixed(2)}...`);
         const sids = await sdk.Mattertag.add(tags);
@@ -884,11 +885,12 @@ const TourViewer = () => {
     if (sdk.Tag?.add) {
       try {
         const tags = dotCoords.map((c) => ({
-          label: "•",
+          label: "",
           description: "",
           anchorPosition: { x: c.x, y: c.y, z: c.z },
-          stemVector: { x: 0, y: 0.5, z: 0 },
+          stemVector: { x: 0, y: 0, z: 0 }, // no stem — flat on floor
           color: { r: 0.4, g: 0.6, b: 1.0 },
+          stemVisible: false,
         }));
         console.log(`📍 Adding ${tags.length} path dots via Tag.add...`);
         const sids = await sdk.Tag.add(tags);
