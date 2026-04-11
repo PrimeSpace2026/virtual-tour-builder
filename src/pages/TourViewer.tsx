@@ -1331,15 +1331,46 @@ const TourViewer = () => {
       let pathSource = "none";
 
       // ── Try A: Sweep graph + A* (official Matterport wall-aware pathfinding) ──
-      // Build a map of sweep sid → puckPosition for per-point floor snapping
+      // Build spatial map of ALL sweep puckPositions for per-vertex floor snapping
       const sweepPuckMap = new Map<string, { x: number; y: number; z: number }>();
+      const sweepFloorSamples: { x: number; y: number; z: number }[] = []; // all puck positions for spatial lookup
       for (const s of allSweeps) {
-        if (s.sid && s.puckPosition) sweepPuckMap.set(s.sid, s.puckPosition);
+        if (s.sid && s.puckPosition) {
+          sweepPuckMap.set(s.sid, s.puckPosition);
+          sweepFloorSamples.push(s.puckPosition);
+        }
       }
+      console.log(`📐 Sweep puck samples: ${sweepFloorSamples.length} (from ${allSweeps.length} sweeps)`);
+      if (sweepFloorSamples.length > 0) {
+        const ys = sweepFloorSamples.map(p => p.y);
+        console.log(`📐 Puck Y range: ${Math.min(...ys).toFixed(3)} to ${Math.max(...ys).toFixed(3)}`);
+      }
+
+      // Helper: find floor Y at any (x,z) by nearest sweep puckPosition (weighted avg of 3 nearest)
+      const snapToFloor = (x: number, z: number): number => {
+        if (sweepFloorSamples.length === 0) return floorY;
+        // Find 3 nearest pucks by horizontal distance
+        const scored = sweepFloorSamples.map(p => ({
+          y: p.y,
+          dist: Math.sqrt((p.x - x) ** 2 + (p.z - z) ** 2)
+        })).sort((a, b) => a.dist - b.dist);
+
+        if (scored[0].dist < 0.1) return scored[0].y + 0.05; // very close, use directly
+
+        // Inverse-distance weighted average of up to 3 nearest pucks
+        const nearest = scored.slice(0, Math.min(3, scored.length));
+        let weightSum = 0;
+        let ySum = 0;
+        for (const n of nearest) {
+          const w = 1 / Math.max(n.dist, 0.01);
+          weightSum += w;
+          ySum += n.y * w;
+        }
+        return (ySum / weightSum) + 0.05; // +5cm to avoid Z-fighting
+      };
 
       if (allSweeps.length > 3) {
         try {
-          // Find nearest sweep to camera and to destination
           const findNearest = (target: { x: number; z: number }) => {
             let best = allSweeps[0];
             let bestDist = Infinity;
@@ -1357,7 +1388,7 @@ const TourViewer = () => {
 
           if (startSweep?.sid && endSweep?.sid && startSweep.sid !== endSweep.sid) {
             if (sdk.Sweep?.createGraph && sdk.Graph?.createAStarRunner) {
-              console.log(`🗺️ Trying A* sweep graph: ${startSweep.sid} → ${endSweep.sid}`);
+              console.log(`🗺️ A* sweep graph: ${startSweep.sid} → ${endSweep.sid}`);
               const graph = await sdk.Sweep.createGraph();
               const startVertex = graph.vertex(startSweep.sid);
               const endVertex = graph.vertex(endSweep.sid);
@@ -1365,34 +1396,35 @@ const TourViewer = () => {
                 const runner = sdk.Graph.createAStarRunner(graph, startVertex, endVertex);
                 const result = runner.exec();
                 if (result?.path && result.path.length > 1) {
-                  // Use puckPosition (floor level) for each sweep, NOT eye-level position
-                  const startPuck = sweepPuckMap.get(startSweep.sid);
-                  const startY = startPuck ? startPuck.y + 0.05 : floorY;
-                  pathWaypoints = [{ x: camPos.x, y: startY, z: camPos.z }];
+                  // Start: user's feet on the floor
+                  pathWaypoints = [{ x: camPos.x, y: snapToFloor(camPos.x, camPos.z), z: camPos.z }];
 
                   for (const vertex of result.path) {
                     const data = vertex.data || vertex;
+                    if (!data?.position) continue;
+                    // Try 3 sources for floor Y: vertex.puckPosition → map lookup → snapToFloor
                     const sid = data?.sid || data?.id || "";
-                    const puck = sweepPuckMap.get(sid);
-                    if (data?.position) {
-                      // KEY: Use puckPosition.y (floor) instead of position.y (eye level)
-                      const groundY = puck ? puck.y + 0.05 : floorY;
-                      pathWaypoints.push({ x: data.position.x, y: groundY, z: data.position.z });
+                    let groundY: number;
+                    if (data.puckPosition?.y != null) {
+                      groundY = data.puckPosition.y + 0.05;
+                    } else if (sweepPuckMap.has(sid)) {
+                      groundY = sweepPuckMap.get(sid)!.y + 0.05;
+                    } else {
+                      groundY = snapToFloor(data.position.x, data.position.z);
                     }
+                    pathWaypoints.push({ x: data.position.x, y: groundY, z: data.position.z });
                   }
 
-                  const endPuck = sweepPuckMap.get(endSweep.sid);
-                  const endY = endPuck ? endPuck.y + 0.05 : floorY;
-                  pathWaypoints.push({ x: tagPos.x, y: endY, z: tagPos.z });
-
-                  pathSource = `A* sweep graph (${result.path.length} sweeps, per-puck Y)`;
-                  console.log(`✅ A* path: ${result.path.length} sweeps (grounded via puckPositions)`);
+                  // End: destination grounded via snapToFloor
+                  pathWaypoints.push({ x: tagPos.x, y: snapToFloor(tagPos.x, tagPos.z), z: tagPos.z });
+                  pathSource = `A* (${result.path.length} sweeps, per-vertex floor snap)`;
+                  console.log(`✅ A* path: ${result.path.length} sweeps, Y per vertex`);
                 }
               }
             }
           }
         } catch (e) {
-          console.log(`⚠️ A* sweep pathfinding failed:`, e);
+          console.log(`⚠️ A* failed:`, e);
         }
       }
 
@@ -1498,30 +1530,38 @@ const TourViewer = () => {
       console.log(`🗺️ Path source: ${pathSource} (${pathWaypoints.length} waypoints)`);
 
       // ══════════════════════════════════════════════════════
-      // STEP 4: GROUND EVERY POINT TO FLOOR + interpolate
+      // STEP 4: GROUND EVERY POINT TO FLOOR (per-vertex snap)
       // ══════════════════════════════════════════════════════
+      // For A* paths, Y is already per-sweep grounded.
+      // For Dijkstra/other, snap each point to nearest sweep puck Y.
       let groundedPath: { x: number; y: number; z: number }[];
 
       if (pathSource.includes("A*")) {
-        // A* path: points already have per-sweep puckPosition Y — keep them
-        // This follows stair geometry correctly (each sweep has its own floor level)
+        // Already grounded per-vertex in step 3
         groundedPath = pathWaypoints.map(p => ({ x: p.x, y: p.y, z: p.z }));
-        console.log(`📍 A* path Y values (per-puck): ${groundedPath.map(p => p.y.toFixed(2)).join(" → ")}`);
+      } else if (sweepFloorSamples.length > 0) {
+        // Dijkstra: snap each waypoint to nearest sweep floor via spatial lookup
+        groundedPath = pathWaypoints.map(p => ({
+          x: p.x,
+          y: snapToFloor(p.x, p.z),
+          z: p.z,
+        }));
+        console.log(`📍 Dijkstra per-vertex snap Y: ${groundedPath.map(p => p.y.toFixed(2)).join(" → ")}`);
       } else {
-        // Dijkstra/straight line: flatten to global floorY
+        // No sweep data at all — global floorY
         groundedPath = pathWaypoints.map(p => ({ x: p.x, y: floorY, z: p.z }));
       }
 
-      // Log each waypoint
+      // Log each waypoint with grounding info
       for (let i = 0; i < groundedPath.length; i++) {
         const orig = pathWaypoints[i];
         const g = groundedPath[i];
         console.log(`  📍 [${i}] origY=${orig.y.toFixed(2)} → groundedY=${g.y.toFixed(2)} | x=${g.x.toFixed(2)}, z=${g.z.toFixed(2)}`);
       }
 
-      // Interpolate: Y will smoothly follow the floor contour (stairs, ramps)
+      // Interpolate: Y smoothly follows floor contour between waypoints (stairs, ramps)
       const pathPoints = interpolatePath(groundedPath, 0.5);
-      console.log(`📍 Final: ${pathPoints.length} interpolated points`);
+      console.log(`📍 Final: ${pathPoints.length} interpolated points, Y range: ${Math.min(...pathPoints.map(p=>p.y)).toFixed(3)} → ${Math.max(...pathPoints.map(p=>p.y)).toFixed(3)}`);
 
       // 5. Set UI state
       setNavPath(groundedPath);
