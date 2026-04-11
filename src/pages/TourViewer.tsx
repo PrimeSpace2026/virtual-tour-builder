@@ -545,9 +545,18 @@ const TourViewer = () => {
 
     let cancelled = false;
 
+    // Double-click detection for tags
+    let lastTagClick = { sid: "", time: 0 };
+
     const handleTagClick = async (sdk: any, tagSid: string) => {
       try {
         console.log("🏷️ Tag cliqué — SID:", tagSid);
+
+        // Detect double-click (same tag within 400ms)
+        const now = Date.now();
+        const isDoubleClick = lastTagClick.sid === tagSid && (now - lastTagClick.time) < 400;
+        lastTagClick = { sid: tagSid, time: now };
+
         let tagLabel = "";
         let tagData: TagItem | null = null;
 
@@ -572,19 +581,23 @@ const TourViewer = () => {
         });
 
         if (matchedItem) {
-          // Track tag click
           if (tour?.id) trackEvent(tour.id, "tag_click", matchedItem.name, tagSid);
-          // Close native Matterport popup immediately
+          // Close native Matterport popup
           try { if (sdk.Mattertag?.close) sdk.Mattertag.close(tagSid); } catch {}
           try { if (sdk.Tag?.close) sdk.Tag.close(tagSid); } catch {}
-          // Show custom product popup instead
-          setSelectedItem(matchedItem);
+          // Single click: just filter bottom strip. Double click: show popup
           setActiveTagFilter(matchedItem.tagSid);
+          if (isDoubleClick) {
+            console.log("🏷️ Double-click → showing custom popup");
+            setSelectedItem(matchedItem);
+          }
           return;
         }
         if (tagData) {
           if (tour?.id) trackEvent(tour.id, "tag_click", tagData.label || tagSid, tagSid);
-          setSelectedTag(tagData);
+          if (isDoubleClick) {
+            setSelectedTag(tagData);
+          }
         }
       } catch (err) {
         console.log("Tag data error:", err);
