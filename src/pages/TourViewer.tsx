@@ -771,100 +771,17 @@ const TourViewer = () => {
         setIframeLoaded(false);
       };
 
-      // Helper: get all sweeps as array
-      const getSweeps = (sdk: any): Promise<any[]> =>
-        new Promise((resolve) => {
-          const timeout = setTimeout(() => resolve([]), 3000);
-          const sub = sdk.Sweep.data.subscribe({
-            onCollectionUpdated: (c: any) => {
-              const arr: any[] = [];
-              if (c && typeof c.forEach === "function") c.forEach((v: any, k: any) => { if (v.position) arr.push({ ...v, sid: k }); });
-              clearTimeout(timeout);
-              try { sub?.cancel?.(); } catch {}
-              resolve(arr);
-            },
-          });
-        });
-
-      // Helper: get tag position
-      const getTagPos = async (sdk: any, sid: string) => {
-        try {
-          const tags = await new Promise<any[]>((resolve) => {
-            const timeout = setTimeout(() => resolve([]), 3000);
-            const sub = sdk.Tag.data.subscribe({
-              onCollectionUpdated: (c: any) => {
-                const arr: any[] = [];
-                if (c && typeof c.forEach === "function") c.forEach((v: any, k: any) => arr.push({ ...v, sid: k }));
-                clearTimeout(timeout);
-                try { sub?.cancel?.(); } catch {}
-                resolve(arr);
-              },
-            });
-          });
-          const found = tags.find((t: any) => t.sid === sid);
-          return found?.anchorPosition || null;
-        } catch { return null; }
-      };
-
-      // Primary: FLY directly to nearest sweep near tag
-      if (sdk) {
+      // SDK: Mattertag.navigateToTag FLY directly to the tag
+      if (sdk && sdk.Mattertag?.navigateToTag) {
         const doFly = async () => {
           try {
-            // Cancel any previous navigation
-            navCancelledRef.current = true;
-            await new Promise((r) => setTimeout(r, 100));
-            navCancelledRef.current = false;
-
-            const [tagPos, sweeps] = await Promise.all([
-              getTagPos(sdk, resolvedSid),
-              getSweeps(sdk),
-            ]);
-
-            if (!tagPos || sweeps.length === 0) {
-              console.log("⚠️ Missing data, using iframe");
-              iframeFallback();
-              setSelectedItem(item);
-              return;
-            }
-
-            // Find nearest sweep to the tag
-            let nearest = sweeps[0];
-            let minDist = Infinity;
-            for (const s of sweeps) {
-              const dx = s.position.x - tagPos.x;
-              const dy = s.position.y - tagPos.y;
-              const dz = s.position.z - tagPos.z;
-              const d = dx * dx + dy * dy + dz * dz;
-              if (d < minDist) { minDist = d; nearest = s; }
-            }
-
-            // Calculate camera rotation to look at the tag
-            const dx = tagPos.x - nearest.position.x;
-            const dy = tagPos.y - nearest.position.y;
-            const dz = tagPos.z - nearest.position.z;
-            const yaw = Math.atan2(dx, dz) * (180 / Math.PI);
-            const pitch = Math.atan2(dy, Math.sqrt(dx * dx + dz * dz)) * (180 / Math.PI);
-
-            // Show nav indicator
-            setNavTarget(item);
-            setNavPath([{ x: nearest.position.x, y: nearest.position.y, z: nearest.position.z, sid: nearest.sid }]);
-            setNavStep(1);
-
-            const transition = sdk.Sweep.Transition?.INSTANT || sdk.Sweep.Transition?.TELEPORT || "transition.instant";
-            console.log(`🎯 MOVE to sweep ${nearest.sid} → looking at tag ${resolvedSid}`);
-            await sdk.Sweep.moveTo(nearest.sid, {
-              rotation: { x: pitch, y: yaw },
-              transition: transition as any,
-              transitionTime: 300,
-            });
-            console.log(`✅ Moved to sweep ${nearest.sid} near tag ${resolvedSid}`);
-
-            // Clear nav and show popup
-            setNavPath([]); setNavTarget(null); setNavStep(0);
+            const fly = sdk.Mattertag.Transition?.FLY_IN || "transition.fly";
+            console.log(`🎯 Mattertag.navigateToTag("${resolvedSid}", ${fly})`);
+            await sdk.Mattertag.navigateToTag(resolvedSid, fly);
+            console.log(`✅ Flew to tag: ${resolvedSid}`);
             setSelectedItem(item);
           } catch (err) {
             console.log("SDK fly failed, using iframe:", err);
-            setNavPath([]); setNavTarget(null); setNavStep(0);
             iframeFallback();
             setSelectedItem(item);
           }
