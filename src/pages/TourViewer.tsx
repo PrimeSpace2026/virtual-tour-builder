@@ -602,9 +602,7 @@ const TourViewer = () => {
           new Promise<never>((_, reject) => setTimeout(() => reject(new Error("SDK timeout")), 10000)),
         ]);
         if (cancelled) return;
-        sdkRef.current = sdk;
-        setSdkConnected(true);
-        console.log("✅ SDK connecté (localhost)");
+        console.log("✅ SDK connecté, waiting for model...");
 
         // Wait for model to be fully loaded (PLAYING phase) before querying data
         await new Promise<void>((resolve) => {
@@ -615,6 +613,7 @@ const TourViewer = () => {
             }
           });
         });
+        console.log("✅ Model fully loaded (PLAYING)");
 
         // Get floor data for custom floor selector
         try {
@@ -641,6 +640,12 @@ const TourViewer = () => {
             });
           }
         } catch {}
+
+        // NOW set SDK as ready — model is loaded & tags are cached
+        if (cancelled) return;
+        sdkRef.current = sdk;
+        setSdkConnected(true);
+        console.log("✅ SDK ready for navigation");
 
         // Listen for model state changes (e.g. defurnished toggle) and restore tags
         try {
