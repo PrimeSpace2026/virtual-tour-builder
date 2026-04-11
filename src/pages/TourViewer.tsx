@@ -371,14 +371,15 @@ const TourViewer = () => {
   const [showCart, setShowCart] = useState(false);
 
   // Navigation path state (walk-to-tag with floor path)
-  const [navPath, setNavPath] = useState<{x: number; y: number; z: number; sid: string}[]>([]);
+  const [navPath, setNavPath] = useState<{x: number; y: number; z: number}[]>([]);
   const [navTarget, setNavTarget] = useState<TourItemData | null>(null);
   const [navStep, setNavStep] = useState(0);
   const navCancelledRef = useRef(false);
-  const pathNodesRef = useRef<any[]>([]); // 3D scene nodes for navigation dots
-  const pathDotDataRef = useRef<{ sid: string; x: number; y: number; z: number }[]>([]); // dot SIDs with positions for progressive removal
-  const removedDotsRef = useRef<{ x: number; y: number; z: number }[]>([]); // removed dot positions — re-add if user goes back
-  const totalDotsRef = useRef(0); // total dots placed at start
+  const pathNodesRef = useRef<any[]>([]); // Mattertag SIDs (kept for legacy cleanup)
+  const navPathPointsRef = useRef<{x: number; y: number; z: number}[]>([]); // 3D path coords for canvas line
+  const navCanvasRef = useRef<HTMLCanvasElement>(null); // canvas overlay for drawing line
+  const navPoseSubRef = useRef<any>(null); // Camera.pose subscription for live line updates
+  const totalDotsRef = useRef(0);
 
   // Navigation choice modal state (Fly vs Navigate)
   const [navChoice, setNavChoice] = useState<{ tagSid: string; label: string } | null>(null);
@@ -831,105 +832,214 @@ const TourViewer = () => {
     setIframeLoaded(false);
   }, [tour?.tourUrl]);
 
-  // ===== 3D NAVIGATION PATH HELPERS =====
+  // ===== CANVAS LINE NAVIGATION =====
 
-  // Clear path dots — remove injected Mattertags/Tags
-  const clearPathDots = useCallback(() => {
-    const sdk = sdkRef.current;
-    const sids = pathNodesRef.current;
-    if (sids.length === 0) return;
-
-    if (sdk?.Mattertag?.remove) {
-      sdk.Mattertag.remove(sids).catch(() => {});
-    } else if (sdk?.Tag?.remove) {
-      sdk.Tag.remove(sids).catch(() => {});
-    }
-    pathNodesRef.current = [];
-    pathDotDataRef.current = [];
-    removedDotsRef.current = [];
-    totalDotsRef.current = 0;
-    console.log(`🧹 Cleared ${sids.length} path dots`);
+  // Project a 3D world point to 2D screen coordinates using camera pose
+  const worldToScreen = useCallback((
+    point: { x: number; y: number; z: number },
+    camPos: { x: number; y: number; z: number },
+    camRot: { x: number; y: number }, // pitch (x) and yaw (y) in degrees
+    canvasW: number,
+    canvasH: number
+  ): { x: number; y: number; behind: boolean } | null => {
+    const DEG = Math.PI / 180;
+    // Translate point relative to camera
+    const dx = point.x - camPos.x;
+    const dy = point.y - camPos.y;
+    const dz = point.z - camPos.z;
+    // Rotate by negative yaw (around Y axis)
+    const yaw = -camRot.y * DEG;
+    const cosY = Math.cos(yaw), sinY = Math.sin(yaw);
+    const rx = dx * cosY + dz * sinY;
+    const rz = -dx * sinY + dz * cosY;
+    const ry = dy;
+    // Rotate by negative pitch (around X axis)
+    const pitch = -camRot.x * DEG;
+    const cosP = Math.cos(pitch), sinP = Math.sin(pitch);
+    const fy = ry * cosP - rz * sinP;
+    const fz = ry * sinP + rz * cosP;
+    const fx = rx;
+    // Behind camera
+    if (fz <= 0.1) return { x: 0, y: 0, behind: true };
+    // Perspective projection (vertical FOV ~75°)
+    const fov = 75 * DEG;
+    const f = canvasH / (2 * Math.tan(fov / 2));
+    const sx = (fx / fz) * f + canvasW / 2;
+    const sy = -(fy / fz) * f + canvasH / 2;
+    return { x: sx, y: sy, behind: false };
   }, []);
 
-  // Create visible dots along a path using Mattertag.add (3D markers on floor)
-  const createPathDots = useCallback(async (coords: {x: number; y: number; z: number}[]) => {
+  // Draw the navigation line on the canvas overlay
+  const drawNavLine = useCallback((
+    pose: { position: { x: number; y: number; z: number }; rotation: { x: number; y: number } }
+  ) => {
+    const canvas = navCanvasRef.current;
+    const points = navPathPointsRef.current;
+    if (!canvas || points.length < 2) return;
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    // Match canvas to its display size
+    const rect = canvas.getBoundingClientRect();
+    if (canvas.width !== rect.width || canvas.height !== rect.height) {
+      canvas.width = rect.width;
+      canvas.height = rect.height;
+    }
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    const camPos = pose.position;
+    const camRot = pose.rotation;
+
+    // Project all path points to screen
+    const screenPts: { x: number; y: number; behind: boolean }[] = [];
+    for (const pt of points) {
+      const sp = worldToScreen(pt, camPos, camRot, canvas.width, canvas.height);
+      screenPts.push(sp || { x: 0, y: 0, behind: true });
+    }
+
+    // Find which dots user has passed (within 2m horizontally)
+    let passedIndex = 0;
+    for (let i = 0; i < points.length; i++) {
+      const dx = points[i].x - camPos.x;
+      const dz = points[i].z - camPos.z;
+      if (dx * dx + dz * dz < 4) passedIndex = i + 1;
+    }
+
+    // Update step counter
+    const remaining = Math.max(0, points.length - passedIndex);
+    setNavStep(remaining);
+
+    // Draw the line from passedIndex onward (remaining path)
+    const startIdx = Math.max(0, passedIndex - 1);
+    let hasVisibleSegment = false;
+
+    // Glow layer
+    ctx.save();
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+
+    // Outer glow
+    ctx.strokeStyle = "rgba(100, 150, 255, 0.3)";
+    ctx.lineWidth = 12;
+    ctx.beginPath();
+    for (let i = startIdx; i < screenPts.length; i++) {
+      const sp = screenPts[i];
+      if (sp.behind) continue;
+      if (!hasVisibleSegment) { ctx.moveTo(sp.x, sp.y); hasVisibleSegment = true; }
+      else ctx.lineTo(sp.x, sp.y);
+    }
+    if (hasVisibleSegment) ctx.stroke();
+
+    // Inner bright line
+    hasVisibleSegment = false;
+    ctx.strokeStyle = "rgba(80, 140, 255, 0.8)";
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    for (let i = startIdx; i < screenPts.length; i++) {
+      const sp = screenPts[i];
+      if (sp.behind) continue;
+      if (!hasVisibleSegment) { ctx.moveTo(sp.x, sp.y); hasVisibleSegment = true; }
+      else ctx.lineTo(sp.x, sp.y);
+    }
+    if (hasVisibleSegment) ctx.stroke();
+
+    // Core white-blue line
+    hasVisibleSegment = false;
+    ctx.strokeStyle = "rgba(180, 210, 255, 0.9)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (let i = startIdx; i < screenPts.length; i++) {
+      const sp = screenPts[i];
+      if (sp.behind) continue;
+      if (!hasVisibleSegment) { ctx.moveTo(sp.x, sp.y); hasVisibleSegment = true; }
+      else ctx.lineTo(sp.x, sp.y);
+    }
+    if (hasVisibleSegment) ctx.stroke();
+
+    // Destination marker (last visible point)
+    const lastPt = screenPts[screenPts.length - 1];
+    if (lastPt && !lastPt.behind) {
+      ctx.beginPath();
+      ctx.arc(lastPt.x, lastPt.y, 8, 0, Math.PI * 2);
+      ctx.fillStyle = "rgba(100, 150, 255, 0.6)";
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(lastPt.x, lastPt.y, 4, 0, Math.PI * 2);
+      ctx.fillStyle = "rgba(200, 220, 255, 0.9)";
+      ctx.fill();
+    }
+
+    ctx.restore();
+  }, [worldToScreen]);
+
+  // Stop navigation: clear canvas, unsubscribe from camera, reset state
+  const stopNavigation = useCallback(() => {
+    // Clear canvas
+    const canvas = navCanvasRef.current;
+    if (canvas) {
+      const ctx = canvas.getContext("2d");
+      ctx?.clearRect(0, 0, canvas.width, canvas.height);
+    }
+    // Unsubscribe camera pose
+    try { navPoseSubRef.current?.cancel?.(); navPoseSubRef.current?.unsubscribe?.(); } catch {}
+    navPoseSubRef.current = null;
+    // Clear legacy Mattertag dots if any
     const sdk = sdkRef.current;
-    clearPathDots();
-
-    if (!sdk) { console.log("⚠️ No SDK for path dots"); return; }
-
-    // Limit dots to avoid overloading (max ~20 for one-by-one add)
-    let dotCoords = coords;
-    if (coords.length > 20) {
-      const step = Math.ceil(coords.length / 20);
-      dotCoords = coords.filter((_, i) => i % step === 0 || i === coords.length - 1);
+    const sids = pathNodesRef.current;
+    if (sids.length > 0) {
+      if (sdk?.Mattertag?.remove) sdk.Mattertag.remove(sids).catch(() => {});
+      else if (sdk?.Tag?.remove) sdk.Tag.remove(sids).catch(() => {});
+      pathNodesRef.current = [];
     }
-    console.log(`📍 Creating ${dotCoords.length} dots (from ${coords.length} total), Y=${dotCoords[0]?.y.toFixed(2)}, first=(${dotCoords[0]?.x.toFixed(1)},${dotCoords[0]?.z.toFixed(1)})`);
+    // Reset state
+    navPathPointsRef.current = [];
+    totalDotsRef.current = 0;
+    setNavPath([]); setNavTarget(null); setNavStep(0);
+    navCancelledRef.current = true;
+    console.log("🛑 Navigation stopped");
+  }, []);
 
-    // Use Mattertag.add to place visible dots along the path
-    if (sdk.Mattertag?.add) {
-      try {
-        // Add dots one-by-one (batch add can silently fail in bundle SDK)
-        const addedSids: string[] = [];
-        for (let i = 0; i < dotCoords.length; i++) {
-          const c = dotCoords[i];
-          try {
-            const sids = await sdk.Mattertag.add([{
-              label: "●",
-              description: "",
-              anchorPosition: { x: c.x, y: c.y, z: c.z },
-              stemVector: { x: 0, y: -1.2, z: 0 }, // stem goes DOWN from eye level toward floor
-              color: { r: 0.2, g: 0.5, b: 1.0 },
-              floorIndex: 0,
-            }]);
-            if (sids?.[0]) addedSids.push(sids[0]);
-          } catch (e2) {
-            console.log(`❌ Dot ${i} failed:`, e2);
-            break; // stop if add fails
-          }
-        }
-        pathNodesRef.current = addedSids;
-        pathDotDataRef.current = addedSids.map((sid: string, i: number) => ({
-          sid, x: dotCoords[i].x, y: dotCoords[i].y, z: dotCoords[i].z,
-        }));
-        totalDotsRef.current = addedSids.length;
-        console.log(`✅ Created ${addedSids.length} path dot tags (one-by-one)`);
-      } catch (e) {
-        console.log("❌ Mattertag.add failed:", e);
+  // Start live navigation line: subscribe to Camera.pose and draw continuously
+  const startNavLine = useCallback((pathPoints: { x: number; y: number; z: number }[], destTag: { x: number; y: number; z: number }) => {
+    const sdk = sdkRef.current;
+    if (!sdk?.Camera?.pose?.subscribe) { console.log("❌ No Camera.pose for nav line"); return; }
+
+    // Store path points
+    navPathPointsRef.current = pathPoints;
+    totalDotsRef.current = pathPoints.length;
+    setNavStep(pathPoints.length);
+
+    // Throttled camera pose subscription — redraws line every 200ms
+    let lastDraw = 0;
+    let autoCleanupTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const sub = sdk.Camera.pose.subscribe((pose: any) => {
+      if (!pose?.position || !pose?.rotation) return;
+
+      const now = Date.now();
+      if (now - lastDraw < 200) return; // throttle
+      lastDraw = now;
+
+      // Draw the line
+      drawNavLine(pose);
+
+      // Check arrival (~3m from destination)
+      const dx = pose.position.x - destTag.x;
+      const dz = pose.position.z - destTag.z;
+      if (dx * dx + dz * dz < 9) {
+        console.log("✅ Arrived at destination!");
+        stopNavigation();
       }
-      return;
-    }
+    });
 
-    // Fallback: Tag.add (newer SDK)
-    if (sdk.Tag?.add) {
-      try {
-        const addedSids: string[] = [];
-        for (let i = 0; i < dotCoords.length; i++) {
-          const c = dotCoords[i];
-          try {
-            const sids = await sdk.Tag.add([{
-              label: "●",
-              description: "",
-              anchorPosition: { x: c.x, y: c.y, z: c.z },
-              stemVector: { x: 0, y: -1.2, z: 0 },
-              color: { r: 0.2, g: 0.5, b: 1.0 },
-            }]);
-            if (sids?.[0]) addedSids.push(sids[0]);
-          } catch { break; }
-        }
-        pathNodesRef.current = addedSids;
-        pathDotDataRef.current = addedSids.map((sid: string, i: number) => ({
-          sid, x: dotCoords[i].x, y: dotCoords[i].y, z: dotCoords[i].z,
-        }));
-        totalDotsRef.current = addedSids.length;
-        console.log(`✅ Created ${addedSids.length} path dot tags (Tag API, one-by-one)`);
-      } catch (e) {
-        console.log("❌ Tag.add failed:", e);
-      }
-    } else {
-      console.log("⚠️ Neither Mattertag.add nor Tag.add available");
-    }
-  }, [clearPathDots]);
+    navPoseSubRef.current = sub;
+
+    // Auto-cleanup after 3 minutes
+    autoCleanupTimer = setTimeout(() => { stopNavigation(); }, 180000);
+
+    console.log(`🗺️ Nav line started: ${pathPoints.length} points`);
+  }, [drawNavLine, stopNavigation]);
 
   // Interpolate points along a path for smooth dot placement
   const interpolatePath = (points: {x: number; y: number; z: number}[], spacing: number = 0.8) => {
@@ -1144,131 +1254,24 @@ const TourViewer = () => {
         pathWaypoints.push({ x: tagPos.x, y: tagPos.y, z: tagPos.z });
       }
 
-      // 4. Place dots along the path
-      // Use anchorPosition at camera Y level (eye height) — the stemVector pulls disc down toward floor
-      // This ensures dots are always visible, not buried underground
-      const dotY = camPos.y; // eye-level Y — stem goes down from here
-      console.log(`📐 Dot anchor Y: ${dotY.toFixed(2)} (camera height)`);
-      const floorPath = pathWaypoints.map(p => ({ x: p.x, y: dotY, z: p.z }));
-      const dots = interpolatePath(floorPath, 1.0); // 1m spacing
-      await createPathDots(dots);
-      console.log(`📍 Drew ${dots.length} dots along ${pathWaypoints.length}-waypoint path`);
+      // 4. Build interpolated path at floor level for the canvas line
+      const floorY = camPos.y - 1.0; // slightly below eye level for floor projection
+      const floorPath = pathWaypoints.map(p => ({ x: p.x, y: floorY, z: p.z }));
+      const pathPoints = interpolatePath(floorPath, 0.5);
+      console.log(`📍 Path: ${pathPoints.length} points along ${pathWaypoints.length} waypoints`);
 
-      // 5. Set UI indicator — totalDotsRef has the count
+      // 5. Set UI state
       setNavPath(floorPath);
       setNavTarget({ id: 0, tourId: 0, name: foundTag?.label || tagSid, tagSid: resolvedSid } as TourItemData);
-      setNavStep(totalDotsRef.current); // remaining dots
 
-      // 6. Watch camera — remove dots behind user as they walk, update step counter
-      let removeThrottleTimer: ReturnType<typeof setTimeout> | null = null;
-      const poseSub = sdk.Camera.pose.subscribe(async (pose: any) => {
-        if (!pose?.position) return;
-        const cx = pose.position.x;
-        const cz = pose.position.z;
-
-        // Check arrival near destination (~3m)
-        const dxDest = cx - tagPos.x;
-        const dzDest = cz - tagPos.z;
-        if (dxDest * dxDest + dzDest * dzDest < 9) {
-          console.log(`✅ Arrived near destination tag`);
-          clearPathDots();
-          setNavPath([]); setNavTarget(null); setNavStep(0);
-          try { poseSub?.cancel?.(); poseSub?.unsubscribe?.(); } catch {}
-          return;
-        }
-
-        // Throttle dot removal to avoid hammering SDK (every 300ms)
-        if (removeThrottleTimer) return;
-        removeThrottleTimer = setTimeout(() => { removeThrottleTimer = null; }, 300);
-
-        // Remove dots within 1.5m of camera (user passed them)
-        const dotsToRemove: string[] = [];
-        const remaining: typeof pathDotDataRef.current = [];
-        for (const dot of pathDotDataRef.current) {
-          const dx = dot.x - cx;
-          const dz = dot.z - cz;
-          if (dx * dx + dz * dz < 2.25) { // 1.5m radius
-            dotsToRemove.push(dot.sid);
-            removedDotsRef.current.push({ x: dot.x, y: dot.y, z: dot.z });
-          } else {
-            remaining.push(dot);
-          }
-        }
-
-        if (dotsToRemove.length > 0) {
-          const sdk2 = sdkRef.current;
-          if (sdk2?.Mattertag?.remove) {
-            sdk2.Mattertag.remove(dotsToRemove).catch(() => {});
-          } else if (sdk2?.Tag?.remove) {
-            sdk2.Tag.remove(dotsToRemove).catch(() => {});
-          }
-          // Update refs
-          pathDotDataRef.current = remaining;
-          pathNodesRef.current = remaining.map(d => d.sid);
-          // Update step counter (remaining dots)
-          setNavStep(remaining.length);
-          console.log(`🔵 Removed ${dotsToRemove.length} dots — ${remaining.length} remaining`);
-        }
-
-        // Re-add dots if user walks back near previously removed positions
-        const toRestore: { x: number; y: number; z: number }[] = [];
-        const stillRemoved: { x: number; y: number; z: number }[] = [];
-        for (const rd of removedDotsRef.current) {
-          const dx = rd.x - cx;
-          const dz = rd.z - cz;
-          const dist = dx * dx + dz * dz;
-          // Re-add if user is 2-5m away (close enough to see, but not on top of)
-          if (dist >= 4 && dist <= 25) {
-            toRestore.push(rd);
-          } else if (dist > 25) {
-            // Too far — keep in removed list for later
-            stillRemoved.push(rd);
-          }
-          // If dist < 4, user is right on top — don't re-add yet
-          if (dist < 4) stillRemoved.push(rd);
-        }
-
-        if (toRestore.length > 0) {
-          const sdk2 = sdkRef.current;
-          const addFn = sdk2?.Mattertag?.add || sdk2?.Tag?.add;
-          if (addFn) {
-            const newTags = toRestore.map(c => ({
-              label: "●",
-              description: "",
-              anchorPosition: { x: c.x, y: c.y, z: c.z },
-              stemVector: { x: 0, y: -1.2, z: 0 },
-              color: { r: 0.2, g: 0.5, b: 1.0 },
-              floorIndex: 0,
-            }));
-            try {
-              const newSids = await (sdk2.Mattertag?.add || sdk2.Tag?.add)!(newTags);
-              if (newSids) {
-                for (let i = 0; i < newSids.length; i++) {
-                  pathDotDataRef.current.push({ sid: newSids[i], x: toRestore[i].x, y: toRestore[i].y, z: toRestore[i].z });
-                  pathNodesRef.current.push(newSids[i]);
-                }
-                setNavStep(pathDotDataRef.current.length);
-                console.log(`🔄 Restored ${newSids.length} dots — ${pathDotDataRef.current.length} total`);
-              }
-            } catch {}
-          }
-          removedDotsRef.current = stillRemoved;
-        }
-      });
-
-      // Auto-cleanup after 2 minutes
-      setTimeout(() => {
-        clearPathDots();
-        setNavPath([]); setNavTarget(null); setNavStep(0);
-        try { poseSub?.cancel?.(); poseSub?.unsubscribe?.(); } catch {}
-      }, 120000);
+      // 6. Start live canvas line navigation
+      startNavLine(pathPoints, { x: tagPos.x, y: tagPos.y, z: tagPos.z });
 
     } catch (err) {
       console.log("❌ Walk failed:", err);
-      clearPathDots();
-      setNavPath([]); setNavTarget(null); setNavStep(0);
+      stopNavigation();
     }
-  }, [navigateToMenuTag, flyToTag, clearPathDots, createPathDots]);
+  }, [navigateToMenuTag, flyToTag, stopNavigation, startNavLine]);
 
   // Show navigation choice modal (called from HotelMenuSection item click)
   const showNavChoice = useCallback((tagSid: string, label?: string) => {
@@ -1440,6 +1443,12 @@ const TourViewer = () => {
           referrerPolicy="no-referrer-when-downgrade"
           onLoad={() => setIframeLoaded(true)}
         />
+        {/* ===== NAVIGATION LINE CANVAS OVERLAY ===== */}
+        <canvas
+          ref={navCanvasRef}
+          className="absolute inset-0 w-full h-full pointer-events-none z-[10]"
+          style={{ opacity: navPath.length > 0 ? 1 : 0 }}
+        />
         {/* ===== NAVIGATION PATH INDICATOR ===== */}
         <AnimatePresence>
           {navPath.length > 0 && navTarget && (
@@ -1483,7 +1492,7 @@ const TourViewer = () => {
 
                 {/* Cancel button */}
                 <button
-                  onClick={() => { navCancelledRef.current = true; clearPathDots(); setNavPath([]); setNavTarget(null); setNavStep(0); }}
+                  onClick={() => stopNavigation()}
                   className="ml-2 w-7 h-7 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors"
                 >
                   <svg className="w-3.5 h-3.5 text-white/60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
