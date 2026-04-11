@@ -832,167 +832,152 @@ const TourViewer = () => {
     setIframeLoaded(false);
   }, [tour?.tourUrl]);
 
-  // ===== CANVAS LINE NAVIGATION =====
+  // ===== CANVAS LINE NAVIGATION (using sdk.Conversion.worldToScreen) =====
 
-  // Project a 3D world point to 2D screen coordinates using camera pose
-  const worldToScreen = useCallback((
-    point: { x: number; y: number; z: number },
-    camPos: { x: number; y: number; z: number },
-    camRot: { x: number; y: number }, // pitch (x) and yaw (y) in degrees
-    canvasW: number,
-    canvasH: number
-  ): { x: number; y: number; behind: boolean } | null => {
-    const DEG = Math.PI / 180;
-    // Translate point relative to camera
-    const dx = point.x - camPos.x;
-    const dy = point.y - camPos.y;
-    const dz = point.z - camPos.z;
-    // Rotate by negative yaw (around Y axis)
-    const yaw = -camRot.y * DEG;
-    const cosY = Math.cos(yaw), sinY = Math.sin(yaw);
-    const rx = dx * cosY + dz * sinY;
-    const rz = -dx * sinY + dz * cosY;
-    const ry = dy;
-    // Rotate by negative pitch (around X axis)
-    const pitch = -camRot.x * DEG;
-    const cosP = Math.cos(pitch), sinP = Math.sin(pitch);
-    const fy = ry * cosP - rz * sinP;
-    const fz = ry * sinP + rz * cosP;
-    const fx = rx;
-    // Behind camera
-    if (fz <= 0.1) return { x: 0, y: 0, behind: true };
-    // Perspective projection (vertical FOV ~75°)
-    const fov = 75 * DEG;
-    const f = canvasH / (2 * Math.tan(fov / 2));
-    const sx = (fx / fz) * f + canvasW / 2;
-    const sy = -(fy / fz) * f + canvasH / 2;
-    return { x: sx, y: sy, behind: false };
-  }, []);
-
-  // Draw the navigation line on the canvas overlay
-  const drawNavLine = useCallback((
-    pose: { position: { x: number; y: number; z: number }; rotation: { x: number; y: number } }
-  ) => {
+  // Draw navigation path on canvas using Matterport's native 3D→2D projection
+  const drawNavLine = useCallback((pose: any) => {
+    const sdk = sdkRef.current;
     const canvas = navCanvasRef.current;
     const points = navPathPointsRef.current;
-    if (!canvas || points.length < 2) return;
+    if (!sdk || !canvas || points.length < 2) return;
 
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    // Match canvas to its display size
-    const rect = canvas.getBoundingClientRect();
+    // Match canvas to iframe display size
+    const iframe = document.getElementById("showcase-iframe");
+    const rect = iframe?.getBoundingClientRect() || canvas.getBoundingClientRect();
     if (canvas.width !== rect.width || canvas.height !== rect.height) {
       canvas.width = rect.width;
       canvas.height = rect.height;
     }
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    const camPos = pose.position;
-    const camRot = pose.rotation;
+    const showcaseSize = { w: rect.width, h: rect.height };
 
-    // Project all path points to screen
-    const screenPts: { x: number; y: number; behind: boolean }[] = [];
+    // Project path points to screen using official SDK
+    const screenPts: { x: number; y: number; visible: boolean }[] = [];
+    const hasWorldToScreen = !!sdk.Conversion?.worldToScreen;
+
     for (const pt of points) {
-      const sp = worldToScreen(pt, camPos, camRot, canvas.width, canvas.height);
-      screenPts.push(sp || { x: 0, y: 0, behind: true });
+      if (hasWorldToScreen) {
+        try {
+          const sp = sdk.Conversion.worldToScreen(pt, pose, showcaseSize);
+          // worldToScreen returns {x, y, z} where z < 0 means behind camera
+          const visible = sp && sp.z > 0 && sp.x >= -100 && sp.x <= canvas.width + 100 && sp.y >= -100 && sp.y <= canvas.height + 100;
+          screenPts.push({ x: sp?.x || 0, y: sp?.y || 0, visible: !!visible });
+        } catch {
+          screenPts.push({ x: 0, y: 0, visible: false });
+        }
+      } else {
+        screenPts.push({ x: 0, y: 0, visible: false });
+      }
     }
 
-    // Find which dots user has passed (within 2m horizontally)
+    // Find which points user has passed (within 2m horizontally)
+    const camPos = pose.position;
     let passedIndex = 0;
-    for (let i = 0; i < points.length; i++) {
-      const dx = points[i].x - camPos.x;
-      const dz = points[i].z - camPos.z;
-      if (dx * dx + dz * dz < 4) passedIndex = i + 1;
+    if (camPos) {
+      for (let i = 0; i < points.length; i++) {
+        const dx = points[i].x - camPos.x;
+        const dz = points[i].z - camPos.z;
+        if (dx * dx + dz * dz < 4) passedIndex = i + 1;
+      }
     }
-
-    // Update step counter
     const remaining = Math.max(0, points.length - passedIndex);
     setNavStep(remaining);
 
-    // Draw the line from passedIndex onward (remaining path)
+    // Draw from passedIndex onward
     const startIdx = Math.max(0, passedIndex - 1);
-    let hasVisibleSegment = false;
 
-    // Glow layer
     ctx.save();
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
 
-    // Outer glow
-    ctx.strokeStyle = "rgba(100, 150, 255, 0.3)";
-    ctx.lineWidth = 12;
+    // --- Layer 1: outer glow ---
+    ctx.strokeStyle = "rgba(60, 120, 255, 0.25)";
+    ctx.lineWidth = 14;
     ctx.beginPath();
+    let started = false;
     for (let i = startIdx; i < screenPts.length; i++) {
       const sp = screenPts[i];
-      if (sp.behind) continue;
-      if (!hasVisibleSegment) { ctx.moveTo(sp.x, sp.y); hasVisibleSegment = true; }
+      if (!sp.visible) { started = false; continue; }
+      if (!started) { ctx.moveTo(sp.x, sp.y); started = true; }
       else ctx.lineTo(sp.x, sp.y);
     }
-    if (hasVisibleSegment) ctx.stroke();
+    if (started) ctx.stroke();
 
-    // Inner bright line
-    hasVisibleSegment = false;
-    ctx.strokeStyle = "rgba(80, 140, 255, 0.8)";
-    ctx.lineWidth = 4;
+    // --- Layer 2: main line ---
+    ctx.strokeStyle = "rgba(80, 150, 255, 0.7)";
+    ctx.lineWidth = 5;
     ctx.beginPath();
+    started = false;
     for (let i = startIdx; i < screenPts.length; i++) {
       const sp = screenPts[i];
-      if (sp.behind) continue;
-      if (!hasVisibleSegment) { ctx.moveTo(sp.x, sp.y); hasVisibleSegment = true; }
+      if (!sp.visible) { started = false; continue; }
+      if (!started) { ctx.moveTo(sp.x, sp.y); started = true; }
       else ctx.lineTo(sp.x, sp.y);
     }
-    if (hasVisibleSegment) ctx.stroke();
+    if (started) ctx.stroke();
 
-    // Core white-blue line
-    hasVisibleSegment = false;
-    ctx.strokeStyle = "rgba(180, 210, 255, 0.9)";
+    // --- Layer 3: bright core ---
+    ctx.strokeStyle = "rgba(160, 200, 255, 0.9)";
     ctx.lineWidth = 2;
     ctx.beginPath();
+    started = false;
     for (let i = startIdx; i < screenPts.length; i++) {
       const sp = screenPts[i];
-      if (sp.behind) continue;
-      if (!hasVisibleSegment) { ctx.moveTo(sp.x, sp.y); hasVisibleSegment = true; }
+      if (!sp.visible) { started = false; continue; }
+      if (!started) { ctx.moveTo(sp.x, sp.y); started = true; }
       else ctx.lineTo(sp.x, sp.y);
     }
-    if (hasVisibleSegment) ctx.stroke();
+    if (started) ctx.stroke();
 
-    // Destination marker (last visible point)
-    const lastPt = screenPts[screenPts.length - 1];
-    if (lastPt && !lastPt.behind) {
+    // --- Animated dots along the visible path ---
+    const now = Date.now();
+    for (let i = startIdx; i < screenPts.length; i += 3) {
+      const sp = screenPts[i];
+      if (!sp.visible) continue;
+      const pulse = 0.5 + 0.5 * Math.sin((now / 400) + i * 0.5);
+      const radius = 3 + pulse * 3;
       ctx.beginPath();
-      ctx.arc(lastPt.x, lastPt.y, 8, 0, Math.PI * 2);
-      ctx.fillStyle = "rgba(100, 150, 255, 0.6)";
+      ctx.arc(sp.x, sp.y, radius, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(100, 170, 255, ${0.3 + pulse * 0.4})`;
+      ctx.fill();
+    }
+
+    // --- Destination marker ---
+    const lastVisible = [...screenPts].reverse().find(sp => sp.visible);
+    if (lastVisible) {
+      const pulse = 0.5 + 0.5 * Math.sin(now / 300);
+      ctx.beginPath();
+      ctx.arc(lastVisible.x, lastVisible.y, 10 + pulse * 4, 0, Math.PI * 2);
+      ctx.fillStyle = "rgba(80, 150, 255, 0.3)";
       ctx.fill();
       ctx.beginPath();
-      ctx.arc(lastPt.x, lastPt.y, 4, 0, Math.PI * 2);
+      ctx.arc(lastVisible.x, lastVisible.y, 6, 0, Math.PI * 2);
       ctx.fillStyle = "rgba(200, 220, 255, 0.9)";
       ctx.fill();
     }
 
     ctx.restore();
-  }, [worldToScreen]);
+  }, []);
 
   // Stop navigation: clear canvas, unsubscribe from camera, reset state
   const stopNavigation = useCallback(() => {
-    // Clear canvas
     const canvas = navCanvasRef.current;
     if (canvas) {
       const ctx = canvas.getContext("2d");
       ctx?.clearRect(0, 0, canvas.width, canvas.height);
     }
-    // Unsubscribe camera pose
     try { navPoseSubRef.current?.cancel?.(); navPoseSubRef.current?.unsubscribe?.(); } catch {}
     navPoseSubRef.current = null;
-    // Clear legacy Mattertag dots if any
     const sdk = sdkRef.current;
     const sids = pathNodesRef.current;
     if (sids.length > 0) {
       if (sdk?.Mattertag?.remove) sdk.Mattertag.remove(sids).catch(() => {});
-      else if (sdk?.Tag?.remove) sdk.Tag.remove(sids).catch(() => {});
       pathNodesRef.current = [];
     }
-    // Reset state
     navPathPointsRef.current = [];
     totalDotsRef.current = 0;
     setNavPath([]); setNavTarget(null); setNavStep(0);
@@ -1000,92 +985,64 @@ const TourViewer = () => {
     console.log("🛑 Navigation stopped");
   }, []);
 
-  // Start live navigation line: subscribe to Camera.pose and draw continuously
+  // Start live navigation: subscribe to Camera.pose, redraw line every frame
   const startNavLine = useCallback((pathPoints: { x: number; y: number; z: number }[], destTag: { x: number; y: number; z: number }) => {
     const sdk = sdkRef.current;
-    if (!sdk) { console.log("❌ No SDK for nav line"); return; }
+    if (!sdk) { console.log("❌ No SDK"); return; }
 
-    // Store path points
     navPathPointsRef.current = pathPoints;
     totalDotsRef.current = pathPoints.length;
     setNavStep(pathPoints.length);
 
-    console.log(`🗺️ startNavLine: ${pathPoints.length} points, dest=(${destTag.x.toFixed(1)},${destTag.z.toFixed(1)})`);
-    console.log(`🗺️ SDK Camera available:`, {
-      pose: !!sdk.Camera?.pose,
-      poseSubscribe: !!sdk.Camera?.pose?.subscribe,
-      getPose: !!sdk.Camera?.getPose,
+    console.log(`🗺️ startNavLine: ${pathPoints.length} points`);
+    console.log(`🗺️ SDK APIs:`, {
+      Conversion: !!sdk.Conversion?.worldToScreen,
+      CameraPose: !!sdk.Camera?.pose?.subscribe,
     });
 
-    // Throttled camera pose subscription — redraws line every 200ms
     let lastDraw = 0;
     let drawCount = 0;
 
     const handlePose = (pose: any) => {
-      if (!pose) return;
-      // Log first few poses to debug format
-      if (drawCount < 3) {
-        console.log(`📐 Pose #${drawCount}:`, JSON.stringify({
-          position: pose.position,
-          rotation: pose.rotation,
-          sweep: pose.sweep,
-        }));
-      }
-
-      if (!pose.position) return;
-      // If rotation is missing, fabricate a default
-      const rotation = pose.rotation || { x: 0, y: 0 };
+      if (!pose?.position) return;
+      if (drawCount < 2) console.log(`📐 Pose #${drawCount}:`, JSON.stringify(pose).substring(0, 200));
 
       const now = Date.now();
-      if (now - lastDraw < 200) return; // throttle
+      // Redraw every 100ms for smooth animation
+      if (now - lastDraw < 100) return;
       lastDraw = now;
       drawCount++;
 
-      // Draw the line
-      drawNavLine({ position: pose.position, rotation });
+      drawNavLine(pose);
 
-      // Check arrival (~3m from destination)
+      // Arrival check
       const dx = pose.position.x - destTag.x;
       const dz = pose.position.z - destTag.z;
       if (dx * dx + dz * dz < 9) {
-        console.log("✅ Arrived at destination!");
+        console.log("✅ Arrived!");
         stopNavigation();
       }
     };
 
-    // Try subscribing to Camera.pose
     if (sdk.Camera?.pose?.subscribe) {
-      console.log("📡 Subscribing to Camera.pose...");
       const sub = sdk.Camera.pose.subscribe(handlePose);
       navPoseSubRef.current = sub;
-    } else {
-      console.log("⚠️ Camera.pose.subscribe not available");
     }
 
-    // Fallback: if no pose fires within 2s, try getPose once to at least draw something
+    // Fallback after 2s
     setTimeout(async () => {
       if (drawCount === 0 && navPathPointsRef.current.length > 0) {
-        console.log("⚠️ No Camera.pose fired after 2s — trying getPose fallback");
+        console.log("⚠️ No pose after 2s — fallback");
         try {
           if (sdk.Camera?.getPose) {
             const pose = await sdk.Camera.getPose();
-            console.log("📐 getPose result:", JSON.stringify(pose));
-            if (pose?.position) {
-              handlePose(pose);
-            }
+            if (pose) handlePose(pose);
           }
-        } catch (e) { console.log("❌ getPose failed:", e); }
-        // Also try checking Camera.pose as a current-value observable
-        if (drawCount === 0 && sdk.Camera?.pose && typeof sdk.Camera.pose !== 'function') {
-          console.log("📐 Camera.pose raw value:", typeof sdk.Camera.pose, JSON.stringify(sdk.Camera.pose).substring(0, 200));
-        }
+        } catch {}
       }
     }, 2000);
 
-    // Auto-cleanup after 3 minutes
-    setTimeout(() => { stopNavigation(); }, 180000);
-
-    console.log(`🗺️ Nav line started: ${pathPoints.length} points`);
+    setTimeout(() => stopNavigation(), 180000);
   }, [drawNavLine, stopNavigation]);
 
   // Interpolate points along a path for smooth dot placement
