@@ -832,9 +832,9 @@ const TourViewer = () => {
     setIframeLoaded(false);
   }, [tour?.tourUrl]);
 
-  // ===== CANVAS LINE NAVIGATION (using sdk.Conversion.worldToScreen) =====
+  // ===== GROUNDED PATH NAVIGATION (schema line on floor) =====
 
-  // Draw navigation path on canvas using Matterport's native 3D→2D projection
+  // Draw grounded navigation schema on canvas — connected line stuck to the floor
   const drawNavLine = useCallback((pose: any) => {
     const sdk = sdkRef.current;
     const canvas = navCanvasRef.current;
@@ -854,114 +854,154 @@ const TourViewer = () => {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     const showcaseSize = { w: rect.width, h: rect.height };
-
-    // Project path points to screen using official SDK
-    const screenPts: { x: number; y: number; visible: boolean }[] = [];
     const hasWorldToScreen = !!sdk.Conversion?.worldToScreen;
+    if (!hasWorldToScreen) return; // need SDK projection
 
+    // Project grounded 3D path points → 2D screen coordinates
+    const screenPts: { x: number; y: number; visible: boolean }[] = [];
     for (const pt of points) {
-      if (hasWorldToScreen) {
-        try {
-          const sp = sdk.Conversion.worldToScreen(pt, pose, showcaseSize);
-          // worldToScreen returns {x, y, z} where z < 0 means behind camera
-          const visible = sp && sp.z > 0 && sp.x >= -100 && sp.x <= canvas.width + 100 && sp.y >= -100 && sp.y <= canvas.height + 100;
-          screenPts.push({ x: sp?.x || 0, y: sp?.y || 0, visible: !!visible });
-        } catch {
-          screenPts.push({ x: 0, y: 0, visible: false });
-        }
-      } else {
+      try {
+        const sp = sdk.Conversion.worldToScreen(pt, pose, showcaseSize);
+        const visible = sp && sp.z > 0
+          && sp.x >= -200 && sp.x <= canvas.width + 200
+          && sp.y >= -200 && sp.y <= canvas.height + 200;
+        screenPts.push({ x: sp?.x || 0, y: sp?.y || 0, visible: !!visible });
+      } catch {
         screenPts.push({ x: 0, y: 0, visible: false });
       }
     }
 
-    // Find which points user has passed (within 2m horizontally)
+    // Track which points user has passed (within 1.5m horizontally)
     const camPos = pose.position;
     let passedIndex = 0;
     if (camPos) {
       for (let i = 0; i < points.length; i++) {
         const dx = points[i].x - camPos.x;
         const dz = points[i].z - camPos.z;
-        if (dx * dx + dz * dz < 4) passedIndex = i + 1;
+        if (dx * dx + dz * dz < 2.25) passedIndex = i + 1; // 1.5m radius
       }
     }
-    const remaining = Math.max(0, points.length - passedIndex);
-    setNavStep(remaining);
+    setNavStep(Math.max(0, points.length - passedIndex));
 
-    // Draw from passedIndex onward
     const startIdx = Math.max(0, passedIndex - 1);
+
+    // Collect visible segments (skip behind-camera gaps)
+    const segments: { x: number; y: number }[][] = [];
+    let seg: { x: number; y: number }[] = [];
+    for (let i = startIdx; i < screenPts.length; i++) {
+      if (screenPts[i].visible) {
+        seg.push(screenPts[i]);
+      } else if (seg.length > 0) {
+        segments.push(seg);
+        seg = [];
+      }
+    }
+    if (seg.length > 0) segments.push(seg);
+    if (segments.length === 0) return;
 
     ctx.save();
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
 
-    // --- Layer 1: outer glow ---
-    ctx.strokeStyle = "rgba(60, 120, 255, 0.25)";
-    ctx.lineWidth = 22;
-    ctx.beginPath();
-    let started = false;
-    for (let i = startIdx; i < screenPts.length; i++) {
-      const sp = screenPts[i];
-      if (!sp.visible) { started = false; continue; }
-      if (!started) { ctx.moveTo(sp.x, sp.y); started = true; }
-      else ctx.lineTo(sp.x, sp.y);
-    }
-    if (started) ctx.stroke();
-
-    // --- Layer 2: main line ---
-    ctx.strokeStyle = "rgba(80, 150, 255, 0.7)";
-    ctx.lineWidth = 10;
-    ctx.beginPath();
-    started = false;
-    for (let i = startIdx; i < screenPts.length; i++) {
-      const sp = screenPts[i];
-      if (!sp.visible) { started = false; continue; }
-      if (!started) { ctx.moveTo(sp.x, sp.y); started = true; }
-      else ctx.lineTo(sp.x, sp.y);
-    }
-    if (started) ctx.stroke();
-
-    // --- Layer 3: bright core ---
-    ctx.strokeStyle = "rgba(160, 200, 255, 0.9)";
-    ctx.lineWidth = 4;
-    ctx.beginPath();
-    started = false;
-    for (let i = startIdx; i < screenPts.length; i++) {
-      const sp = screenPts[i];
-      if (!sp.visible) { started = false; continue; }
-      if (!started) { ctx.moveTo(sp.x, sp.y); started = true; }
-      else ctx.lineTo(sp.x, sp.y);
-    }
-    if (started) ctx.stroke();
-
-    // --- Dots on every point (no gap / stem 0) ---
     const now = Date.now();
-    for (let i = startIdx; i < screenPts.length; i++) {
-      const sp = screenPts[i];
-      if (!sp.visible) continue;
-      const pulse = 0.5 + 0.5 * Math.sin((now / 400) + i * 0.5);
-      const radius = 8 + pulse * 4;
+
+    // ── Schema Layer 1: Wide soft glow (like Google Maps blue shadow) ──
+    for (const s of segments) {
+      if (s.length < 2) continue;
       ctx.beginPath();
-      ctx.arc(sp.x, sp.y, radius, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(100, 170, 255, ${0.5 + pulse * 0.3})`;
+      ctx.moveTo(s[0].x, s[0].y);
+      for (let i = 1; i < s.length; i++) ctx.lineTo(s[i].x, s[i].y);
+      ctx.strokeStyle = "rgba(50, 120, 255, 0.15)";
+      ctx.lineWidth = 28;
+      ctx.stroke();
+    }
+
+    // ── Schema Layer 2: Main path fill (solid blue) ──
+    for (const s of segments) {
+      if (s.length < 2) continue;
+      ctx.beginPath();
+      ctx.moveTo(s[0].x, s[0].y);
+      for (let i = 1; i < s.length; i++) ctx.lineTo(s[i].x, s[i].y);
+      ctx.strokeStyle = "rgba(66, 133, 244, 0.85)";
+      ctx.lineWidth = 12;
+      ctx.stroke();
+    }
+
+    // ── Schema Layer 3: White center line ──
+    for (const s of segments) {
+      if (s.length < 2) continue;
+      ctx.beginPath();
+      ctx.moveTo(s[0].x, s[0].y);
+      for (let i = 1; i < s.length; i++) ctx.lineTo(s[i].x, s[i].y);
+      ctx.strokeStyle = "rgba(200, 220, 255, 0.6)";
+      ctx.lineWidth = 3;
+      ctx.stroke();
+    }
+
+    // ── Animated direction chevrons (arrows showing direction) ──
+    const animOffset = (now % 2000) / 2000; // cycles every 2s
+    for (const s of segments) {
+      if (s.length < 4) continue;
+      // Draw chevron arrows every ~25 screen pixels along the path
+      let accDist = 0;
+      for (let i = 1; i < s.length; i++) {
+        const dx = s[i].x - s[i - 1].x;
+        const dy = s[i].y - s[i - 1].y;
+        accDist += Math.sqrt(dx * dx + dy * dy);
+        // Place chevron every 40px, animated offset
+        if (accDist > 40) {
+          accDist = 0;
+          const angle = Math.atan2(dy, dx);
+          const cx = s[i].x;
+          const cy = s[i].y;
+          const pulse = 0.4 + 0.6 * Math.sin((now / 600) + i * 0.3);
+          ctx.save();
+          ctx.translate(cx, cy);
+          ctx.rotate(angle);
+          ctx.beginPath();
+          ctx.moveTo(-6, -5);
+          ctx.lineTo(2, 0);
+          ctx.lineTo(-6, 5);
+          ctx.strokeStyle = `rgba(255, 255, 255, ${0.3 + pulse * 0.5})`;
+          ctx.lineWidth = 2.5;
+          ctx.stroke();
+          ctx.restore();
+        }
+      }
+    }
+
+    // ── Destination pulse marker ──
+    const lastSeg = segments[segments.length - 1];
+    if (lastSeg && lastSeg.length > 0) {
+      const dest = lastSeg[lastSeg.length - 1];
+      const pulse = 0.5 + 0.5 * Math.sin(now / 300);
+      // Outer ring
+      ctx.beginPath();
+      ctx.arc(dest.x, dest.y, 18 + pulse * 8, 0, Math.PI * 2);
+      ctx.fillStyle = "rgba(66, 133, 244, 0.2)";
       ctx.fill();
-      // White center
+      // Mid ring
       ctx.beginPath();
-      ctx.arc(sp.x, sp.y, radius * 0.35, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(220, 235, 255, ${0.6 + pulse * 0.3})`;
+      ctx.arc(dest.x, dest.y, 10 + pulse * 3, 0, Math.PI * 2);
+      ctx.fillStyle = "rgba(66, 133, 244, 0.5)";
+      ctx.fill();
+      // Center dot
+      ctx.beginPath();
+      ctx.arc(dest.x, dest.y, 5, 0, Math.PI * 2);
+      ctx.fillStyle = "rgba(255, 255, 255, 0.95)";
       ctx.fill();
     }
 
-    // --- Destination marker ---
-    const lastVisible = [...screenPts].reverse().find(sp => sp.visible);
-    if (lastVisible) {
-      const pulse = 0.5 + 0.5 * Math.sin(now / 300);
+    // ── Start position marker (user's feet) ──
+    if (segments[0] && segments[0].length > 0) {
+      const start = segments[0][0];
       ctx.beginPath();
-      ctx.arc(lastVisible.x, lastVisible.y, 16 + pulse * 6, 0, Math.PI * 2);
-      ctx.fillStyle = "rgba(80, 150, 255, 0.3)";
+      ctx.arc(start.x, start.y, 6, 0, Math.PI * 2);
+      ctx.fillStyle = "rgba(66, 133, 244, 0.9)";
       ctx.fill();
       ctx.beginPath();
-      ctx.arc(lastVisible.x, lastVisible.y, 10, 0, Math.PI * 2);
-      ctx.fillStyle = "rgba(200, 220, 255, 0.9)";
+      ctx.arc(start.x, start.y, 3, 0, Math.PI * 2);
+      ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
       ctx.fill();
     }
 
@@ -1013,8 +1053,8 @@ const TourViewer = () => {
       if (drawCount < 2) console.log(`📐 Pose #${drawCount}:`, JSON.stringify(pose).substring(0, 200));
 
       const now = Date.now();
-      // Redraw every 100ms for smooth animation
-      if (now - lastDraw < 100) return;
+      // Throttle redraws to 400ms for performance (disposes old frame properly)
+      if (now - lastDraw < 400) return;
       lastDraw = now;
       drawCount++;
 
@@ -1263,14 +1303,70 @@ const TourViewer = () => {
         pathWaypoints.push({ x: tagPos.x, y: tagPos.y, z: tagPos.z });
       }
 
-      // 4. Build interpolated path at floor level for the canvas line
-      const floorY = camPos.y - 1.5; // actual floor level (~1.5m below eye)
-      const floorPath = pathWaypoints.map(p => ({ x: p.x, y: floorY, z: p.z }));
-      const pathPoints = interpolatePath(floorPath, 0.3);
-      console.log(`📍 Path: ${pathPoints.length} points along ${pathWaypoints.length} waypoints`);
+      // 4. Build grounded path — raycast to find exact floor Y
+      // Strategy: Use Renderer.getWorldPositionData to raycast from screen to floor,
+      // fallback to minimum tag Y, then apply +0.03m offset to avoid Z-fighting
+      let floorY = camPos.y - 1.5; // initial estimate
+
+      // Method 1: Raycast from bottom-center of screen (usually hits the floor)
+      try {
+        if (sdk.Renderer?.getWorldPositionData) {
+          const iframe = document.getElementById("showcase-iframe");
+          const iRect = iframe?.getBoundingClientRect();
+          if (iRect) {
+            // Sample 3 points at bottom of screen to find floor
+            const samples = [
+              { x: iRect.width * 0.5, y: iRect.height * 0.85 },
+              { x: iRect.width * 0.3, y: iRect.height * 0.8 },
+              { x: iRect.width * 0.7, y: iRect.height * 0.8 },
+            ];
+            const floorHits: number[] = [];
+            for (const sp of samples) {
+              try {
+                const data = await sdk.Renderer.getWorldPositionData(sp);
+                if (data?.position && data.position.y != null) {
+                  floorHits.push(data.position.y);
+                }
+              } catch {}
+            }
+            if (floorHits.length > 0) {
+              // Use the lowest hit as floor level
+              floorY = Math.min(...floorHits) + 0.03; // +3cm to avoid Z-fighting
+              console.log(`📐 Raycast floor Y: ${floorY.toFixed(3)} (from ${floorHits.length} samples: ${floorHits.map(h => h.toFixed(2)).join(", ")})`);
+            }
+          }
+        }
+      } catch (e) {
+        console.log("⚠️ Floor raycast failed:", e);
+      }
+
+      // Method 2 fallback: Use lowest tag anchor Y on the same floor level
+      if (floorY === camPos.y - 1.5) {
+        const tagYs: number[] = [];
+        allTagPositions.forEach((pos) => {
+          if (Math.abs(pos.y - camPos.y) < 3) tagYs.push(pos.y); // same floor
+        });
+        if (tagYs.length > 0) {
+          const minTagY = Math.min(...tagYs);
+          // Tags anchors are usually on surfaces ~1m+ above floor, use lowest as reference
+          floorY = minTagY - 0.5;
+          console.log(`📐 Fallback floor Y from tags: ${floorY.toFixed(3)} (lowest tag: ${minTagY.toFixed(2)})`);
+        }
+      }
+
+      console.log(`📐 Final floor Y: ${floorY.toFixed(3)} (camera Y: ${camPos.y.toFixed(2)})`);
+
+      // Start point = user's feet position (camera Y → floor level)
+      const feetPos = { x: camPos.x, y: floorY, z: camPos.z };
+      const groundedWaypoints = pathWaypoints.map((p, i) =>
+        i === 0 ? feetPos : { x: p.x, y: floorY, z: p.z }
+      );
+
+      const pathPoints = interpolatePath(groundedWaypoints, 0.4);
+      console.log(`📍 Grounded path: ${pathPoints.length} points along ${pathWaypoints.length} waypoints at Y=${floorY.toFixed(3)}`);
 
       // 5. Set UI state
-      setNavPath(floorPath);
+      setNavPath(groundedWaypoints);
       setNavTarget({ id: 0, tourId: 0, name: foundTag?.label || tagSid, tagSid: resolvedSid } as TourItemData);
 
       // 6. Start live canvas line navigation
