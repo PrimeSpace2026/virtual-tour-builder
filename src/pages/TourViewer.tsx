@@ -859,19 +859,18 @@ const TourViewer = () => {
       dotCoords = coords.filter((_, i) => i % step === 0 || i === coords.length - 1);
     }
 
-    // Use Mattertag.add to place visible red pins along the path
+    // Use Mattertag.add to place visible dots along the path
     if (sdk.Mattertag?.add) {
       try {
         const tags = dotCoords.map((c) => ({
           label: "•",
           description: "",
           anchorPosition: { x: c.x, y: c.y, z: c.z },
-          stemVector: { x: 0, y: 0.15, z: 0 }, // short stem — small visible pin
-          color: { r: 1, g: 0.2, b: 0.3 }, // bright red
+          stemVector: { x: 0, y: 0.5, z: 0 }, // 50cm stem — visible pin rising from floor
+          color: { r: 0.4, g: 0.6, b: 1.0 }, // blue like Treedis
           floorIndex: 0,
-          iconId: undefined,
         }));
-        console.log(`📍 Adding ${tags.length} path dots via Mattertag.add...`);
+        console.log(`📍 Adding ${tags.length} path dots via Mattertag.add at Y=${dotCoords[0]?.y.toFixed(2)}...`);
         const sids = await sdk.Mattertag.add(tags);
         pathNodesRef.current = sids || [];
         console.log(`✅ Created ${sids?.length || 0} path dot tags`, sids);
@@ -888,8 +887,8 @@ const TourViewer = () => {
           label: "•",
           description: "",
           anchorPosition: { x: c.x, y: c.y, z: c.z },
-          stemVector: { x: 0, y: 0.15, z: 0 },
-          color: { r: 1, g: 0.2, b: 0.3 },
+          stemVector: { x: 0, y: 0.5, z: 0 },
+          color: { r: 0.4, g: 0.6, b: 1.0 },
         }));
         console.log(`📍 Adding ${tags.length} path dots via Tag.add...`);
         const sids = await sdk.Tag.add(tags);
@@ -996,26 +995,36 @@ const TourViewer = () => {
       // 2. Get current camera position (no sweeps needed)
       let camPos: { x: number; y: number; z: number } | null = null;
       try {
-        camPos = await new Promise<{ x: number; y: number; z: number } | null>((resolve) => {
-          const timeout = setTimeout(() => { console.log("⏰ Camera.pose timeout"); resolve(null); }, 3000);
-          const sub = sdk.Camera.pose.subscribe((pose: any) => {
-            clearTimeout(timeout);
-            try { sub?.cancel?.(); sub?.unsubscribe?.(); } catch {}
-            if (pose?.position) {
-              resolve({ x: pose.position.x, y: pose.position.y, z: pose.position.z });
-            } else {
-              resolve(null);
-            }
+        // Method A: getPose() one-shot (most reliable)
+        if (sdk.Camera?.getPose) {
+          const pose = await sdk.Camera.getPose();
+          if (pose?.position) camPos = { x: pose.position.x, y: pose.position.y, z: pose.position.z };
+          console.log(`📍 Camera.getPose:`, camPos);
+        }
+        // Method B: pose observable subscribe
+        if (!camPos && sdk.Camera?.pose?.subscribe) {
+          camPos = await new Promise<{ x: number; y: number; z: number } | null>((resolve) => {
+            const timeout = setTimeout(() => { console.log("⏰ Camera.pose timeout"); resolve(null); }, 3000);
+            const sub = sdk.Camera.pose.subscribe((pose: any) => {
+              clearTimeout(timeout);
+              try { sub?.cancel?.(); sub?.unsubscribe?.(); } catch {}
+              resolve(pose?.position ? { x: pose.position.x, y: pose.position.y, z: pose.position.z } : null);
+            });
           });
-        });
-      } catch (e) { console.log("❌ Camera.pose failed:", e); }
-      console.log(`📍 Camera position:`, camPos);
+          console.log(`📍 Camera.pose.subscribe:`, camPos);
+        }
+      } catch (e) { console.log("❌ Camera position failed:", e); }
 
-      if (!camPos) { console.log("❌ WALK: No camera position"); return; }
+      if (!camPos) {
+        // Fallback: use tag position as both start and end (at least show dots near destination)
+        console.log("⚠️ No camera position — placing dots near tag only");
+        camPos = { x: tagPos.x + 3, y: tagPos.y, z: tagPos.z + 3 };
+      }
 
       // 3. Build straight-line path from camera to tag at floor level
-      // Use the lower Y value (floor level) for dots so they appear on the ground
-      const floorY = Math.min(camPos.y, tagPos.y) - 0.5;
+      // Camera Y is typically at eye height (~1.5m above floor)
+      // Subtract 1.3m from camera height to estimate floor level
+      const floorY = camPos.y - 1.3;
       const startPt = { x: camPos.x, y: floorY, z: camPos.z };
       const endPt = { x: tagPos.x, y: floorY, z: tagPos.z };
       console.log(`🗺️ Straight-line path: cam(${startPt.x.toFixed(1)},${startPt.z.toFixed(1)}) → tag(${endPt.x.toFixed(1)},${endPt.z.toFixed(1)})`);
