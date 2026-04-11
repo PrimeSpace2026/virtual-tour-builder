@@ -933,20 +933,20 @@ const TourViewer = () => {
     }
     if (started) ctx.stroke();
 
-    // --- Animated dots along the visible path ---
+    // --- Dots on every point (no gap / stem 0) ---
     const now = Date.now();
-    for (let i = startIdx; i < screenPts.length; i += 2) {
+    for (let i = startIdx; i < screenPts.length; i++) {
       const sp = screenPts[i];
       if (!sp.visible) continue;
       const pulse = 0.5 + 0.5 * Math.sin((now / 400) + i * 0.5);
-      const radius = 7 + pulse * 5;
+      const radius = 8 + pulse * 4;
       ctx.beginPath();
       ctx.arc(sp.x, sp.y, radius, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(100, 170, 255, ${0.4 + pulse * 0.4})`;
+      ctx.fillStyle = `rgba(100, 170, 255, ${0.5 + pulse * 0.3})`;
       ctx.fill();
-      // White center for each dot
+      // White center
       ctx.beginPath();
-      ctx.arc(sp.x, sp.y, radius * 0.4, 0, Math.PI * 2);
+      ctx.arc(sp.x, sp.y, radius * 0.35, 0, Math.PI * 2);
       ctx.fillStyle = `rgba(220, 235, 255, ${0.6 + pulse * 0.3})`;
       ctx.fill();
     }
@@ -1266,7 +1266,7 @@ const TourViewer = () => {
       // 4. Build interpolated path at floor level for the canvas line
       const floorY = camPos.y - 1.5; // actual floor level (~1.5m below eye)
       const floorPath = pathWaypoints.map(p => ({ x: p.x, y: floorY, z: p.z }));
-      const pathPoints = interpolatePath(floorPath, 0.5);
+      const pathPoints = interpolatePath(floorPath, 0.3);
       console.log(`📍 Path: ${pathPoints.length} points along ${pathWaypoints.length} waypoints`);
 
       // 5. Set UI state
