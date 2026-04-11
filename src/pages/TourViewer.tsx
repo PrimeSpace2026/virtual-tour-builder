@@ -369,6 +369,12 @@ const TourViewer = () => {
   });
   const [showCart, setShowCart] = useState(false);
 
+  // Navigation path state (walk-to-tag with floor path)
+  const [navPath, setNavPath] = useState<{x: number; y: number; z: number; sid: string}[]>([]);
+  const [navTarget, setNavTarget] = useState<TourItemData | null>(null);
+  const [navStep, setNavStep] = useState(0);
+  const navCancelledRef = useRef(false);
+
   // Persist cart to localStorage
   useEffect(() => {
     try {
@@ -765,92 +771,184 @@ const TourViewer = () => {
         setIframeLoaded(false);
       };
 
-      // Primary: fly to tag using SDK Camera + show custom popup
+      // Helper: get all sweeps as array
+      const getSweeps = (sdk: any): Promise<any[]> =>
+        new Promise((resolve) => {
+          const timeout = setTimeout(() => resolve([]), 3000);
+          const sub = sdk.Sweep.data.subscribe({
+            onCollectionUpdated: (c: any) => {
+              const arr: any[] = [];
+              if (c && typeof c.forEach === "function") c.forEach((v: any, k: any) => { if (v.position) arr.push({ ...v, sid: k }); });
+              clearTimeout(timeout);
+              try { sub?.cancel?.(); } catch {}
+              resolve(arr);
+            },
+          });
+        });
+
+      // Helper: get tag position
+      const getTagPos = async (sdk: any, sid: string) => {
+        try {
+          const tags = await new Promise<any[]>((resolve) => {
+            const timeout = setTimeout(() => resolve([]), 3000);
+            const sub = sdk.Tag.data.subscribe({
+              onCollectionUpdated: (c: any) => {
+                const arr: any[] = [];
+                if (c && typeof c.forEach === "function") c.forEach((v: any, k: any) => arr.push({ ...v, sid: k }));
+                clearTimeout(timeout);
+                try { sub?.cancel?.(); } catch {}
+                resolve(arr);
+              },
+            });
+          });
+          const found = tags.find((t: any) => t.sid === sid);
+          return found?.anchorPosition || null;
+        } catch { return null; }
+      };
+
+      // Helper: get current sweep SID
+      const getCurrentSweep = (sdk: any): Promise<string | null> =>
+        new Promise((resolve) => {
+          const timeout = setTimeout(() => resolve(null), 2000);
+          const sub = sdk.Sweep.current.subscribe((s: any) => {
+            clearTimeout(timeout);
+            try { sub?.cancel?.(); sub?.unsubscribe?.(); } catch {}
+            resolve(s?.sid || null);
+          });
+        });
+
+      // Helper: build shortest path through sweeps (BFS on neighbor graph)
+      const buildPath = (sweeps: any[], startSid: string, targetPos: {x: number; y: number; z: number}) => {
+        // Find nearest sweep to target
+        let endSid = startSid;
+        let minDist = Infinity;
+        for (const s of sweeps) {
+          const dx = s.position.x - targetPos.x;
+          const dy = s.position.y - targetPos.y;
+          const dz = s.position.z - targetPos.z;
+          const d = dx * dx + dy * dy + dz * dz;
+          if (d < minDist) { minDist = d; endSid = s.sid; }
+        }
+        if (startSid === endSid) return [sweeps.find((s: any) => s.sid === endSid)];
+
+        // Build adjacency graph — connect sweeps within ~5m of each other
+        const sweepMap = new Map(sweeps.map((s: any) => [s.sid, s]));
+        const neighbors = new Map<string, string[]>();
+        for (const a of sweeps) {
+          const adj: string[] = [];
+          for (const b of sweeps) {
+            if (a.sid === b.sid) continue;
+            const dx = a.position.x - b.position.x;
+            const dz = a.position.z - b.position.z;
+            const dy = a.position.y - b.position.y;
+            if (dx * dx + dy * dy + dz * dz < 25) adj.push(b.sid); // 5m radius
+          }
+          neighbors.set(a.sid, adj);
+        }
+
+        // BFS
+        const visited = new Set<string>([startSid]);
+        const parent = new Map<string, string>();
+        const queue = [startSid];
+        while (queue.length > 0) {
+          const cur = queue.shift()!;
+          if (cur === endSid) break;
+          for (const n of (neighbors.get(cur) || [])) {
+            if (!visited.has(n)) {
+              visited.add(n);
+              parent.set(n, cur);
+              queue.push(n);
+            }
+          }
+        }
+
+        // Reconstruct path
+        const path: any[] = [];
+        let cur: string | undefined = endSid;
+        while (cur && cur !== startSid) {
+          const s = sweepMap.get(cur);
+          if (s) path.unshift(s);
+          cur = parent.get(cur);
+        }
+        // Add start
+        const startSweep = sweepMap.get(startSid);
+        if (startSweep) path.unshift(startSweep);
+
+        // If BFS failed (disconnected graph), fallback to direct path
+        if (path.length <= 1) {
+          const end = sweepMap.get(endSid);
+          return end ? [end] : [];
+        }
+        return path;
+      };
+
+      // Primary: walk along sweep path to tag
       if (sdk) {
-        const tryNavigate = async () => {
+        const doWalk = async () => {
           try {
-            // 1. Get tag position from Tag.data observable
-            let anchorPos: any = null;
-            try {
-              const tagData = await new Promise<any[]>((resolve) => {
-                const timeout = setTimeout(() => resolve([]), 3000);
-                const sub = sdk.Tag.data.subscribe({
-                  onCollectionUpdated: (collection: any) => {
-                    const items: any[] = [];
-                    if (collection && typeof collection.forEach === "function") {
-                      collection.forEach((v: any, k: any) => items.push({ ...v, sid: k }));
-                    }
-                    clearTimeout(timeout);
-                    try { sub?.cancel?.(); } catch {}
-                    resolve(items);
-                  },
-                });
-              });
-              const found = tagData.find((t: any) => t.sid === resolvedSid);
-              if (found?.anchorPosition) anchorPos = found.anchorPosition;
-              console.log(`📍 Tag ${resolvedSid} position:`, anchorPos);
-            } catch (e) {
-              console.log("Tag.data failed:", e);
-            }
+            // Cancel any previous navigation
+            navCancelledRef.current = true;
+            await new Promise((r) => setTimeout(r, 100));
+            navCancelledRef.current = false;
 
-            // 2. If we have the position, use Camera.pose to look at the tag
-            if (anchorPos && sdk.Camera?.pose) {
-              // First get current camera pose
-              const currentPose = await sdk.Camera.pose.pipe(
-                (source: any) => new Promise<any>((resolve) => {
-                  const sub = source.subscribe({
-                    next: (pose: any) => { resolve(pose); sub?.unsubscribe?.(); },
-                  });
-                })
-              ).catch(() => null);
+            const [tagPos, sweeps, currentSweepSid] = await Promise.all([
+              getTagPos(sdk, resolvedSid),
+              getSweeps(sdk),
+              getCurrentSweep(sdk),
+            ]);
 
-              if (currentPose?.position) {
-                // Calculate look-at rotation from current position to tag
-                const dx = anchorPos.x - currentPose.position.x;
-                const dy = anchorPos.y - currentPose.position.y;
-                const dz = anchorPos.z - currentPose.position.z;
-                const yaw = Math.atan2(dx, dz) * (180 / Math.PI);
-                const pitch = Math.atan2(dy, Math.sqrt(dx * dx + dz * dz)) * (180 / Math.PI);
-
-                // Use Camera.setRotation to smoothly look at the tag
-                if (sdk.Camera?.setRotation) {
-                  console.log(`🎯 Camera.setRotation → looking at tag ${resolvedSid}`);
-                  await sdk.Camera.setRotation({ x: pitch, y: yaw }, { speed: 1.5 });
-                  console.log(`✅ Camera rotated to face tag`);
-                  setSelectedItem(item);
-                  return;
-                }
-              }
-            }
-
-            // 3. Fallback: use Mattertag.navigateToTag + cover with popup
-            if (sdk.Mattertag?.navigateToTag) {
-              setSelectedItem(item); // Show popup first to cover native one
-              const fly = sdk.Mattertag.Transition?.FLY_IN || "transition.fly";
-              console.log(`🎯 Mattertag.navigateToTag("${resolvedSid}", ${fly})`);
-              await sdk.Mattertag.navigateToTag(resolvedSid, fly);
-              console.log(`✅ Flew to tag: ${resolvedSid}`);
-              const closeNative = () => {
-                try { sdk.Mattertag?.close?.(resolvedSid); } catch {}
-                try { sdk.Tag?.close?.(resolvedSid); } catch {}
-              };
-              closeNative();
-              setTimeout(closeNative, 300);
-              setTimeout(closeNative, 800);
+            if (!tagPos || sweeps.length === 0 || !currentSweepSid) {
+              console.log("⚠️ Missing data for path navigation, using iframe");
+              iframeFallback();
+              setSelectedItem(item);
               return;
             }
 
-            // 4. Last resort: iframe deep link
-            console.log("⚠️ No SDK method available, using iframe");
-            iframeFallback();
-            setSelectedItem(item);
+            // Build path
+            const path = buildPath(sweeps, currentSweepSid, tagPos);
+            console.log(`🗺️ Navigation path: ${path.length} sweeps → tag ${resolvedSid}`);
+
+            // Set path state for visual overlay
+            setNavPath(path.map((s: any) => ({ x: s.position.x, y: s.position.y, z: s.position.z, sid: s.sid })));
+            setNavTarget(item);
+            setNavStep(0);
+
+            // Walk sweep by sweep (skip first — we're already there)
+            const transition = sdk.Sweep.Transition?.FLY || "transition.fly";
+            for (let i = 1; i < path.length; i++) {
+              if (navCancelledRef.current) { console.log("🚫 Navigation cancelled"); break; }
+              setNavStep(i);
+              console.log(`🚶 Step ${i}/${path.length - 1} → sweep ${path[i].sid}`);
+
+              // Calculate look direction toward next sweep (or tag at final step)
+              const lookTarget = i < path.length - 1 ? path[i + 1].position : tagPos;
+              const dx = lookTarget.x - path[i].position.x;
+              const dy = lookTarget.y - path[i].position.y;
+              const dz = lookTarget.z - path[i].position.z;
+              const yaw = Math.atan2(dx, dz) * (180 / Math.PI);
+              const pitch = Math.atan2(dy, Math.sqrt(dx * dx + dz * dz)) * (180 / Math.PI);
+
+              await sdk.Sweep.moveTo(path[i].sid, {
+                rotation: { x: pitch, y: yaw },
+                transition: transition as any,
+                transitionTime: 800,
+              });
+            }
+
+            if (!navCancelledRef.current) {
+              console.log(`✅ Arrived near tag ${resolvedSid}`);
+              // Clear nav path and show popup
+              setTimeout(() => { setNavPath([]); setNavTarget(null); setNavStep(0); }, 500);
+              setSelectedItem(item);
+            }
           } catch (err) {
-            console.log("SDK navigate failed, using iframe:", err);
+            console.log("Path navigation failed, using iframe:", err);
+            setNavPath([]); setNavTarget(null); setNavStep(0);
             iframeFallback();
             setSelectedItem(item);
           }
         };
-        tryNavigate();
+        doWalk();
       } else {
         // No SDK — use iframe deep link + show custom popup
         iframeFallback();
@@ -1039,6 +1137,63 @@ const TourViewer = () => {
           referrerPolicy="no-referrer-when-downgrade"
           onLoad={() => setIframeLoaded(true)}
         />
+        {/* ===== NAVIGATION PATH INDICATOR ===== */}
+        <AnimatePresence>
+          {navPath.length > 0 && navTarget && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="absolute top-4 left-1/2 -translate-x-1/2 z-[15] pointer-events-auto"
+            >
+              <div className="bg-black/80 backdrop-blur-xl border border-white/20 rounded-2xl px-5 py-3 flex items-center gap-4 shadow-2xl shadow-purple-500/10">
+                {/* Animated walking icon */}
+                <div className="relative w-10 h-10 flex items-center justify-center">
+                  <motion.div
+                    animate={{ scale: [1, 1.3, 1] }}
+                    transition={{ duration: 1.2, repeat: Infinity }}
+                    className="absolute inset-0 bg-purple-500/20 rounded-full"
+                  />
+                  <svg className="w-5 h-5 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                  </svg>
+                </div>
+
+                <div className="flex flex-col">
+                  <span className="text-white/90 text-sm font-semibold truncate max-w-[200px]">
+                    {navTarget.name}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-white/50 text-xs">
+                      Step {navStep}/{navPath.length - 1}
+                    </span>
+                    {/* Progress dots */}
+                    <div className="flex gap-0.5">
+                      {navPath.map((_, i) => (
+                        <motion.div
+                          key={i}
+                          className={`w-1.5 h-1.5 rounded-full ${i <= navStep ? 'bg-purple-400' : 'bg-white/20'}`}
+                          animate={i === navStep ? { scale: [1, 1.5, 1] } : {}}
+                          transition={{ duration: 0.6, repeat: Infinity }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Cancel button */}
+                <button
+                  onClick={() => { navCancelledRef.current = true; setNavPath([]); setNavTarget(null); setNavStep(0); }}
+                  className="ml-2 w-7 h-7 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+                >
+                  <svg className="w-3.5 h-3.5 text-white/60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
         {/* 
           PrimeSpace overlay — covers Matterport branding at bottom-right
           Always visible (including clean mode) to hide Matterport logo
