@@ -850,14 +850,14 @@ const TourViewer = () => {
             setNavPath([{ x: nearest.position.x, y: nearest.position.y, z: nearest.position.z, sid: nearest.sid }]);
             setNavStep(1);
 
-            const transition = sdk.Sweep.Transition?.FLY || "transition.fly";
-            console.log(`🎯 FLY to sweep ${nearest.sid} → looking at tag ${resolvedSid}`);
+            const transition = sdk.Sweep.Transition?.INSTANT || sdk.Sweep.Transition?.TELEPORT || "transition.instant";
+            console.log(`🎯 MOVE to sweep ${nearest.sid} → looking at tag ${resolvedSid}`);
             await sdk.Sweep.moveTo(nearest.sid, {
               rotation: { x: pitch, y: yaw },
               transition: transition as any,
-              transitionTime: 1500,
+              transitionTime: 300,
             });
-            console.log(`✅ Flew to sweep ${nearest.sid} near tag ${resolvedSid}`);
+            console.log(`✅ Moved to sweep ${nearest.sid} near tag ${resolvedSid}`);
 
             // Clear nav and show popup
             setNavPath([]); setNavTarget(null); setNavStep(0);
