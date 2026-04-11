@@ -779,6 +779,16 @@ const TourViewer = () => {
             console.log(`🎯 Mattertag.navigateToTag("${resolvedSid}", ${fly})`);
             await sdk.Mattertag.navigateToTag(resolvedSid, fly);
             console.log(`✅ Flew to tag: ${resolvedSid}`);
+            // Close native popup immediately + delayed retries
+            const closeNative = () => {
+              try { sdk.Mattertag?.close?.(resolvedSid); } catch {}
+              try { sdk.Tag?.close?.(resolvedSid); } catch {}
+            };
+            closeNative();
+            setTimeout(closeNative, 100);
+            setTimeout(closeNative, 300);
+            setTimeout(closeNative, 600);
+            setTimeout(closeNative, 1000);
             setSelectedItem(item);
           } catch (err) {
             console.log("SDK fly failed, using iframe:", err);
