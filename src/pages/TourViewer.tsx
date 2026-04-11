@@ -875,11 +875,11 @@ const TourViewer = () => {
           const c = dotCoords[i];
           try {
             const sids = await sdk.Mattertag.add([{
-              label: " ",
+              label: "●",
               description: "",
               anchorPosition: { x: c.x, y: c.y, z: c.z },
-              stemVector: { x: 0, y: 0.01, z: 0 }, // minimal stem — nearly flat but visible
-              color: { r: 0.3, g: 0.5, b: 1.0 },
+              stemVector: { x: 0, y: -1.2, z: 0 }, // stem goes DOWN from eye level toward floor
+              color: { r: 0.2, g: 0.5, b: 1.0 },
               floorIndex: 0,
             }]);
             if (sids?.[0]) addedSids.push(sids[0]);
@@ -908,11 +908,11 @@ const TourViewer = () => {
           const c = dotCoords[i];
           try {
             const sids = await sdk.Tag.add([{
-              label: " ",
+              label: "●",
               description: "",
               anchorPosition: { x: c.x, y: c.y, z: c.z },
-              stemVector: { x: 0, y: 0.01, z: 0 },
-              color: { r: 0.3, g: 0.5, b: 1.0 },
+              stemVector: { x: 0, y: -1.2, z: 0 },
+              color: { r: 0.2, g: 0.5, b: 1.0 },
             }]);
             if (sids?.[0]) addedSids.push(sids[0]);
           } catch { break; }
@@ -1144,15 +1144,13 @@ const TourViewer = () => {
         pathWaypoints.push({ x: tagPos.x, y: tagPos.y, z: tagPos.z });
       }
 
-      // 4. Place dots at floor level along the path
-      // Use each waypoint's own Y to estimate floor (tag Y minus ~1m offset for wall-mounted tags)
-      // Find the lowest Y among all tags to estimate floor level
-      let lowestTagY = Infinity;
-      allTagPositions.forEach((pos) => { if (pos.y < lowestTagY) lowestTagY = pos.y; });
-      const floorY = lowestTagY < Infinity ? lowestTagY - 0.3 : camPos.y - 1.3;
-      console.log(`📐 Floor Y estimated: ${floorY.toFixed(2)} (lowest tag Y: ${lowestTagY.toFixed(2)})`);
-      const floorPath = pathWaypoints.map(p => ({ x: p.x, y: floorY, z: p.z }));
-      const dots = interpolatePath(floorPath, 0.5);
+      // 4. Place dots along the path
+      // Use anchorPosition at camera Y level (eye height) — the stemVector pulls disc down toward floor
+      // This ensures dots are always visible, not buried underground
+      const dotY = camPos.y; // eye-level Y — stem goes down from here
+      console.log(`📐 Dot anchor Y: ${dotY.toFixed(2)} (camera height)`);
+      const floorPath = pathWaypoints.map(p => ({ x: p.x, y: dotY, z: p.z }));
+      const dots = interpolatePath(floorPath, 1.0); // 1m spacing
       await createPathDots(dots);
       console.log(`📍 Drew ${dots.length} dots along ${pathWaypoints.length}-waypoint path`);
 
@@ -1235,13 +1233,12 @@ const TourViewer = () => {
           const addFn = sdk2?.Mattertag?.add || sdk2?.Tag?.add;
           if (addFn) {
             const newTags = toRestore.map(c => ({
-              label: "",
+              label: "●",
               description: "",
               anchorPosition: { x: c.x, y: c.y, z: c.z },
-              stemVector: { x: 0, y: 0, z: 0 },
-              color: { r: 0.4, g: 0.6, b: 1.0 },
+              stemVector: { x: 0, y: -1.2, z: 0 },
+              color: { r: 0.2, g: 0.5, b: 1.0 },
               floorIndex: 0,
-              stemVisible: false,
             }));
             try {
               const newSids = await (sdk2.Mattertag?.add || sdk2.Tag?.add)!(newTags);
