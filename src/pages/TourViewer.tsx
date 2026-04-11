@@ -538,12 +538,12 @@ const TourViewer = () => {
     return () => { sendDuration(); window.removeEventListener("beforeunload", sendDuration); };
   }, [tour?.id]);
 
-  // SDK: only works on localhost (Matterport free plan restricts to local domains)
+  // SDK: only connect on localhost (key not authorized on production domains yet)
   const isLocalDev = typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
 
-  // SDK: connect on any domain (key authorized in Matterport portal)
   useEffect(() => {
     if (!iframeLoaded || !iframeRef.current || !tour?.tourUrl) return;
+    if (!isLocalDev) { setSdkFailed(true); return; }
     if (sdkAttemptsRef.current >= 1) return;
     sdkAttemptsRef.current = 1;
 
