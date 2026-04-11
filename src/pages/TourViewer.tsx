@@ -701,18 +701,7 @@ const TourViewer = () => {
           sdk.on(sdk.Tag.Event.CLICK, (tagSid: string) => handleTagClick(sdk, tagSid));
         }
 
-        // Prevent native Matterport popup from appearing on product tags
-        try {
-          if (sdk.Tag?.allowAction !== undefined) {
-            sdk.Tag.allowAction(false);
-          }
-        } catch {}
-        // Alternative: use Mattertag.preventAction for older SDK
-        try {
-          if (sdk.Mattertag?.preventAction) {
-            sdk.Mattertag.preventAction(true);
-          }
-        } catch {}
+
       } catch (err) {
         if (cancelled) return;
         console.log("⚠️ SDK échoué sur localhost:", err);
@@ -794,19 +783,30 @@ const TourViewer = () => {
             }
 
             if (anchorPos) {
-              // 2. Get all sweeps
-              const sweeps = await new Promise<any[]>((resolve, reject) => {
-                const timeout = setTimeout(() => reject(new Error("Sweep timeout")), 5000);
+              // 2. Get all sweeps — use Promise-wrapped observable with immediate check
+              const sweeps: any[] = [];
+              await new Promise<void>((resolve) => {
+                const timeout = setTimeout(() => resolve(), 3000);
                 const sub = sdk.Sweep.data.subscribe({
                   onCollectionUpdated: (collection: any) => {
-                    const items: any[] = [];
                     if (collection && typeof collection.forEach === "function") {
-                      collection.forEach((v: any, k: any) => items.push({ ...v, sid: k }));
+                      collection.forEach((v: any, k: any) => {
+                        if (v.position) sweeps.push({ ...v, sid: k });
+                      });
                     }
-                    if (items.length > 0) { clearTimeout(timeout); sub?.cancel?.(); resolve(items); }
+                    clearTimeout(timeout);
+                    try { sub?.cancel?.(); } catch {}
+                    resolve();
                   },
                 });
               });
+
+              if (sweeps.length === 0) {
+                console.log("⚠️ No sweeps found, using iframe");
+                iframeFallback();
+                setSelectedItem(item);
+                return;
+              }
 
               // 3. Find nearest sweep to the tag
               let nearest = sweeps[0];
