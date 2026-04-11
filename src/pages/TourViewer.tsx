@@ -1861,16 +1861,16 @@ const TourViewer = () => {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 onClick={() => setNavChoice(null)}
-                className="absolute inset-0 bg-black/50 backdrop-blur-sm z-[35]"
+                className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[35]"
               />
               <motion.div
                 initial={{ opacity: 0, scale: 0.9, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.9, y: 20 }}
                 transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[36] w-[min(280px,calc(100vw-2rem))]"
+                className="fixed inset-0 z-[36] flex items-center justify-center p-4 pointer-events-none"
               >
-                <div className="bg-gradient-to-b from-[#1a1a2e] to-[#0f0f1a] border border-white/15 rounded-2xl p-5 shadow-2xl shadow-purple-500/10">
+                <div className="bg-gradient-to-b from-[#1a1a2e] to-[#0f0f1a] border border-white/15 rounded-2xl p-5 shadow-2xl shadow-purple-500/10 w-full max-w-[280px] pointer-events-auto">
                   <p className="text-white/90 text-sm font-semibold text-center mb-1">Navigation</p>
                   <p className="text-white/40 text-xs text-center mb-5 truncate">{navChoice.label}</p>
 
@@ -1924,16 +1924,16 @@ const TourViewer = () => {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 onClick={() => setNavArrived(null)}
-                className="absolute inset-0 bg-black/40 backdrop-blur-sm z-[40]"
+                className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[40]"
               />
               <motion.div
                 initial={{ opacity: 0, scale: 0.8, y: 30 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.8, y: 30 }}
                 transition={{ type: "spring", damping: 20, stiffness: 300 }}
-                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[41] w-[min(300px,calc(100vw-2rem))]"
+                className="fixed inset-0 z-[41] flex items-center justify-center p-4 pointer-events-none"
               >
-                <div className="bg-gradient-to-b from-[#0d2137] to-[#0a1628] border border-blue-400/30 rounded-2xl p-6 shadow-2xl shadow-blue-500/20 text-center">
+                <div className="bg-gradient-to-b from-[#0d2137] to-[#0a1628] border border-blue-400/30 rounded-2xl p-6 shadow-2xl shadow-blue-500/20 text-center w-full max-w-[300px] pointer-events-auto">
                   {/* Success icon */}
                   <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
                     <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
