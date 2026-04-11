@@ -149,7 +149,7 @@ interface MenuSectionProps {
   iconKey: string;
   items: { name: string; iconKey: string; sub?: string; tagSid?: string }[];
   amenities?: string[];
-  onItemClick?: (tagSid: string) => void;
+  onItemClick?: (tagSid: string, label?: string) => void;
 }
 
 const HotelMenuSection = ({ title, iconKey, items, amenities, onItemClick }: MenuSectionProps) => {
@@ -181,7 +181,7 @@ const HotelMenuSection = ({ title, iconKey, items, amenities, onItemClick }: Men
             return (
               <div
                 key={i}
-                onClick={() => hasTag && onItemClick?.(item.tagSid!)}
+                onClick={() => hasTag && onItemClick?.(item.tagSid!, item.name)}
                 className={`flex items-center gap-3 px-4 py-2.5 border-t border-white/[0.05] transition-colors ${hasTag ? "cursor-pointer hover:bg-white/[0.08]" : "hover:bg-white/[0.06] cursor-default"}`}
               >
                 <ItemIcon className="w-4 h-4 text-white/40 shrink-0" />
@@ -374,6 +374,10 @@ const TourViewer = () => {
   const [navTarget, setNavTarget] = useState<TourItemData | null>(null);
   const [navStep, setNavStep] = useState(0);
   const navCancelledRef = useRef(false);
+  const pathNodesRef = useRef<any[]>([]); // 3D scene nodes for navigation dots
+
+  // Navigation choice modal state (Fly vs Navigate)
+  const [navChoice, setNavChoice] = useState<{ tagSid: string; label: string } | null>(null);
 
   // Persist cart to localStorage
   useEffect(() => {
@@ -820,6 +824,262 @@ const TourViewer = () => {
     setIframeLoaded(false);
   }, [tour?.tourUrl]);
 
+  // ===== 3D NAVIGATION PATH HELPERS =====
+
+  // Clear all 3D dot nodes from the scene
+  const clearPathNodes = useCallback(() => {
+    for (const node of pathNodesRef.current) {
+      try { node.stop(); } catch {}
+    }
+    pathNodesRef.current = [];
+  }, []);
+
+  // Create 3D red dots along a path of coordinates
+  const createPathDots = useCallback(async (coords: {x: number; y: number; z: number}[]) => {
+    const sdk = sdkRef.current;
+    if (!sdk?.Scene?.createNode) return;
+
+    clearPathNodes();
+
+    for (let i = 0; i < coords.length; i++) {
+      try {
+        const node = sdk.Scene.createNode();
+        const comp = node.addComponent("mp.objLoader", {
+          url: "", // empty — we use gltfLoader or a built-in
+          localScale: { x: 0.15, y: 0.02, z: 0.15 },
+        });
+
+        // Use a simple sphere/disc via the SDK's built-in primitives
+        // Fallback: use createObjects for a flat disc
+        node.position = {
+          x: coords[i].x,
+          y: coords[i].y + 0.05, // slightly above floor to avoid z-fighting
+          z: coords[i].z,
+        };
+        node.start();
+        pathNodesRef.current.push(node);
+      } catch (e) {
+        // Scene.createNode may not be available in all SDK versions
+        console.log("Could not create path dot node:", e);
+        break;
+      }
+    }
+  }, [clearPathNodes]);
+
+  // Interpolate points along a path for smooth dot placement
+  const interpolatePath = (points: {x: number; y: number; z: number}[], spacing: number = 0.8) => {
+    if (points.length < 2) return points;
+    const result: {x: number; y: number; z: number}[] = [points[0]];
+    for (let i = 1; i < points.length; i++) {
+      const prev = points[i - 1];
+      const curr = points[i];
+      const dx = curr.x - prev.x;
+      const dy = curr.y - prev.y;
+      const dz = curr.z - prev.z;
+      const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+      const steps = Math.floor(dist / spacing);
+      for (let s = 1; s <= steps; s++) {
+        const t = s / (steps + 1);
+        result.push({ x: prev.x + dx * t, y: prev.y + dy * t, z: prev.z + dz * t });
+      }
+      result.push(curr);
+    }
+    return result;
+  };
+
+  // FLY directly to a tag using Mattertag.navigateToTag
+  const flyToTag = useCallback((tagSid: string) => {
+    const sdk = sdkRef.current;
+    if (!sdk?.Mattertag?.navigateToTag) {
+      // Fallback to iframe
+      navigateToMenuTag(tagSid);
+      return;
+    }
+    const tagKey = tagSid.trim().toLowerCase();
+    const resolvedSid = tagsMapRef.current.get(tagKey) || savedTagsMapRef.current.get(tagKey) || tagSid;
+    const fly = sdk.Mattertag.Transition?.FLY_IN || "transition.fly";
+    console.log(`🎯 FLY to tag: ${resolvedSid}`);
+    sdk.Mattertag.navigateToTag(resolvedSid, fly).then(() => {
+      console.log(`✅ Flew to tag: ${resolvedSid}`);
+      const closeNative = () => {
+        try { sdk.Mattertag?.close?.(resolvedSid); } catch {}
+        try { sdk.Tag?.close?.(resolvedSid); } catch {}
+      };
+      closeNative();
+      setTimeout(closeNative, 200);
+      setTimeout(closeNative, 500);
+    }).catch((err: any) => {
+      console.log("FLY failed, iframe fallback:", err);
+      navigateToMenuTag(tagSid);
+    });
+    setNavChoice(null);
+  }, [navigateToMenuTag]);
+
+  // WALK to a tag — step-by-step through sweep points with 3D dots on floor
+  const walkToTag = useCallback(async (tagSid: string) => {
+    const sdk = sdkRef.current;
+    setNavChoice(null);
+    if (!sdk) { navigateToMenuTag(tagSid); return; }
+
+    const tagKey = tagSid.trim().toLowerCase();
+    const resolvedSid = tagsMapRef.current.get(tagKey) || savedTagsMapRef.current.get(tagKey) || tagSid;
+
+    try {
+      navCancelledRef.current = true;
+      await new Promise((r) => setTimeout(r, 50));
+      navCancelledRef.current = false;
+
+      // 1. Get tag position
+      let tagPos: any = null;
+      const tagData = await new Promise<any[]>((resolve) => {
+        const timeout = setTimeout(() => resolve([]), 3000);
+        const sub = sdk.Tag.data.subscribe({
+          onCollectionUpdated: (c: any) => {
+            const arr: any[] = [];
+            if (c && typeof c.forEach === "function") c.forEach((v: any, k: any) => arr.push({ ...v, sid: k }));
+            clearTimeout(timeout);
+            try { sub?.cancel?.(); } catch {}
+            resolve(arr);
+          },
+        });
+      });
+      const foundTag = tagData.find((t: any) => t.sid === resolvedSid);
+      if (foundTag?.anchorPosition) tagPos = foundTag.anchorPosition;
+
+      if (!tagPos) { console.log("⚠️ No tag position"); navigateToMenuTag(tagSid); return; }
+
+      // 2. Get all sweeps
+      const sweeps: any[] = [];
+      await new Promise<void>((resolve) => {
+        const timeout = setTimeout(() => resolve(), 3000);
+        const sub = sdk.Sweep.data.subscribe({
+          onCollectionUpdated: (c: any) => {
+            if (c && typeof c.forEach === "function") {
+              c.forEach((v: any, k: any) => { if (v.position) sweeps.push({ ...v, sid: k }); });
+            }
+            clearTimeout(timeout);
+            try { sub?.cancel?.(); } catch {}
+            resolve();
+          },
+        });
+      });
+
+      if (sweeps.length === 0) { navigateToMenuTag(tagSid); return; }
+
+      // 3. Get current sweep
+      const currentSid = await new Promise<string | null>((resolve) => {
+        const timeout = setTimeout(() => resolve(null), 2000);
+        const sub = sdk.Sweep.current.subscribe((s: any) => {
+          clearTimeout(timeout);
+          try { sub?.cancel?.(); sub?.unsubscribe?.(); } catch {}
+          resolve(s?.sid || null);
+        });
+      });
+      if (!currentSid) { navigateToMenuTag(tagSid); return; }
+
+      // 4. Find nearest sweep to the tag
+      let endSweep = sweeps[0];
+      let minDist = Infinity;
+      for (const s of sweeps) {
+        const dx = s.position.x - tagPos.x;
+        const dy = s.position.y - tagPos.y;
+        const dz = s.position.z - tagPos.z;
+        const d = dx * dx + dy * dy + dz * dz;
+        if (d < minDist) { minDist = d; endSweep = s; }
+      }
+
+      // 5. BFS pathfinding through sweep graph
+      const sweepMap = new Map(sweeps.map((s: any) => [s.sid, s]));
+      const neighbors = new Map<string, string[]>();
+      for (const a of sweeps) {
+        const adj: string[] = [];
+        for (const b of sweeps) {
+          if (a.sid === b.sid) continue;
+          const dx = a.position.x - b.position.x;
+          const dy = a.position.y - b.position.y;
+          const dz = a.position.z - b.position.z;
+          if (dx * dx + dy * dy + dz * dz < 25) adj.push(b.sid);
+        }
+        neighbors.set(a.sid, adj);
+      }
+
+      const visited = new Set<string>([currentSid]);
+      const parent = new Map<string, string>();
+      const queue = [currentSid];
+      while (queue.length > 0) {
+        const cur = queue.shift()!;
+        if (cur === endSweep.sid) break;
+        for (const n of (neighbors.get(cur) || [])) {
+          if (!visited.has(n)) { visited.add(n); parent.set(n, cur); queue.push(n); }
+        }
+      }
+
+      // Reconstruct path
+      const path: any[] = [];
+      let cur: string | undefined = endSweep.sid;
+      while (cur && cur !== currentSid) {
+        const s = sweepMap.get(cur);
+        if (s) path.unshift(s);
+        cur = parent.get(cur);
+      }
+      const startSweep = sweepMap.get(currentSid);
+      if (startSweep) path.unshift(startSweep);
+
+      if (path.length <= 1) {
+        // Direct fly if BFS fails
+        flyToTag(tagSid);
+        return;
+      }
+
+      console.log(`🗺️ Walk path: ${path.length} sweeps → tag ${resolvedSid}`);
+
+      // 6. Create interpolated 3D dots along the path
+      const pathCoords = path.map((s: any) => ({ x: s.position.x, y: s.position.y, z: s.position.z }));
+      const dots = interpolatePath(pathCoords, 0.6);
+      createPathDots(dots);
+
+      // 7. Set UI indicator
+      setNavPath(path.map((s: any) => ({ x: s.position.x, y: s.position.y, z: s.position.z, sid: s.sid })));
+      setNavTarget({ id: 0, tourId: 0, name: foundTag?.label || tagSid, tagSid: resolvedSid } as TourItemData);
+      setNavStep(0);
+
+      // 8. Walk sweep-by-sweep
+      const transition = sdk.Sweep.Transition?.FLY || "transition.fly";
+      for (let i = 1; i < path.length; i++) {
+        if (navCancelledRef.current) { console.log("🚫 Walk cancelled"); break; }
+        setNavStep(i);
+
+        const lookTarget = i < path.length - 1 ? path[i + 1].position : tagPos;
+        const dx = lookTarget.x - path[i].position.x;
+        const dy = lookTarget.y - path[i].position.y;
+        const dz = lookTarget.z - path[i].position.z;
+        const yaw = Math.atan2(dx, dz) * (180 / Math.PI);
+        const pitch = Math.atan2(dy, Math.sqrt(dx * dx + dz * dz)) * (180 / Math.PI);
+
+        await sdk.Sweep.moveTo(path[i].sid, {
+          rotation: { x: pitch, y: yaw },
+          transition: transition as any,
+          transitionTime: 800,
+        });
+      }
+
+      // 9. Cleanup
+      clearPathNodes();
+      setNavPath([]); setNavTarget(null); setNavStep(0);
+      console.log(`✅ Arrived at tag: ${resolvedSid}`);
+    } catch (err) {
+      console.log("Walk failed:", err);
+      clearPathNodes();
+      setNavPath([]); setNavTarget(null); setNavStep(0);
+      navigateToMenuTag(tagSid);
+    }
+  }, [navigateToMenuTag, flyToTag, clearPathNodes, createPathDots]);
+
+  // Show navigation choice modal (called from HotelMenuSection item click)
+  const showNavChoice = useCallback((tagSid: string, label?: string) => {
+    setNavChoice({ tagSid, label: label || tagSid });
+  }, []);
+
   // Navigate to a specific floor
   const navigateToFloor = useCallback((floorIndex: number) => {
     const sdk = sdkRef.current;
@@ -1040,6 +1300,69 @@ const TourViewer = () => {
                 </button>
               </div>
             </motion.div>
+          )}
+        </AnimatePresence>
+        {/* ===== NAVIGATION CHOICE MODAL (Fly vs Walk) ===== */}
+        <AnimatePresence>
+          {navChoice && (
+            <>
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setNavChoice(null)}
+                className="absolute inset-0 bg-black/50 backdrop-blur-sm z-[35]"
+              />
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[36] w-[280px]"
+              >
+                <div className="bg-gradient-to-b from-[#1a1a2e] to-[#0f0f1a] border border-white/15 rounded-2xl p-5 shadow-2xl shadow-purple-500/10">
+                  <p className="text-white/90 text-sm font-semibold text-center mb-1">Navigation</p>
+                  <p className="text-white/40 text-xs text-center mb-5 truncate">{navChoice.label}</p>
+
+                  <div className="flex flex-col gap-3">
+                    {/* Fly option */}
+                    <button
+                      onClick={() => flyToTag(navChoice.tagSid)}
+                      className="flex items-center gap-3 w-full px-4 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 transition-all shadow-lg shadow-purple-500/25 group"
+                    >
+                      <svg className="w-5 h-5 text-white shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                      </svg>
+                      <div className="text-left">
+                        <p className="text-white text-sm font-semibold">Fly</p>
+                        <p className="text-white/60 text-[10px]">Voler directement au tag</p>
+                      </div>
+                    </button>
+
+                    {/* Walk option */}
+                    <button
+                      onClick={() => walkToTag(navChoice.tagSid)}
+                      className="flex items-center gap-3 w-full px-4 py-3 rounded-xl bg-white/[0.08] hover:bg-white/[0.15] border border-white/10 hover:border-white/20 transition-all group"
+                    >
+                      <svg className="w-5 h-5 text-purple-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                      </svg>
+                      <div className="text-left">
+                        <p className="text-white/90 text-sm font-semibold">Navigate</p>
+                        <p className="text-white/40 text-[10px]">Marcher pas à pas avec chemin</p>
+                      </div>
+                    </button>
+                  </div>
+
+                  <button
+                    onClick={() => setNavChoice(null)}
+                    className="mt-4 w-full text-center text-white/30 text-xs hover:text-white/50 transition-colors"
+                  >
+                    Annuler
+                  </button>
+                </div>
+              </motion.div>
+            </>
           )}
         </AnimatePresence>
         {/* 
@@ -1387,7 +1710,7 @@ const TourViewer = () => {
                     return (
                       <div className="rounded-xl overflow-hidden border border-white/[0.06]">
                         {allSections.map((sec, i) => (
-                          <HotelMenuSection key={i} title={sec.title} iconKey={sec.iconKey} items={sec.items} amenities={sec.amenities} onItemClick={navigateToMenuTag} />
+                          <HotelMenuSection key={i} title={sec.title} iconKey={sec.iconKey} items={sec.items} amenities={sec.amenities} onItemClick={showNavChoice} />
                         ))}
                       </div>
                     );
@@ -1455,7 +1778,7 @@ const TourViewer = () => {
                         {allSections.length > 0 && (
                           <div className="rounded-xl overflow-hidden border border-white/[0.06]">
                             {allSections.map((sec, i) => (
-                              <HotelMenuSection key={i} title={sec.title} iconKey={sec.iconKey} items={sec.items} amenities={sec.amenities} onItemClick={navigateToMenuTag} />
+                              <HotelMenuSection key={i} title={sec.title} iconKey={sec.iconKey} items={sec.items} amenities={sec.amenities} onItemClick={showNavChoice} />
                             ))}
                           </div>
                         )}
@@ -1655,7 +1978,7 @@ const TourViewer = () => {
                   return (
                     <div className="border-t border-white/[0.06] overflow-hidden">
                       {allSections.map((sec, i) => (
-                        <HotelMenuSection key={i} title={sec.title} iconKey={sec.iconKey} items={sec.items} amenities={sec.amenities} onItemClick={navigateToMenuTag} />
+                        <HotelMenuSection key={i} title={sec.title} iconKey={sec.iconKey} items={sec.items} amenities={sec.amenities} onItemClick={showNavChoice} />
                       ))}
                     </div>
                   );
@@ -1695,7 +2018,7 @@ const TourViewer = () => {
                       {allSections.length > 0 && (
                         <div className="border-t border-white/[0.06] overflow-hidden">
                           {allSections.map((sec, i) => (
-                            <HotelMenuSection key={i} title={sec.title} iconKey={sec.iconKey} items={sec.items} amenities={sec.amenities} onItemClick={navigateToMenuTag} />
+                            <HotelMenuSection key={i} title={sec.title} iconKey={sec.iconKey} items={sec.items} amenities={sec.amenities} onItemClick={showNavChoice} />
                           ))}
                         </div>
                       )}
