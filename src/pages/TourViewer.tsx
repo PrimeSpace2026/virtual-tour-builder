@@ -376,6 +376,8 @@ const TourViewer = () => {
   const [navStep, setNavStep] = useState(0);
   const navCancelledRef = useRef(false);
   const pathNodesRef = useRef<any[]>([]); // 3D scene nodes for navigation dots
+  const pathDotDataRef = useRef<{ sid: string; x: number; z: number }[]>([]); // dot SIDs with positions for progressive removal
+  const totalDotsRef = useRef(0); // total dots placed at start
 
   // Navigation choice modal state (Fly vs Navigate)
   const [navChoice, setNavChoice] = useState<{ tagSid: string; label: string } | null>(null);
@@ -842,6 +844,8 @@ const TourViewer = () => {
       sdk.Tag.remove(sids).catch(() => {});
     }
     pathNodesRef.current = [];
+    pathDotDataRef.current = [];
+    totalDotsRef.current = 0;
     console.log(`🧹 Cleared ${sids.length} path dots`);
   }, []);
 
@@ -874,6 +878,11 @@ const TourViewer = () => {
         console.log(`📍 Adding ${tags.length} path dots via Mattertag.add at Y=${dotCoords[0]?.y.toFixed(2)}...`);
         const sids = await sdk.Mattertag.add(tags);
         pathNodesRef.current = sids || [];
+        // Store dot SIDs with their positions for progressive removal
+        pathDotDataRef.current = (sids || []).map((sid: string, i: number) => ({
+          sid, x: dotCoords[i].x, z: dotCoords[i].z,
+        }));
+        totalDotsRef.current = sids?.length || 0;
         console.log(`✅ Created ${sids?.length || 0} path dot tags`, sids);
       } catch (e) {
         console.log("❌ Mattertag.add failed:", e);
@@ -895,6 +904,10 @@ const TourViewer = () => {
         console.log(`📍 Adding ${tags.length} path dots via Tag.add...`);
         const sids = await sdk.Tag.add(tags);
         pathNodesRef.current = sids || [];
+        pathDotDataRef.current = (sids || []).map((sid: string, i: number) => ({
+          sid, x: dotCoords[i].x, z: dotCoords[i].z,
+        }));
+        totalDotsRef.current = sids?.length || 0;
         console.log(`✅ Created ${sids?.length || 0} path dot tags (Tag API)`, sids);
       } catch (e) {
         console.log("❌ Tag.add failed:", e);
@@ -1081,25 +1094,62 @@ const TourViewer = () => {
       const floorY = camPos.y - 1.3;
       const floorPath = pathWaypoints.map(p => ({ x: p.x, y: floorY, z: p.z }));
       const dots = interpolatePath(floorPath, 0.5);
-      createPathDots(dots);
+      await createPathDots(dots);
       console.log(`📍 Drew ${dots.length} dots along ${pathWaypoints.length}-waypoint path`);
 
-      // 5. Set UI indicator
+      // 5. Set UI indicator — totalDotsRef has the count
       setNavPath(floorPath);
       setNavTarget({ id: 0, tourId: 0, name: foundTag?.label || tagSid, tagSid: resolvedSid } as TourItemData);
-      setNavStep(0);
+      setNavStep(totalDotsRef.current); // remaining dots
 
-      // 6. Watch camera position to detect arrival near destination (~3m)
+      // 6. Watch camera — remove dots behind user as they walk, update step counter
+      let removeThrottleTimer: ReturnType<typeof setTimeout> | null = null;
       const poseSub = sdk.Camera.pose.subscribe((pose: any) => {
         if (!pose?.position) return;
-        const dx = pose.position.x - tagPos.x;
-        const dz = pose.position.z - tagPos.z;
-        const dist = dx * dx + dz * dz;
-        if (dist < 9) {
-          console.log(`✅ Arrived near destination tag (dist²=${dist.toFixed(1)})`);
+        const cx = pose.position.x;
+        const cz = pose.position.z;
+
+        // Check arrival near destination (~3m)
+        const dxDest = cx - tagPos.x;
+        const dzDest = cz - tagPos.z;
+        if (dxDest * dxDest + dzDest * dzDest < 9) {
+          console.log(`✅ Arrived near destination tag`);
           clearPathDots();
           setNavPath([]); setNavTarget(null); setNavStep(0);
           try { poseSub?.cancel?.(); poseSub?.unsubscribe?.(); } catch {}
+          return;
+        }
+
+        // Throttle dot removal to avoid hammering SDK (every 300ms)
+        if (removeThrottleTimer) return;
+        removeThrottleTimer = setTimeout(() => { removeThrottleTimer = null; }, 300);
+
+        // Remove dots within 1.5m of camera (user passed them)
+        const dotsToRemove: string[] = [];
+        const remaining: typeof pathDotDataRef.current = [];
+        for (const dot of pathDotDataRef.current) {
+          const dx = dot.x - cx;
+          const dz = dot.z - cz;
+          if (dx * dx + dz * dz < 2.25) { // 1.5m radius
+            dotsToRemove.push(dot.sid);
+          } else {
+            remaining.push(dot);
+          }
+        }
+
+        if (dotsToRemove.length > 0) {
+          const sdk2 = sdkRef.current;
+          if (sdk2?.Mattertag?.remove) {
+            sdk2.Mattertag.remove(dotsToRemove).catch(() => {});
+          } else if (sdk2?.Tag?.remove) {
+            sdk2.Tag.remove(dotsToRemove).catch(() => {});
+          }
+          // Update refs
+          pathDotDataRef.current = remaining;
+          pathNodesRef.current = remaining.map(d => d.sid);
+          // Update step counter (remaining dots)
+          setNavStep(remaining.length);
+          console.log(`🔵 Removed ${dotsToRemove.length} dots — ${remaining.length} remaining`);
         }
       });
 
@@ -1315,25 +1365,22 @@ const TourViewer = () => {
                   </span>
                   <div className="flex items-center gap-2">
                     <span className="text-white/50 text-xs">
-                      Step {navStep}/{navPath.length - 1}
+                      {navStep > 0 ? `${navStep} pas restants` : "Vous y êtes !"}
                     </span>
-                    {/* Progress dots */}
-                    <div className="flex gap-0.5">
-                      {navPath.map((_, i) => (
-                        <motion.div
-                          key={i}
-                          className={`w-1.5 h-1.5 rounded-full ${i <= navStep ? 'bg-purple-400' : 'bg-white/20'}`}
-                          animate={i === navStep ? { scale: [1, 1.5, 1] } : {}}
-                          transition={{ duration: 0.6, repeat: Infinity }}
-                        />
-                      ))}
+                    {/* Progress bar */}
+                    <div className="w-20 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                      <motion.div
+                        className="h-full bg-purple-400 rounded-full"
+                        animate={{ width: totalDotsRef.current > 0 ? `${Math.max(5, 100 - (navStep / totalDotsRef.current) * 100)}%` : '100%' }}
+                        transition={{ duration: 0.3 }}
+                      />
                     </div>
                   </div>
                 </div>
 
                 {/* Cancel button */}
                 <button
-                  onClick={() => { navCancelledRef.current = true; setNavPath([]); setNavTarget(null); setNavStep(0); }}
+                  onClick={() => { navCancelledRef.current = true; clearPathDots(); setNavPath([]); setNavTarget(null); setNavStep(0); }}
                   className="ml-2 w-7 h-7 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors"
                 >
                   <svg className="w-3.5 h-3.5 text-white/60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
