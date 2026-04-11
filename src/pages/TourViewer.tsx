@@ -1034,7 +1034,7 @@ const TourViewer = () => {
 
       // 3. Build waypoint graph from tag positions for pathfinding
       // Tags are placed in accessible areas (doorways, rooms, corridors)
-      // so a path through tags follows the walkable layout
+      // Use tight radius so path goes through nearby tags, not across rooms/walls
       const waypoints: { sid: string; x: number; y: number; z: number }[] = [];
       allTagPositions.forEach((pos, sid) => {
         waypoints.push({ sid, x: pos.x, y: pos.y, z: pos.z });
@@ -1044,56 +1044,101 @@ const TourViewer = () => {
       waypoints.push({ sid: "__dest__", x: tagPos.x, y: tagPos.y, z: tagPos.z });
       console.log(`🗺️ Pathfinding with ${waypoints.length} waypoints (${allTagPositions.size} tags + cam + dest)`);
 
-      // Build adjacency: connect waypoints within ~10m on same floor (Y within 2m)
-      const neighbors = new Map<string, string[]>();
+      // Build adjacency with Dijkstra-style weighted edges
+      // Use tight 5m radius to avoid cross-wall connections, same floor only
+      const wpMap = new Map(waypoints.map(w => [w.sid, w]));
+      const neighbors = new Map<string, { sid: string; dist: number }[]>();
       for (const a of waypoints) {
-        const adj: string[] = [];
+        const adj: { sid: string; dist: number }[] = [];
         for (const b of waypoints) {
           if (a.sid === b.sid) continue;
           const dx = a.x - b.x;
           const dy = a.y - b.y;
           const dz = a.z - b.z;
-          const horizDist = dx * dx + dz * dz;
-          if (Math.abs(dy) < 2 && horizDist < 100) adj.push(b.sid); // 10m radius, same floor
+          const horizDist = Math.sqrt(dx * dx + dz * dz);
+          if (Math.abs(dy) < 1.5 && horizDist < 5) {
+            adj.push({ sid: b.sid, dist: horizDist });
+          }
         }
         neighbors.set(a.sid, adj);
       }
 
-      // BFS from camera to destination
-      const visited = new Set<string>(["__cam__"]);
-      const parent = new Map<string, string>();
-      const queue = ["__cam__"];
-      let found = false;
-      while (queue.length > 0) {
-        const cur = queue.shift()!;
-        if (cur === "__dest__") { found = true; break; }
-        for (const n of (neighbors.get(cur) || [])) {
-          if (!visited.has(n)) { visited.add(n); parent.set(n, cur); queue.push(n); }
+      // If camera/dest have no neighbors at 5m, widen to 8m just for them
+      for (const nodeId of ["__cam__", "__dest__"]) {
+        if ((neighbors.get(nodeId) || []).length === 0) {
+          const node = wpMap.get(nodeId)!;
+          const adj: { sid: string; dist: number }[] = [];
+          for (const b of waypoints) {
+            if (b.sid === nodeId) continue;
+            const dx = node.x - b.x;
+            const dy = node.y - b.y;
+            const dz = node.z - b.z;
+            const horizDist = Math.sqrt(dx * dx + dz * dz);
+            if (Math.abs(dy) < 1.5 && horizDist < 8) {
+              adj.push({ sid: b.sid, dist: horizDist });
+            }
+          }
+          neighbors.set(nodeId, adj);
+        }
+      }
+
+      // Dijkstra for shortest path (not just BFS — picks shortest real distance)
+      const dist = new Map<string, number>();
+      const prev = new Map<string, string>();
+      const unvisited = new Set(waypoints.map(w => w.sid));
+      for (const w of waypoints) dist.set(w.sid, Infinity);
+      dist.set("__cam__", 0);
+
+      while (unvisited.size > 0) {
+        let minNode: string | null = null;
+        let minDist = Infinity;
+        for (const sid of unvisited) {
+          if ((dist.get(sid) || Infinity) < minDist) {
+            minDist = dist.get(sid) || Infinity;
+            minNode = sid;
+          }
+        }
+        if (!minNode || minDist === Infinity) break;
+        if (minNode === "__dest__") break;
+        unvisited.delete(minNode);
+
+        for (const edge of (neighbors.get(minNode) || [])) {
+          if (!unvisited.has(edge.sid)) continue;
+          const alt = minDist + edge.dist;
+          if (alt < (dist.get(edge.sid) || Infinity)) {
+            dist.set(edge.sid, alt);
+            prev.set(edge.sid, minNode);
+          }
         }
       }
 
       // Reconstruct path
       const pathWaypoints: { x: number; y: number; z: number }[] = [];
+      const found = dist.get("__dest__") !== Infinity && dist.get("__dest__") !== undefined;
       if (found) {
         const pathSids: string[] = [];
         let cur: string | undefined = "__dest__";
-        while (cur && cur !== "__cam__") { pathSids.unshift(cur); cur = parent.get(cur); }
+        while (cur && cur !== "__cam__") { pathSids.unshift(cur); cur = prev.get(cur); }
         pathSids.unshift("__cam__");
-        const wpMap = new Map(waypoints.map(w => [w.sid, w]));
         for (const sid of pathSids) {
           const w = wpMap.get(sid);
           if (w) pathWaypoints.push({ x: w.x, y: w.y, z: w.z });
         }
-        console.log(`✅ BFS path: ${pathSids.length} waypoints → ${pathSids.filter(s => !s.startsWith("__")).join(" → ")}`);
+        console.log(`✅ Dijkstra path: ${pathSids.length} waypoints (${dist.get("__dest__")?.toFixed(1)}m) → ${pathSids.filter(s => !s.startsWith("__")).join(" → ")}`);
       } else {
         // No path found — straight line fallback
-        console.log("⚠️ No BFS path found — straight line fallback");
+        console.log("⚠️ No path found — straight line fallback");
         pathWaypoints.push({ x: camPos.x, y: camPos.y, z: camPos.z });
         pathWaypoints.push({ x: tagPos.x, y: tagPos.y, z: tagPos.z });
       }
 
       // 4. Place dots at floor level along the path
-      const floorY = camPos.y - 1.3;
+      // Use each waypoint's own Y to estimate floor (tag Y minus ~1m offset for wall-mounted tags)
+      // Find the lowest Y among all tags to estimate floor level
+      let lowestTagY = Infinity;
+      allTagPositions.forEach((pos) => { if (pos.y < lowestTagY) lowestTagY = pos.y; });
+      const floorY = lowestTagY < Infinity ? lowestTagY - 0.3 : camPos.y - 1.3;
+      console.log(`📐 Floor Y estimated: ${floorY.toFixed(2)} (lowest tag Y: ${lowestTagY.toFixed(2)})`);
       const floorPath = pathWaypoints.map(p => ({ x: p.x, y: floorY, z: p.z }));
       const dots = interpolatePath(floorPath, 0.5);
       await createPathDots(dots);
