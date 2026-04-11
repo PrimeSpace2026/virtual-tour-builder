@@ -670,24 +670,68 @@ const TourViewer = () => {
 
         // Cache sweep positions for navigation
         try {
-          const sweepData = await new Promise<any[]>((resolve) => {
-            const timeout = setTimeout(() => resolve([]), 8000);
-            const sub = sdk.Sweep.data.subscribe({
-              onCollectionUpdated: (c: any) => {
-                const arr: any[] = [];
-                if (c && typeof c.forEach === "function") {
-                  c.forEach((v: any, k: any) => { if (v.position) arr.push({ ...v, sid: k }); });
-                }
-                if (arr.length > 0) {
-                  clearTimeout(timeout);
-                  try { sub?.cancel?.(); } catch {}
-                  resolve(arr);
-                }
-              },
+          let sweepArr: any[] = [];
+
+          // Method A: direct forEach on the observable map
+          try {
+            if (sdk.Sweep?.data?.forEach) {
+              sdk.Sweep.data.forEach((v: any, k: any) => {
+                if (v?.position) sweepArr.push({ ...v, sid: k });
+              });
+              console.log(`📍 Sweep.data.forEach: ${sweepArr.length} sweeps`);
+            }
+          } catch (e) { console.log("Sweep.data.forEach failed:", e); }
+
+          // Method B: Mattertag-style getData if available
+          if (sweepArr.length === 0 && sdk.Sweep?.getData) {
+            try {
+              const data = await sdk.Sweep.getData();
+              if (Array.isArray(data)) sweepArr = data.filter((s: any) => s.position);
+              console.log(`📍 Sweep.getData: ${sweepArr.length} sweeps`);
+            } catch (e) { console.log("Sweep.getData failed:", e); }
+          }
+
+          // Method C: subscribe with longer wait
+          if (sweepArr.length === 0) {
+            sweepArr = await new Promise<any[]>((resolve) => {
+              const timeout = setTimeout(() => resolve([]), 10000);
+              let resolved = false;
+              const sub = sdk.Sweep.data.subscribe({
+                onAdded: (idx: any, item: any, col: any) => {
+                  // Some SDK versions fire onAdded per sweep
+                  if (!resolved && col) {
+                    const arr: any[] = [];
+                    if (typeof col.forEach === "function") {
+                      col.forEach((v: any, k: any) => { if (v?.position) arr.push({ ...v, sid: k }); });
+                    }
+                    if (arr.length > 0) {
+                      resolved = true;
+                      clearTimeout(timeout);
+                      try { sub?.cancel?.(); } catch {}
+                      resolve(arr);
+                    }
+                  }
+                },
+                onCollectionUpdated: (c: any) => {
+                  if (resolved) return;
+                  const arr: any[] = [];
+                  if (c && typeof c.forEach === "function") {
+                    c.forEach((v: any, k: any) => { if (v?.position) arr.push({ ...v, sid: k }); });
+                  }
+                  if (arr.length > 0) {
+                    resolved = true;
+                    clearTimeout(timeout);
+                    try { sub?.cancel?.(); } catch {}
+                    resolve(arr);
+                  }
+                },
+              });
             });
-          });
-          sweepsCacheRef.current = sweepData;
-          console.log(`📍 Cached ${sweepData.length} sweeps for navigation`);
+            console.log(`📍 Sweep.data.subscribe: ${sweepArr.length} sweeps`);
+          }
+
+          sweepsCacheRef.current = sweepArr;
+          console.log(`✅ Cached ${sweepArr.length} sweeps for navigation`);
         } catch (e) { console.log("Sweep cache error:", e); }
 
         // NOW set SDK as ready — model is loaded & tags are cached
