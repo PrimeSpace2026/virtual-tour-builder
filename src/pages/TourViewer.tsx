@@ -1303,67 +1303,110 @@ const TourViewer = () => {
         pathWaypoints.push({ x: tagPos.x, y: tagPos.y, z: tagPos.z });
       }
 
-      // 4. Build grounded path — raycast to find exact floor Y
-      // Strategy: Use Renderer.getWorldPositionData to raycast from screen to floor,
-      // fallback to minimum tag Y, then apply +0.03m offset to avoid Z-fighting
-      let floorY = camPos.y - 1.5; // initial estimate
+      // 4. Build GROUNDED path — force every point to the actual floor
+      // Multi-strategy floor Y detection:
+      let floorY: number | null = null;
+      const camY = camPos.y;
+      console.log(`📐 Camera Y (eye level): ${camY.toFixed(3)}`);
 
-      // Method 1: Raycast from bottom-center of screen (usually hits the floor)
+      // ── Strategy 1: Sweep puckPosition (exact floor height) ──
       try {
-        if (sdk.Renderer?.getWorldPositionData) {
-          const iframe = document.getElementById("showcase-iframe");
-          const iRect = iframe?.getBoundingClientRect();
-          if (iRect) {
-            // Sample 3 points at bottom of screen to find floor
-            const samples = [
-              { x: iRect.width * 0.5, y: iRect.height * 0.85 },
-              { x: iRect.width * 0.3, y: iRect.height * 0.8 },
-              { x: iRect.width * 0.7, y: iRect.height * 0.8 },
-            ];
-            const floorHits: number[] = [];
-            for (const sp of samples) {
-              try {
-                const data = await sdk.Renderer.getWorldPositionData(sp);
-                if (data?.position && data.position.y != null) {
-                  floorHits.push(data.position.y);
-                }
-              } catch {}
-            }
-            if (floorHits.length > 0) {
-              // Use the lowest hit as floor level
-              floorY = Math.min(...floorHits) + 0.03; // +3cm to avoid Z-fighting
-              console.log(`📐 Raycast floor Y: ${floorY.toFixed(3)} (from ${floorHits.length} samples: ${floorHits.map(h => h.toFixed(2)).join(", ")})`);
+        if (sdk.Sweep?.current?.subscribe) {
+          const currentSweep: any = await new Promise((resolve) => {
+            const timeout = setTimeout(() => resolve(null), 2000);
+            const sub = sdk.Sweep.current.subscribe((s: any) => {
+              clearTimeout(timeout);
+              try { sub?.cancel?.(); sub?.unsubscribe?.(); } catch {}
+              resolve(s);
+            });
+          });
+          if (currentSweep?.puckPosition && currentSweep.puckPosition.y != null) {
+            const puckY = currentSweep.puckPosition.y;
+            // puckPosition is ON the floor — sanity check: must be below camera
+            if (puckY < camY - 0.5) {
+              floorY = puckY + 0.05; // +5cm offset above floor for visibility
+              console.log(`📐 Strategy 1 (puckPosition): floorY=${floorY.toFixed(3)} (puck=${puckY.toFixed(3)})`);
             }
           }
         }
-      } catch (e) {
-        console.log("⚠️ Floor raycast failed:", e);
+      } catch (e) { console.log("⚠️ Sweep puck failed:", e); }
+
+      // ── Strategy 2: Raycast from screen bottom — DISCARD hits near camera Y ──
+      if (floorY === null) {
+        try {
+          if (sdk.Renderer?.getWorldPositionData) {
+            const iframe = document.getElementById("showcase-iframe");
+            const iRect = iframe?.getBoundingClientRect();
+            if (iRect) {
+              const samples = [
+                { x: iRect.width * 0.5, y: iRect.height * 0.92 }, // very bottom center
+                { x: iRect.width * 0.3, y: iRect.height * 0.88 },
+                { x: iRect.width * 0.7, y: iRect.height * 0.88 },
+                { x: iRect.width * 0.5, y: iRect.height * 0.75 },
+              ];
+              const validHits: number[] = [];
+              for (const sp of samples) {
+                try {
+                  const data = await sdk.Renderer.getWorldPositionData(sp);
+                  if (data?.position && data.position.y != null) {
+                    const hitY = data.position.y;
+                    // DISCARD if hit is close to camera Y (within 1m) — probably hit a wall
+                    if (hitY < camY - 1.0) {
+                      validHits.push(hitY);
+                    } else {
+                      console.log(`📐 Raycast discarded: hitY=${hitY.toFixed(2)} too close to camY=${camY.toFixed(2)}`);
+                    }
+                  }
+                } catch {}
+              }
+              if (validHits.length > 0) {
+                floorY = Math.min(...validHits) + 0.05;
+                console.log(`📐 Strategy 2 (raycast): floorY=${floorY.toFixed(3)} (${validHits.length} valid hits: ${validHits.map(h => h.toFixed(2)).join(", ")})`);
+              }
+            }
+          }
+        } catch (e) { console.log("⚠️ Raycast failed:", e); }
       }
 
-      // Method 2 fallback: Use lowest tag anchor Y on the same floor level
-      if (floorY === camPos.y - 1.5) {
+      // ── Strategy 3: Lowest tag anchor Y minus offset ──
+      if (floorY === null) {
         const tagYs: number[] = [];
         allTagPositions.forEach((pos) => {
-          if (Math.abs(pos.y - camPos.y) < 3) tagYs.push(pos.y); // same floor
+          if (Math.abs(pos.y - camY) < 3) tagYs.push(pos.y); // same floor
         });
         if (tagYs.length > 0) {
           const minTagY = Math.min(...tagYs);
-          // Tags anchors are usually on surfaces ~1m+ above floor, use lowest as reference
-          floorY = minTagY - 0.5;
-          console.log(`📐 Fallback floor Y from tags: ${floorY.toFixed(3)} (lowest tag: ${minTagY.toFixed(2)})`);
+          // Tags are on walls typically 0.5-2m above floor
+          const candidate = minTagY - 1.0;
+          if (candidate < camY - 0.5) {
+            floorY = candidate;
+            console.log(`📐 Strategy 3 (min tag Y): floorY=${floorY.toFixed(3)} (lowest tag=${minTagY.toFixed(2)})`);
+          }
         }
       }
 
-      console.log(`📐 Final floor Y: ${floorY.toFixed(3)} (camera Y: ${camPos.y.toFixed(2)})`);
+      // ── Strategy 4: Fixed offset from camera (1.6m = standard person height) ──
+      if (floorY === null) {
+        floorY = camY - 1.6;
+        console.log(`📐 Strategy 4 (fixed offset): floorY=${floorY.toFixed(3)} (camY - 1.6)`);
+      }
 
-      // Start point = user's feet position (camera Y → floor level)
+      // ── Safety: if floorY is STILL above camY - 1.0, force it down ──
+      if (floorY > camY - 1.0) {
+        floorY = camY - 1.6;
+        console.log(`📐 Safety override: floorY forced to ${floorY.toFixed(3)}`);
+      }
+
+      console.log(`📐 ✅ FINAL floor Y: ${floorY.toFixed(3)} | camera Y: ${camY.toFixed(2)} | delta: ${(camY - floorY).toFixed(2)}m`);
+
+      // Ground EVERY point at floor level — start from user's feet
       const feetPos = { x: camPos.x, y: floorY, z: camPos.z };
       const groundedWaypoints = pathWaypoints.map((p, i) =>
         i === 0 ? feetPos : { x: p.x, y: floorY, z: p.z }
       );
 
       const pathPoints = interpolatePath(groundedWaypoints, 0.4);
-      console.log(`📍 Grounded path: ${pathPoints.length} points along ${pathWaypoints.length} waypoints at Y=${floorY.toFixed(3)}`);
+      console.log(`📍 Grounded path: ${pathPoints.length} pts, ${pathWaypoints.length} waypoints, Y=${floorY.toFixed(3)}`);
 
       // 5. Set UI state
       setNavPath(groundedWaypoints);
