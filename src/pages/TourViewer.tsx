@@ -399,6 +399,7 @@ const TourViewer = () => {
   const [selectedCoach, setSelectedCoach] = useState<GymCoachData | null>(null);
   const [gymCoaches, setGymCoaches] = useState<GymCoachData[]>([]);
   const [bottomTab, setBottomTab] = useState<"products" | "services" | "coaches">("products");
+  const [bottomStripOpen, setBottomStripOpen] = useState(true);
 
   // Match a product by name/id/tagSid from a URL param
   const matchProduct = useCallback((param: string) => {
@@ -3307,15 +3308,33 @@ const TourViewer = () => {
       </div>{/* END TOP: MATTERPORT 3D VIEWER */}
 
       {/* ===== BOTTOM: PRODUCT & SERVICE STRIP ===== */}
-      <AnimatePresence>
       {(tourItems.length > 0 || tourServices.length > 0 || gymCoaches.length > 0) && (
-        <motion.div
-          initial={{ y: "100%" }}
-          animate={{ y: 0 }}
-          exit={{ y: "100%" }}
-          transition={{ type: "spring", damping: 28, stiffness: 300 }}
-          className="shrink-0 bg-[#0d0d1a] border-t border-white/10 overflow-hidden"
-        >
+        <div className="shrink-0 relative">
+          {/* Toggle handle */}
+          <button
+            onClick={() => setBottomStripOpen(p => !p)}
+            className="absolute -top-8 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1.5 px-3 py-1 rounded-t-lg bg-[#0d0d1a] border border-b-0 border-white/10 text-white/50 hover:text-white/80 transition-colors"
+          >
+            <motion.svg
+              animate={{ rotate: bottomStripOpen ? 180 : 0 }}
+              transition={{ duration: 0.2 }}
+              className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
+            </motion.svg>
+            <span className="text-[10px] font-medium uppercase tracking-wider">
+              {bottomStripOpen ? "Masquer" : "Produits"}
+            </span>
+          </button>
+          <AnimatePresence>
+          {bottomStripOpen && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ type: "spring", damping: 28, stiffness: 300 }}
+              className="bg-[#0d0d1a] border-t border-white/10 overflow-hidden"
+            >
           <div className="px-3 py-3">
             {/* Tab switcher when both exist */}
             {(tourItems.length > 0 ? 1 : 0) + (tourServices.length > 0 ? 1 : 0) + (gymCoaches.length > 0 ? 1 : 0) > 1 && (
@@ -3491,9 +3510,11 @@ const TourViewer = () => {
               </div>
             )}
           </div>
-        </motion.div>
+            </motion.div>
+          )}
+          </AnimatePresence>
+        </div>
       )}
-      </AnimatePresence>
     </div>
   );
 };
