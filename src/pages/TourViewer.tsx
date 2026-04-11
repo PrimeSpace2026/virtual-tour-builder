@@ -832,9 +832,72 @@ const TourViewer = () => {
     setIframeLoaded(false);
   }, [tour?.tourUrl]);
 
-  // ===== GROUNDED PATH NAVIGATION (schema line on floor) =====
+  // ===== GROUNDED DOT TRAIL NAVIGATION =====
 
-  // Draw grounded navigation schema on canvas — connected line stuck to the floor
+  // Place 3D Mattertag dots along the grounded path, then overlay canvas FX
+  const placePathDots = useCallback(async (pathPoints: { x: number; y: number; z: number }[]) => {
+    const sdk = sdkRef.current;
+    if (!sdk?.Mattertag?.add) { console.log("❌ No Mattertag.add"); return; }
+
+    // Remove old dots first
+    const oldSids = pathNodesRef.current;
+    if (oldSids.length > 0) {
+      try { await sdk.Mattertag.remove(oldSids); } catch {}
+      pathNodesRef.current = [];
+    }
+
+    // Sample dots every ~0.8m along the path
+    const dotPositions: { x: number; y: number; z: number }[] = [];
+    let accDist = 0;
+    dotPositions.push(pathPoints[0]);
+    for (let i = 1; i < pathPoints.length; i++) {
+      const prev = pathPoints[i - 1];
+      const curr = pathPoints[i];
+      const dx = curr.x - prev.x;
+      const dy = curr.y - prev.y;
+      const dz = curr.z - prev.z;
+      accDist += Math.sqrt(dx * dx + dy * dy + dz * dz);
+      if (accDist >= 0.8) {
+        dotPositions.push(curr);
+        accDist = 0;
+      }
+    }
+    // Always include the last point (destination)
+    const last = pathPoints[pathPoints.length - 1];
+    const lastDot = dotPositions[dotPositions.length - 1];
+    if (Math.abs(last.x - lastDot.x) > 0.1 || Math.abs(last.z - lastDot.z) > 0.1) {
+      dotPositions.push(last);
+    }
+
+    console.log(`🔵 Placing ${dotPositions.length} 3D dots (from ${pathPoints.length} path points)`);
+
+    // Place dots in batches of 20 (Mattertag API limit)
+    const allSids: string[] = [];
+    for (let batch = 0; batch < dotPositions.length; batch += 20) {
+      const chunk = dotPositions.slice(batch, batch + 20);
+      const descriptors = chunk.map(pos => ({
+        anchorPosition: { x: pos.x, y: pos.y, z: pos.z },
+        stemVector: { x: 0, y: 0.15, z: 0 }, // small stem up so disc is visible from above
+        label: "",
+        description: "",
+        color: { r: 0.25, g: 0.52, b: 0.96 }, // Google blue #4285F4
+        floorIndex: 0,
+      }));
+      try {
+        const sids = await sdk.Mattertag.add(descriptors);
+        if (Array.isArray(sids)) {
+          allSids.push(...sids);
+        }
+      } catch (e) {
+        console.log(`⚠️ Mattertag.add batch ${batch} failed:`, e);
+      }
+    }
+
+    pathNodesRef.current = allSids;
+    console.log(`✅ Placed ${allSids.length} 3D dots on floor`);
+  }, []);
+
+  // Draw canvas overlay: pulsing glow at dot positions + destination marker + direction chevrons
   const drawNavLine = useCallback((pose: any) => {
     const sdk = sdkRef.current;
     const canvas = navCanvasRef.current;
@@ -844,7 +907,6 @@ const TourViewer = () => {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    // Match canvas to iframe display size
     const iframe = document.getElementById("showcase-iframe");
     const rect = iframe?.getBoundingClientRect() || canvas.getBoundingClientRect();
     if (canvas.width !== rect.width || canvas.height !== rect.height) {
@@ -854,10 +916,9 @@ const TourViewer = () => {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     const showcaseSize = { w: rect.width, h: rect.height };
-    const hasWorldToScreen = !!sdk.Conversion?.worldToScreen;
-    if (!hasWorldToScreen) return; // need SDK projection
+    if (!sdk.Conversion?.worldToScreen) return;
 
-    // Project grounded 3D path points → 2D screen coordinates
+    // Project path points to screen
     const screenPts: { x: number; y: number; visible: boolean }[] = [];
     for (const pt of points) {
       try {
@@ -871,21 +932,20 @@ const TourViewer = () => {
       }
     }
 
-    // Track which points user has passed (within 1.5m horizontally)
+    // Track passed points
     const camPos = pose.position;
     let passedIndex = 0;
     if (camPos) {
       for (let i = 0; i < points.length; i++) {
         const dx = points[i].x - camPos.x;
         const dz = points[i].z - camPos.z;
-        if (dx * dx + dz * dz < 2.25) passedIndex = i + 1; // 1.5m radius
+        if (dx * dx + dz * dz < 2.25) passedIndex = i + 1;
       }
     }
     setNavStep(Math.max(0, points.length - passedIndex));
-
     const startIdx = Math.max(0, passedIndex - 1);
 
-    // Collect visible segments (skip behind-camera gaps)
+    // Collect visible segments
     const segments: { x: number; y: number }[][] = [];
     let seg: { x: number; y: number }[] = [];
     for (let i = startIdx; i < screenPts.length; i++) {
@@ -902,68 +962,52 @@ const TourViewer = () => {
     ctx.save();
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
-
     const now = Date.now();
 
-    // ── Schema Layer 1: Wide soft glow (like Google Maps blue shadow) ──
+    // ── Thin connecting line between dots (subtle, not the main visual) ──
     for (const s of segments) {
       if (s.length < 2) continue;
       ctx.beginPath();
       ctx.moveTo(s[0].x, s[0].y);
       for (let i = 1; i < s.length; i++) ctx.lineTo(s[i].x, s[i].y);
-      ctx.strokeStyle = "rgba(50, 120, 255, 0.15)";
-      ctx.lineWidth = 28;
+      ctx.strokeStyle = "rgba(66, 133, 244, 0.3)";
+      ctx.lineWidth = 4;
       ctx.stroke();
     }
 
-    // ── Schema Layer 2: Main path fill (solid blue) ──
-    for (const s of segments) {
-      if (s.length < 2) continue;
+    // ── Pulsing glow at every ~5th screen point (matches 3D dot positions) ──
+    for (let i = startIdx; i < screenPts.length; i += 4) {
+      const sp = screenPts[i];
+      if (!sp.visible) continue;
+      const pulse = 0.5 + 0.5 * Math.sin((now / 500) + i * 0.4);
+      // Outer glow
       ctx.beginPath();
-      ctx.moveTo(s[0].x, s[0].y);
-      for (let i = 1; i < s.length; i++) ctx.lineTo(s[i].x, s[i].y);
-      ctx.strokeStyle = "rgba(66, 133, 244, 0.85)";
-      ctx.lineWidth = 12;
-      ctx.stroke();
+      ctx.arc(sp.x, sp.y, 10 + pulse * 6, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(66, 133, 244, ${0.08 + pulse * 0.12})`;
+      ctx.fill();
     }
 
-    // ── Schema Layer 3: White center line ──
+    // ── Direction chevrons ──
     for (const s of segments) {
-      if (s.length < 2) continue;
-      ctx.beginPath();
-      ctx.moveTo(s[0].x, s[0].y);
-      for (let i = 1; i < s.length; i++) ctx.lineTo(s[i].x, s[i].y);
-      ctx.strokeStyle = "rgba(200, 220, 255, 0.6)";
-      ctx.lineWidth = 3;
-      ctx.stroke();
-    }
-
-    // ── Animated direction chevrons (arrows showing direction) ──
-    const animOffset = (now % 2000) / 2000; // cycles every 2s
-    for (const s of segments) {
-      if (s.length < 4) continue;
-      // Draw chevron arrows every ~25 screen pixels along the path
+      if (s.length < 6) continue;
       let accDist = 0;
       for (let i = 1; i < s.length; i++) {
         const dx = s[i].x - s[i - 1].x;
         const dy = s[i].y - s[i - 1].y;
         accDist += Math.sqrt(dx * dx + dy * dy);
-        // Place chevron every 40px, animated offset
-        if (accDist > 40) {
+        if (accDist > 50) {
           accDist = 0;
           const angle = Math.atan2(dy, dx);
-          const cx = s[i].x;
-          const cy = s[i].y;
           const pulse = 0.4 + 0.6 * Math.sin((now / 600) + i * 0.3);
           ctx.save();
-          ctx.translate(cx, cy);
+          ctx.translate(s[i].x, s[i].y);
           ctx.rotate(angle);
           ctx.beginPath();
-          ctx.moveTo(-6, -5);
+          ctx.moveTo(-5, -4);
           ctx.lineTo(2, 0);
-          ctx.lineTo(-6, 5);
-          ctx.strokeStyle = `rgba(255, 255, 255, ${0.3 + pulse * 0.5})`;
-          ctx.lineWidth = 2.5;
+          ctx.lineTo(-5, 4);
+          ctx.strokeStyle = `rgba(255, 255, 255, ${0.3 + pulse * 0.4})`;
+          ctx.lineWidth = 2;
           ctx.stroke();
           ctx.restore();
         }
@@ -975,51 +1019,39 @@ const TourViewer = () => {
     if (lastSeg && lastSeg.length > 0) {
       const dest = lastSeg[lastSeg.length - 1];
       const pulse = 0.5 + 0.5 * Math.sin(now / 300);
-      // Outer ring
       ctx.beginPath();
-      ctx.arc(dest.x, dest.y, 18 + pulse * 8, 0, Math.PI * 2);
+      ctx.arc(dest.x, dest.y, 16 + pulse * 6, 0, Math.PI * 2);
       ctx.fillStyle = "rgba(66, 133, 244, 0.2)";
       ctx.fill();
-      // Mid ring
       ctx.beginPath();
-      ctx.arc(dest.x, dest.y, 10 + pulse * 3, 0, Math.PI * 2);
+      ctx.arc(dest.x, dest.y, 8 + pulse * 2, 0, Math.PI * 2);
       ctx.fillStyle = "rgba(66, 133, 244, 0.5)";
       ctx.fill();
-      // Center dot
       ctx.beginPath();
-      ctx.arc(dest.x, dest.y, 5, 0, Math.PI * 2);
+      ctx.arc(dest.x, dest.y, 4, 0, Math.PI * 2);
       ctx.fillStyle = "rgba(255, 255, 255, 0.95)";
-      ctx.fill();
-    }
-
-    // ── Start position marker (user's feet) ──
-    if (segments[0] && segments[0].length > 0) {
-      const start = segments[0][0];
-      ctx.beginPath();
-      ctx.arc(start.x, start.y, 6, 0, Math.PI * 2);
-      ctx.fillStyle = "rgba(66, 133, 244, 0.9)";
-      ctx.fill();
-      ctx.beginPath();
-      ctx.arc(start.x, start.y, 3, 0, Math.PI * 2);
-      ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
       ctx.fill();
     }
 
     ctx.restore();
   }, []);
 
-  // Stop navigation: clear canvas, unsubscribe from camera, reset state
+  // Stop navigation: remove 3D dots, clear canvas, unsubscribe, reset state
   const stopNavigation = useCallback(() => {
+    // Clear canvas overlay
     const canvas = navCanvasRef.current;
     if (canvas) {
       const ctx = canvas.getContext("2d");
       ctx?.clearRect(0, 0, canvas.width, canvas.height);
     }
+    // Unsubscribe camera pose
     try { navPoseSubRef.current?.cancel?.(); navPoseSubRef.current?.unsubscribe?.(); } catch {}
     navPoseSubRef.current = null;
+    // Remove ALL 3D Mattertag dots
     const sdk = sdkRef.current;
     const sids = pathNodesRef.current;
     if (sids.length > 0) {
+      console.log(`🗑️ Removing ${sids.length} 3D dots`);
       if (sdk?.Mattertag?.remove) sdk.Mattertag.remove(sids).catch(() => {});
       pathNodesRef.current = [];
     }
@@ -1030,7 +1062,7 @@ const TourViewer = () => {
     console.log("🛑 Navigation stopped");
   }, []);
 
-  // Start live navigation: subscribe to Camera.pose, redraw line every frame
+  // Start live navigation: place 3D dots + subscribe to Camera.pose for canvas overlay
   const startNavLine = useCallback((pathPoints: { x: number; y: number; z: number }[], destTag: { x: number; y: number; z: number }) => {
     const sdk = sdkRef.current;
     if (!sdk) { console.log("❌ No SDK"); return; }
@@ -1042,11 +1074,12 @@ const TourViewer = () => {
     console.log(`🗺️ startNavLine: ${pathPoints.length} points, Y range: ${Math.min(...pathPoints.map(p=>p.y)).toFixed(3)} to ${Math.max(...pathPoints.map(p=>p.y)).toFixed(3)}`);
     console.log(`🗺️ SDK APIs:`, {
       Conversion: !!sdk.Conversion?.worldToScreen,
+      MattertagAdd: !!sdk.Mattertag?.add,
       CameraPose: !!sdk.Camera?.pose?.subscribe,
-      SweepGraph: !!sdk.Sweep?.createGraph,
-      AStarRunner: !!sdk.Graph?.createAStarRunner,
-      Renderer: !!sdk.Renderer?.getWorldPositionData,
     });
+
+    // Place 3D Mattertag dots along the grounded path
+    placePathDots(pathPoints);
 
     let lastDraw = 0;
     let drawCount = 0;
@@ -1091,7 +1124,7 @@ const TourViewer = () => {
     }, 2000);
 
     setTimeout(() => stopNavigation(), 180000);
-  }, [drawNavLine, stopNavigation]);
+  }, [drawNavLine, stopNavigation, placePathDots]);
 
   // Interpolate points along a path for smooth dot placement
   const interpolatePath = (points: {x: number; y: number; z: number}[], spacing: number = 0.8) => {
