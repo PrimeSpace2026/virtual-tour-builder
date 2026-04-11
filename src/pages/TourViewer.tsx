@@ -376,7 +376,8 @@ const TourViewer = () => {
   const [navStep, setNavStep] = useState(0);
   const navCancelledRef = useRef(false);
   const pathNodesRef = useRef<any[]>([]); // 3D scene nodes for navigation dots
-  const pathDotDataRef = useRef<{ sid: string; x: number; z: number }[]>([]); // dot SIDs with positions for progressive removal
+  const pathDotDataRef = useRef<{ sid: string; x: number; y: number; z: number }[]>([]); // dot SIDs with positions for progressive removal
+  const removedDotsRef = useRef<{ x: number; y: number; z: number }[]>([]); // removed dot positions — re-add if user goes back
   const totalDotsRef = useRef(0); // total dots placed at start
 
   // Navigation choice modal state (Fly vs Navigate)
@@ -845,6 +846,7 @@ const TourViewer = () => {
     }
     pathNodesRef.current = [];
     pathDotDataRef.current = [];
+    removedDotsRef.current = [];
     totalDotsRef.current = 0;
     console.log(`🧹 Cleared ${sids.length} path dots`);
   }, []);
@@ -880,7 +882,7 @@ const TourViewer = () => {
         pathNodesRef.current = sids || [];
         // Store dot SIDs with their positions for progressive removal
         pathDotDataRef.current = (sids || []).map((sid: string, i: number) => ({
-          sid, x: dotCoords[i].x, z: dotCoords[i].z,
+          sid, x: dotCoords[i].x, y: dotCoords[i].y, z: dotCoords[i].z,
         }));
         totalDotsRef.current = sids?.length || 0;
         console.log(`✅ Created ${sids?.length || 0} path dot tags`, sids);
@@ -905,7 +907,7 @@ const TourViewer = () => {
         const sids = await sdk.Tag.add(tags);
         pathNodesRef.current = sids || [];
         pathDotDataRef.current = (sids || []).map((sid: string, i: number) => ({
-          sid, x: dotCoords[i].x, z: dotCoords[i].z,
+          sid, x: dotCoords[i].x, y: dotCoords[i].y, z: dotCoords[i].z,
         }));
         totalDotsRef.current = sids?.length || 0;
         console.log(`✅ Created ${sids?.length || 0} path dot tags (Tag API)`, sids);
@@ -1104,7 +1106,7 @@ const TourViewer = () => {
 
       // 6. Watch camera — remove dots behind user as they walk, update step counter
       let removeThrottleTimer: ReturnType<typeof setTimeout> | null = null;
-      const poseSub = sdk.Camera.pose.subscribe((pose: any) => {
+      const poseSub = sdk.Camera.pose.subscribe(async (pose: any) => {
         if (!pose?.position) return;
         const cx = pose.position.x;
         const cz = pose.position.z;
@@ -1132,6 +1134,7 @@ const TourViewer = () => {
           const dz = dot.z - cz;
           if (dx * dx + dz * dz < 2.25) { // 1.5m radius
             dotsToRemove.push(dot.sid);
+            removedDotsRef.current.push({ x: dot.x, y: dot.y, z: dot.z });
           } else {
             remaining.push(dot);
           }
@@ -1150,6 +1153,52 @@ const TourViewer = () => {
           // Update step counter (remaining dots)
           setNavStep(remaining.length);
           console.log(`🔵 Removed ${dotsToRemove.length} dots — ${remaining.length} remaining`);
+        }
+
+        // Re-add dots if user walks back near previously removed positions
+        const toRestore: { x: number; y: number; z: number }[] = [];
+        const stillRemoved: { x: number; y: number; z: number }[] = [];
+        for (const rd of removedDotsRef.current) {
+          const dx = rd.x - cx;
+          const dz = rd.z - cz;
+          const dist = dx * dx + dz * dz;
+          // Re-add if user is 2-5m away (close enough to see, but not on top of)
+          if (dist >= 4 && dist <= 25) {
+            toRestore.push(rd);
+          } else if (dist > 25) {
+            // Too far — keep in removed list for later
+            stillRemoved.push(rd);
+          }
+          // If dist < 4, user is right on top — don't re-add yet
+          if (dist < 4) stillRemoved.push(rd);
+        }
+
+        if (toRestore.length > 0) {
+          const sdk2 = sdkRef.current;
+          const addFn = sdk2?.Mattertag?.add || sdk2?.Tag?.add;
+          if (addFn) {
+            const newTags = toRestore.map(c => ({
+              label: "",
+              description: "",
+              anchorPosition: { x: c.x, y: c.y, z: c.z },
+              stemVector: { x: 0, y: 0, z: 0 },
+              color: { r: 0.4, g: 0.6, b: 1.0 },
+              floorIndex: 0,
+              stemVisible: false,
+            }));
+            try {
+              const newSids = await (sdk2.Mattertag?.add || sdk2.Tag?.add)!(newTags);
+              if (newSids) {
+                for (let i = 0; i < newSids.length; i++) {
+                  pathDotDataRef.current.push({ sid: newSids[i], x: toRestore[i].x, y: toRestore[i].y, z: toRestore[i].z });
+                  pathNodesRef.current.push(newSids[i]);
+                }
+                setNavStep(pathDotDataRef.current.length);
+                console.log(`🔄 Restored ${newSids.length} dots — ${pathDotDataRef.current.length} total`);
+              }
+            } catch {}
+          }
+          removedDotsRef.current = stillRemoved;
         }
       });
 
