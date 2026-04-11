@@ -313,6 +313,8 @@ const TourViewer = () => {
   const tagsMapRef = useRef<Map<string, string>>(new Map()); // tagName (lowercase) → SID
   const savedTagsMapRef = useRef<Map<string, string>>(new Map()); // saved tags from DB: name (lowercase) → SID
   const tagPositionsRef = useRef<Map<string, {x: number; y: number; z: number}>>(new Map()); // SID → anchorPosition
+  const sweepsCacheRef = useRef<any[]>([]); // cached sweep data from SDK init
+  const sweepsCacheRef = useRef<any[]>([]); // cached sweep data from SDK init
   const visitIdRef = useRef<number | null>(null);
   const visitStartRef = useRef<number>(Date.now());
 
@@ -666,6 +668,28 @@ const TourViewer = () => {
           }
         } catch {}
 
+        // Cache sweep positions for navigation
+        try {
+          const sweepData = await new Promise<any[]>((resolve) => {
+            const timeout = setTimeout(() => resolve([]), 8000);
+            const sub = sdk.Sweep.data.subscribe({
+              onCollectionUpdated: (c: any) => {
+                const arr: any[] = [];
+                if (c && typeof c.forEach === "function") {
+                  c.forEach((v: any, k: any) => { if (v.position) arr.push({ ...v, sid: k }); });
+                }
+                if (arr.length > 0) {
+                  clearTimeout(timeout);
+                  try { sub?.cancel?.(); } catch {}
+                  resolve(arr);
+                }
+              },
+            });
+          });
+          sweepsCacheRef.current = sweepData;
+          console.log(`📍 Cached ${sweepData.length} sweeps for navigation`);
+        } catch (e) { console.log("Sweep cache error:", e); }
+
         // NOW set SDK as ready — model is loaded & tags are cached
         if (cancelled) return;
         sdkRef.current = sdk;
@@ -992,29 +1016,32 @@ const TourViewer = () => {
 
       if (!tagPos) { console.log("❌ WALK: No tag position found"); return; }
 
-      // 2. Get all sweeps (wait for non-empty collection)
-      const sweeps: any[] = [];
-      try {
-        await new Promise<void>((resolve) => {
-          const timeout = setTimeout(() => { console.log("⏰ Sweep.data timeout"); resolve(); }, 5000);
-          const sub = sdk.Sweep.data.subscribe({
-            onCollectionUpdated: (c: any) => {
-              if (c && typeof c.forEach === "function") {
-                const arr: any[] = [];
-                c.forEach((v: any, k: any) => { if (v.position) arr.push({ ...v, sid: k }); });
-                if (arr.length > 0) {
-                  sweeps.push(...arr);
-                  clearTimeout(timeout);
-                  try { sub?.cancel?.(); } catch {}
-                  resolve();
+      // 2. Get all sweeps (use cache first, then try subscribe)
+      let sweeps: any[] = [...sweepsCacheRef.current];
+      console.log(`📊 Cached sweeps: ${sweeps.length}`);
+      if (sweeps.length === 0) {
+        try {
+          await new Promise<void>((resolve) => {
+            const timeout = setTimeout(() => { console.log("⏰ Sweep.data timeout"); resolve(); }, 5000);
+            const sub = sdk.Sweep.data.subscribe({
+              onCollectionUpdated: (c: any) => {
+                if (c && typeof c.forEach === "function") {
+                  const arr: any[] = [];
+                  c.forEach((v: any, k: any) => { if (v.position) arr.push({ ...v, sid: k }); });
+                  if (arr.length > 0) {
+                    sweeps = arr;
+                    sweepsCacheRef.current = arr; // update cache
+                    clearTimeout(timeout);
+                    try { sub?.cancel?.(); } catch {}
+                    resolve();
+                  }
                 }
-                // If empty, keep waiting — don't resolve yet
-              }
-            },
+              },
+            });
           });
-        });
-      } catch (e) { console.log("❌ Sweep.data failed:", e); }
-      console.log(`📊 Got ${sweeps.length} sweeps`);
+        } catch (e) { console.log("❌ Sweep.data failed:", e); }
+      }
+      console.log(`📊 Total sweeps: ${sweeps.length}`);
 
       if (sweeps.length === 0) { console.log("❌ WALK: No sweeps"); return; }
 
