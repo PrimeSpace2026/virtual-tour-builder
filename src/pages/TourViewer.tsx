@@ -1033,40 +1033,42 @@ const TourViewer = () => {
 
       console.log(`🗺️ Walk path: ${path.length} sweeps → tag ${resolvedSid}`);
 
-      // 6. Create interpolated 3D dots along the path
+      // 6. Create interpolated 3D dots along the path (dense — every 0.5m)
       const pathCoords = path.map((s: any) => ({ x: s.position.x, y: s.position.y, z: s.position.z }));
-      const dots = interpolatePath(pathCoords, 0.6);
+      const dots = interpolatePath(pathCoords, 0.5);
       createPathDots(dots);
+      console.log(`📍 Drew ${dots.length} dots on path`);
 
-      // 7. Set UI indicator
+      // 7. Set UI indicator — user walks themselves, dots guide the way
       setNavPath(path.map((s: any) => ({ x: s.position.x, y: s.position.y, z: s.position.z, sid: s.sid })));
       setNavTarget({ id: 0, tourId: 0, name: foundTag?.label || tagSid, tagSid: resolvedSid } as TourItemData);
       setNavStep(0);
 
-      // 8. Walk sweep-by-sweep
-      const transition = sdk.Sweep.Transition?.FLY || "transition.fly";
-      for (let i = 1; i < path.length; i++) {
-        if (navCancelledRef.current) { console.log("🚫 Walk cancelled"); break; }
-        setNavStep(i);
-
-        const lookTarget = i < path.length - 1 ? path[i + 1].position : tagPos;
-        const dx = lookTarget.x - path[i].position.x;
-        const dy = lookTarget.y - path[i].position.y;
-        const dz = lookTarget.z - path[i].position.z;
-        const yaw = Math.atan2(dx, dz) * (180 / Math.PI);
-        const pitch = Math.atan2(dy, Math.sqrt(dx * dx + dz * dz)) * (180 / Math.PI);
-
-        await sdk.Sweep.moveTo(path[i].sid, {
-          rotation: { x: pitch, y: yaw },
-          transition: transition as any,
-          transitionTime: 800,
-        });
+      // 8. Watch sweep changes to detect arrival near destination
+      const destSid = endSweep.sid;
+      const nearDestSids = new Set<string>();
+      // All sweeps within ~3m of destination count as "arrived"
+      for (const s of sweeps) {
+        const dx = s.position.x - endSweep.position.x;
+        const dz = s.position.z - endSweep.position.z;
+        if (dx * dx + dz * dz < 9) nearDestSids.add(s.sid);
       }
+      const sweepSub = sdk.Sweep.current.subscribe((s: any) => {
+        if (s?.sid && nearDestSids.has(s.sid)) {
+          console.log(`✅ Arrived near destination sweep: ${s.sid}`);
+          clearPathNodes();
+          setNavPath([]); setNavTarget(null); setNavStep(0);
+          try { sweepSub?.cancel?.(); sweepSub?.unsubscribe?.(); } catch {}
+        }
+      });
 
-      // 9. Cleanup
-      clearPathNodes();
-      setNavPath([]); setNavTarget(null); setNavStep(0);
-      console.log(`✅ Arrived at tag: ${resolvedSid}`);
+      // Auto-cleanup after 2 minutes if user doesn't arrive
+      setTimeout(() => {
+        clearPathNodes();
+        setNavPath([]); setNavTarget(null); setNavStep(0);
+        try { sweepSub?.cancel?.(); sweepSub?.unsubscribe?.(); } catch {}
+      }, 120000);
+
     } catch (err) {
       console.log("Walk failed:", err);
       clearPathNodes();
