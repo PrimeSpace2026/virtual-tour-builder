@@ -765,45 +765,89 @@ const TourViewer = () => {
         setIframeLoaded(false);
       };
 
-      // Primary: fly to tag with SDK, then show custom popup over native one
+      // Primary: fly to tag using SDK Camera + show custom popup
       if (sdk) {
         const tryNavigate = async () => {
           try {
-            // Show custom popup immediately so it covers any native popup
-            setSelectedItem(item);
+            // 1. Get tag position from Tag.data observable
+            let anchorPos: any = null;
+            try {
+              const tagData = await new Promise<any[]>((resolve) => {
+                const timeout = setTimeout(() => resolve([]), 3000);
+                const sub = sdk.Tag.data.subscribe({
+                  onCollectionUpdated: (collection: any) => {
+                    const items: any[] = [];
+                    if (collection && typeof collection.forEach === "function") {
+                      collection.forEach((v: any, k: any) => items.push({ ...v, sid: k }));
+                    }
+                    clearTimeout(timeout);
+                    try { sub?.cancel?.(); } catch {}
+                    resolve(items);
+                  },
+                });
+              });
+              const found = tagData.find((t: any) => t.sid === resolvedSid);
+              if (found?.anchorPosition) anchorPos = found.anchorPosition;
+              console.log(`📍 Tag ${resolvedSid} position:`, anchorPos);
+            } catch (e) {
+              console.log("Tag.data failed:", e);
+            }
 
-            // Use Mattertag.navigateToTag for the fly (most reliable)
+            // 2. If we have the position, use Camera.pose to look at the tag
+            if (anchorPos && sdk.Camera?.pose) {
+              // First get current camera pose
+              const currentPose = await sdk.Camera.pose.pipe(
+                (source: any) => new Promise<any>((resolve) => {
+                  const sub = source.subscribe({
+                    next: (pose: any) => { resolve(pose); sub?.unsubscribe?.(); },
+                  });
+                })
+              ).catch(() => null);
+
+              if (currentPose?.position) {
+                // Calculate look-at rotation from current position to tag
+                const dx = anchorPos.x - currentPose.position.x;
+                const dy = anchorPos.y - currentPose.position.y;
+                const dz = anchorPos.z - currentPose.position.z;
+                const yaw = Math.atan2(dx, dz) * (180 / Math.PI);
+                const pitch = Math.atan2(dy, Math.sqrt(dx * dx + dz * dz)) * (180 / Math.PI);
+
+                // Use Camera.setRotation to smoothly look at the tag
+                if (sdk.Camera?.setRotation) {
+                  console.log(`🎯 Camera.setRotation → looking at tag ${resolvedSid}`);
+                  await sdk.Camera.setRotation({ x: pitch, y: yaw }, { speed: 1.5 });
+                  console.log(`✅ Camera rotated to face tag`);
+                  setSelectedItem(item);
+                  return;
+                }
+              }
+            }
+
+            // 3. Fallback: use Mattertag.navigateToTag + cover with popup
             if (sdk.Mattertag?.navigateToTag) {
+              setSelectedItem(item); // Show popup first to cover native one
               const fly = sdk.Mattertag.Transition?.FLY_IN || "transition.fly";
               console.log(`🎯 Mattertag.navigateToTag("${resolvedSid}", ${fly})`);
               await sdk.Mattertag.navigateToTag(resolvedSid, fly);
               console.log(`✅ Flew to tag: ${resolvedSid}`);
-              // Try closing native popup repeatedly (it opens after the fly completes)
               const closeNative = () => {
                 try { sdk.Mattertag?.close?.(resolvedSid); } catch {}
                 try { sdk.Tag?.close?.(resolvedSid); } catch {}
               };
               closeNative();
-              setTimeout(closeNative, 200);
-              setTimeout(closeNative, 500);
-              setTimeout(closeNative, 1000);
+              setTimeout(closeNative, 300);
+              setTimeout(closeNative, 800);
               return;
             }
 
-            // Fallback: Tag API
-            if (sdk.Tag?.open) {
-              console.log(`🎯 Tag.open("${resolvedSid}")`);
-              await sdk.Tag.open(resolvedSid);
-              try { sdk.Tag.close(resolvedSid); } catch {}
-              return;
-            }
-
-            // Last resort: iframe
-            console.log("⚠️ No SDK fly method, using iframe");
+            // 4. Last resort: iframe deep link
+            console.log("⚠️ No SDK method available, using iframe");
             iframeFallback();
+            setSelectedItem(item);
           } catch (err) {
-            console.log("SDK fly failed, falling back to iframe:", err);
+            console.log("SDK navigate failed, using iframe:", err);
             iframeFallback();
+            setSelectedItem(item);
           }
         };
         tryNavigate();
