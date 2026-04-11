@@ -313,8 +313,6 @@ const TourViewer = () => {
   const tagsMapRef = useRef<Map<string, string>>(new Map()); // tagName (lowercase) → SID
   const savedTagsMapRef = useRef<Map<string, string>>(new Map()); // saved tags from DB: name (lowercase) → SID
   const tagPositionsRef = useRef<Map<string, {x: number; y: number; z: number}>>(new Map()); // SID → anchorPosition
-  const sweepsCacheRef = useRef<any[]>([]); // cached sweep data from SDK init
-  const sweepsCacheRef = useRef<any[]>([]); // cached sweep data from SDK init
   const visitIdRef = useRef<number | null>(null);
   const visitStartRef = useRef<number>(Date.now());
 
@@ -669,71 +667,6 @@ const TourViewer = () => {
         } catch {}
 
         // Cache sweep positions for navigation
-        try {
-          let sweepArr: any[] = [];
-
-          // Method A: direct forEach on the observable map
-          try {
-            if (sdk.Sweep?.data?.forEach) {
-              sdk.Sweep.data.forEach((v: any, k: any) => {
-                if (v?.position) sweepArr.push({ ...v, sid: k });
-              });
-              console.log(`📍 Sweep.data.forEach: ${sweepArr.length} sweeps`);
-            }
-          } catch (e) { console.log("Sweep.data.forEach failed:", e); }
-
-          // Method B: Mattertag-style getData if available
-          if (sweepArr.length === 0 && sdk.Sweep?.getData) {
-            try {
-              const data = await sdk.Sweep.getData();
-              if (Array.isArray(data)) sweepArr = data.filter((s: any) => s.position);
-              console.log(`📍 Sweep.getData: ${sweepArr.length} sweeps`);
-            } catch (e) { console.log("Sweep.getData failed:", e); }
-          }
-
-          // Method C: subscribe with longer wait
-          if (sweepArr.length === 0) {
-            sweepArr = await new Promise<any[]>((resolve) => {
-              const timeout = setTimeout(() => resolve([]), 10000);
-              let resolved = false;
-              const sub = sdk.Sweep.data.subscribe({
-                onAdded: (idx: any, item: any, col: any) => {
-                  // Some SDK versions fire onAdded per sweep
-                  if (!resolved && col) {
-                    const arr: any[] = [];
-                    if (typeof col.forEach === "function") {
-                      col.forEach((v: any, k: any) => { if (v?.position) arr.push({ ...v, sid: k }); });
-                    }
-                    if (arr.length > 0) {
-                      resolved = true;
-                      clearTimeout(timeout);
-                      try { sub?.cancel?.(); } catch {}
-                      resolve(arr);
-                    }
-                  }
-                },
-                onCollectionUpdated: (c: any) => {
-                  if (resolved) return;
-                  const arr: any[] = [];
-                  if (c && typeof c.forEach === "function") {
-                    c.forEach((v: any, k: any) => { if (v?.position) arr.push({ ...v, sid: k }); });
-                  }
-                  if (arr.length > 0) {
-                    resolved = true;
-                    clearTimeout(timeout);
-                    try { sub?.cancel?.(); } catch {}
-                    resolve(arr);
-                  }
-                },
-              });
-            });
-            console.log(`📍 Sweep.data.subscribe: ${sweepArr.length} sweeps`);
-          }
-
-          sweepsCacheRef.current = sweepArr;
-          console.log(`✅ Cached ${sweepArr.length} sweeps for navigation`);
-        } catch (e) { console.log("Sweep cache error:", e); }
-
         // NOW set SDK as ready — model is loaded & tags are cached
         if (cancelled) return;
         sdkRef.current = sdk;
@@ -1060,143 +993,62 @@ const TourViewer = () => {
 
       if (!tagPos) { console.log("❌ WALK: No tag position found"); return; }
 
-      // 2. Get all sweeps (use cache first, then try subscribe)
-      let sweeps: any[] = [...sweepsCacheRef.current];
-      console.log(`📊 Cached sweeps: ${sweeps.length}`);
-      if (sweeps.length === 0) {
-        try {
-          await new Promise<void>((resolve) => {
-            const timeout = setTimeout(() => { console.log("⏰ Sweep.data timeout"); resolve(); }, 5000);
-            const sub = sdk.Sweep.data.subscribe({
-              onCollectionUpdated: (c: any) => {
-                if (c && typeof c.forEach === "function") {
-                  const arr: any[] = [];
-                  c.forEach((v: any, k: any) => { if (v.position) arr.push({ ...v, sid: k }); });
-                  if (arr.length > 0) {
-                    sweeps = arr;
-                    sweepsCacheRef.current = arr; // update cache
-                    clearTimeout(timeout);
-                    try { sub?.cancel?.(); } catch {}
-                    resolve();
-                  }
-                }
-              },
-            });
-          });
-        } catch (e) { console.log("❌ Sweep.data failed:", e); }
-      }
-      console.log(`📊 Total sweeps: ${sweeps.length}`);
-
-      if (sweeps.length === 0) { console.log("❌ WALK: No sweeps"); return; }
-
-      // 3. Get current sweep
-      let currentSid: string | null = null;
+      // 2. Get current camera position (no sweeps needed)
+      let camPos: { x: number; y: number; z: number } | null = null;
       try {
-        currentSid = await new Promise<string | null>((resolve) => {
-          const timeout = setTimeout(() => { console.log("⏰ Sweep.current timeout"); resolve(null); }, 2000);
-          const sub = sdk.Sweep.current.subscribe((s: any) => {
+        camPos = await new Promise<{ x: number; y: number; z: number } | null>((resolve) => {
+          const timeout = setTimeout(() => { console.log("⏰ Camera.pose timeout"); resolve(null); }, 3000);
+          const sub = sdk.Camera.pose.subscribe((pose: any) => {
             clearTimeout(timeout);
             try { sub?.cancel?.(); sub?.unsubscribe?.(); } catch {}
-            resolve(s?.sid || null);
+            if (pose?.position) {
+              resolve({ x: pose.position.x, y: pose.position.y, z: pose.position.z });
+            } else {
+              resolve(null);
+            }
           });
         });
-      } catch (e) { console.log("❌ Sweep.current failed:", e); }
-      console.log(`📍 Current sweep: ${currentSid}`);
+      } catch (e) { console.log("❌ Camera.pose failed:", e); }
+      console.log(`📍 Camera position:`, camPos);
 
-      if (!currentSid) { console.log("❌ WALK: No current sweep"); return; }
+      if (!camPos) { console.log("❌ WALK: No camera position"); return; }
 
-      // 4. Find nearest sweep to the tag
-      let endSweep = sweeps[0];
-      let minDist = Infinity;
-      for (const s of sweeps) {
-        const dx = s.position.x - tagPos.x;
-        const dy = s.position.y - tagPos.y;
-        const dz = s.position.z - tagPos.z;
-        const d = dx * dx + dy * dy + dz * dz;
-        if (d < minDist) { minDist = d; endSweep = s; }
-      }
+      // 3. Build straight-line path from camera to tag at floor level
+      // Use the lower Y value (floor level) for dots so they appear on the ground
+      const floorY = Math.min(camPos.y, tagPos.y) - 0.5;
+      const startPt = { x: camPos.x, y: floorY, z: camPos.z };
+      const endPt = { x: tagPos.x, y: floorY, z: tagPos.z };
+      console.log(`🗺️ Straight-line path: cam(${startPt.x.toFixed(1)},${startPt.z.toFixed(1)}) → tag(${endPt.x.toFixed(1)},${endPt.z.toFixed(1)})`);
 
-      // 5. BFS pathfinding through sweep graph
-      const sweepMap = new Map(sweeps.map((s: any) => [s.sid, s]));
-      const neighbors = new Map<string, string[]>();
-      for (const a of sweeps) {
-        const adj: string[] = [];
-        for (const b of sweeps) {
-          if (a.sid === b.sid) continue;
-          const dx = a.position.x - b.position.x;
-          const dy = a.position.y - b.position.y;
-          const dz = a.position.z - b.position.z;
-          if (dx * dx + dy * dy + dz * dz < 25) adj.push(b.sid);
-        }
-        neighbors.set(a.sid, adj);
-      }
-
-      const visited = new Set<string>([currentSid]);
-      const parent = new Map<string, string>();
-      const queue = [currentSid];
-      while (queue.length > 0) {
-        const cur = queue.shift()!;
-        if (cur === endSweep.sid) break;
-        for (const n of (neighbors.get(cur) || [])) {
-          if (!visited.has(n)) { visited.add(n); parent.set(n, cur); queue.push(n); }
-        }
-      }
-
-      // Reconstruct path
-      const path: any[] = [];
-      let cur: string | undefined = endSweep.sid;
-      while (cur && cur !== currentSid) {
-        const s = sweepMap.get(cur);
-        if (s) path.unshift(s);
-        cur = parent.get(cur);
-      }
-      const startSweep = sweepMap.get(currentSid);
-      if (startSweep) path.unshift(startSweep);
-
-      if (path.length <= 1) {
-        console.log("⚠️ WALK: BFS path too short, placing dot at destination only");
-        // Just place a single dot at the destination
-        createPathDots([{ x: endSweep.position.x, y: endSweep.position.y, z: endSweep.position.z }]);
-        setNavTarget({ id: 0, tourId: 0, name: tagSid, tagSid: resolvedSid } as TourItemData);
-        return;
-      }
-
-      console.log(`🗺️ Walk path: ${path.length} sweeps → tag ${resolvedSid}`);
-
-      // 6. Create interpolated 3D dots along the path (dense — every 0.5m)
-      const pathCoords = path.map((s: any) => ({ x: s.position.x, y: s.position.y, z: s.position.z }));
-      const dots = interpolatePath(pathCoords, 0.5);
+      // 4. Interpolate and create dots
+      const dots = interpolatePath([startPt, endPt], 0.5);
       createPathDots(dots);
       console.log(`📍 Drew ${dots.length} dots on path`);
 
-      // 7. Set UI indicator — user walks themselves, dots guide the way
-      setNavPath(path.map((s: any) => ({ x: s.position.x, y: s.position.y, z: s.position.z, sid: s.sid })));
+      // 5. Set UI indicator
+      setNavPath([startPt, endPt]);
       setNavTarget({ id: 0, tourId: 0, name: foundTag?.label || tagSid, tagSid: resolvedSid } as TourItemData);
       setNavStep(0);
 
-      // 8. Watch sweep changes to detect arrival near destination
-      const destSid = endSweep.sid;
-      const nearDestSids = new Set<string>();
-      // All sweeps within ~3m of destination count as "arrived"
-      for (const s of sweeps) {
-        const dx = s.position.x - endSweep.position.x;
-        const dz = s.position.z - endSweep.position.z;
-        if (dx * dx + dz * dz < 9) nearDestSids.add(s.sid);
-      }
-      const sweepSub = sdk.Sweep.current.subscribe((s: any) => {
-        if (s?.sid && nearDestSids.has(s.sid)) {
-          console.log(`✅ Arrived near destination sweep: ${s.sid}`);
+      // 6. Watch camera position to detect arrival near destination (~3m)
+      const poseSub = sdk.Camera.pose.subscribe((pose: any) => {
+        if (!pose?.position) return;
+        const dx = pose.position.x - tagPos.x;
+        const dz = pose.position.z - tagPos.z;
+        const dist = dx * dx + dz * dz;
+        if (dist < 9) {
+          console.log(`✅ Arrived near destination tag (dist²=${dist.toFixed(1)})`);
           clearPathDots();
           setNavPath([]); setNavTarget(null); setNavStep(0);
-          try { sweepSub?.cancel?.(); sweepSub?.unsubscribe?.(); } catch {}
+          try { poseSub?.cancel?.(); poseSub?.unsubscribe?.(); } catch {}
         }
       });
 
-      // Auto-cleanup after 2 minutes if user doesn't arrive
+      // Auto-cleanup after 2 minutes
       setTimeout(() => {
         clearPathDots();
         setNavPath([]); setNavTarget(null); setNavStep(0);
-        try { sweepSub?.cancel?.(); sweepSub?.unsubscribe?.(); } catch {}
+        try { poseSub?.cancel?.(); poseSub?.unsubscribe?.(); } catch {}
       }, 120000);
 
     } catch (err) {
