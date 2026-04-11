@@ -776,11 +776,6 @@ const TourViewer = () => {
               const found = tags.find((t: any) => t.sid === resolvedSid);
               if (found?.anchorPosition) anchorPos = found.anchorPosition;
             }
-            if (!anchorPos && sdk.Mattertag?.getData) {
-              const tags = await sdk.Mattertag.getData();
-              const found = tags.find((t: any) => t.sid === resolvedSid);
-              if (found?.anchorPosition) anchorPos = found.anchorPosition;
-            }
 
             if (anchorPos) {
               // 2. Get all sweeps — use Promise-wrapped observable with immediate check
