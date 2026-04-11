@@ -1039,10 +1039,13 @@ const TourViewer = () => {
     totalDotsRef.current = pathPoints.length;
     setNavStep(pathPoints.length);
 
-    console.log(`🗺️ startNavLine: ${pathPoints.length} points`);
+    console.log(`🗺️ startNavLine: ${pathPoints.length} points, Y range: ${Math.min(...pathPoints.map(p=>p.y)).toFixed(3)} to ${Math.max(...pathPoints.map(p=>p.y)).toFixed(3)}`);
     console.log(`🗺️ SDK APIs:`, {
       Conversion: !!sdk.Conversion?.worldToScreen,
       CameraPose: !!sdk.Camera?.pose?.subscribe,
+      SweepGraph: !!sdk.Sweep?.createGraph,
+      AStarRunner: !!sdk.Graph?.createAStarRunner,
+      Renderer: !!sdk.Renderer?.getWorldPositionData,
     });
 
     let lastDraw = 0;
@@ -1139,8 +1142,8 @@ const TourViewer = () => {
     setNavChoice(null);
   }, [navigateToMenuTag]);
 
-  // WALK to a tag — draw dots on floor, user walks themselves
-  // Uses tag positions as waypoints for pathfinding (tags are in accessible spots)
+  // WALK to a tag — draw grounded path on floor, user walks themselves
+  // Priority: Sweep graph A* (wall-aware) → Tag Dijkstra fallback (tight radius)
   const walkToTag = useCallback(async (tagSid: string) => {
     const sdk = sdkRef.current;
     setNavChoice(null);
@@ -1155,7 +1158,11 @@ const TourViewer = () => {
       await new Promise((r) => setTimeout(r, 50));
       navCancelledRef.current = false;
 
-      // 1. Get ALL tag positions (refresh from API if cache is small)
+      // ══════════════════════════════════════════════════════
+      // STEP 1: Gather ALL available position data
+      // ══════════════════════════════════════════════════════
+
+      // 1a. Get ALL tag positions
       let allTagPositions = new Map(tagPositionsRef.current);
       if (allTagPositions.size < 5 && sdk.Mattertag?.getData) {
         try {
@@ -1164,11 +1171,10 @@ const TourViewer = () => {
             if (t.sid && t.anchorPosition) allTagPositions.set(t.sid, t.anchorPosition);
           }
           tagPositionsRef.current = allTagPositions;
-          console.log(`📊 Refreshed tag positions: ${allTagPositions.size} tags`);
         } catch {}
       }
 
-      // Get destination tag position
+      // 1b. Get destination tag position
       let tagPos: any = allTagPositions.get(resolvedSid) || null;
       let foundTag: any = null;
       if (!tagPos && sdk.Mattertag?.getData) {
@@ -1178,7 +1184,7 @@ const TourViewer = () => {
       }
       if (!tagPos) { console.log("❌ WALK: No tag position found"); return; }
 
-      // 2. Get current camera position
+      // 1c. Get camera position
       let camPos: { x: number; y: number; z: number } | null = null;
       try {
         if (sdk.Camera?.getPose) {
@@ -1196,220 +1202,308 @@ const TourViewer = () => {
           });
         }
       } catch {}
-      console.log(`📍 Camera:`, camPos, `Tag:`, tagPos);
-
       if (!camPos) {
-        console.log("⚠️ No camera position — fallback near tag");
         camPos = { x: tagPos.x + 2, y: tagPos.y, z: tagPos.z + 2 };
       }
+      console.log(`📍 Camera: ${camPos.x.toFixed(2)}, ${camPos.y.toFixed(2)}, ${camPos.z.toFixed(2)}`);
+      console.log(`📍 Target: ${tagPos.x.toFixed(2)}, ${tagPos.y.toFixed(2)}, ${tagPos.z.toFixed(2)}`);
 
-      // 3. Build waypoint graph from tag positions for pathfinding
-      // Tags are placed in accessible areas (doorways, rooms, corridors)
-      // Use tight radius so path goes through nearby tags, not across rooms/walls
-      const waypoints: { sid: string; x: number; y: number; z: number }[] = [];
-      allTagPositions.forEach((pos, sid) => {
-        waypoints.push({ sid, x: pos.x, y: pos.y, z: pos.z });
-      });
-      // Add camera position and destination as virtual nodes
-      waypoints.push({ sid: "__cam__", x: camPos.x, y: camPos.y, z: camPos.z });
-      waypoints.push({ sid: "__dest__", x: tagPos.x, y: tagPos.y, z: tagPos.z });
-      console.log(`🗺️ Pathfinding with ${waypoints.length} waypoints (${allTagPositions.size} tags + cam + dest)`);
-
-      // Build adjacency with Dijkstra-style weighted edges
-      // Use tight 5m radius to avoid cross-wall connections, same floor only
-      const wpMap = new Map(waypoints.map(w => [w.sid, w]));
-      const neighbors = new Map<string, { sid: string; dist: number }[]>();
-      for (const a of waypoints) {
-        const adj: { sid: string; dist: number }[] = [];
-        for (const b of waypoints) {
-          if (a.sid === b.sid) continue;
-          const dx = a.x - b.x;
-          const dy = a.y - b.y;
-          const dz = a.z - b.z;
-          const horizDist = Math.sqrt(dx * dx + dz * dz);
-          if (Math.abs(dy) < 1.5 && horizDist < 5) {
-            adj.push({ sid: b.sid, dist: horizDist });
-          }
-        }
-        neighbors.set(a.sid, adj);
-      }
-
-      // If camera/dest have no neighbors at 5m, widen to 8m just for them
-      for (const nodeId of ["__cam__", "__dest__"]) {
-        if ((neighbors.get(nodeId) || []).length === 0) {
-          const node = wpMap.get(nodeId)!;
-          const adj: { sid: string; dist: number }[] = [];
-          for (const b of waypoints) {
-            if (b.sid === nodeId) continue;
-            const dx = node.x - b.x;
-            const dy = node.y - b.y;
-            const dz = node.z - b.z;
-            const horizDist = Math.sqrt(dx * dx + dz * dz);
-            if (Math.abs(dy) < 1.5 && horizDist < 8) {
-              adj.push({ sid: b.sid, dist: horizDist });
-            }
-          }
-          neighbors.set(nodeId, adj);
-        }
-      }
-
-      // Dijkstra for shortest path (not just BFS — picks shortest real distance)
-      const dist = new Map<string, number>();
-      const prev = new Map<string, string>();
-      const unvisited = new Set(waypoints.map(w => w.sid));
-      for (const w of waypoints) dist.set(w.sid, Infinity);
-      dist.set("__cam__", 0);
-
-      while (unvisited.size > 0) {
-        let minNode: string | null = null;
-        let minDist = Infinity;
-        for (const sid of unvisited) {
-          if ((dist.get(sid) || Infinity) < minDist) {
-            minDist = dist.get(sid) || Infinity;
-            minNode = sid;
-          }
-        }
-        if (!minNode || minDist === Infinity) break;
-        if (minNode === "__dest__") break;
-        unvisited.delete(minNode);
-
-        for (const edge of (neighbors.get(minNode) || [])) {
-          if (!unvisited.has(edge.sid)) continue;
-          const alt = minDist + edge.dist;
-          if (alt < (dist.get(edge.sid) || Infinity)) {
-            dist.set(edge.sid, alt);
-            prev.set(edge.sid, minNode);
-          }
-        }
-      }
-
-      // Reconstruct path
-      const pathWaypoints: { x: number; y: number; z: number }[] = [];
-      const found = dist.get("__dest__") !== Infinity && dist.get("__dest__") !== undefined;
-      if (found) {
-        const pathSids: string[] = [];
-        let cur: string | undefined = "__dest__";
-        while (cur && cur !== "__cam__") { pathSids.unshift(cur); cur = prev.get(cur); }
-        pathSids.unshift("__cam__");
-        for (const sid of pathSids) {
-          const w = wpMap.get(sid);
-          if (w) pathWaypoints.push({ x: w.x, y: w.y, z: w.z });
-        }
-        console.log(`✅ Dijkstra path: ${pathSids.length} waypoints (${dist.get("__dest__")?.toFixed(1)}m) → ${pathSids.filter(s => !s.startsWith("__")).join(" → ")}`);
-      } else {
-        // No path found — straight line fallback
-        console.log("⚠️ No path found — straight line fallback");
-        pathWaypoints.push({ x: camPos.x, y: camPos.y, z: camPos.z });
-        pathWaypoints.push({ x: tagPos.x, y: tagPos.y, z: tagPos.z });
-      }
-
-      // 4. Build GROUNDED path — force every point to the actual floor
-      // Multi-strategy floor Y detection:
-      let floorY: number | null = null;
-      const camY = camPos.y;
-      console.log(`📐 Camera Y (eye level): ${camY.toFixed(3)}`);
-
-      // ── Strategy 1: Sweep puckPosition (exact floor height) ──
+      // 1d. Collect ALL sweep data for puckPositions (floor Y) and positions
+      let allSweeps: { sid: string; position: any; puckPosition: any }[] = [];
       try {
-        if (sdk.Sweep?.current?.subscribe) {
-          const currentSweep: any = await new Promise((resolve) => {
-            const timeout = setTimeout(() => resolve(null), 2000);
-            const sub = sdk.Sweep.current.subscribe((s: any) => {
-              clearTimeout(timeout);
-              try { sub?.cancel?.(); sub?.unsubscribe?.(); } catch {}
-              resolve(s);
+        if (sdk.Sweep?.data?.subscribe) {
+          allSweeps = await new Promise((resolve) => {
+            const timeout = setTimeout(() => resolve([]), 3000);
+            const sub = sdk.Sweep.data.subscribe({
+              onCollectionUpdated: (collection: any) => {
+                clearTimeout(timeout);
+                try { sub?.cancel?.(); } catch {}
+                const sweeps: any[] = [];
+                if (collection) {
+                  for (const key of Object.keys(collection)) {
+                    const s = collection[key];
+                    if (s?.position) sweeps.push({ sid: s.sid || key, position: s.position, puckPosition: s.puckPosition });
+                  }
+                }
+                resolve(sweeps);
+              }
             });
           });
-          if (currentSweep?.puckPosition && currentSweep.puckPosition.y != null) {
-            const puckY = currentSweep.puckPosition.y;
-            // puckPosition is ON the floor — sanity check: must be below camera
-            if (puckY < camY - 0.5) {
-              floorY = puckY + 0.05; // +5cm offset above floor for visibility
-              console.log(`📐 Strategy 1 (puckPosition): floorY=${floorY.toFixed(3)} (puck=${puckY.toFixed(3)})`);
-            }
+        }
+      } catch {}
+      console.log(`📊 Sweep data: ${allSweeps.length} sweeps collected`);
+
+      // ══════════════════════════════════════════════════════
+      // STEP 2: DETERMINE FLOOR Y (the critical fix)
+      // ══════════════════════════════════════════════════════
+      const camY = camPos.y;
+      let floorY: number | null = null;
+
+      // ── Method A: Use the LOWEST puckPosition.y from sweeps on the same floor ──
+      if (allSweeps.length > 0) {
+        const puckYs = allSweeps
+          .filter(s => s.puckPosition?.y != null && Math.abs(s.position?.y - camY) < 3)
+          .map(s => s.puckPosition.y);
+        if (puckYs.length > 0) {
+          const lowestPuck = Math.min(...puckYs);
+          if (lowestPuck < camY - 0.3) {
+            floorY = lowestPuck + 0.05;
+            console.log(`📐 Floor Y from puckPositions: ${floorY.toFixed(3)} (${puckYs.length} sweeps, lowest=${lowestPuck.toFixed(3)})`);
           }
         }
-      } catch (e) { console.log("⚠️ Sweep puck failed:", e); }
-
-      // ── Strategy 2: Raycast from screen bottom — DISCARD hits near camera Y ──
-      if (floorY === null) {
-        try {
-          if (sdk.Renderer?.getWorldPositionData) {
-            const iframe = document.getElementById("showcase-iframe");
-            const iRect = iframe?.getBoundingClientRect();
-            if (iRect) {
-              const samples = [
-                { x: iRect.width * 0.5, y: iRect.height * 0.92 }, // very bottom center
-                { x: iRect.width * 0.3, y: iRect.height * 0.88 },
-                { x: iRect.width * 0.7, y: iRect.height * 0.88 },
-                { x: iRect.width * 0.5, y: iRect.height * 0.75 },
-              ];
-              const validHits: number[] = [];
-              for (const sp of samples) {
-                try {
-                  const data = await sdk.Renderer.getWorldPositionData(sp);
-                  if (data?.position && data.position.y != null) {
-                    const hitY = data.position.y;
-                    // DISCARD if hit is close to camera Y (within 1m) — probably hit a wall
-                    if (hitY < camY - 1.0) {
-                      validHits.push(hitY);
-                    } else {
-                      console.log(`📐 Raycast discarded: hitY=${hitY.toFixed(2)} too close to camY=${camY.toFixed(2)}`);
-                    }
-                  }
-                } catch {}
-              }
-              if (validHits.length > 0) {
-                floorY = Math.min(...validHits) + 0.05;
-                console.log(`📐 Strategy 2 (raycast): floorY=${floorY.toFixed(3)} (${validHits.length} valid hits: ${validHits.map(h => h.toFixed(2)).join(", ")})`);
-              }
-            }
-          }
-        } catch (e) { console.log("⚠️ Raycast failed:", e); }
       }
 
-      // ── Strategy 3: Lowest tag anchor Y minus offset ──
+      // ── Method B: Raycast from multiple screen positions, reject near-camera hits ──
+      if (floorY === null && sdk.Renderer?.getWorldPositionData) {
+        try {
+          const iframe = document.getElementById("showcase-iframe");
+          const iRect = iframe?.getBoundingClientRect();
+          if (iRect) {
+            const probes = [
+              { x: iRect.width * 0.5, y: iRect.height * 0.95 },
+              { x: iRect.width * 0.3, y: iRect.height * 0.90 },
+              { x: iRect.width * 0.7, y: iRect.height * 0.90 },
+              { x: iRect.width * 0.5, y: iRect.height * 0.70 },
+              { x: iRect.width * 0.2, y: iRect.height * 0.85 },
+              { x: iRect.width * 0.8, y: iRect.height * 0.85 },
+            ];
+            const hits: number[] = [];
+            for (const p of probes) {
+              try {
+                const data = await sdk.Renderer.getWorldPositionData(p);
+                if (data?.position?.y != null) {
+                  const hy = data.position.y;
+                  // Only accept hits that are clearly BELOW camera (>1m below)
+                  if (hy < camY - 1.0) hits.push(hy);
+                }
+              } catch {}
+            }
+            if (hits.length > 0) {
+              floorY = Math.min(...hits) + 0.05;
+              console.log(`📐 Floor Y from raycast: ${floorY.toFixed(3)} (${hits.length} hits: ${hits.map(h => h.toFixed(2))})`);
+            }
+          }
+        } catch {}
+      }
+
+      // ── Method C: Use ALL sweep positions (not puck) — lowest is near floor ──
+      if (floorY === null && allSweeps.length > 0) {
+        const sweepYs = allSweeps
+          .filter(s => s.position?.y != null && Math.abs(s.position.y - camY) < 3)
+          .map(s => s.position.y);
+        if (sweepYs.length > 0) {
+          // Sweep position is at eye level (~1.5m above floor)
+          floorY = Math.min(...sweepYs) - 1.5;
+          console.log(`📐 Floor Y from sweep positions: ${floorY.toFixed(3)}`);
+        }
+      }
+
+      // ── Method D: Lowest tag Y - 1.2m ──
       if (floorY === null) {
         const tagYs: number[] = [];
         allTagPositions.forEach((pos) => {
-          if (Math.abs(pos.y - camY) < 3) tagYs.push(pos.y); // same floor
+          if (Math.abs(pos.y - camY) < 3) tagYs.push(pos.y);
         });
         if (tagYs.length > 0) {
-          const minTagY = Math.min(...tagYs);
-          // Tags are on walls typically 0.5-2m above floor
-          const candidate = minTagY - 1.0;
-          if (candidate < camY - 0.5) {
-            floorY = candidate;
-            console.log(`📐 Strategy 3 (min tag Y): floorY=${floorY.toFixed(3)} (lowest tag=${minTagY.toFixed(2)})`);
-          }
+          floorY = Math.min(...tagYs) - 1.2;
+          console.log(`📐 Floor Y from min tag: ${floorY.toFixed(3)}`);
         }
       }
 
-      // ── Strategy 4: Fixed offset from camera (1.6m = standard person height) ──
+      // ── Method E: Hardcoded offset ──
       if (floorY === null) {
         floorY = camY - 1.6;
-        console.log(`📐 Strategy 4 (fixed offset): floorY=${floorY.toFixed(3)} (camY - 1.6)`);
+        console.log(`📐 Floor Y hardcoded: ${floorY.toFixed(3)}`);
       }
 
-      // ── Safety: if floorY is STILL above camY - 1.0, force it down ──
+      // ── SAFETY: floorY MUST be at least 1m below camera. Period. ──
       if (floorY > camY - 1.0) {
         floorY = camY - 1.6;
-        console.log(`📐 Safety override: floorY forced to ${floorY.toFixed(3)}`);
+        console.log(`📐 Safety: forced floorY to ${floorY.toFixed(3)}`);
       }
 
-      console.log(`📐 ✅ FINAL floor Y: ${floorY.toFixed(3)} | camera Y: ${camY.toFixed(2)} | delta: ${(camY - floorY).toFixed(2)}m`);
+      console.log(`📐 ✅ FINAL floorY=${floorY.toFixed(3)} | camY=${camY.toFixed(2)} | gap=${(camY - floorY).toFixed(2)}m`);
 
-      // Ground EVERY point at floor level — start from user's feet
-      const feetPos = { x: camPos.x, y: floorY, z: camPos.z };
-      const groundedWaypoints = pathWaypoints.map((p, i) =>
-        i === 0 ? feetPos : { x: p.x, y: floorY, z: p.z }
-      );
+      // ══════════════════════════════════════════════════════
+      // STEP 3: PATHFINDING (wall-aware)
+      // ══════════════════════════════════════════════════════
+      let pathWaypoints: { x: number; y: number; z: number }[] = [];
+      let pathSource = "none";
 
-      const pathPoints = interpolatePath(groundedWaypoints, 0.4);
-      console.log(`📍 Grounded path: ${pathPoints.length} pts, ${pathWaypoints.length} waypoints, Y=${floorY.toFixed(3)}`);
+      // ── Try A: Sweep graph + A* (official Matterport wall-aware pathfinding) ──
+      if (allSweeps.length > 3) {
+        try {
+          // Find nearest sweep to camera and to destination
+          const findNearest = (target: { x: number; z: number }) => {
+            let best = allSweeps[0];
+            let bestDist = Infinity;
+            for (const s of allSweeps) {
+              if (!s.position) continue;
+              const dx = s.position.x - target.x;
+              const dz = s.position.z - target.z;
+              const d = dx * dx + dz * dz;
+              if (d < bestDist) { bestDist = d; best = s; }
+            }
+            return best;
+          };
+          const startSweep = findNearest(camPos);
+          const endSweep = findNearest(tagPos);
+
+          if (startSweep?.sid && endSweep?.sid && startSweep.sid !== endSweep.sid) {
+            if (sdk.Sweep?.createGraph && sdk.Graph?.createAStarRunner) {
+              console.log(`🗺️ Trying A* sweep graph: ${startSweep.sid} → ${endSweep.sid}`);
+              const graph = await sdk.Sweep.createGraph();
+              const startVertex = graph.vertex(startSweep.sid);
+              const endVertex = graph.vertex(endSweep.sid);
+              if (startVertex && endVertex) {
+                const runner = sdk.Graph.createAStarRunner(graph, startVertex, endVertex);
+                const result = runner.exec();
+                if (result?.path && result.path.length > 1) {
+                  pathWaypoints = [{ x: camPos.x, y: camPos.y, z: camPos.z }];
+                  for (const vertex of result.path) {
+                    const data = vertex.data || vertex;
+                    if (data?.position) {
+                      pathWaypoints.push({ x: data.position.x, y: data.position.y, z: data.position.z });
+                    }
+                  }
+                  pathWaypoints.push({ x: tagPos.x, y: tagPos.y, z: tagPos.z });
+                  pathSource = `A* sweep graph (${result.path.length} sweeps)`;
+                  console.log(`✅ A* path: ${result.path.length} sweeps`);
+                }
+              }
+            }
+          }
+        } catch (e) {
+          console.log(`⚠️ A* sweep pathfinding failed:`, e);
+        }
+      }
+
+      // ── Try B: Tag-based Dijkstra with TIGHT 3m radius ──
+      if (pathWaypoints.length < 2) {
+        console.log(`🗺️ Falling back to tag Dijkstra (${allTagPositions.size} tags)`);
+        const waypoints: { sid: string; x: number; y: number; z: number }[] = [];
+        allTagPositions.forEach((pos, sid) => {
+          waypoints.push({ sid, x: pos.x, y: pos.y, z: pos.z });
+        });
+        waypoints.push({ sid: "__cam__", x: camPos.x, y: camPos.y, z: camPos.z });
+        waypoints.push({ sid: "__dest__", x: tagPos.x, y: tagPos.y, z: tagPos.z });
+
+        const wpMap = new Map(waypoints.map(w => [w.sid, w]));
+        const neighbors = new Map<string, { sid: string; dist: number }[]>();
+
+        // TIGHT 3m radius for tags (avoid cross-wall connections)
+        for (const a of waypoints) {
+          const adj: { sid: string; dist: number }[] = [];
+          for (const b of waypoints) {
+            if (a.sid === b.sid) continue;
+            const dx = a.x - b.x;
+            const dy = a.y - b.y;
+            const dz = a.z - b.z;
+            const horizDist = Math.sqrt(dx * dx + dz * dz);
+            const maxR = (a.sid.startsWith("__") || b.sid.startsWith("__")) ? 6 : 3;
+            if (Math.abs(dy) < 1.5 && horizDist < maxR) {
+              adj.push({ sid: b.sid, dist: horizDist });
+            }
+          }
+          neighbors.set(a.sid, adj);
+        }
+
+        // Widen cam/dest to 10m if no neighbors
+        for (const nodeId of ["__cam__", "__dest__"]) {
+          if ((neighbors.get(nodeId) || []).length === 0) {
+            const node = wpMap.get(nodeId)!;
+            const adj: { sid: string; dist: number }[] = [];
+            for (const b of waypoints) {
+              if (b.sid === nodeId) continue;
+              const dx = node.x - b.x;
+              const dy = node.y - b.y;
+              const dz = node.z - b.z;
+              const horizDist = Math.sqrt(dx * dx + dz * dz);
+              if (Math.abs(dy) < 2 && horizDist < 10) {
+                adj.push({ sid: b.sid, dist: horizDist });
+              }
+            }
+            neighbors.set(nodeId, adj);
+          }
+        }
+
+        // Dijkstra
+        const dist = new Map<string, number>();
+        const prev = new Map<string, string>();
+        const unvisited = new Set(waypoints.map(w => w.sid));
+        for (const w of waypoints) dist.set(w.sid, Infinity);
+        dist.set("__cam__", 0);
+
+        while (unvisited.size > 0) {
+          let minNode: string | null = null;
+          let minDist = Infinity;
+          for (const sid of unvisited) {
+            if ((dist.get(sid) || Infinity) < minDist) {
+              minDist = dist.get(sid) || Infinity;
+              minNode = sid;
+            }
+          }
+          if (!minNode || minDist === Infinity) break;
+          if (minNode === "__dest__") break;
+          unvisited.delete(minNode);
+
+          for (const edge of (neighbors.get(minNode) || [])) {
+            if (!unvisited.has(edge.sid)) continue;
+            const alt = minDist + edge.dist;
+            if (alt < (dist.get(edge.sid) || Infinity)) {
+              dist.set(edge.sid, alt);
+              prev.set(edge.sid, minNode);
+            }
+          }
+        }
+
+        const found = dist.get("__dest__") !== Infinity && dist.get("__dest__") !== undefined;
+        if (found) {
+          const pathSids: string[] = [];
+          let cur: string | undefined = "__dest__";
+          while (cur && cur !== "__cam__") { pathSids.unshift(cur); cur = prev.get(cur); }
+          pathSids.unshift("__cam__");
+          for (const sid of pathSids) {
+            const w = wpMap.get(sid);
+            if (w) pathWaypoints.push({ x: w.x, y: w.y, z: w.z });
+          }
+          pathSource = `Dijkstra (${pathSids.length} tags, 3m radius)`;
+          console.log(`✅ Dijkstra: ${pathSids.length} waypoints → ${pathSids.filter(s => !s.startsWith("__")).join(" → ")}`);
+        } else {
+          // Last resort: straight line
+          pathWaypoints.push({ x: camPos.x, y: camPos.y, z: camPos.z });
+          pathWaypoints.push({ x: tagPos.x, y: tagPos.y, z: tagPos.z });
+          pathSource = "straight line (no path found)";
+        }
+      }
+
+      console.log(`🗺️ Path source: ${pathSource} (${pathWaypoints.length} waypoints)`);
+
+      // ══════════════════════════════════════════════════════
+      // STEP 4: GROUND EVERY POINT TO FLOOR + interpolate
+      // ══════════════════════════════════════════════════════
+      // Force EVERY single point to exact floorY — no exceptions
+      const groundedPath = pathWaypoints.map((p, i) => ({
+        x: p.x,
+        y: floorY,
+        z: p.z,
+      }));
+
+      // Log each waypoint for debugging
+      for (let i = 0; i < groundedPath.length; i++) {
+        const orig = pathWaypoints[i];
+        console.log(`  📍 [${i}] orig Y=${orig.y.toFixed(2)} → grounded Y=${floorY.toFixed(2)} | x=${orig.x.toFixed(2)}, z=${orig.z.toFixed(2)}`);
+      }
+
+      const pathPoints = interpolatePath(groundedPath, 0.5);
+      console.log(`📍 Final: ${pathPoints.length} interpolated points, ALL at Y=${floorY.toFixed(3)}`);
+
+      // Verify: every point should have the same Y
+      const badPoints = pathPoints.filter(p => Math.abs(p.y - floorY) > 0.01);
+      if (badPoints.length > 0) console.log(`⚠️ ${badPoints.length} points NOT at floorY!`);
 
       // 5. Set UI state
-      setNavPath(groundedWaypoints);
+      setNavPath(groundedPath);
       setNavTarget({ id: 0, tourId: 0, name: foundTag?.label || tagSid, tagSid: resolvedSid } as TourItemData);
 
       // 6. Start live canvas line navigation
