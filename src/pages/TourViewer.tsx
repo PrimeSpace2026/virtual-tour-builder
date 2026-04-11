@@ -1331,6 +1331,12 @@ const TourViewer = () => {
       let pathSource = "none";
 
       // ── Try A: Sweep graph + A* (official Matterport wall-aware pathfinding) ──
+      // Build a map of sweep sid → puckPosition for per-point floor snapping
+      const sweepPuckMap = new Map<string, { x: number; y: number; z: number }>();
+      for (const s of allSweeps) {
+        if (s.sid && s.puckPosition) sweepPuckMap.set(s.sid, s.puckPosition);
+      }
+
       if (allSweeps.length > 3) {
         try {
           // Find nearest sweep to camera and to destination
@@ -1359,16 +1365,28 @@ const TourViewer = () => {
                 const runner = sdk.Graph.createAStarRunner(graph, startVertex, endVertex);
                 const result = runner.exec();
                 if (result?.path && result.path.length > 1) {
-                  pathWaypoints = [{ x: camPos.x, y: camPos.y, z: camPos.z }];
+                  // Use puckPosition (floor level) for each sweep, NOT eye-level position
+                  const startPuck = sweepPuckMap.get(startSweep.sid);
+                  const startY = startPuck ? startPuck.y + 0.05 : floorY;
+                  pathWaypoints = [{ x: camPos.x, y: startY, z: camPos.z }];
+
                   for (const vertex of result.path) {
                     const data = vertex.data || vertex;
+                    const sid = data?.sid || data?.id || "";
+                    const puck = sweepPuckMap.get(sid);
                     if (data?.position) {
-                      pathWaypoints.push({ x: data.position.x, y: data.position.y, z: data.position.z });
+                      // KEY: Use puckPosition.y (floor) instead of position.y (eye level)
+                      const groundY = puck ? puck.y + 0.05 : floorY;
+                      pathWaypoints.push({ x: data.position.x, y: groundY, z: data.position.z });
                     }
                   }
-                  pathWaypoints.push({ x: tagPos.x, y: tagPos.y, z: tagPos.z });
-                  pathSource = `A* sweep graph (${result.path.length} sweeps)`;
-                  console.log(`✅ A* path: ${result.path.length} sweeps`);
+
+                  const endPuck = sweepPuckMap.get(endSweep.sid);
+                  const endY = endPuck ? endPuck.y + 0.05 : floorY;
+                  pathWaypoints.push({ x: tagPos.x, y: endY, z: tagPos.z });
+
+                  pathSource = `A* sweep graph (${result.path.length} sweeps, per-puck Y)`;
+                  console.log(`✅ A* path: ${result.path.length} sweeps (grounded via puckPositions)`);
                 }
               }
             }
@@ -1482,25 +1500,28 @@ const TourViewer = () => {
       // ══════════════════════════════════════════════════════
       // STEP 4: GROUND EVERY POINT TO FLOOR + interpolate
       // ══════════════════════════════════════════════════════
-      // Force EVERY single point to exact floorY — no exceptions
-      const groundedPath = pathWaypoints.map((p, i) => ({
-        x: p.x,
-        y: floorY,
-        z: p.z,
-      }));
+      let groundedPath: { x: number; y: number; z: number }[];
 
-      // Log each waypoint for debugging
-      for (let i = 0; i < groundedPath.length; i++) {
-        const orig = pathWaypoints[i];
-        console.log(`  📍 [${i}] orig Y=${orig.y.toFixed(2)} → grounded Y=${floorY.toFixed(2)} | x=${orig.x.toFixed(2)}, z=${orig.z.toFixed(2)}`);
+      if (pathSource.includes("A*")) {
+        // A* path: points already have per-sweep puckPosition Y — keep them
+        // This follows stair geometry correctly (each sweep has its own floor level)
+        groundedPath = pathWaypoints.map(p => ({ x: p.x, y: p.y, z: p.z }));
+        console.log(`📍 A* path Y values (per-puck): ${groundedPath.map(p => p.y.toFixed(2)).join(" → ")}`);
+      } else {
+        // Dijkstra/straight line: flatten to global floorY
+        groundedPath = pathWaypoints.map(p => ({ x: p.x, y: floorY, z: p.z }));
       }
 
-      const pathPoints = interpolatePath(groundedPath, 0.5);
-      console.log(`📍 Final: ${pathPoints.length} interpolated points, ALL at Y=${floorY.toFixed(3)}`);
+      // Log each waypoint
+      for (let i = 0; i < groundedPath.length; i++) {
+        const orig = pathWaypoints[i];
+        const g = groundedPath[i];
+        console.log(`  📍 [${i}] origY=${orig.y.toFixed(2)} → groundedY=${g.y.toFixed(2)} | x=${g.x.toFixed(2)}, z=${g.z.toFixed(2)}`);
+      }
 
-      // Verify: every point should have the same Y
-      const badPoints = pathPoints.filter(p => Math.abs(p.y - floorY) > 0.01);
-      if (badPoints.length > 0) console.log(`⚠️ ${badPoints.length} points NOT at floorY!`);
+      // Interpolate: Y will smoothly follow the floor contour (stairs, ramps)
+      const pathPoints = interpolatePath(groundedPath, 0.5);
+      console.log(`📍 Final: ${pathPoints.length} interpolated points`);
 
       // 5. Set UI state
       setNavPath(groundedPath);
