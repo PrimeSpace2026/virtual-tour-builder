@@ -312,6 +312,7 @@ const TourViewer = () => {
   const sdkAttemptsRef = useRef(0);
   const tagsMapRef = useRef<Map<string, string>>(new Map()); // tagName (lowercase) → SID
   const savedTagsMapRef = useRef<Map<string, string>>(new Map()); // saved tags from DB: name (lowercase) → SID
+  const tagPositionsRef = useRef<Map<string, {x: number; y: number; z: number}>>(new Map()); // SID → anchorPosition
   const visitIdRef = useRef<number | null>(null);
   const visitStartRef = useRef<number>(Date.now());
 
@@ -660,6 +661,7 @@ const TourViewer = () => {
             allTags.forEach((t: any) => {
               if (t.label) tagsMapRef.current.set(t.label.trim().toLowerCase(), t.sid);
               if (t.sid) tagsMapRef.current.set(t.sid, t.sid);
+              if (t.sid && t.anchorPosition) tagPositionsRef.current.set(t.sid, t.anchorPosition);
             });
           }
         } catch {}
@@ -683,6 +685,7 @@ const TourViewer = () => {
                 tags.forEach((t: any) => {
                   if (t.label) tagsMapRef.current.set(t.label.trim().toLowerCase(), t.sid);
                   if (t.sid) tagsMapRef.current.set(t.sid, t.sid);
+                  if (t.sid && t.anchorPosition) tagPositionsRef.current.set(t.sid, t.anchorPosition);
                 });
               }
             } catch (e) { console.log("Tag restore error:", e); }
@@ -963,26 +966,29 @@ const TourViewer = () => {
       await new Promise((r) => setTimeout(r, 50));
       navCancelledRef.current = false;
 
-      // 1. Get tag position (try multiple methods)
-      let tagPos: any = null;
+      // 1. Get tag position (try cache first, then API)
+      let tagPos: any = tagPositionsRef.current.get(resolvedSid) || null;
       let foundTag: any = null;
-      try {
-        // Method A: Mattertag.getData (most reliable, returns all tags)
-        if (sdk.Mattertag?.getData) {
-          const tags = await sdk.Mattertag.getData();
-          console.log(`📊 Mattertag.getData returned ${tags.length} tags`);
-          foundTag = tags.find((t: any) => t.sid === resolvedSid);
-          if (foundTag?.anchorPosition) tagPos = foundTag.anchorPosition;
-        }
-        // Method B: Tag.getData
-        if (!tagPos && sdk.Tag?.getData) {
-          const tags = await sdk.Tag.getData();
-          console.log(`📊 Tag.getData returned ${tags.length} tags`);
-          foundTag = tags.find((t: any) => t.sid === resolvedSid);
-          if (foundTag?.anchorPosition) tagPos = foundTag.anchorPosition;
-        }
-        console.log(`📍 Tag position:`, tagPos);
-      } catch (e) { console.log("❌ Tag getData failed:", e); }
+      console.log(`📍 Cached tag position for ${resolvedSid}:`, tagPos);
+      if (!tagPos) {
+        try {
+          // Method A: Mattertag.getData
+          if (sdk.Mattertag?.getData) {
+            const tags = await sdk.Mattertag.getData();
+            console.log(`📊 Mattertag.getData returned ${tags.length} tags`);
+            foundTag = tags.find((t: any) => t.sid === resolvedSid);
+            if (foundTag?.anchorPosition) tagPos = foundTag.anchorPosition;
+          }
+          // Method B: Tag.getData
+          if (!tagPos && sdk.Tag?.getData) {
+            const tags = await sdk.Tag.getData();
+            console.log(`📊 Tag.getData returned ${tags.length} tags`);
+            foundTag = tags.find((t: any) => t.sid === resolvedSid);
+            if (foundTag?.anchorPosition) tagPos = foundTag.anchorPosition;
+          }
+          console.log(`📍 API tag position:`, tagPos);
+        } catch (e) { console.log("❌ Tag getData failed:", e); }
+      }
 
       if (!tagPos) { console.log("❌ WALK: No tag position found"); return; }
 
