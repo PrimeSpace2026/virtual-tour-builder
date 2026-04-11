@@ -383,6 +383,8 @@ const TourViewer = () => {
 
   // Navigation choice modal state (Fly vs Navigate)
   const [navChoice, setNavChoice] = useState<{ tagSid: string; label: string } | null>(null);
+  // Arrival popup state
+  const [navArrived, setNavArrived] = useState<{ name: string } | null>(null);
 
   // Persist cart to localStorage
   useEffect(() => {
@@ -1063,13 +1065,14 @@ const TourViewer = () => {
   }, []);
 
   // Start live navigation: place 3D dots + subscribe to Camera.pose for canvas overlay
-  const startNavLine = useCallback((pathPoints: { x: number; y: number; z: number }[], destTag: { x: number; y: number; z: number }) => {
+  const startNavLine = useCallback((pathPoints: { x: number; y: number; z: number }[], destTag: { x: number; y: number; z: number }, destName: string) => {
     const sdk = sdkRef.current;
     if (!sdk) { console.log("❌ No SDK"); return; }
 
     navPathPointsRef.current = pathPoints;
     totalDotsRef.current = pathPoints.length;
     setNavStep(pathPoints.length);
+    setNavArrived(null); // reset any previous arrival popup
 
     console.log(`🗺️ startNavLine: ${pathPoints.length} points, Y range: ${Math.min(...pathPoints.map(p=>p.y)).toFixed(3)} to ${Math.max(...pathPoints.map(p=>p.y)).toFixed(3)}`);
     console.log(`🗺️ SDK APIs:`, {
@@ -1080,6 +1083,9 @@ const TourViewer = () => {
 
     // Place 3D Mattertag dots along the grounded path
     placePathDots(pathPoints);
+
+    // Debounce: only trigger arrival once per navigation session
+    const arrivedRef = { current: false };
 
     let lastDraw = 0;
     let drawCount = 0;
@@ -1096,12 +1102,18 @@ const TourViewer = () => {
 
       drawNavLine(pose);
 
-      // Arrival check
-      const dx = pose.position.x - destTag.x;
-      const dz = pose.position.z - destTag.z;
-      if (dx * dx + dz * dz < 9) {
-        console.log("✅ Arrived!");
-        stopNavigation();
+      // Arrival check — 1.5m threshold, debounced (arrivedRef prevents re-trigger)
+      if (!arrivedRef.current) {
+        const dx = pose.position.x - destTag.x;
+        const dz = pose.position.z - destTag.z;
+        if (dx * dx + dz * dz < 2.25) { // 1.5m radius
+          arrivedRef.current = true;
+          console.log("✅ وصلت! Arrived at destination");
+          stopNavigation();
+          setNavArrived({ name: destName });
+          // Auto-dismiss after 5s
+          setTimeout(() => setNavArrived(null), 5000);
+        }
       }
     };
 
@@ -1601,7 +1613,7 @@ const TourViewer = () => {
       setNavTarget({ id: 0, tourId: 0, name: foundTag?.label || tagSid, tagSid: resolvedSid } as TourItemData);
 
       // 6. Start live canvas line navigation
-      startNavLine(pathPoints, { x: tagPos.x, y: tagPos.y, z: tagPos.z });
+      startNavLine(pathPoints, { x: tagPos.x, y: tagPos.y, z: tagPos.z }, foundTag?.label || tagSid);
 
     } catch (err) {
       console.log("❌ Walk failed:", err);
@@ -1896,6 +1908,47 @@ const TourViewer = () => {
                     className="mt-4 w-full text-center text-white/30 text-xs hover:text-white/50 transition-colors"
                   >
                     Annuler
+                  </button>
+                </div>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
+        {/* ===== ARRIVAL POPUP (وصلت!) ===== */}
+        <AnimatePresence>
+          {navArrived && (
+            <>
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setNavArrived(null)}
+                className="absolute inset-0 bg-black/40 backdrop-blur-sm z-[40]"
+              />
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8, y: 30 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.8, y: 30 }}
+                transition={{ type: "spring", damping: 20, stiffness: 300 }}
+                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[41] w-[300px]"
+              >
+                <div className="bg-gradient-to-b from-[#0d2137] to-[#0a1628] border border-blue-400/30 rounded-2xl p-6 shadow-2xl shadow-blue-500/20 text-center">
+                  {/* Success icon */}
+                  <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
+                    <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  {/* Arabic title */}
+                  <p className="text-2xl font-bold text-white mb-1">!وصلت</p>
+                  <p className="text-blue-300 text-sm font-medium mb-1">Vous êtes arrivé !</p>
+                  <p className="text-white/50 text-xs mb-4 truncate px-2">{navArrived.name}</p>
+                  {/* Dismiss button */}
+                  <button
+                    onClick={() => setNavArrived(null)}
+                    className="w-full px-4 py-2.5 rounded-xl bg-blue-500/20 hover:bg-blue-500/30 border border-blue-400/20 hover:border-blue-400/40 text-blue-200 text-sm font-medium transition-all"
+                  >
+                    Continuer l'exploration
                   </button>
                 </div>
               </motion.div>
