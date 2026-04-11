@@ -1878,7 +1878,7 @@ const TourViewer = () => {
                   <div className="flex flex-col gap-3">
                     {/* Fly option */}
                     <button
-                      onClick={() => flyToTag(navChoice.tagSid)}
+                      onClick={() => { flyToTag(navChoice.tagSid); setShowCard(false); }}
                       className="flex items-center gap-3 w-full px-4 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 transition-all shadow-lg shadow-purple-500/25 group"
                     >
                       <svg className="w-5 h-5 text-white shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -1892,7 +1892,7 @@ const TourViewer = () => {
 
                     {/* Walk option */}
                     <button
-                      onClick={() => walkToTag(navChoice.tagSid, navChoice.label)}
+                      onClick={() => { walkToTag(navChoice.tagSid, navChoice.label); setShowCard(false); }}
                       className="flex items-center gap-3 w-full px-4 py-3 rounded-xl bg-white/[0.08] hover:bg-white/[0.15] border border-white/10 hover:border-white/20 transition-all group"
                     >
                       <svg className="w-5 h-5 text-purple-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
