@@ -1201,7 +1201,7 @@ const Admin = () => {
                                   setMenuSections(updated);
                                 }}
                               >
-                                <SelectTrigger className="h-8 text-xs w-[140px]">
+                                <SelectTrigger className="h-8 text-xs w-[200px]">
                                   <SelectValue placeholder={dialogTagsLoading ? "Chargement..." : dialogTags.length === 0 ? "Aucun tag" : "Tag"} />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -1715,7 +1715,7 @@ const Admin = () => {
                             </Select>
                             <Input value={item.name} onChange={(e) => { const u = [...gymSections]; const items = [...sec.items]; items[iIdx] = { ...item, name: e.target.value }; u[sIdx] = { ...sec, items }; setGymSections(u); }} placeholder="Nom" className="h-8 text-sm flex-1" />
                             <Select value={item.tagSid || "__none__"} onValueChange={(v) => { const u = [...gymSections]; const items = [...sec.items]; items[iIdx] = { ...item, tagSid: v === "__none__" ? "" : v }; u[sIdx] = { ...sec, items }; setGymSections(u); }}>
-                              <SelectTrigger className="h-8 text-xs w-[140px]"><SelectValue placeholder={dialogTagsLoading ? "Chargement..." : dialogTags.length === 0 ? "Aucun tag" : "Tag"} /></SelectTrigger>
+                              <SelectTrigger className="h-8 text-xs w-[200px]"><SelectValue placeholder={dialogTagsLoading ? "Chargement..." : dialogTags.length === 0 ? "Aucun tag" : "Tag"} /></SelectTrigger>
                               <SelectContent>
                                 <SelectItem value="__none__">Aucun tag</SelectItem>
                                 {dialogTags.map((tag) => (<SelectItem key={tag.sid} value={tag.sid}><span className="flex items-center gap-1"><Tag className="w-3 h-3" />{tag.name}</span></SelectItem>))}
