@@ -465,7 +465,7 @@ const Admin = () => {
         const rawSweeps = sData?.data?.model?.sweeps || sData?.sweeps || [];
         sweepOptions = rawSweeps.map((s: any, idx: number) => ({
           name: `360° #${idx + 1} — Étage ${s.floor ?? '?'}`,
-          sid: s.uuid || s.id || `sweep:${idx}`,
+          sid: `sweep:${s.floor ?? 0}:${idx + 1}`,
         }));
         combined = [...combined, ...sweepOptions];
       }
@@ -759,7 +759,7 @@ const Admin = () => {
                 const rawSweeps = sData?.data?.model?.sweeps || sData?.sweeps || [];
                 const sweepOptions = rawSweeps.map((s: any, idx: number) => ({
                   name: `360° #${idx + 1} — Étage ${s.floor ?? '?'}`,
-                  sid: s.uuid || s.id || `sweep:${idx}`,
+                  sid: `sweep:${s.floor ?? 0}:${idx + 1}`,
                 }));
                 combined = [...combined, ...sweepOptions];
               }
@@ -774,7 +774,7 @@ const Admin = () => {
               const rawSweeps = sData?.data?.model?.sweeps || sData?.sweeps || [];
               const sweepOptions = rawSweeps.map((s: any, idx: number) => ({
                 name: `360° #${idx + 1} — Étage ${s.floor ?? '?'}`,
-                sid: s.uuid || s.id || `sweep:${idx}`,
+                sid: `sweep:${s.floor ?? 0}:${idx + 1}`,
               }));
               if (sweepOptions.length > 0) setTourTags([...saved, ...sweepOptions]);
             }
