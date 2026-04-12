@@ -701,17 +701,8 @@ const TourViewer = () => {
         }
 
         // Prevent native Matterport popup from appearing on product tags
-        try {
-          if (sdk.Tag?.allowAction !== undefined) {
-            sdk.Tag.allowAction(false);
-          }
-        } catch {}
-        // Alternative: use Mattertag.preventAction for older SDK
-        try {
-          if (sdk.Mattertag?.preventAction) {
-            sdk.Mattertag.preventAction(true);
-          }
-        } catch {}
+        // Note: we handle popup close manually in handleTagClick
+        // Do NOT use allowAction(false) as it blocks navigateToTag fly transitions
       } catch (err) {
         if (cancelled) return;
         console.log("⚠️ SDK échoué sur localhost:", err);
