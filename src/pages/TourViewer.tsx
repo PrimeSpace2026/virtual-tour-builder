@@ -824,6 +824,13 @@ const TourViewer = () => {
   // Navigate to a Matterport tag by SID (used by hotel menu sections)
   // Uses iframe deep-link method (same as product navigation fallback)
   const navigateToMenuTag = useCallback((tagSid: string) => {
+    // Handle direct Matterport sweep URL
+    if (tagSid.startsWith("http")) {
+      setIframeSrc(tagSid);
+      setIframeKey((k) => k + 1);
+      setIframeLoaded(false);
+      return;
+    }
     if (!tour?.tourUrl) return;
     const tagKey = tagSid.trim().toLowerCase();
     const resolvedSid = tagsMapRef.current.get(tagKey) || savedTagsMapRef.current.get(tagKey) || tagSid;
@@ -838,6 +845,15 @@ const TourViewer = () => {
 
   // FLY directly to a tag using SDK Mattertag.navigateToTag
   const flyToTag = useCallback((tagSid: string) => {
+    // Handle direct Matterport sweep URL (e.g. https://my.matterport.com/show/?m=xxx&ss=48&sr=-.12,-.53)
+    if (tagSid.startsWith("http")) {
+      console.log(`🔗 Direct sweep link: ${tagSid}`);
+      setIframeSrc(tagSid);
+      setIframeKey((k) => k + 1);
+      setIframeLoaded(false);
+      setShowCard(false);
+      return;
+    }
     const sdk = sdkRef.current;
     if (!sdk?.Mattertag?.navigateToTag) {
       navigateToMenuTag(tagSid);

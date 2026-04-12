@@ -1192,11 +1192,11 @@ const Admin = () => {
                                 className="h-8 text-sm flex-1"
                               />
                               <Select
-                                value={item.tagSid || "__none__"}
+                                value={item.tagSid?.startsWith("http") ? "__link__" : (item.tagSid || "__none__")}
                                 onValueChange={(v) => {
                                   const updated = [...menuSections];
                                   const items = [...sec.items];
-                                  items[iIdx] = { ...item, tagSid: v === "__none__" ? "" : v };
+                                  items[iIdx] = { ...item, tagSid: v === "__none__" ? "" : v === "__link__" ? "https://" : v };
                                   updated[sIdx] = { ...sec, items };
                                   setMenuSections(updated);
                                 }}
@@ -1206,6 +1206,7 @@ const Admin = () => {
                                 </SelectTrigger>
                                 <SelectContent>
                                   <SelectItem value="__none__">Aucun tag</SelectItem>
+                                  <SelectItem value="__link__">📍 Coller un lien 360°</SelectItem>
                                   {dialogTags.map((tag) => (
                                     <SelectItem key={tag.sid} value={tag.sid}>
                                       <span className="flex items-center gap-1"><Tag className="w-3 h-3" />{tag.name}</span>
@@ -1213,6 +1214,20 @@ const Admin = () => {
                                   ))}
                                 </SelectContent>
                               </Select>
+                              {item.tagSid?.startsWith("http") && (
+                                <Input
+                                  value={item.tagSid?.startsWith("http") ? item.tagSid : ""}
+                                  onChange={(e) => {
+                                    const updated = [...menuSections];
+                                    const items = [...sec.items];
+                                    items[iIdx] = { ...item, tagSid: e.target.value };
+                                    updated[sIdx] = { ...sec, items };
+                                    setMenuSections(updated);
+                                  }}
+                                  placeholder="https://my.matterport.com/show/?m=...&ss=48&sr=..."
+                                  className="h-8 text-xs w-[280px]"
+                                />
+                              )}
                               <Button
                                 type="button"
                                 size="sm"
