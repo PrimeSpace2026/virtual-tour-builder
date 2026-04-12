@@ -584,6 +584,18 @@ const TourViewer = () => {
         }
         if (tagData) {
           if (tour?.id) trackEvent(tour.id, "tag_click", tagData.label || tagSid, tagSid);
+          // Fly directly to the tag
+          try {
+            const flyType = sdk.Mattertag?.Transition?.FLY_IN ?? sdk.Mattertag?.Transition?.FLYOVER ?? 2;
+            await sdk.Mattertag.navigateToTag(tagSid, flyType);
+          } catch {
+            try { await sdk.Sweep?.moveTo?.(tagSid); } catch {}
+          }
+          // Close native popup after fly
+          setTimeout(() => {
+            try { sdk.Mattertag?.close?.(tagSid); } catch {}
+            try { sdk.Tag?.close?.(tagSid); } catch {}
+          }, 500);
           setSelectedTag(tagData);
         }
       } catch (err) {
