@@ -451,16 +451,18 @@ const Admin = () => {
       let combined: { name: string; sid: string }[] = [];
       if (tagsRes.ok) {
         const data = await tagsRes.json();
-        combined = (data.tags || []).map((t: any, i: number) => ({
+        const rawTags = data?.data?.model?.mattertags || data?.tags || [];
+        combined = rawTags.map((t: any, i: number) => ({
           name: stripMdLinks(t.label || t.description || `Tag ${i + 1}`),
           sid: t.sid,
         })).filter((t: { name: string; sid: string }) => t.sid);
       }
       if (sweepsRes.ok) {
         const sData = await sweepsRes.json();
-        const sweepOptions = (sData.sweeps || []).map((s: any) => ({
-          name: `360° Vue ${s.index}${s.floorLabel ? ` (${s.floorLabel})` : ""}`,
-          sid: `sweep:${s.index}`,
+        const rawSweeps = sData?.data?.model?.sweeps || sData?.sweeps || [];
+        const sweepOptions = rawSweeps.map((s: any, idx: number) => ({
+          name: `360° Vue ${s.id || idx}${s.floor != null ? ` (Étage ${s.floor})` : ""}`,
+          sid: s.uuid || s.id || `sweep:${idx}`,
         }));
         combined = [...combined, ...sweepOptions];
       }
@@ -736,7 +738,8 @@ const Admin = () => {
             let liveTags: { name: string; sid: string }[] = [];
             if (tagsRes.ok) {
               const data = await tagsRes.json();
-              liveTags = (data.tags || []).map((t: any, i: number) => ({
+              const rawTags = data?.data?.model?.mattertags || data?.tags || [];
+              liveTags = rawTags.map((t: any, i: number) => ({
                 name: stripMdLinks(t.label || t.description || `Tag ${i + 1}`),
                 sid: t.sid,
               }));
@@ -749,9 +752,10 @@ const Admin = () => {
               let combined = [...merged];
               if (sweepsRes.ok) {
                 const sData = await sweepsRes.json();
-                const sweepOptions = (sData.sweeps || []).map((s: any) => ({
-                  name: `360° Vue ${s.index}${s.floorLabel ? ` (${s.floorLabel})` : ""}`,
-                  sid: `sweep:${s.index}`,
+                const rawSweeps = sData?.data?.model?.sweeps || sData?.sweeps || [];
+                const sweepOptions = rawSweeps.map((s: any, idx: number) => ({
+                  name: `360° Vue ${s.id || idx}${s.floor != null ? ` (Étage ${s.floor})` : ""}`,
+                  sid: s.uuid || s.id || `sweep:${idx}`,
                 }));
                 combined = [...combined, ...sweepOptions];
               }
@@ -763,9 +767,10 @@ const Admin = () => {
               }).catch(() => {});
             } else if (sweepsRes.ok) {
               const sData = await sweepsRes.json();
-              const sweepOptions = (sData.sweeps || []).map((s: any) => ({
-                name: `360° Vue ${s.index}${s.floorLabel ? ` (${s.floorLabel})` : ""}`,
-                sid: `sweep:${s.index}`,
+              const rawSweeps = sData?.data?.model?.sweeps || sData?.sweeps || [];
+              const sweepOptions = rawSweeps.map((s: any, idx: number) => ({
+                name: `360° Vue ${s.id || idx}${s.floor != null ? ` (Étage ${s.floor})` : ""}`,
+                sid: s.uuid || s.id || `sweep:${idx}`,
               }));
               if (sweepOptions.length > 0) setTourTags([...saved, ...sweepOptions]);
             }
@@ -853,7 +858,8 @@ const Admin = () => {
         throw new Error(data.error);
       }
 
-      const allTags: TagInfo[] = (data.tags || []).map((t: any) => ({
+      const rawTags = data?.data?.model?.mattertags || data?.tags || [];
+      const allTags: TagInfo[] = rawTags.map((t: any) => ({
         sid: t.sid,
         label: stripMdLinks(t.label || "(sans nom)"),
         description: (t.description || "").slice(0, 100),
