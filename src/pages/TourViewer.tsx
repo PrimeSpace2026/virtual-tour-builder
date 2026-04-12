@@ -836,6 +836,33 @@ const TourViewer = () => {
     setIframeLoaded(false);
   }, [tour?.tourUrl]);
 
+  // FLY directly to a tag using SDK Mattertag.navigateToTag
+  const flyToTag = useCallback((tagSid: string) => {
+    const sdk = sdkRef.current;
+    if (!sdk?.Mattertag?.navigateToTag) {
+      navigateToMenuTag(tagSid);
+      return;
+    }
+    const tagKey = tagSid.trim().toLowerCase();
+    const resolvedSid = tagsMapRef.current.get(tagKey) || savedTagsMapRef.current.get(tagKey) || tagSid;
+    const fly = sdk.Mattertag.Transition?.FLY_IN || "transition.fly";
+    console.log(`🎯 FLY to tag: ${resolvedSid}`);
+    sdk.Mattertag.navigateToTag(resolvedSid, fly).then(() => {
+      console.log(`✅ Flew to tag: ${resolvedSid}`);
+      const closeNative = () => {
+        try { sdk.Mattertag?.close?.(resolvedSid); } catch {}
+        try { sdk.Tag?.close?.(resolvedSid); } catch {}
+      };
+      closeNative();
+      setTimeout(closeNative, 200);
+      setTimeout(closeNative, 500);
+    }).catch((err: any) => {
+      console.log("FLY failed, iframe fallback:", err);
+      navigateToMenuTag(tagSid);
+    });
+    setShowCard(false);
+  }, [navigateToMenuTag]);
+
   // Navigate to a specific floor
   const navigateToFloor = useCallback((floorIndex: number) => {
     const sdk = sdkRef.current;
@@ -1346,7 +1373,7 @@ const TourViewer = () => {
                     return (
                       <div className="rounded-xl overflow-hidden border border-white/[0.06]">
                         {allSections.map((sec, i) => (
-                          <HotelMenuSection key={i} title={sec.title} iconKey={sec.iconKey} items={sec.items} amenities={sec.amenities} onItemClick={navigateToMenuTag} />
+                          <HotelMenuSection key={i} title={sec.title} iconKey={sec.iconKey} items={sec.items} amenities={sec.amenities} onItemClick={flyToTag} />
                         ))}
                       </div>
                     );
@@ -1414,7 +1441,7 @@ const TourViewer = () => {
                         {allSections.length > 0 && (
                           <div className="rounded-xl overflow-hidden border border-white/[0.06]">
                             {allSections.map((sec, i) => (
-                              <HotelMenuSection key={i} title={sec.title} iconKey={sec.iconKey} items={sec.items} amenities={sec.amenities} onItemClick={navigateToMenuTag} />
+                              <HotelMenuSection key={i} title={sec.title} iconKey={sec.iconKey} items={sec.items} amenities={sec.amenities} onItemClick={flyToTag} />
                             ))}
                           </div>
                         )}
@@ -1614,7 +1641,7 @@ const TourViewer = () => {
                   return (
                     <div className="border-t border-white/[0.06] overflow-hidden">
                       {allSections.map((sec, i) => (
-                        <HotelMenuSection key={i} title={sec.title} iconKey={sec.iconKey} items={sec.items} amenities={sec.amenities} onItemClick={navigateToMenuTag} />
+                        <HotelMenuSection key={i} title={sec.title} iconKey={sec.iconKey} items={sec.items} amenities={sec.amenities} onItemClick={flyToTag} />
                       ))}
                     </div>
                   );
@@ -1654,7 +1681,7 @@ const TourViewer = () => {
                       {allSections.length > 0 && (
                         <div className="border-t border-white/[0.06] overflow-hidden">
                           {allSections.map((sec, i) => (
-                            <HotelMenuSection key={i} title={sec.title} iconKey={sec.iconKey} items={sec.items} amenities={sec.amenities} onItemClick={navigateToMenuTag} />
+                            <HotelMenuSection key={i} title={sec.title} iconKey={sec.iconKey} items={sec.items} amenities={sec.amenities} onItemClick={flyToTag} />
                           ))}
                         </div>
                       )}
