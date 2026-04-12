@@ -442,28 +442,26 @@ const Admin = () => {
       } catch {}
     }
 
-    // Fetch live from Matterport (tags + sweeps)
+    // Fetch live from Matterport Graph API directly
     let savedTags: { name: string; sid: string }[] = [];
     try {
-      const [tagsRes, sweepsRes] = await Promise.all([
-        fetch(`/api/matterport/tags?modelId=${encodeURIComponent(modelId)}`),
-        fetch(`/api/matterport/sweeps?modelId=${encodeURIComponent(modelId)}`),
-      ]);
+      const graphQuery = `{ model(id: "${modelId}") { mattertags { sid label description anchorPosition { x y z } } sweeps { id uuid position { x y z } floor neighbors } } }`;
+      const graphRes = await fetch("https://my.matterport.com/api/models/graph", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: graphQuery }),
+      });
       let combined: { name: string; sid: string }[] = [];
-      if (tagsRes.ok) {
-        const data = await tagsRes.json();
-        const rawTags = data?.data?.model?.mattertags || data?.tags || [];
+      if (graphRes.ok) {
+        const gData = await graphRes.json();
+        const rawTags = gData?.data?.model?.mattertags || [];
         combined = rawTags.map((t: any, i: number) => ({
           name: stripMdLinks(t.label || t.description || `Tag ${i + 1}`),
           sid: t.sid,
         })).filter((t: { name: string; sid: string }) => t.sid);
-      }
-      // Always add sweep options
-      let sweepOptions: { name: string; sid: string }[] = [];
-      if (sweepsRes.ok) {
-        const sData = await sweepsRes.json();
-        const rawSweeps = sData?.data?.model?.sweeps || sData?.sweeps || [];
-        sweepOptions = rawSweeps.map((s: any, idx: number) => ({
+
+        const rawSweeps = gData?.data?.model?.sweeps || [];
+        const sweepOptions = rawSweeps.map((s: any, idx: number) => ({
           name: `360° #${idx + 1} — Étage ${s.floor ?? '?'}`,
           sid: `sweep:${s.floor ?? 0}:${idx + 1}`,
         }));
@@ -735,48 +733,41 @@ const Admin = () => {
         // Always fetch live tags + sweeps from Matterport to merge
         if (modelId) {
           try {
-            const [tagsRes, sweepsRes] = await Promise.all([
-              fetch(`/api/matterport/tags?modelId=${encodeURIComponent(modelId)}`),
-              fetch(`/api/matterport/sweeps?modelId=${encodeURIComponent(modelId)}`),
-            ]);
+            const graphQuery = `{ model(id: "${modelId}") { mattertags { sid label description } sweeps { id uuid floor } } }`;
+            const graphRes = await fetch("https://my.matterport.com/api/models/graph", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ query: graphQuery }),
+            });
             let liveTags: { name: string; sid: string }[] = [];
-            if (tagsRes.ok) {
-              const data = await tagsRes.json();
-              const rawTags = data?.data?.model?.mattertags || data?.tags || [];
+            if (graphRes.ok) {
+              const gData = await graphRes.json();
+              const rawTags = gData?.data?.model?.mattertags || [];
               liveTags = rawTags.map((t: any, i: number) => ({
                 name: stripMdLinks(t.label || t.description || `Tag ${i + 1}`),
                 sid: t.sid,
               }));
-            }
-            if (liveTags.length > 0) {
-              const merged = liveTags.map((lt) => {
-                const existing = saved.find((s) => s.sid === lt.sid);
-                return existing && existing.name ? existing : lt;
-              });
-              let combined = [...merged];
-              if (sweepsRes.ok) {
-                const sData = await sweepsRes.json();
-                const rawSweeps = sData?.data?.model?.sweeps || sData?.sweeps || [];
-                const sweepOptions = rawSweeps.map((s: any, idx: number) => ({
-                  name: `360° #${idx + 1} — Étage ${s.floor ?? '?'}`,
-                  sid: `sweep:${s.floor ?? 0}:${idx + 1}`,
-                }));
-                combined = [...combined, ...sweepOptions];
-              }
-              setTourTags(combined);
-              fetch(`/api/tours/${tour.id}/tags`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(merged),
-              }).catch(() => {});
-            } else if (sweepsRes.ok) {
-              const sData = await sweepsRes.json();
-              const rawSweeps = sData?.data?.model?.sweeps || sData?.sweeps || [];
+              const rawSweeps = gData?.data?.model?.sweeps || [];
               const sweepOptions = rawSweeps.map((s: any, idx: number) => ({
                 name: `360° #${idx + 1} — Étage ${s.floor ?? '?'}`,
                 sid: `sweep:${s.floor ?? 0}:${idx + 1}`,
               }));
-              if (sweepOptions.length > 0) setTourTags([...saved, ...sweepOptions]);
+
+              if (liveTags.length > 0) {
+                const merged = liveTags.map((lt) => {
+                  const existing = saved.find((s) => s.sid === lt.sid);
+                  return existing && existing.name ? existing : lt;
+                });
+                const combined = [...merged, ...sweepOptions];
+                setTourTags(combined);
+                fetch(`/api/tours/${tour.id}/tags`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify(merged),
+                }).catch(() => {});
+              } else if (sweepOptions.length > 0) {
+                setTourTags([...saved, ...sweepOptions]);
+              }
             }
           } catch {}
         }
@@ -853,16 +844,21 @@ const Admin = () => {
     setTagFinderTags([]);
 
     try {
-      const res = await fetch(`/api/matterport/tags?modelId=${encodeURIComponent(modelId)}`);
+      const graphQuery = `{ model(id: "${modelId}") { mattertags { sid label description } } }`;
+      const res = await fetch("https://my.matterport.com/api/models/graph", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: graphQuery }),
+      });
       if (!res.ok) {
         throw new Error(`Erreur serveur (${res.status})`);
       }
       const data = await res.json();
-      if (data.error) {
-        throw new Error(data.error);
+      if (data.errors) {
+        throw new Error(data.errors[0]?.message || "GraphQL error");
       }
 
-      const rawTags = data?.data?.model?.mattertags || data?.tags || [];
+      const rawTags = data?.data?.model?.mattertags || [];
       const allTags: TagInfo[] = rawTags.map((t: any) => ({
         sid: t.sid,
         label: stripMdLinks(t.label || "(sans nom)"),
