@@ -443,6 +443,7 @@ const Admin = () => {
     }
 
     // Fetch live from Matterport (tags + sweeps)
+    let savedTags: { name: string; sid: string }[] = [];
     try {
       const [tagsRes, sweepsRes] = await Promise.all([
         fetch(`/api/matterport/tags?modelId=${encodeURIComponent(modelId)}`),
@@ -457,10 +458,12 @@ const Admin = () => {
           sid: t.sid,
         })).filter((t: { name: string; sid: string }) => t.sid);
       }
+      // Always add sweep options
+      let sweepOptions: { name: string; sid: string }[] = [];
       if (sweepsRes.ok) {
         const sData = await sweepsRes.json();
         const rawSweeps = sData?.data?.model?.sweeps || sData?.sweeps || [];
-        const sweepOptions = rawSweeps.map((s: any, idx: number) => ({
+        sweepOptions = rawSweeps.map((s: any, idx: number) => ({
           name: `360° #${idx + 1} — Étage ${s.floor ?? '?'}`,
           sid: s.uuid || s.id || `sweep:${idx}`,
         }));
@@ -468,11 +471,12 @@ const Admin = () => {
       }
       if (combined.length > 0) {
         setDialogTags(combined);
+        savedTags = combined.filter(t => !t.sid.startsWith("sweep:"));
         if (isEdit && id) {
           fetch(`/api/tours/${id}/tags`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(combined.filter(t => !t.sid.startsWith("sweep:"))),
+            body: JSON.stringify(savedTags),
           }).catch(() => {});
         }
       }
