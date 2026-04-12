@@ -1306,10 +1306,10 @@ const Admin = () => {
                         <div>
                           <label className="text-xs text-muted-foreground mb-1 block">Tag Matterport (SID)</label>
                           <Select
-                            value={room.tagSid || "__none__"}
+                            value={room.tagSid?.startsWith("http") ? "__link__" : (room.tagSid || "__none__")}
                             onValueChange={(v) => {
                               const updated = [...hotelRooms];
-                              updated[idx] = { ...room, tagSid: v === "__none__" ? "" : v };
+                              updated[idx] = { ...room, tagSid: v === "__none__" ? "" : v === "__link__" ? "https://" : v };
                               setHotelRooms(updated);
                             }}
                           >
@@ -1318,6 +1318,7 @@ const Admin = () => {
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="__none__">Aucun tag</SelectItem>
+                              <SelectItem value="__link__">📍 Coller un lien 360°</SelectItem>
                               {dialogTags.map((tag) => (
                                 <SelectItem key={tag.sid} value={tag.sid}>
                                   <span className="flex items-center gap-1"><Tag className="w-3 h-3" />{tag.name}</span>
@@ -1325,6 +1326,18 @@ const Admin = () => {
                               ))}
                             </SelectContent>
                           </Select>
+                          {room.tagSid?.startsWith("http") && (
+                            <Input
+                              value={room.tagSid}
+                              onChange={(e) => {
+                                const updated = [...hotelRooms];
+                                updated[idx] = { ...room, tagSid: e.target.value };
+                                setHotelRooms(updated);
+                              }}
+                              placeholder="https://my.matterport.com/show/?m=...&ss=48&sr=..."
+                              className="mt-2 text-xs"
+                            />
+                          )}
                         </div>
                       </div>
                       <div className="grid grid-cols-2 gap-3">
