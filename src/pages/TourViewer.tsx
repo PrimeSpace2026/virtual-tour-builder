@@ -3313,7 +3313,7 @@ const TourViewer = () => {
           {/* Toggle bar — always visible */}
           <button
             onClick={() => setBottomStripOpen(p => !p)}
-            className="w-full flex items-center justify-center gap-2 py-2 text-white/50 hover:text-white/80 transition-colors"
+            className="w-full flex items-center justify-center gap-2 py-2 text-white/50 hover:text-white/80 transition-colors group"
           >
             <motion.svg
               animate={{ rotate: bottomStripOpen ? 0 : 180 }}
@@ -3323,8 +3323,17 @@ const TourViewer = () => {
               <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
             </motion.svg>
             <span className="text-[10px] font-semibold uppercase tracking-wider">
-              {bottomStripOpen ? "Masquer" : "Afficher produits"}
+              {bottomStripOpen ? "Masquer" : "Afficher"}
             </span>
+            {!bottomStripOpen && (
+              <span className="ml-1 inline-flex items-center gap-1 bg-white/10 group-hover:bg-white/15 text-white/70 px-2 py-0.5 rounded-full text-[10px] font-semibold transition-colors">
+                {tourItems.length > 0 && <><ShoppingBag className="w-2.5 h-2.5" /> {tourItems.length}</>}
+                {tourItems.length > 0 && tourServices.length > 0 && <span className="text-white/30 mx-0.5">·</span>}
+                {tourServices.length > 0 && <><Briefcase className="w-2.5 h-2.5" /> {tourServices.length}</>}
+                {(tourItems.length > 0 || tourServices.length > 0) && gymCoaches.length > 0 && <span className="text-white/30 mx-0.5">·</span>}
+                {gymCoaches.length > 0 && <><User className="w-2.5 h-2.5" /> {gymCoaches.length}</>}
+              </span>
+            )}
           </button>
           {/* Collapsible content */}
           <AnimatePresence initial={false}>
