@@ -461,7 +461,7 @@ const Admin = () => {
         const sData = await sweepsRes.json();
         const rawSweeps = sData?.data?.model?.sweeps || sData?.sweeps || [];
         const sweepOptions = rawSweeps.map((s: any, idx: number) => ({
-          name: `360° Vue ${s.id || idx}${s.floor != null ? ` (Étage ${s.floor})` : ""}`,
+          name: `360° #${idx + 1} — Étage ${s.floor ?? '?'}`,
           sid: s.uuid || s.id || `sweep:${idx}`,
         }));
         combined = [...combined, ...sweepOptions];
@@ -754,7 +754,7 @@ const Admin = () => {
                 const sData = await sweepsRes.json();
                 const rawSweeps = sData?.data?.model?.sweeps || sData?.sweeps || [];
                 const sweepOptions = rawSweeps.map((s: any, idx: number) => ({
-                  name: `360° Vue ${s.id || idx}${s.floor != null ? ` (Étage ${s.floor})` : ""}`,
+                  name: `360° #${idx + 1} — Étage ${s.floor ?? '?'}`,
                   sid: s.uuid || s.id || `sweep:${idx}`,
                 }));
                 combined = [...combined, ...sweepOptions];
@@ -769,7 +769,7 @@ const Admin = () => {
               const sData = await sweepsRes.json();
               const rawSweeps = sData?.data?.model?.sweeps || sData?.sweeps || [];
               const sweepOptions = rawSweeps.map((s: any, idx: number) => ({
-                name: `360° Vue ${s.id || idx}${s.floor != null ? ` (Étage ${s.floor})` : ""}`,
+                name: `360° #${idx + 1} — Étage ${s.floor ?? '?'}`,
                 sid: s.uuid || s.id || `sweep:${idx}`,
               }));
               if (sweepOptions.length > 0) setTourTags([...saved, ...sweepOptions]);
