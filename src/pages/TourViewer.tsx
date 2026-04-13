@@ -312,6 +312,7 @@ const TourViewer = () => {
   const sdkAttemptsRef = useRef(0);
   const tagsMapRef = useRef<Map<string, string>>(new Map()); // tagName (lowercase) → SID
   const savedTagsMapRef = useRef<Map<string, string>>(new Map()); // saved tags from DB: name (lowercase) → SID
+  const sweepsRef = useRef<any[]>([]); // cached sweep objects from SDK
   const visitIdRef = useRef<number | null>(null);
   const visitStartRef = useRef<number>(Date.now());
 
@@ -653,6 +654,15 @@ const TourViewer = () => {
           }
         } catch {}
 
+        // Cache sweep data for sweep: SID resolution
+        try {
+          if (sdk.Sweep?.getData) {
+            const allSweeps = await sdk.Sweep.getData();
+            sweepsRef.current = allSweeps;
+            console.log(`📍 Cached ${allSweeps.length} sweeps`);
+          }
+        } catch (e) { console.log("Sweep cache error:", e); }
+
         // NOW set SDK as ready — model is loaded & tags are cached
         if (cancelled) return;
         sdkRef.current = sdk;
@@ -812,6 +822,20 @@ const TourViewer = () => {
     }
   }, [tour?.id, tour?.tourUrl, trackEvent]);
 
+  // Resolve sweep:floor:index SID to actual sweep ID for SDK navigation
+  const resolveSweepSid = useCallback((sid: string): { isSweep: boolean; sweepId?: string } => {
+    const match = sid.match(/^sweep:(\d+):(\d+)$/);
+    if (!match) return { isSweep: false };
+    const floor = parseInt(match[1], 10);
+    const index = parseInt(match[2], 10) - 1; // convert 1-based to 0-based
+    const sweeps = sweepsRef.current;
+    if (!sweeps.length) return { isSweep: true }; // is a sweep but no data cached
+    // Filter by floor, then pick by index
+    const floorSweeps = sweeps.filter((s: any) => s.floor === floor || s.floorInfo?.sequence === floor);
+    const target = floorSweeps[index] || sweeps[index];
+    return { isSweep: true, sweepId: target?.sid || target?.id || target?.uuid };
+  }, []);
+
   // Navigate to a Matterport tag by SID (used by hotel menu sections)
   // Uses iframe deep-link method (same as product navigation fallback)
   const navigateToMenuTag = useCallback((tagSid: string) => {
@@ -820,6 +844,32 @@ const TourViewer = () => {
       setIframeSrc(tagSid);
       setIframeKey((k) => k + 1);
       setIframeLoaded(false);
+      return;
+    }
+    // Handle sweep: SID — navigate via SDK or iframe with sweep index
+    const { isSweep, sweepId } = resolveSweepSid(tagSid);
+    if (isSweep) {
+      const sdk = sdkRef.current;
+      if (sdk?.Sweep?.moveTo && sweepId) {
+        console.log(`📍 Sweep.moveTo("${sweepId}") from ${tagSid}`);
+        sdk.Sweep.moveTo(sweepId, { transition: sdk.Sweep.Transition?.FLY || 2 })
+          .catch(() => console.log("Sweep.moveTo failed, using iframe fallback"));
+        return;
+      }
+      // Iframe fallback: use ss= param with sweep index
+      if (tour?.tourUrl) {
+        const modelId = extractModelId(tour.tourUrl);
+        const match = tagSid.match(/^sweep:(\d+):(\d+)$/);
+        if (modelId && match) {
+          const sweepIdx = parseInt(match[2], 10) - 1;
+          const sweepUrl = `https://my.matterport.com/show/?m=${modelId}&play=1&qs=1&brand=0&title=0&ss=${sweepIdx}`;
+          console.log(`📍 Sweep iframe fallback: ss=${sweepIdx}`);
+          setIframeSrc(sweepUrl);
+          setIframeKey((k) => k + 1);
+          setIframeLoaded(false);
+          return;
+        }
+      }
       return;
     }
     if (!tour?.tourUrl) return;
@@ -832,7 +882,7 @@ const TourViewer = () => {
     setIframeSrc(tagUrl);
     setIframeKey((k) => k + 1);
     setIframeLoaded(false);
-  }, [tour?.tourUrl]);
+  }, [tour?.tourUrl, resolveSweepSid]);
 
   // FLY directly to a tag using SDK Mattertag.navigateToTag
   const flyToTag = useCallback((tagSid: string) => {
@@ -842,6 +892,20 @@ const TourViewer = () => {
       setIframeSrc(tagSid);
       setIframeKey((k) => k + 1);
       setIframeLoaded(false);
+      setShowCard(false);
+      return;
+    }
+    // Handle sweep: SID — fly to sweep position
+    const { isSweep, sweepId } = resolveSweepSid(tagSid);
+    if (isSweep) {
+      const sdk = sdkRef.current;
+      if (sdk?.Sweep?.moveTo && sweepId) {
+        console.log(`📍 FLY to sweep: ${sweepId} (from ${tagSid})`);
+        sdk.Sweep.moveTo(sweepId, { transition: sdk.Sweep.Transition?.FLY || 2 })
+          .catch(() => navigateToMenuTag(tagSid));
+      } else {
+        navigateToMenuTag(tagSid);
+      }
       setShowCard(false);
       return;
     }
@@ -868,7 +932,7 @@ const TourViewer = () => {
       navigateToMenuTag(tagSid);
     });
     setShowCard(false);
-  }, [navigateToMenuTag]);
+  }, [navigateToMenuTag, resolveSweepSid]);
 
   // Navigate to a specific floor
   const navigateToFloor = useCallback((floorIndex: number) => {
@@ -1048,7 +1112,7 @@ const TourViewer = () => {
               border-b-0 sm:border-b
               hover:bg-black/80 hover:border-white/25 transition-all group"
           >
-            <img src="/logo.jpg" alt="PrimeSpace" className="w-12 h-12 shrink-0 rounded-xl object-cover shadow-lg shadow-purple-500/20 group-hover:shadow-purple-500/40 transition-shadow" />
+            <img src="/logo.jpg" alt="PrimeSpace" className="w-8 h-8 shrink-0 rounded-lg object-cover shadow-lg shadow-purple-500/20 group-hover:shadow-purple-500/40 transition-shadow" />
             <div className="flex-grow min-w-0">
               <p className="text-white/90 text-sm sm:text-base font-bold tracking-tight group-hover:text-white transition-colors">PrimeSpace</p>
               <p className="text-white/40 text-[10px] sm:text-[11px] font-medium">Studio 3D immersif</p>
