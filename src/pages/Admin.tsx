@@ -462,14 +462,15 @@ const Admin = () => {
 
         const rawSweeps = gData?.data?.model?.sweeps || [];
         const sweepOptions = rawSweeps.map((s: any, idx: number) => ({
-          name: `360° #${idx + 1} — Étage ${s.floor ?? '?'}`,
-          sid: `sweep:${s.floor ?? 0}:${idx + 1}`,
-        }));
+          name: `360° Vue ${idx + 1} — Étage ${s.floor ?? '?'}`,
+          sid: s.id || s.uuid,
+        })).filter((s: { name: string; sid: string }) => s.sid);
         combined = [...combined, ...sweepOptions];
       }
       if (combined.length > 0) {
         setDialogTags(combined);
-        savedTags = combined.filter(t => !t.sid.startsWith("sweep:"));
+        // Only save mattertags to DB, not sweeps (sweeps have names starting with "360°")
+        savedTags = combined.filter(t => !t.name.startsWith("360°"));
         if (isEdit && id) {
           fetch(`/api/tours/${id}/tags`, {
             method: "POST",
@@ -749,9 +750,9 @@ const Admin = () => {
               }));
               const rawSweeps = gData?.data?.model?.sweeps || [];
               const sweepOptions = rawSweeps.map((s: any, idx: number) => ({
-                name: `360° #${idx + 1} — Étage ${s.floor ?? '?'}`,
-                sid: `sweep:${s.floor ?? 0}:${idx + 1}`,
-              }));
+                name: `360° Vue ${idx + 1} — Étage ${s.floor ?? '?'}`,
+                sid: s.id || s.uuid,
+              })).filter((s: { name: string; sid: string }) => s.sid);
 
               if (liveTags.length > 0) {
                 const merged = liveTags.map((lt) => {
