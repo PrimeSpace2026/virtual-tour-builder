@@ -822,18 +822,28 @@ const TourViewer = () => {
     }
   }, [tour?.id, tour?.tourUrl, trackEvent]);
 
-  // Resolve sweep:floor:index SID to actual sweep ID for SDK navigation
+  // Resolve sweep:floor:index SID or raw sweep UUID to actual sweep ID for SDK navigation
   const resolveSweepSid = useCallback((sid: string): { isSweep: boolean; sweepId?: string } => {
+    // Match sweep:floor:index format
     const match = sid.match(/^sweep:(\d+):(\d+)$/);
-    if (!match) return { isSweep: false };
-    const floor = parseInt(match[1], 10);
-    const index = parseInt(match[2], 10) - 1; // convert 1-based to 0-based
+    if (match) {
+      const floor = parseInt(match[1], 10);
+      const index = parseInt(match[2], 10) - 1; // convert 1-based to 0-based
+      const sweeps = sweepsRef.current;
+      if (!sweeps.length) return { isSweep: true }; // is a sweep but no data cached
+      const floorSweeps = sweeps.filter((s: any) => s.floor === floor || s.floorInfo?.sequence === floor);
+      const target = floorSweeps[index] || sweeps[index];
+      return { isSweep: true, sweepId: target?.sid || target?.id || target?.uuid };
+    }
+    // Check if it's a raw sweep UUID by matching against cached sweeps
     const sweeps = sweepsRef.current;
-    if (!sweeps.length) return { isSweep: true }; // is a sweep but no data cached
-    // Filter by floor, then pick by index
-    const floorSweeps = sweeps.filter((s: any) => s.floor === floor || s.floorInfo?.sequence === floor);
-    const target = floorSweeps[index] || sweeps[index];
-    return { isSweep: true, sweepId: target?.sid || target?.id || target?.uuid };
+    if (sweeps.length > 0) {
+      const found = sweeps.find((s: any) =>
+        s.sid === sid || s.id === sid || s.uuid === sid
+      );
+      if (found) return { isSweep: true, sweepId: found.sid || found.id || found.uuid };
+    }
+    return { isSweep: false };
   }, []);
 
   // Navigate to a Matterport tag by SID (used by hotel menu sections)
@@ -927,8 +937,18 @@ const TourViewer = () => {
       closeNative();
       setTimeout(closeNative, 200);
       setTimeout(closeNative, 500);
-    }).catch((err: any) => {
-      console.log("FLY failed, iframe fallback:", err);
+    }).catch(async (err: any) => {
+      console.log("Mattertag.navigateToTag failed, trying Sweep.moveTo:", err);
+      // Fallback: maybe it's a sweep UUID, not a tag SID
+      try {
+        if (sdk.Sweep?.moveTo) {
+          await sdk.Sweep.moveTo(resolvedSid, { transition: sdk.Sweep.Transition?.FLY || 2 });
+          console.log(`✅ Sweep.moveTo succeeded: ${resolvedSid}`);
+          return;
+        }
+      } catch (sweepErr: any) {
+        console.log("Sweep.moveTo also failed:", sweepErr);
+      }
       navigateToMenuTag(tagSid);
     });
     setShowCard(false);
