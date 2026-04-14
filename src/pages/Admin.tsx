@@ -445,9 +445,11 @@ const Admin = () => {
     // Fetch sweeps via hidden Matterport iframe + SDK (only reliable method)
     const fetchSweepsViaSdk = (mid: string): Promise<any[]> => {
       return new Promise((resolve) => {
-        const timeout = setTimeout(() => { cleanup(); resolve([]); }, 25000);
+        let done = false;
+        const finish = (result: any[]) => { if (done) return; done = true; clearTimeout(outerTimeout); cleanup(); resolve(result); };
+        const outerTimeout = setTimeout(() => finish([]), 30000);
         const iframe = document.createElement("iframe");
-        iframe.style.cssText = "width:300px;height:300px;position:fixed;left:-9999px;top:0;opacity:0;pointer-events:none";
+        iframe.style.cssText = "width:300px;height:300px;position:fixed;left:0;top:0;z-index:-1;opacity:0.01;pointer-events:none";
         iframe.allow = "xr-spatial-tracking";
         iframe.src = `https://my.matterport.com/show/?m=${mid}&applicationKey=b7uar4u57xdec0zw7dwygt7md&play=1&qs=1&title=0&brand=0&help=0&hl=0`;
         const cleanup = () => { try { document.body.removeChild(iframe); } catch {} };
@@ -456,47 +458,30 @@ const Admin = () => {
         const tryConnect = async () => {
           try {
             const { setupSdk } = await import("@matterport/sdk");
-            console.log("[SweepFetch] SDK imported, connecting to iframe...");
+            console.log("[SweepFetch] connecting...");
             const sdk = await setupSdk("b7uar4u57xdec0zw7dwygt7md", { iframe, space: mid });
-            console.log("[SweepFetch] SDK connected, waiting for playing state...");
-            // Wait for model to be ready
-            await new Promise<void>((res) => {
-              const sub = sdk.App.state.subscribe((state: any) => {
-                console.log("[SweepFetch] App state:", state.phase);
-                if (state.phase === "appphase.playing" || state.phase === "playing") { sub.cancel(); res(); }
-              });
-              // Also resolve after 8s even if not playing
-              setTimeout(() => { console.log("[SweepFetch] State wait timeout"); res(); }, 8000);
+            console.log("[SweepFetch] connected, subscribing to sweeps...");
+            const collected: any[] = [];
+            let debounce: any;
+            const sub = sdk.Sweep.data.subscribe({
+              onAdded(_index: string, item: any) {
+                collected.push(item);
+                clearTimeout(debounce);
+                debounce = setTimeout(() => {
+                  console.log("[SweepFetch] got", collected.length, "sweeps");
+                  try { sub.cancel(); } catch {}
+                  finish(collected);
+                }, 3000);
+              },
             });
-            console.log("[SweepFetch] Model ready, subscribing to Sweep.data...");
-            const sweeps = await new Promise<any[]>((resolveSweeps) => {
-              let resolved = false;
-              const sub = sdk.Sweep.data.subscribe({
-                onCollectionUpdated(collection: any) {
-                  const items = Object.values(collection);
-                  console.log("[SweepFetch] onCollectionUpdated:", items.length, "sweeps");
-                  if (items.length > 0 && !resolved) {
-                    resolved = true;
-                    sub.cancel();
-                    resolveSweeps(items);
-                  }
-                },
-              });
-              setTimeout(() => { if (!resolved) { resolved = true; try { sub.cancel(); } catch {} resolveSweeps([]); } }, 10000);
-            });
-            clearTimeout(timeout);
-            cleanup();
-            resolve(sweeps);
+            setTimeout(() => { try { sub.cancel(); } catch {} finish(collected); }, 20000);
           } catch (err) {
-            console.log("SDK sweep fetch failed:", err);
-            clearTimeout(timeout);
-            cleanup();
-            resolve([]);
+            console.log("[SweepFetch] error:", err);
+            finish([]);
           }
         };
-        // Give iframe 2s to start loading before connecting SDK
-        setTimeout(tryConnect, 2000);
-        iframe.onerror = () => { clearTimeout(timeout); cleanup(); resolve([]); };
+        setTimeout(tryConnect, 3000);
+        iframe.onerror = () => finish([]);
       });
     };
 
@@ -789,9 +774,11 @@ const Admin = () => {
           try {
             const fetchSweepsViaSdk = (mid: string): Promise<any[]> => {
               return new Promise((resolve) => {
-                const timeout = setTimeout(() => { cleanup(); resolve([]); }, 25000);
+                let done = false;
+                const finish = (result: any[]) => { if (done) return; done = true; clearTimeout(outerTimeout); cleanup(); resolve(result); };
+                const outerTimeout = setTimeout(() => finish([]), 30000);
                 const iframe = document.createElement("iframe");
-                iframe.style.cssText = "width:300px;height:300px;position:fixed;left:-9999px;top:0;opacity:0;pointer-events:none";
+                iframe.style.cssText = "width:300px;height:300px;position:fixed;left:0;top:0;z-index:-1;opacity:0.01;pointer-events:none";
                 iframe.allow = "xr-spatial-tracking";
                 iframe.src = `https://my.matterport.com/show/?m=${mid}&applicationKey=b7uar4u57xdec0zw7dwygt7md&play=1&qs=1&title=0&brand=0&help=0&hl=0`;
                 const cleanup = () => { try { document.body.removeChild(iframe); } catch {} };
@@ -800,33 +787,20 @@ const Admin = () => {
                   try {
                     const { setupSdk } = await import("@matterport/sdk");
                     const sdk = await setupSdk("b7uar4u57xdec0zw7dwygt7md", { iframe, space: mid });
-                    await new Promise<void>((res) => {
-                      const sub = sdk.App.state.subscribe((state: any) => {
-                        if (state.phase === "appphase.playing" || state.phase === "playing") { sub.cancel(); res(); }
-                      });
-                      setTimeout(() => res(), 8000);
+                    const collected: any[] = [];
+                    let debounce: any;
+                    const sub = sdk.Sweep.data.subscribe({
+                      onAdded(_index: string, item: any) {
+                        collected.push(item);
+                        clearTimeout(debounce);
+                        debounce = setTimeout(() => { try { sub.cancel(); } catch {} finish(collected); }, 3000);
+                      },
                     });
-                    const sweeps = await new Promise<any[]>((resolveSweeps) => {
-                      let resolved = false;
-                      const sub = sdk.Sweep.data.subscribe({
-                        onCollectionUpdated(collection: any) {
-                          const items = Object.values(collection);
-                          if (items.length > 0 && !resolved) {
-                            resolved = true;
-                            sub.cancel();
-                            resolveSweeps(items);
-                          }
-                        },
-                      });
-                      setTimeout(() => { if (!resolved) { resolved = true; try { sub.cancel(); } catch {} resolveSweeps([]); } }, 10000);
-                    });
-                    clearTimeout(timeout);
-                    cleanup();
-                    resolve(sweeps);
-                  } catch { clearTimeout(timeout); cleanup(); resolve([]); }
+                    setTimeout(() => { try { sub.cancel(); } catch {} finish(collected); }, 20000);
+                  } catch { finish([]); }
                 };
-                setTimeout(tryConnect, 2000);
-                iframe.onerror = () => { clearTimeout(timeout); cleanup(); resolve([]); };
+                setTimeout(tryConnect, 3000);
+                iframe.onerror = () => finish([]);
               });
             };
 
@@ -916,9 +890,11 @@ const Admin = () => {
     try {
       // Fetch mattertags via hidden iframe + SDK
       const rawTags: any[] = await new Promise((resolve) => {
-        const timeout = setTimeout(() => { cleanup(); resolve([]); }, 25000);
+        let done = false;
+        const finish = (result: any[]) => { if (done) return; done = true; clearTimeout(outerTimeout); cleanup(); resolve(result); };
+        const outerTimeout = setTimeout(() => finish([]), 30000);
         const iframe = document.createElement("iframe");
-        iframe.style.cssText = "width:300px;height:300px;position:fixed;left:-9999px;top:0;opacity:0;pointer-events:none";
+        iframe.style.cssText = "width:300px;height:300px;position:fixed;left:0;top:0;z-index:-1;opacity:0.01;pointer-events:none";
         iframe.allow = "xr-spatial-tracking";
         iframe.src = `https://my.matterport.com/show/?m=${modelId}&applicationKey=b7uar4u57xdec0zw7dwygt7md&play=1&qs=1&title=0&brand=0&help=0&hl=0`;
         const cleanup = () => { try { document.body.removeChild(iframe); } catch {} };
@@ -927,33 +903,20 @@ const Admin = () => {
           try {
             const { setupSdk } = await import("@matterport/sdk");
             const sdk = await setupSdk("b7uar4u57xdec0zw7dwygt7md", { iframe, space: modelId });
-            await new Promise<void>((res) => {
-              const sub = sdk.App.state.subscribe((state: any) => {
-                if (state.phase === "appphase.playing" || state.phase === "playing") { sub.cancel(); res(); }
-              });
-              setTimeout(() => res(), 8000);
+            const collected: any[] = [];
+            let debounce: any;
+            const sub = sdk.Mattertag.data.subscribe({
+              onAdded(_index: string, item: any) {
+                collected.push(item);
+                clearTimeout(debounce);
+                debounce = setTimeout(() => { try { sub.cancel(); } catch {} finish(collected); }, 3000);
+              },
             });
-            const tags = await new Promise<any[]>((resolveTags) => {
-              let resolved = false;
-              const sub = sdk.Mattertag.data.subscribe({
-                onCollectionUpdated(collection: any) {
-                  const items = Object.values(collection);
-                  if (items.length > 0 && !resolved) {
-                    resolved = true;
-                    sub.cancel();
-                    resolveTags(items);
-                  }
-                },
-              });
-              setTimeout(() => { if (!resolved) { resolved = true; try { sub.cancel(); } catch {} resolveTags([]); } }, 10000);
-            });
-            clearTimeout(timeout);
-            cleanup();
-            resolve(tags);
-          } catch { clearTimeout(timeout); cleanup(); resolve([]); }
+            setTimeout(() => { try { sub.cancel(); } catch {} finish(collected); }, 20000);
+          } catch { finish([]); }
         };
-        setTimeout(tryConnect, 2000);
-        iframe.onerror = () => { clearTimeout(timeout); cleanup(); resolve([]); };
+        setTimeout(tryConnect, 3000);
+        iframe.onerror = () => finish([]);
       });
 
       const allTags: TagInfo[] = rawTags.map((t: any) => ({
