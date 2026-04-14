@@ -464,10 +464,18 @@ const Admin = () => {
               // Also resolve after 8s even if not playing
               setTimeout(() => res(), 8000);
             });
-            const sweepData = await sdk.Sweep.getData();
+            const sweeps = await new Promise<any[]>((resolveSweeps) => {
+              const sub = sdk.Sweep.data.subscribe({
+                onCollectionUpdated(collection: any) {
+                  sub.cancel();
+                  resolveSweeps(Object.values(collection));
+                },
+              });
+              setTimeout(() => { try { sub.cancel(); } catch {} resolveSweeps([]); }, 5000);
+            });
             clearTimeout(timeout);
             cleanup();
-            resolve(sweepData || []);
+            resolve(sweeps);
           } catch (err) {
             console.log("SDK sweep fetch failed:", err);
             clearTimeout(timeout);
@@ -786,10 +794,18 @@ const Admin = () => {
                       });
                       setTimeout(() => res(), 8000);
                     });
-                    const sweepData = await sdk.Sweep.getData();
+                    const sweeps = await new Promise<any[]>((resolveSweeps) => {
+                      const sub = sdk.Sweep.data.subscribe({
+                        onCollectionUpdated(collection: any) {
+                          sub.cancel();
+                          resolveSweeps(Object.values(collection));
+                        },
+                      });
+                      setTimeout(() => { try { sub.cancel(); } catch {} resolveSweeps([]); }, 5000);
+                    });
                     clearTimeout(timeout);
                     cleanup();
-                    resolve(sweepData || []);
+                    resolve(sweeps);
                   } catch { clearTimeout(timeout); cleanup(); resolve([]); }
                 };
                 setTimeout(tryConnect, 2000);
@@ -899,10 +915,18 @@ const Admin = () => {
               });
               setTimeout(() => res(), 8000);
             });
-            const tags = await sdk.Mattertag.getData();
+            const tags = await new Promise<any[]>((resolveTags) => {
+              const sub = sdk.Mattertag.data.subscribe({
+                onCollectionUpdated(collection: any) {
+                  sub.cancel();
+                  resolveTags(Object.values(collection));
+                },
+              });
+              setTimeout(() => { try { sub.cancel(); } catch {} resolveTags([]); }, 5000);
+            });
             clearTimeout(timeout);
             cleanup();
-            resolve(tags || []);
+            resolve(tags);
           } catch { clearTimeout(timeout); cleanup(); resolve([]); }
         };
         setTimeout(tryConnect, 2000);
