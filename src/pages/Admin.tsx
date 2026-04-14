@@ -443,11 +443,12 @@ const Admin = () => {
     }
 
     // Fetch sweeps via hidden Matterport iframe + SDK (only reliable method)
-    const fetchSweepsViaSdk = (mid: string): Promise<any[]> => {
+    const fetchSdkData = (mid: string): Promise<{ sweeps: any[]; mattertags: any[] }> => {
       return new Promise((resolve) => {
         let done = false;
-        const finish = (result: any[]) => { if (done) return; done = true; clearTimeout(outerTimeout); cleanup(); resolve(result); };
-        const outerTimeout = setTimeout(() => finish([]), 30000);
+        const result = { sweeps: [] as any[], mattertags: [] as any[] };
+        const finish = () => { if (done) return; done = true; clearTimeout(outerTimeout); cleanup(); resolve(result); };
+        const outerTimeout = setTimeout(() => finish(), 30000);
         const iframe = document.createElement("iframe");
         iframe.style.cssText = "width:300px;height:300px;position:fixed;left:0;top:0;z-index:-1;opacity:0.01;pointer-events:none";
         iframe.allow = "xr-spatial-tracking";
@@ -458,57 +459,61 @@ const Admin = () => {
         const tryConnect = async () => {
           try {
             const { setupSdk } = await import("@matterport/sdk");
-            console.log("[SweepFetch] connecting...");
+            console.log("[SdkFetch] connecting...");
             const sdk = await setupSdk("b7uar4u57xdec0zw7dwygt7md", { iframe, space: mid });
-            console.log("[SweepFetch] connected, subscribing to sweeps...");
-            const collected: any[] = [];
-            let debounce: any;
-            const sub = sdk.Sweep.data.subscribe({
-              onAdded(_index: string, item: any) {
-                collected.push(item);
-                clearTimeout(debounce);
-                debounce = setTimeout(() => {
-                  console.log("[SweepFetch] got", collected.length, "sweeps");
-                  try { sub.cancel(); } catch {}
-                  finish(collected);
-                }, 3000);
+            console.log("[SdkFetch] connected, subscribing...");
+            let pendingSubs = 2;
+            const checkDone = () => { if (pendingSubs <= 0) { console.log("[SdkFetch] got", result.mattertags.length, "tags +", result.sweeps.length, "sweeps"); finish(); } };
+
+            // Collect sweeps
+            let sweepDebounce: any;
+            const sweepSub = sdk.Sweep.data.subscribe({
+              onAdded(_i: string, item: any) {
+                result.sweeps.push(item);
+                clearTimeout(sweepDebounce);
+                sweepDebounce = setTimeout(() => { try { sweepSub.cancel(); } catch {} pendingSubs--; checkDone(); }, 3000);
               },
             });
-            setTimeout(() => { try { sub.cancel(); } catch {} finish(collected); }, 20000);
+            setTimeout(() => { try { sweepSub.cancel(); } catch {} if (pendingSubs > 0) { pendingSubs--; checkDone(); } }, 15000);
+
+            // Collect mattertags
+            let tagDebounce: any;
+            const tagSub = sdk.Mattertag.data.subscribe({
+              onAdded(_i: string, item: any) {
+                result.mattertags.push(item);
+                clearTimeout(tagDebounce);
+                tagDebounce = setTimeout(() => { try { tagSub.cancel(); } catch {} pendingSubs--; checkDone(); }, 3000);
+              },
+            });
+            setTimeout(() => { try { tagSub.cancel(); } catch {} if (pendingSubs > 0) { pendingSubs--; checkDone(); } }, 15000);
           } catch (err) {
-            console.log("[SweepFetch] error:", err);
-            finish([]);
+            console.log("[SdkFetch] error:", err);
+            finish();
           }
         };
         setTimeout(tryConnect, 3000);
-        iframe.onerror = () => finish([]);
+        iframe.onerror = () => finish();
       });
     };
 
     let savedTags: { name: string; sid: string }[] = [];
     try {
-      // Fetch sweeps via SDK iframe
-      let rawSweeps: any[] = [];
-      try {
-        const sdkSweeps = await fetchSweepsViaSdk(modelId);
-        console.log("[fetchDialogTags] sdkSweeps:", sdkSweeps.length, sdkSweeps.slice(0, 2));
-        rawSweeps = sdkSweeps.map((s: any) => ({
-          id: s.id || s.sid || s.uuid,
-          floor: s.floorInfo?.sequence ?? s.floor ?? '?',
-        }));
-      } catch {}
+      const sdkData = await fetchSdkData(modelId);
 
-      // Merge with any saved DB tags (mattertags only)
-      const existing = dialogTags.filter(t => !t.name.startsWith("360°"));
-      const sweepOptions = rawSweeps.map((s: any, idx: number) => ({
-        name: `360° Vue ${idx + 1} — Étage ${s.floor ?? '?'}`,
-        sid: s.id,
-      })).filter((s: { name: string; sid: string }) => s.sid);
+      const sweepOptions = sdkData.sweeps.map((s: any, idx: number) => ({
+        name: `360° Vue ${idx + 1} — Étage ${s.floorInfo?.sequence ?? s.floor ?? '?'}`,
+        sid: s.id || s.sid || s.uuid,
+      })).filter((t: { name: string; sid: string }) => t.sid);
 
-      const combined = [...existing, ...sweepOptions];
+      const liveMattertags = sdkData.mattertags.map((t: any) => ({
+        name: t.label || t.description || "(sans nom)",
+        sid: t.sid || t.id,
+      })).filter((t: { name: string; sid: string }) => t.sid);
+
+      const combined = [...liveMattertags, ...sweepOptions];
       if (combined.length > 0) {
         setDialogTags(combined);
-        savedTags = combined.filter(t => !t.name.startsWith("360°"));
+        savedTags = liveMattertags;
         if (isEdit && id) {
           fetch(`/api/tours/${id}/tags`, {
             method: "POST",
@@ -769,14 +774,15 @@ const Admin = () => {
           setTourTags(saved);
           setTourTagsLoading(false);
         }
-        // Fetch live sweeps via SDK iframe and merge with saved tags
+        // Fetch live tags + sweeps via SDK iframe
         if (modelId) {
           try {
-            const fetchSweepsViaSdk = (mid: string): Promise<any[]> => {
+            const fetchSdkData = (mid: string): Promise<{ sweeps: any[]; mattertags: any[] }> => {
               return new Promise((resolve) => {
                 let done = false;
-                const finish = (result: any[]) => { if (done) return; done = true; clearTimeout(outerTimeout); cleanup(); resolve(result); };
-                const outerTimeout = setTimeout(() => finish([]), 30000);
+                const result = { sweeps: [] as any[], mattertags: [] as any[] };
+                const finish = () => { if (done) return; done = true; clearTimeout(outerTimeout); cleanup(); resolve(result); };
+                const outerTimeout = setTimeout(() => finish(), 30000);
                 const iframe = document.createElement("iframe");
                 iframe.style.cssText = "width:300px;height:300px;position:fixed;left:0;top:0;z-index:-1;opacity:0.01;pointer-events:none";
                 iframe.allow = "xr-spatial-tracking";
@@ -787,33 +793,54 @@ const Admin = () => {
                   try {
                     const { setupSdk } = await import("@matterport/sdk");
                     const sdk = await setupSdk("b7uar4u57xdec0zw7dwygt7md", { iframe, space: mid });
-                    const collected: any[] = [];
-                    let debounce: any;
-                    const sub = sdk.Sweep.data.subscribe({
-                      onAdded(_index: string, item: any) {
-                        collected.push(item);
-                        clearTimeout(debounce);
-                        debounce = setTimeout(() => { try { sub.cancel(); } catch {} finish(collected); }, 3000);
+                    let pendingSubs = 2;
+                    const checkDone = () => { if (pendingSubs <= 0) finish(); };
+                    let sweepDebounce: any;
+                    const sweepSub = sdk.Sweep.data.subscribe({
+                      onAdded(_i: string, item: any) {
+                        result.sweeps.push(item);
+                        clearTimeout(sweepDebounce);
+                        sweepDebounce = setTimeout(() => { try { sweepSub.cancel(); } catch {} pendingSubs--; checkDone(); }, 3000);
                       },
                     });
-                    setTimeout(() => { try { sub.cancel(); } catch {} finish(collected); }, 20000);
-                  } catch { finish([]); }
+                    setTimeout(() => { try { sweepSub.cancel(); } catch {} if (pendingSubs > 0) { pendingSubs--; checkDone(); } }, 15000);
+                    let tagDebounce: any;
+                    const tagSub = sdk.Mattertag.data.subscribe({
+                      onAdded(_i: string, item: any) {
+                        result.mattertags.push(item);
+                        clearTimeout(tagDebounce);
+                        tagDebounce = setTimeout(() => { try { tagSub.cancel(); } catch {} pendingSubs--; checkDone(); }, 3000);
+                      },
+                    });
+                    setTimeout(() => { try { tagSub.cancel(); } catch {} if (pendingSubs > 0) { pendingSubs--; checkDone(); } }, 15000);
+                  } catch { finish(); }
                 };
                 setTimeout(tryConnect, 3000);
-                iframe.onerror = () => finish([]);
+                iframe.onerror = () => finish();
               });
             };
 
-            const sdkSweeps = await fetchSweepsViaSdk(modelId);
-            console.log("[openItems] sdkSweeps:", sdkSweeps.length, sdkSweeps.slice(0, 2));
-            const sweepOptions = sdkSweeps.map((s: any, idx: number) => ({
+            const sdkData = await fetchSdkData(modelId);
+            const liveMattertags = sdkData.mattertags.map((t: any) => ({
+              name: t.label || t.description || "(sans nom)",
+              sid: t.sid || t.id,
+            })).filter((t: { name: string; sid: string }) => t.sid);
+            const sweepOptions = sdkData.sweeps.map((s: any, idx: number) => ({
               name: `360° Vue ${idx + 1} — Étage ${s.floorInfo?.sequence ?? s.floor ?? '?'}`,
               sid: s.id || s.sid || s.uuid,
-            })).filter((s: { name: string; sid: string }) => s.sid);
-            console.log("[openItems] sweepOptions:", sweepOptions.length, sweepOptions.slice(0, 2));
+            })).filter((t: { name: string; sid: string }) => t.sid);
 
-            if (sweepOptions.length > 0) {
-              setTourTags([...saved, ...sweepOptions]);
+            const combined = [...(liveMattertags.length > 0 ? liveMattertags : saved), ...sweepOptions];
+            if (combined.length > 0) {
+              setTourTags(combined);
+              // Save mattertags to DB
+              if (liveMattertags.length > 0) {
+                fetch(`/api/tours/${tour.id}/tags`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify(liveMattertags),
+                }).catch(() => {});
+              }
             }
           } catch {}
         }
