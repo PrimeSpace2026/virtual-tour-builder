@@ -442,95 +442,68 @@ const Admin = () => {
       } catch {}
     }
 
-    // Fetch live sweeps via hidden Matterport SDK iframe
+    // Fetch sweeps via hidden Matterport iframe + SDK (only reliable method)
     const fetchSweepsViaSdk = (mid: string): Promise<any[]> => {
       return new Promise((resolve) => {
-        const timeout = setTimeout(() => resolve([]), 12000);
+        const timeout = setTimeout(() => { cleanup(); resolve([]); }, 20000);
         const iframe = document.createElement("iframe");
         iframe.style.cssText = "width:1px;height:1px;position:absolute;left:-9999px;opacity:0;pointer-events:none";
-        iframe.src = `https://my.matterport.com/show/?m=${mid}&applicationKey=b7uar4u57xdec0zw7dwygt7md&play=0&qs=1&title=0&brand=0`;
+        iframe.src = `https://my.matterport.com/show/?m=${mid}&applicationKey=b7uar4u57xdec0zw7dwygt7md&play=1&qs=1&title=0&brand=0&help=0&hl=0`;
+        const cleanup = () => { try { document.body.removeChild(iframe); } catch {} };
         document.body.appendChild(iframe);
-        iframe.onload = async () => {
-          try {
-            const MP = (window as any).MP_SDK;
-            if (MP?.connect) {
-              const sdk = await MP.connect(iframe, "b7uar4u57xdec0zw7dwygt7md", "3.10");
-              const sweepData = await sdk.Sweep.getData();
-              clearTimeout(timeout);
-              document.body.removeChild(iframe);
-              resolve(sweepData || []);
-              return;
-            }
-          } catch {}
-          // Fallback: try @matterport/sdk setupSdk
+
+        const tryConnect = async () => {
           try {
             const { setupSdk } = await import("@matterport/sdk");
             const sdk = await setupSdk("b7uar4u57xdec0zw7dwygt7md", { iframe, space: mid });
+            // Wait for model to be ready
+            await new Promise<void>((res) => {
+              const sub = sdk.App.state.subscribe((state: any) => {
+                if (state.phase === "appphase.playing" || state.phase === "playing") { sub.cancel(); res(); }
+              });
+              // Also resolve after 8s even if not playing
+              setTimeout(() => res(), 8000);
+            });
             const sweepData = await sdk.Sweep.getData();
             clearTimeout(timeout);
-            document.body.removeChild(iframe);
+            cleanup();
             resolve(sweepData || []);
-          } catch {
+          } catch (err) {
+            console.log("SDK sweep fetch failed:", err);
             clearTimeout(timeout);
-            document.body.removeChild(iframe);
+            cleanup();
             resolve([]);
           }
         };
-        iframe.onerror = () => { clearTimeout(timeout); document.body.removeChild(iframe); resolve([]); };
+        // Give iframe 2s to start loading before connecting SDK
+        setTimeout(tryConnect, 2000);
+        iframe.onerror = () => { clearTimeout(timeout); cleanup(); resolve([]); };
       });
     };
 
-    // Fetch live from Matterport via backend proxy
-    const BACKEND = "https://back-end-tp6x.onrender.com";
     let savedTags: { name: string; sid: string }[] = [];
     try {
-      let rawTags: any[] = [];
+      // Fetch sweeps via SDK iframe
       let rawSweeps: any[] = [];
-
-      // Try backend proxy first
       try {
-        const [tagsRes, sweepsRes] = await Promise.all([
-          fetch(`${BACKEND}/api/matterport/tags?modelId=${modelId}`),
-          fetch(`${BACKEND}/api/matterport/sweeps?modelId=${modelId}`),
-        ]);
-        if (tagsRes?.ok) {
-          const tData = await tagsRes.json();
-          rawTags = tData?.data?.model?.mattertags || [];
-        }
-        if (sweepsRes?.ok) {
-          const sData = await sweepsRes.json();
-          rawSweeps = sData?.data?.model?.sweeps || [];
-        }
+        const sdkSweeps = await fetchSweepsViaSdk(modelId);
+        rawSweeps = sdkSweeps.map((s: any) => ({
+          id: s.sid || s.id || s.uuid,
+          uuid: s.uuid || s.sid || s.id,
+          floor: s.floor ?? s.floorInfo?.sequence ?? '?',
+        }));
       } catch {}
 
-      // Fallback: use hidden iframe + SDK to get sweeps
-      if (rawSweeps.length === 0) {
-        try {
-          const sdkSweeps = await fetchSweepsViaSdk(modelId);
-          rawSweeps = sdkSweeps.map((s: any) => ({
-            id: s.sid || s.id || s.uuid,
-            uuid: s.uuid || s.sid || s.id,
-            floor: s.floor ?? s.floorInfo?.sequence ?? '?',
-          }));
-        } catch {}
-      }
+      // Merge with any saved DB tags (mattertags only)
+      const existing = dialogTags.filter(t => !t.name.startsWith("360°"));
+      const sweepOptions = rawSweeps.map((s: any, idx: number) => ({
+        name: `360° Vue ${idx + 1} — Étage ${s.floor ?? '?'}`,
+        sid: s.id || s.uuid,
+      })).filter((s: { name: string; sid: string }) => s.sid);
 
-      let combined: { name: string; sid: string }[] = [];
-      if (rawTags.length > 0 || rawSweeps.length > 0) {
-        combined = rawTags.map((t: any, i: number) => ({
-          name: stripMdLinks(t.label || t.description || `Tag ${i + 1}`),
-          sid: t.sid,
-        })).filter((t: { name: string; sid: string }) => t.sid);
-
-        const sweepOptions = rawSweeps.map((s: any, idx: number) => ({
-          name: `360° Vue ${idx + 1} — Étage ${s.floor ?? '?'}`,
-          sid: s.id || s.uuid,
-        })).filter((s: { name: string; sid: string }) => s.sid);
-        combined = [...combined, ...sweepOptions];
-      }
+      const combined = [...existing, ...sweepOptions];
       if (combined.length > 0) {
         setDialogTags(combined);
-        // Only save mattertags to DB, not sweeps (sweeps have names starting with "360°")
         savedTags = combined.filter(t => !t.name.startsWith("360°"));
         if (isEdit && id) {
           fetch(`/api/tours/${id}/tags`, {
@@ -792,83 +765,45 @@ const Admin = () => {
           setTourTags(saved);
           setTourTagsLoading(false);
         }
-        // Always fetch live tags + sweeps from Matterport to merge
+        // Fetch live sweeps via SDK iframe and merge with saved tags
         if (modelId) {
-          const BACKEND = "https://back-end-tp6x.onrender.com";
           try {
-            let rawTags: any[] = [];
-            let rawSweeps: any[] = [];
-
-            // Fetch via backend proxy
-            try {
-              const [tagsRes, sweepsRes] = await Promise.all([
-                fetch(`${BACKEND}/api/matterport/tags?modelId=${modelId}`),
-                fetch(`${BACKEND}/api/matterport/sweeps?modelId=${modelId}`),
-              ]);
-              if (tagsRes?.ok) {
-                const tData = await tagsRes.json();
-                rawTags = tData?.data?.model?.mattertags || [];
-              }
-              if (sweepsRes?.ok) {
-                const sData = await sweepsRes.json();
-                rawSweeps = sData?.data?.model?.sweeps || [];
-              }
-            } catch {}
-
-            // Fallback: hidden iframe + SDK for sweeps
-            if (rawSweeps.length === 0) {
-              try {
-                const fetchSweepsViaSdk = (mid: string): Promise<any[]> => {
-                  return new Promise((resolve) => {
-                    const timeout = setTimeout(() => resolve([]), 12000);
-                    const iframe = document.createElement("iframe");
-                    iframe.style.cssText = "width:1px;height:1px;position:absolute;left:-9999px;opacity:0;pointer-events:none";
-                    iframe.src = `https://my.matterport.com/show/?m=${mid}&applicationKey=b7uar4u57xdec0zw7dwygt7md&play=0&qs=1&title=0&brand=0`;
-                    document.body.appendChild(iframe);
-                    iframe.onload = async () => {
-                      try {
-                        const { setupSdk } = await import("@matterport/sdk");
-                        const sdk = await setupSdk("b7uar4u57xdec0zw7dwygt7md", { iframe, space: mid });
-                        const sweepData = await sdk.Sweep.getData();
-                        clearTimeout(timeout);
-                        document.body.removeChild(iframe);
-                        resolve(sweepData || []);
-                      } catch { clearTimeout(timeout); document.body.removeChild(iframe); resolve([]); }
-                    };
-                    iframe.onerror = () => { clearTimeout(timeout); document.body.removeChild(iframe); resolve([]); };
-                  });
+            const fetchSweepsViaSdk = (mid: string): Promise<any[]> => {
+              return new Promise((resolve) => {
+                const timeout = setTimeout(() => { cleanup(); resolve([]); }, 20000);
+                const iframe = document.createElement("iframe");
+                iframe.style.cssText = "width:1px;height:1px;position:absolute;left:-9999px;opacity:0;pointer-events:none";
+                iframe.src = `https://my.matterport.com/show/?m=${mid}&applicationKey=b7uar4u57xdec0zw7dwygt7md&play=1&qs=1&title=0&brand=0&help=0&hl=0`;
+                const cleanup = () => { try { document.body.removeChild(iframe); } catch {} };
+                document.body.appendChild(iframe);
+                const tryConnect = async () => {
+                  try {
+                    const { setupSdk } = await import("@matterport/sdk");
+                    const sdk = await setupSdk("b7uar4u57xdec0zw7dwygt7md", { iframe, space: mid });
+                    await new Promise<void>((res) => {
+                      const sub = sdk.App.state.subscribe((state: any) => {
+                        if (state.phase === "appphase.playing" || state.phase === "playing") { sub.cancel(); res(); }
+                      });
+                      setTimeout(() => res(), 8000);
+                    });
+                    const sweepData = await sdk.Sweep.getData();
+                    clearTimeout(timeout);
+                    cleanup();
+                    resolve(sweepData || []);
+                  } catch { clearTimeout(timeout); cleanup(); resolve([]); }
                 };
-                const sdkSweeps = await fetchSweepsViaSdk(modelId);
-                rawSweeps = sdkSweeps.map((s: any) => ({
-                  id: s.sid || s.id || s.uuid,
-                  uuid: s.uuid || s.sid || s.id,
-                  floor: s.floor ?? s.floorInfo?.sequence ?? '?',
-                }));
-              } catch {}
-            }
+                setTimeout(tryConnect, 2000);
+                iframe.onerror = () => { clearTimeout(timeout); cleanup(); resolve([]); };
+              });
+            };
 
-            const liveTags = rawTags.map((t: any, i: number) => ({
-              name: stripMdLinks(t.label || t.description || `Tag ${i + 1}`),
-              sid: t.sid,
-            }));
-            const sweepOptions = rawSweeps.map((s: any, idx: number) => ({
-              name: `360° Vue ${idx + 1} — Étage ${s.floor ?? '?'}`,
-              sid: s.id || s.uuid,
+            const sdkSweeps = await fetchSweepsViaSdk(modelId);
+            const sweepOptions = sdkSweeps.map((s: any, idx: number) => ({
+              name: `360° Vue ${idx + 1} — Étage ${s.floor ?? s.floorInfo?.sequence ?? '?'}`,
+              sid: s.sid || s.id || s.uuid,
             })).filter((s: { name: string; sid: string }) => s.sid);
 
-            if (liveTags.length > 0) {
-              const merged = liveTags.map((lt) => {
-                const existing = saved.find((s) => s.sid === lt.sid);
-                return existing && existing.name ? existing : lt;
-              });
-              const combined = [...merged, ...sweepOptions];
-              setTourTags(combined);
-              fetch(`/api/tours/${tour.id}/tags`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(merged),
-              }).catch(() => {});
-            } else if (sweepOptions.length > 0) {
+            if (sweepOptions.length > 0) {
               setTourTags([...saved, ...sweepOptions]);
             }
           } catch {}
@@ -946,32 +881,33 @@ const Admin = () => {
     setTagFinderTags([]);
 
     try {
-      // Fetch via backend proxy (server-side, no CORS)
-      const BACKEND = "https://back-end-tp6x.onrender.com";
-      let rawTags: any[] = [];
-      try {
-        const proxyRes = await fetch(`${BACKEND}/api/matterport/tags?modelId=${modelId}`);
-        if (proxyRes.ok) {
-          const pData = await proxyRes.json();
-          rawTags = pData?.data?.model?.mattertags || [];
-        }
-      } catch {}
-      if (rawTags.length === 0) {
-        const graphQuery = `{ model(id: "${modelId}") { mattertags { sid label description } } }`;
-        const res = await fetch("https://my.matterport.com/api/models/graph", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ query: graphQuery }),
-        });
-        if (!res.ok) {
-          throw new Error(`Erreur serveur (${res.status})`);
-        }
-        const data = await res.json();
-        if (data.errors) {
-          throw new Error(data.errors[0]?.message || "GraphQL error");
-        }
-        rawTags = data?.data?.model?.mattertags || [];
-      }
+      // Fetch mattertags via hidden iframe + SDK
+      const rawTags: any[] = await new Promise((resolve) => {
+        const timeout = setTimeout(() => { cleanup(); resolve([]); }, 20000);
+        const iframe = document.createElement("iframe");
+        iframe.style.cssText = "width:1px;height:1px;position:absolute;left:-9999px;opacity:0;pointer-events:none";
+        iframe.src = `https://my.matterport.com/show/?m=${modelId}&applicationKey=b7uar4u57xdec0zw7dwygt7md&play=1&qs=1&title=0&brand=0&help=0&hl=0`;
+        const cleanup = () => { try { document.body.removeChild(iframe); } catch {} };
+        document.body.appendChild(iframe);
+        const tryConnect = async () => {
+          try {
+            const { setupSdk } = await import("@matterport/sdk");
+            const sdk = await setupSdk("b7uar4u57xdec0zw7dwygt7md", { iframe, space: modelId });
+            await new Promise<void>((res) => {
+              const sub = sdk.App.state.subscribe((state: any) => {
+                if (state.phase === "appphase.playing" || state.phase === "playing") { sub.cancel(); res(); }
+              });
+              setTimeout(() => res(), 8000);
+            });
+            const tags = await sdk.Mattertag.getData();
+            clearTimeout(timeout);
+            cleanup();
+            resolve(tags || []);
+          } catch { clearTimeout(timeout); cleanup(); resolve([]); }
+        };
+        setTimeout(tryConnect, 2000);
+        iframe.onerror = () => { clearTimeout(timeout); cleanup(); resolve([]); };
+      });
 
       const allTags: TagInfo[] = rawTags.map((t: any) => ({
         sid: t.sid,
