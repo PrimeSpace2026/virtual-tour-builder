@@ -465,13 +465,18 @@ const Admin = () => {
               setTimeout(() => res(), 8000);
             });
             const sweeps = await new Promise<any[]>((resolveSweeps) => {
+              let resolved = false;
               const sub = sdk.Sweep.data.subscribe({
                 onCollectionUpdated(collection: any) {
-                  sub.cancel();
-                  resolveSweeps(Object.values(collection));
+                  const items = Object.values(collection);
+                  if (items.length > 0 && !resolved) {
+                    resolved = true;
+                    sub.cancel();
+                    resolveSweeps(items);
+                  }
                 },
               });
-              setTimeout(() => { try { sub.cancel(); } catch {} resolveSweeps([]); }, 5000);
+              setTimeout(() => { if (!resolved) { resolved = true; try { sub.cancel(); } catch {} resolveSweeps([]); } }, 10000);
             });
             clearTimeout(timeout);
             cleanup();
@@ -795,13 +800,18 @@ const Admin = () => {
                       setTimeout(() => res(), 8000);
                     });
                     const sweeps = await new Promise<any[]>((resolveSweeps) => {
+                      let resolved = false;
                       const sub = sdk.Sweep.data.subscribe({
                         onCollectionUpdated(collection: any) {
-                          sub.cancel();
-                          resolveSweeps(Object.values(collection));
+                          const items = Object.values(collection);
+                          if (items.length > 0 && !resolved) {
+                            resolved = true;
+                            sub.cancel();
+                            resolveSweeps(items);
+                          }
                         },
                       });
-                      setTimeout(() => { try { sub.cancel(); } catch {} resolveSweeps([]); }, 5000);
+                      setTimeout(() => { if (!resolved) { resolved = true; try { sub.cancel(); } catch {} resolveSweeps([]); } }, 10000);
                     });
                     clearTimeout(timeout);
                     cleanup();
@@ -916,13 +926,18 @@ const Admin = () => {
               setTimeout(() => res(), 8000);
             });
             const tags = await new Promise<any[]>((resolveTags) => {
+              let resolved = false;
               const sub = sdk.Mattertag.data.subscribe({
                 onCollectionUpdated(collection: any) {
-                  sub.cancel();
-                  resolveTags(Object.values(collection));
+                  const items = Object.values(collection);
+                  if (items.length > 0 && !resolved) {
+                    resolved = true;
+                    sub.cancel();
+                    resolveTags(items);
+                  }
                 },
               });
-              setTimeout(() => { try { sub.cancel(); } catch {} resolveTags([]); }, 5000);
+              setTimeout(() => { if (!resolved) { resolved = true; try { sub.cancel(); } catch {} resolveTags([]); } }, 10000);
             });
             clearTimeout(timeout);
             cleanup();
