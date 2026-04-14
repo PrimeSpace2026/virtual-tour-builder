@@ -442,30 +442,17 @@ const Admin = () => {
       } catch {}
     }
 
-    // Fetch live from Matterport Graph API (direct, then fallback to backend proxy)
+    // Fetch live from Matterport (backend proxy first, then direct Graph API)
     let savedTags: { name: string; sid: string }[] = [];
     try {
       let rawTags: any[] = [];
       let rawSweeps: any[] = [];
 
-      // Try direct Graph API first
-      const graphQuery = `{ model(id: "${modelId}") { mattertags { sid label description anchorPosition { x y z } } sweeps { id uuid position { x y z } floor neighbors } } }`;
-      const graphRes = await fetch("https://my.matterport.com/api/models/graph", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: graphQuery }),
-      });
-      if (graphRes.ok) {
-        const gData = await graphRes.json();
-        rawTags = gData?.data?.model?.mattertags || [];
-        rawSweeps = gData?.data?.model?.sweeps || [];
-      }
-
-      // Fallback: fetch via backend proxy if direct failed
-      if (rawTags.length === 0 && rawSweeps.length === 0) {
+      // Try backend proxy first (Vercel rewrites /api/* → Render backend → Matterport)
+      try {
         const [tagsRes, sweepsRes] = await Promise.all([
-          fetch(`/api/matterport/tags?modelId=${modelId}`).catch(() => null),
-          fetch(`/api/matterport/sweeps?modelId=${modelId}`).catch(() => null),
+          fetch(`/api/matterport/tags?modelId=${modelId}`),
+          fetch(`/api/matterport/sweeps?modelId=${modelId}`),
         ]);
         if (tagsRes?.ok) {
           const tData = await tagsRes.json();
@@ -474,6 +461,21 @@ const Admin = () => {
         if (sweepsRes?.ok) {
           const sData = await sweepsRes.json();
           rawSweeps = sData?.data?.model?.sweeps || [];
+        }
+      } catch {}
+
+      // Fallback: direct Graph API if proxy failed
+      if (rawTags.length === 0 && rawSweeps.length === 0) {
+        const graphQuery = `{ model(id: "${modelId}") { mattertags { sid label description anchorPosition { x y z } } sweeps { id uuid position { x y z } floor neighbors } } }`;
+        const graphRes = await fetch("https://my.matterport.com/api/models/graph", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query: graphQuery }),
+        });
+        if (graphRes.ok) {
+          const gData = await graphRes.json();
+          rawTags = gData?.data?.model?.mattertags || [];
+          rawSweeps = gData?.data?.model?.sweeps || [];
         }
       }
 
@@ -760,24 +762,11 @@ const Admin = () => {
             let rawTags: any[] = [];
             let rawSweeps: any[] = [];
 
-            // Try direct Graph API first
-            const graphQuery = `{ model(id: "${modelId}") { mattertags { sid label description } sweeps { id uuid floor } } }`;
-            const graphRes = await fetch("https://my.matterport.com/api/models/graph", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ query: graphQuery }),
-            });
-            if (graphRes.ok) {
-              const gData = await graphRes.json();
-              rawTags = gData?.data?.model?.mattertags || [];
-              rawSweeps = gData?.data?.model?.sweeps || [];
-            }
-
-            // Fallback: fetch via backend proxy
-            if (rawTags.length === 0 && rawSweeps.length === 0) {
+            // Try backend proxy first (Vercel → Render → Matterport)
+            try {
               const [tagsRes, sweepsRes] = await Promise.all([
-                fetch(`/api/matterport/tags?modelId=${modelId}`).catch(() => null),
-                fetch(`/api/matterport/sweeps?modelId=${modelId}`).catch(() => null),
+                fetch(`/api/matterport/tags?modelId=${modelId}`),
+                fetch(`/api/matterport/sweeps?modelId=${modelId}`),
               ]);
               if (tagsRes?.ok) {
                 const tData = await tagsRes.json();
@@ -786,6 +775,21 @@ const Admin = () => {
               if (sweepsRes?.ok) {
                 const sData = await sweepsRes.json();
                 rawSweeps = sData?.data?.model?.sweeps || [];
+              }
+            } catch {}
+
+            // Fallback: direct Graph API
+            if (rawTags.length === 0 && rawSweeps.length === 0) {
+              const graphQuery = `{ model(id: "${modelId}") { mattertags { sid label description } sweeps { id uuid floor } } }`;
+              const graphRes = await fetch("https://my.matterport.com/api/models/graph", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ query: graphQuery }),
+              });
+              if (graphRes.ok) {
+                const gData = await graphRes.json();
+                rawTags = gData?.data?.model?.mattertags || [];
+                rawSweeps = gData?.data?.model?.sweeps || [];
               }
             }
 
@@ -888,21 +892,32 @@ const Admin = () => {
     setTagFinderTags([]);
 
     try {
-      const graphQuery = `{ model(id: "${modelId}") { mattertags { sid label description } } }`;
-      const res = await fetch("https://my.matterport.com/api/models/graph", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: graphQuery }),
-      });
-      if (!res.ok) {
-        throw new Error(`Erreur serveur (${res.status})`);
-      }
-      const data = await res.json();
-      if (data.errors) {
-        throw new Error(data.errors[0]?.message || "GraphQL error");
+      // Try backend proxy first, then direct
+      let rawTags: any[] = [];
+      try {
+        const proxyRes = await fetch(`/api/matterport/tags?modelId=${modelId}`);
+        if (proxyRes.ok) {
+          const pData = await proxyRes.json();
+          rawTags = pData?.data?.model?.mattertags || [];
+        }
+      } catch {}
+      if (rawTags.length === 0) {
+        const graphQuery = `{ model(id: "${modelId}") { mattertags { sid label description } } }`;
+        const res = await fetch("https://my.matterport.com/api/models/graph", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query: graphQuery }),
+        });
+        if (!res.ok) {
+          throw new Error(`Erreur serveur (${res.status})`);
+        }
+        const data = await res.json();
+        if (data.errors) {
+          throw new Error(data.errors[0]?.message || "GraphQL error");
+        }
+        rawTags = data?.data?.model?.mattertags || [];
       }
 
-      const rawTags = data?.data?.model?.mattertags || [];
       const allTags: TagInfo[] = rawTags.map((t: any) => ({
         sid: t.sid,
         label: stripMdLinks(t.label || "(sans nom)"),
