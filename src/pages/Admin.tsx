@@ -442,25 +442,48 @@ const Admin = () => {
       } catch {}
     }
 
-    // Fetch live from Matterport Graph API directly
+    // Fetch live from Matterport Graph API (direct, then fallback to backend proxy)
     let savedTags: { name: string; sid: string }[] = [];
     try {
+      let rawTags: any[] = [];
+      let rawSweeps: any[] = [];
+
+      // Try direct Graph API first
       const graphQuery = `{ model(id: "${modelId}") { mattertags { sid label description anchorPosition { x y z } } sweeps { id uuid position { x y z } floor neighbors } } }`;
       const graphRes = await fetch("https://my.matterport.com/api/models/graph", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ query: graphQuery }),
       });
-      let combined: { name: string; sid: string }[] = [];
       if (graphRes.ok) {
         const gData = await graphRes.json();
-        const rawTags = gData?.data?.model?.mattertags || [];
+        rawTags = gData?.data?.model?.mattertags || [];
+        rawSweeps = gData?.data?.model?.sweeps || [];
+      }
+
+      // Fallback: fetch via backend proxy if direct failed
+      if (rawTags.length === 0 && rawSweeps.length === 0) {
+        const [tagsRes, sweepsRes] = await Promise.all([
+          fetch(`/api/matterport/tags?modelId=${modelId}`).catch(() => null),
+          fetch(`/api/matterport/sweeps?modelId=${modelId}`).catch(() => null),
+        ]);
+        if (tagsRes?.ok) {
+          const tData = await tagsRes.json();
+          rawTags = tData?.data?.model?.mattertags || [];
+        }
+        if (sweepsRes?.ok) {
+          const sData = await sweepsRes.json();
+          rawSweeps = sData?.data?.model?.sweeps || [];
+        }
+      }
+
+      let combined: { name: string; sid: string }[] = [];
+      if (rawTags.length > 0 || rawSweeps.length > 0) {
         combined = rawTags.map((t: any, i: number) => ({
           name: stripMdLinks(t.label || t.description || `Tag ${i + 1}`),
           sid: t.sid,
         })).filter((t: { name: string; sid: string }) => t.sid);
 
-        const rawSweeps = gData?.data?.model?.sweeps || [];
         const sweepOptions = rawSweeps.map((s: any, idx: number) => ({
           name: `360° Vue ${idx + 1} — Étage ${s.floor ?? '?'}`,
           sid: s.id || s.uuid,
@@ -734,41 +757,61 @@ const Admin = () => {
         // Always fetch live tags + sweeps from Matterport to merge
         if (modelId) {
           try {
+            let rawTags: any[] = [];
+            let rawSweeps: any[] = [];
+
+            // Try direct Graph API first
             const graphQuery = `{ model(id: "${modelId}") { mattertags { sid label description } sweeps { id uuid floor } } }`;
             const graphRes = await fetch("https://my.matterport.com/api/models/graph", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ query: graphQuery }),
             });
-            let liveTags: { name: string; sid: string }[] = [];
             if (graphRes.ok) {
               const gData = await graphRes.json();
-              const rawTags = gData?.data?.model?.mattertags || [];
-              liveTags = rawTags.map((t: any, i: number) => ({
-                name: stripMdLinks(t.label || t.description || `Tag ${i + 1}`),
-                sid: t.sid,
-              }));
-              const rawSweeps = gData?.data?.model?.sweeps || [];
-              const sweepOptions = rawSweeps.map((s: any, idx: number) => ({
-                name: `360° Vue ${idx + 1} — Étage ${s.floor ?? '?'}`,
-                sid: s.id || s.uuid,
-              })).filter((s: { name: string; sid: string }) => s.sid);
+              rawTags = gData?.data?.model?.mattertags || [];
+              rawSweeps = gData?.data?.model?.sweeps || [];
+            }
 
-              if (liveTags.length > 0) {
-                const merged = liveTags.map((lt) => {
-                  const existing = saved.find((s) => s.sid === lt.sid);
-                  return existing && existing.name ? existing : lt;
-                });
-                const combined = [...merged, ...sweepOptions];
-                setTourTags(combined);
-                fetch(`/api/tours/${tour.id}/tags`, {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify(merged),
-                }).catch(() => {});
-              } else if (sweepOptions.length > 0) {
-                setTourTags([...saved, ...sweepOptions]);
+            // Fallback: fetch via backend proxy
+            if (rawTags.length === 0 && rawSweeps.length === 0) {
+              const [tagsRes, sweepsRes] = await Promise.all([
+                fetch(`/api/matterport/tags?modelId=${modelId}`).catch(() => null),
+                fetch(`/api/matterport/sweeps?modelId=${modelId}`).catch(() => null),
+              ]);
+              if (tagsRes?.ok) {
+                const tData = await tagsRes.json();
+                rawTags = tData?.data?.model?.mattertags || [];
               }
+              if (sweepsRes?.ok) {
+                const sData = await sweepsRes.json();
+                rawSweeps = sData?.data?.model?.sweeps || [];
+              }
+            }
+
+            const liveTags = rawTags.map((t: any, i: number) => ({
+              name: stripMdLinks(t.label || t.description || `Tag ${i + 1}`),
+              sid: t.sid,
+            }));
+            const sweepOptions = rawSweeps.map((s: any, idx: number) => ({
+              name: `360° Vue ${idx + 1} — Étage ${s.floor ?? '?'}`,
+              sid: s.id || s.uuid,
+            })).filter((s: { name: string; sid: string }) => s.sid);
+
+            if (liveTags.length > 0) {
+              const merged = liveTags.map((lt) => {
+                const existing = saved.find((s) => s.sid === lt.sid);
+                return existing && existing.name ? existing : lt;
+              });
+              const combined = [...merged, ...sweepOptions];
+              setTourTags(combined);
+              fetch(`/api/tours/${tour.id}/tags`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(merged),
+              }).catch(() => {});
+            } else if (sweepOptions.length > 0) {
+              setTourTags([...saved, ...sweepOptions]);
             }
           } catch {}
         }
