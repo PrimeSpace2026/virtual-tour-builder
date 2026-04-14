@@ -432,7 +432,7 @@ const Admin = () => {
         const savedRes = await fetch(`/api/tours/${id}/tags`);
         if (savedRes.ok) {
           const savedData = await savedRes.json();
-          const saved = Array.isArray(savedData) ? savedData.map((t: any) => ({ name: t.name || "", sid: t.sid || "" })).filter((t: { name: string; sid: string }) => t.sid) : [];
+          const saved = Array.isArray(savedData) ? savedData.map((t: any) => ({ name: t.name || "", sid: t.sid || "" })).filter((t: { name: string; sid: string }) => t.sid && !t.name.startsWith("360°")) : [];
           if (saved.length > 0) {
             setDialogTags(saved);
             setDialogTagsLoading(false);
@@ -749,7 +749,7 @@ const Admin = () => {
     fetch(`/api/tours/${tour.id}/tags`)
       .then((r) => r.ok ? r.json() : [])
       .then(async (savedData) => {
-        const saved = Array.isArray(savedData) ? savedData.map((t: any) => ({ name: t.name || "", sid: t.sid || "" })) : [];
+        const saved = Array.isArray(savedData) ? savedData.map((t: any) => ({ name: t.name || "", sid: t.sid || "" })).filter((t: { name: string; sid: string }) => !t.name.startsWith("360°")) : [];
         if (saved.length > 0) {
           setTourTags(saved);
           setTourTagsLoading(false);
