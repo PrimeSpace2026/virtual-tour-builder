@@ -135,13 +135,7 @@ const GYM_EQUIPMENT_ICONS: Record<string, { icon: React.ComponentType<{ classNam
   ac: { icon: Snowflake, label: "Climatisation" },
 };
 
-const SECTION_COLORS: Record<string, string> = {
-  bed: "#b8860b", sparkles: "#2d8a6e", utensils: "#8b4513",
-  dumbbell: "#5a5a8a", calendar: "#8b5c3a", heart: "#a04050",
-  palmtree: "#4a8a4a", shield: "#5a7a9a", play: "#7a6a3a",
-  star: "#9a7a2a", coffee: "#6a5040", music: "#6a508a",
-  layers: "#6a6a4a", home: "#7a6a3a",
-};
+/* Section colors removed — modern monochrome design */
 
 /* ── Canyon Ranch style collapsible section ── */
 interface MenuSectionProps {
@@ -156,25 +150,25 @@ const HotelMenuSection = ({ title, iconKey, items, amenities, onItemClick }: Men
   const [open, setOpen] = useState(false);
   const [amenitiesOpen, setAmenitiesOpen] = useState(false);
   const Icon = ICON_MAP[iconKey] || Layers;
-  const color = SECTION_COLORS[iconKey] || "#6a6a4a";
 
   return (
-    <div>
-      {/* Section header — golden bar style */}
+    <div className="border-b border-white/[0.06] last:border-b-0">
+      {/* Section header — clean minimal */}
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="w-full flex items-center gap-3 px-3 py-3 transition-colors hover:brightness-110"
-        style={{ background: `linear-gradient(135deg, ${color}, ${color}dd)` }}
+        className="w-full flex items-center gap-3 px-4 py-3.5 transition-all hover:bg-white/[0.05] group"
       >
-        <Icon className="w-5 h-5 text-white/90 shrink-0" />
-        <span className="text-white text-[13px] font-semibold flex-1 text-left tracking-wide">{title}</span>
-        <ChevronDown className={`w-4 h-4 text-white/60 transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
+        <div className="w-8 h-8 rounded-lg bg-white/[0.06] flex items-center justify-center shrink-0 group-hover:bg-white/[0.1] transition-colors">
+          <Icon className="w-4 h-4 text-white/60" />
+        </div>
+        <span className="text-white/85 text-[13px] font-medium flex-1 text-left">{title}</span>
+        <ChevronDown className={`w-4 h-4 text-white/30 transition-transform duration-300 ${open ? "rotate-180" : ""}`} />
       </button>
 
       {/* Sub-items + amenity chips */}
       {open && (
-        <div className="bg-black/30">
+        <div className="pb-1">
           {items.map((item, i) => {
             const ItemIcon = ICON_MAP[item.iconKey] || Layers;
             const hasTag = !!item.tagSid;
@@ -182,37 +176,37 @@ const HotelMenuSection = ({ title, iconKey, items, amenities, onItemClick }: Men
               <div
                 key={i}
                 onClick={() => hasTag && onItemClick?.(item.tagSid!)}
-                className={`flex items-center gap-3 px-4 py-2.5 border-t border-white/[0.05] transition-colors ${hasTag ? "cursor-pointer hover:bg-white/[0.08]" : "hover:bg-white/[0.06] cursor-default"}`}
+                className={`flex items-center gap-3 px-5 py-2.5 ml-4 mr-2 rounded-lg transition-all ${hasTag ? "cursor-pointer hover:bg-white/[0.06]" : "cursor-default"}`}
               >
-                <ItemIcon className="w-4 h-4 text-white/40 shrink-0" />
+                <ItemIcon className="w-3.5 h-3.5 text-white/30 shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-white/80 text-[12px] font-medium truncate">{item.name}</p>
-                  {item.sub && <p className="text-white/35 text-[10px] truncate">{item.sub}</p>}
+                  <p className="text-white/70 text-[12px] font-normal truncate">{item.name}</p>
+                  {item.sub && <p className="text-white/30 text-[10px] truncate mt-0.5">{item.sub}</p>}
                 </div>
-                {hasTag && <Eye className="w-3.5 h-3.5 text-white/30 shrink-0" />}
+                {hasTag && <ChevronRight className="w-3.5 h-3.5 text-white/20 shrink-0" />}
               </div>
             );
           })}
           {amenities && amenities.length > 0 && (
-            <div className="border-t border-white/[0.05]">
+            <div className="mx-4 mt-1">
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); setAmenitiesOpen(!amenitiesOpen); }}
-                className="w-full flex items-center gap-2 px-4 py-2.5 hover:bg-white/[0.06] transition-colors"
+                className="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-white/[0.04] transition-colors"
               >
-                <Sparkles className="w-3.5 h-3.5 text-purple-400 shrink-0" />
-                <span className="text-purple-300 text-[11px] font-semibold flex-1 text-left uppercase tracking-wider">Équipements</span>
-                <ChevronDown className={`w-3.5 h-3.5 text-purple-400/60 transition-transform duration-200 ${amenitiesOpen ? "rotate-180" : ""}`} />
+                <Sparkles className="w-3.5 h-3.5 text-white/30 shrink-0" />
+                <span className="text-white/40 text-[11px] font-medium flex-1 text-left uppercase tracking-wider">Équipements</span>
+                <ChevronDown className={`w-3.5 h-3.5 text-white/25 transition-transform duration-300 ${amenitiesOpen ? "rotate-180" : ""}`} />
               </button>
               {amenitiesOpen && (
-                <div className="px-4 pb-3 pt-1">
+                <div className="px-2 pb-3 pt-1.5">
                   <div className="flex flex-wrap gap-1.5">
                     {amenities.map(key => {
                       const a = AMENITY_ICONS[key] || GYM_EQUIPMENT_ICONS[key];
                       const AIcon = a ? a.icon : Sparkles;
                       const label = a ? a.label : key;
                       return (
-                        <span key={key} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-purple-600 text-white text-[11px] font-medium">
+                        <span key={key} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/[0.06] border border-white/[0.08] text-white/50 text-[10px] font-medium">
                           <AIcon className="w-3 h-3" />
                           {label}
                         </span>
@@ -780,6 +774,16 @@ const TourViewer = () => {
       if (sdk) {
         const tryNavigate = async () => {
           try {
+            // Check if this is a sweep ID first
+            const sweeps = sweepsRef.current;
+            const isSweepId = sweeps.length > 0 && sweeps.some((s: any) => s.sid === resolvedSid || s.id === resolvedSid || s.uuid === resolvedSid);
+            if (isSweepId && sdk.Sweep?.moveTo) {
+              console.log(`📍 Product → Sweep.moveTo("${resolvedSid}")`);
+              await sdk.Sweep.moveTo(resolvedSid, { transition: sdk.Sweep.Transition?.FLY || 2 });
+              setSelectedItem(item);
+              return;
+            }
+
             // Try direct Mattertag.navigateToTag (fly transition)
             if (sdk.Mattertag?.navigateToTag) {
               const flyTransition = sdk.Mattertag.Transition?.FLY_IN || sdk.Mattertag.Transition?.FLYOVER || "transition.fly";
@@ -808,7 +812,16 @@ const TourViewer = () => {
             iframeFallback();
             setSelectedItem(item);
           } catch (err) {
-            console.log("SDK fly failed, falling back to iframe:", err);
+            console.log("SDK fly failed, trying Sweep.moveTo as last SDK resort:", err);
+            try {
+              if (sdk.Sweep?.moveTo) {
+                await sdk.Sweep.moveTo(resolvedSid, { transition: sdk.Sweep.Transition?.FLY || 2 });
+                setSelectedItem(item);
+                return;
+              }
+            } catch (sweepErr) {
+              console.log("Sweep.moveTo also failed:", sweepErr);
+            }
             iframeFallback();
             setSelectedItem(item);
           }
@@ -1344,7 +1357,7 @@ const TourViewer = () => {
                     className="w-full h-full object-cover"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                  <span className="absolute top-3 left-3 px-2.5 py-1 rounded-lg bg-purple-600/80 backdrop-blur-sm text-white text-[10px] font-semibold uppercase tracking-wider">
+                  <span className="absolute top-3 left-3 px-2.5 py-1 rounded-lg bg-white/10 backdrop-blur-md border border-white/[0.12] text-white/80 text-[10px] font-medium uppercase tracking-wider">
                     {tour.category}
                   </span>
                   <div className="absolute bottom-3 left-3 right-3">
@@ -1383,45 +1396,45 @@ const TourViewer = () => {
                 )}
 
                 {/* Info Items */}
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   {tour.surface && (
-                    <div className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.04] border border-white/[0.06]">
-                      <div className="w-8 h-8 rounded-lg bg-teal-500/15 flex items-center justify-center shrink-0">
-                        <Ruler className="w-4 h-4 text-teal-400" />
+                    <div className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.03] border border-white/[0.05]">
+                      <div className="w-8 h-8 rounded-lg bg-white/[0.06] flex items-center justify-center shrink-0">
+                        <Ruler className="w-4 h-4 text-white/50" />
                       </div>
                       <div>
                         <p className="text-white/30 text-[10px] uppercase tracking-wider font-medium">
                           Surface
                         </p>
-                        <p className="text-white/80 text-sm font-semibold">
+                        <p className="text-white/75 text-sm font-medium">
                           {tour.surface} m²
                         </p>
                       </div>
                     </div>
                   )}
-                  <div className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.04] border border-white/[0.06]">
-                    <div className="w-8 h-8 rounded-lg bg-purple-500/15 flex items-center justify-center shrink-0">
-                      <Tag className="w-4 h-4 text-purple-400" />
+                  <div className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.03] border border-white/[0.05]">
+                    <div className="w-8 h-8 rounded-lg bg-white/[0.06] flex items-center justify-center shrink-0">
+                      <Tag className="w-4 h-4 text-white/50" />
                     </div>
                     <div>
                       <p className="text-white/30 text-[10px] uppercase tracking-wider font-medium">
                         Catégorie
                       </p>
-                      <p className="text-white/80 text-sm font-semibold">
+                      <p className="text-white/75 text-sm font-medium">
                         {tour.category}
                       </p>
                     </div>
                   </div>
                   {tour.location && (
-                    <div className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.04] border border-white/[0.06]">
-                      <div className="w-8 h-8 rounded-lg bg-amber-500/15 flex items-center justify-center shrink-0">
-                        <MapPin className="w-4 h-4 text-amber-400" />
+                    <div className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.03] border border-white/[0.05]">
+                      <div className="w-8 h-8 rounded-lg bg-white/[0.06] flex items-center justify-center shrink-0">
+                        <MapPin className="w-4 h-4 text-white/50" />
                       </div>
                       <div className="min-w-0">
                         <p className="text-white/30 text-[10px] uppercase tracking-wider font-medium">
                           Localisation
                         </p>
-                        <p className="text-white/80 text-sm font-semibold truncate">
+                        <p className="text-white/75 text-sm font-medium truncate">
                           {tour.location}
                         </p>
                       </div>
@@ -1692,7 +1705,7 @@ const TourViewer = () => {
                     </button>
                   </div>
                   <div className="flex items-center gap-2 mt-2">
-                    <span className="px-2 py-0.5 rounded-md bg-purple-500/20 text-purple-300 text-[10px] font-medium">
+                    <span className="px-2 py-0.5 rounded-md bg-white/[0.08] border border-white/[0.1] text-white/60 text-[10px] font-medium">
                       {tour.category}
                     </span>
                     {tour.surface && (
