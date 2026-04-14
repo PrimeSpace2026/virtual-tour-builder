@@ -1,6 +1,7 @@
 {
   "rewrites": [
     { "source": "/share/:id", "destination": "https://back-end-tp6x.onrender.com/og/view/:id" },
+    { "source": "/api/matterport/:path*", "destination": "/api/matterport/:path*" },
     { "source": "/api/(.*)", "destination": "https://back-end-tp6x.onrender.com/api/$1" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
