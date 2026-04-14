@@ -1,9 +1,4 @@
 {
-  "functions": {
-    "api/matterport/*.js": {
-      "runtime": "@vercel/node@3"
-    }
-  },
   "rewrites": [
     { "source": "/share/:id", "destination": "https://back-end-tp6x.onrender.com/og/view/:id" },
     { "source": "/api/(.*)", "destination": "https://back-end-tp6x.onrender.com/api/$1" },

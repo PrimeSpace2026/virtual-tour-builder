@@ -442,17 +442,18 @@ const Admin = () => {
       } catch {}
     }
 
-    // Fetch live from Matterport (backend proxy first, then direct Graph API)
+    // Fetch live from Matterport via backend proxy
+    const BACKEND = "https://back-end-tp6x.onrender.com";
     let savedTags: { name: string; sid: string }[] = [];
     try {
       let rawTags: any[] = [];
       let rawSweeps: any[] = [];
 
-      // Try backend proxy first (Vercel rewrites /api/* → Render backend → Matterport)
+      // Fetch tags + sweeps via backend proxy (server-side, no CORS)
       try {
         const [tagsRes, sweepsRes] = await Promise.all([
-          fetch(`/api/matterport/tags?modelId=${modelId}`),
-          fetch(`/api/matterport/sweeps?modelId=${modelId}`),
+          fetch(`${BACKEND}/api/matterport/tags?modelId=${modelId}`),
+          fetch(`${BACKEND}/api/matterport/sweeps?modelId=${modelId}`),
         ]);
         if (tagsRes?.ok) {
           const tData = await tagsRes.json();
@@ -758,15 +759,16 @@ const Admin = () => {
         }
         // Always fetch live tags + sweeps from Matterport to merge
         if (modelId) {
+          const BACKEND = "https://back-end-tp6x.onrender.com";
           try {
             let rawTags: any[] = [];
             let rawSweeps: any[] = [];
 
-            // Try backend proxy first (Vercel → Render → Matterport)
+            // Fetch via backend proxy (server-side, no CORS)
             try {
               const [tagsRes, sweepsRes] = await Promise.all([
-                fetch(`/api/matterport/tags?modelId=${modelId}`),
-                fetch(`/api/matterport/sweeps?modelId=${modelId}`),
+                fetch(`${BACKEND}/api/matterport/tags?modelId=${modelId}`),
+                fetch(`${BACKEND}/api/matterport/sweeps?modelId=${modelId}`),
               ]);
               if (tagsRes?.ok) {
                 const tData = await tagsRes.json();
@@ -892,10 +894,11 @@ const Admin = () => {
     setTagFinderTags([]);
 
     try {
-      // Try backend proxy first, then direct
+      // Fetch via backend proxy (server-side, no CORS)
+      const BACKEND = "https://back-end-tp6x.onrender.com";
       let rawTags: any[] = [];
       try {
-        const proxyRes = await fetch(`/api/matterport/tags?modelId=${modelId}`);
+        const proxyRes = await fetch(`${BACKEND}/api/matterport/tags?modelId=${modelId}`);
         if (proxyRes.ok) {
           const pData = await proxyRes.json();
           rawTags = pData?.data?.model?.mattertags || [];
