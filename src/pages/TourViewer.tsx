@@ -135,13 +135,7 @@ const GYM_EQUIPMENT_ICONS: Record<string, { icon: React.ComponentType<{ classNam
   ac: { icon: Snowflake, label: "Climatisation" },
 };
 
-const SECTION_COLORS: Record<string, string> = {
-  bed: "#b8860b", sparkles: "#2d8a6e", utensils: "#8b4513",
-  dumbbell: "#5a5a8a", calendar: "#8b5c3a", heart: "#a04050",
-  palmtree: "#4a8a4a", shield: "#5a7a9a", play: "#7a6a3a",
-  star: "#9a7a2a", coffee: "#6a5040", music: "#6a508a",
-  layers: "#6a6a4a", home: "#7a6a3a",
-};
+/* Section colors removed — modern monochrome design */
 
 /* ── Canyon Ranch style collapsible section ── */
 interface MenuSectionProps {
@@ -149,70 +143,70 @@ interface MenuSectionProps {
   iconKey: string;
   items: { name: string; iconKey: string; sub?: string; tagSid?: string }[];
   amenities?: string[];
-  onItemClick?: (tagSid: string, label?: string) => void;
+  onItemClick?: (tagSid: string) => void;
 }
 
 const HotelMenuSection = ({ title, iconKey, items, amenities, onItemClick }: MenuSectionProps) => {
   const [open, setOpen] = useState(false);
   const [amenitiesOpen, setAmenitiesOpen] = useState(false);
   const Icon = ICON_MAP[iconKey] || Layers;
-  const color = SECTION_COLORS[iconKey] || "#6a6a4a";
 
   return (
-    <div>
-      {/* Section header — golden bar style */}
+    <div className="border-b border-white/[0.06] last:border-b-0">
+      {/* Section header — clean minimal */}
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="w-full flex items-center gap-3 px-3 py-3 transition-colors hover:brightness-110"
-        style={{ background: `linear-gradient(135deg, ${color}, ${color}dd)` }}
+        className="w-full flex items-center gap-3 px-4 py-3.5 transition-all hover:bg-white/[0.05] group"
       >
-        <Icon className="w-5 h-5 text-white/90 shrink-0" />
-        <span className="text-white text-[13px] font-semibold flex-1 text-left tracking-wide">{title}</span>
-        <ChevronDown className={`w-4 h-4 text-white/60 transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
+        <div className="w-8 h-8 rounded-lg bg-white/[0.06] flex items-center justify-center shrink-0 group-hover:bg-white/[0.1] transition-colors">
+          <Icon className="w-4 h-4 text-white/60" />
+        </div>
+        <span className="text-white/85 text-[13px] font-medium flex-1 text-left">{title}</span>
+        <ChevronDown className={`w-4 h-4 text-white/30 transition-transform duration-300 ${open ? "rotate-180" : ""}`} />
       </button>
 
       {/* Sub-items + amenity chips */}
       {open && (
-        <div className="bg-black/30">
+        <div className="pb-1">
           {items.map((item, i) => {
             const ItemIcon = ICON_MAP[item.iconKey] || Layers;
             const hasTag = !!item.tagSid;
             return (
               <div
                 key={i}
-                onClick={() => hasTag && onItemClick?.(item.tagSid!, item.name)}
-                className={`flex items-center gap-3 px-4 py-2.5 border-t border-white/[0.05] transition-colors ${hasTag ? "cursor-pointer hover:bg-white/[0.08]" : "hover:bg-white/[0.06] cursor-default"}`}
+                onClick={() => hasTag && onItemClick?.(item.tagSid!)}
+                className={`flex items-center gap-3 px-5 py-2.5 ml-4 mr-2 rounded-lg transition-all ${hasTag ? "cursor-pointer hover:bg-white/[0.06]" : "cursor-default"}`}
               >
-                <ItemIcon className="w-4 h-4 text-white/40 shrink-0" />
+                <ItemIcon className="w-3.5 h-3.5 text-white/30 shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-white/80 text-[12px] font-medium truncate">{item.name}</p>
-                  {item.sub && <p className="text-white/35 text-[10px] truncate">{item.sub}</p>}
+                  <p className="text-white/70 text-[12px] font-normal truncate">{item.name}</p>
+                  {item.sub && <p className="text-white/30 text-[10px] truncate mt-0.5">{item.sub}</p>}
                 </div>
-                {hasTag && <Eye className="w-3.5 h-3.5 text-white/30 shrink-0" />}
+                {hasTag && <ChevronRight className="w-3.5 h-3.5 text-white/20 shrink-0" />}
               </div>
             );
           })}
           {amenities && amenities.length > 0 && (
-            <div className="border-t border-white/[0.05]">
+            <div className="mx-4 mt-1">
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); setAmenitiesOpen(!amenitiesOpen); }}
-                className="w-full flex items-center gap-2 px-4 py-2.5 hover:bg-white/[0.06] transition-colors"
+                className="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-white/[0.04] transition-colors"
               >
-                <Sparkles className="w-3.5 h-3.5 text-purple-400 shrink-0" />
-                <span className="text-purple-300 text-[11px] font-semibold flex-1 text-left uppercase tracking-wider">Équipements</span>
-                <ChevronDown className={`w-3.5 h-3.5 text-purple-400/60 transition-transform duration-200 ${amenitiesOpen ? "rotate-180" : ""}`} />
+                <Sparkles className="w-3.5 h-3.5 text-white/30 shrink-0" />
+                <span className="text-white/40 text-[11px] font-medium flex-1 text-left uppercase tracking-wider">Équipements</span>
+                <ChevronDown className={`w-3.5 h-3.5 text-white/25 transition-transform duration-300 ${amenitiesOpen ? "rotate-180" : ""}`} />
               </button>
               {amenitiesOpen && (
-                <div className="px-4 pb-3 pt-1">
+                <div className="px-2 pb-3 pt-1.5">
                   <div className="flex flex-wrap gap-1.5">
                     {amenities.map(key => {
                       const a = AMENITY_ICONS[key] || GYM_EQUIPMENT_ICONS[key];
                       const AIcon = a ? a.icon : Sparkles;
                       const label = a ? a.label : key;
                       return (
-                        <span key={key} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-purple-600 text-white text-[11px] font-medium">
+                        <span key={key} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/[0.06] border border-white/[0.08] text-white/50 text-[10px] font-medium">
                           <AIcon className="w-3 h-3" />
                           {label}
                         </span>
@@ -299,7 +293,7 @@ const CURRENCY_SYMBOLS: Record<string, string> = { EUR: "€", USD: "$", TND: "T
 function buildEmbedUrl(tourUrl: string, withSdkKey = false): string {
   const modelId = extractModelId(tourUrl);
   if (!modelId) return tourUrl;
-  return `https://my.matterport.com/show/?m=${modelId}&play=1&qs=1&title=0&vr=0&dh=1&f=1&search=0&lang=fr&applicationKey=${SDK_KEY}`;
+  return `https://my.matterport.com/show/?m=${modelId}&play=1&qs=1&title=0&vr=0&dh=0&f=0&search=0&lang=fr&applicationKey=${SDK_KEY}`;
 }
 
 const TourViewer = () => {
@@ -312,7 +306,7 @@ const TourViewer = () => {
   const sdkAttemptsRef = useRef(0);
   const tagsMapRef = useRef<Map<string, string>>(new Map()); // tagName (lowercase) → SID
   const savedTagsMapRef = useRef<Map<string, string>>(new Map()); // saved tags from DB: name (lowercase) → SID
-  const tagPositionsRef = useRef<Map<string, {x: number; y: number; z: number}>>(new Map()); // SID → anchorPosition
+  const sweepsRef = useRef<any[]>([]); // cached sweep objects from SDK
   const visitIdRef = useRef<number | null>(null);
   const visitStartRef = useRef<number>(Date.now());
 
@@ -370,22 +364,6 @@ const TourViewer = () => {
   });
   const [showCart, setShowCart] = useState(false);
 
-  // Navigation path state (walk-to-tag with floor path)
-  const [navPath, setNavPath] = useState<{x: number; y: number; z: number}[]>([]);
-  const [navTarget, setNavTarget] = useState<TourItemData | null>(null);
-  const [navStep, setNavStep] = useState(0);
-  const navCancelledRef = useRef(false);
-  const pathNodesRef = useRef<any[]>([]); // Mattertag SIDs (kept for legacy cleanup)
-  const navPathPointsRef = useRef<{x: number; y: number; z: number}[]>([]); // 3D path coords for canvas line
-  const navCanvasRef = useRef<HTMLCanvasElement>(null); // canvas overlay for drawing line
-  const navPoseSubRef = useRef<any>(null); // Camera.pose subscription for live line updates
-  const totalDotsRef = useRef(0);
-
-  // Navigation choice modal state (Fly vs Navigate)
-  const [navChoice, setNavChoice] = useState<{ tagSid: string; label: string } | null>(null);
-  // Arrival popup state
-  const [navArrived, setNavArrived] = useState<{ name: string } | null>(null);
-
   // Persist cart to localStorage
   useEffect(() => {
     try {
@@ -399,7 +377,6 @@ const TourViewer = () => {
   const [selectedCoach, setSelectedCoach] = useState<GymCoachData | null>(null);
   const [gymCoaches, setGymCoaches] = useState<GymCoachData[]>([]);
   const [bottomTab, setBottomTab] = useState<"products" | "services" | "coaches">("products");
-  const [bottomStripOpen, setBottomStripOpen] = useState(true);
 
   // Match a product by name/id/tagSid from a URL param
   const matchProduct = useCallback((param: string) => {
@@ -563,18 +540,9 @@ const TourViewer = () => {
 
     let cancelled = false;
 
-    // Double-click detection for tags
-    let lastTagClick = { sid: "", time: 0 };
-
     const handleTagClick = async (sdk: any, tagSid: string) => {
       try {
         console.log("🏷️ Tag cliqué — SID:", tagSid);
-
-        // Detect double-click (same tag within 400ms)
-        const now = Date.now();
-        const isDoubleClick = lastTagClick.sid === tagSid && (now - lastTagClick.time) < 400;
-        lastTagClick = { sid: tagSid, time: now };
-
         let tagLabel = "";
         let tagData: TagItem | null = null;
 
@@ -599,23 +567,31 @@ const TourViewer = () => {
         });
 
         if (matchedItem) {
+          // Track tag click
           if (tour?.id) trackEvent(tour.id, "tag_click", matchedItem.name, tagSid);
-          // Close native Matterport popup
+          // Close native Matterport popup immediately
           try { if (sdk.Mattertag?.close) sdk.Mattertag.close(tagSid); } catch {}
           try { if (sdk.Tag?.close) sdk.Tag.close(tagSid); } catch {}
-          // Single click: just filter bottom strip. Double click: show popup
+          // Show custom product popup instead
+          setSelectedItem(matchedItem);
           setActiveTagFilter(matchedItem.tagSid);
-          if (isDoubleClick) {
-            console.log("🏷️ Double-click → showing custom popup");
-            setSelectedItem(matchedItem);
-          }
           return;
         }
         if (tagData) {
           if (tour?.id) trackEvent(tour.id, "tag_click", tagData.label || tagSid, tagSid);
-          if (isDoubleClick) {
-            setSelectedTag(tagData);
+          // Fly directly to the tag
+          try {
+            const flyType = sdk.Mattertag?.Transition?.FLY_IN ?? sdk.Mattertag?.Transition?.FLYOVER ?? 2;
+            await sdk.Mattertag.navigateToTag(tagSid, flyType);
+          } catch {
+            try { await sdk.Sweep?.moveTo?.(tagSid); } catch {}
           }
+          // Close native popup after fly
+          setTimeout(() => {
+            try { sdk.Mattertag?.close?.(tagSid); } catch {}
+            try { sdk.Tag?.close?.(tagSid); } catch {}
+          }, 500);
+          setSelectedTag(tagData);
         }
       } catch (err) {
         console.log("Tag data error:", err);
@@ -668,12 +644,19 @@ const TourViewer = () => {
             allTags.forEach((t: any) => {
               if (t.label) tagsMapRef.current.set(t.label.trim().toLowerCase(), t.sid);
               if (t.sid) tagsMapRef.current.set(t.sid, t.sid);
-              if (t.sid && t.anchorPosition) tagPositionsRef.current.set(t.sid, t.anchorPosition);
             });
           }
         } catch {}
 
-        // Cache sweep positions for navigation
+        // Cache sweep data for sweep: SID resolution
+        try {
+          if (sdk.Sweep?.getData) {
+            const allSweeps = await sdk.Sweep.getData();
+            sweepsRef.current = allSweeps;
+            console.log(`📍 Cached ${allSweeps.length} sweeps`);
+          }
+        } catch (e) { console.log("Sweep cache error:", e); }
+
         // NOW set SDK as ready — model is loaded & tags are cached
         if (cancelled) return;
         sdkRef.current = sdk;
@@ -693,7 +676,6 @@ const TourViewer = () => {
                 tags.forEach((t: any) => {
                   if (t.label) tagsMapRef.current.set(t.label.trim().toLowerCase(), t.sid);
                   if (t.sid) tagsMapRef.current.set(t.sid, t.sid);
-                  if (t.sid && t.anchorPosition) tagPositionsRef.current.set(t.sid, t.anchorPosition);
                 });
               }
             } catch (e) { console.log("Tag restore error:", e); }
@@ -722,7 +704,9 @@ const TourViewer = () => {
           sdk.on(sdk.Tag.Event.CLICK, (tagSid: string) => handleTagClick(sdk, tagSid));
         }
 
-
+        // Prevent native Matterport popup from appearing on product tags
+        // Note: we handle popup close manually in handleTagClick
+        // Do NOT use allowAction(false) as it blocks navigateToTag fly transitions
       } catch (err) {
         if (cancelled) return;
         console.log("⚠️ SDK échoué sur localhost:", err);
@@ -786,32 +770,63 @@ const TourViewer = () => {
         setIframeLoaded(false);
       };
 
-      // SDK: Mattertag.navigateToTag FLY directly to the tag
-      if (sdk && sdk.Mattertag?.navigateToTag) {
-        const doFly = async () => {
+      // Primary: use SDK Mattertag.navigateToTag for direct fly-to
+      if (sdk) {
+        const tryNavigate = async () => {
           try {
-            const fly = sdk.Mattertag.Transition?.FLY_IN || "transition.fly";
-            console.log(`🎯 Mattertag.navigateToTag("${resolvedSid}", ${fly})`);
-            await sdk.Mattertag.navigateToTag(resolvedSid, fly);
-            console.log(`✅ Flew to tag: ${resolvedSid}`);
-            // Close native popup immediately + delayed retries
-            const closeNative = () => {
-              try { sdk.Mattertag?.close?.(resolvedSid); } catch {}
-              try { sdk.Tag?.close?.(resolvedSid); } catch {}
-            };
-            closeNative();
-            setTimeout(closeNative, 100);
-            setTimeout(closeNative, 300);
-            setTimeout(closeNative, 600);
-            setTimeout(closeNative, 1000);
+            // Check if this is a sweep ID first
+            const sweeps = sweepsRef.current;
+            const isSweepId = sweeps.length > 0 && sweeps.some((s: any) => s.sid === resolvedSid || s.id === resolvedSid || s.uuid === resolvedSid);
+            if (isSweepId && sdk.Sweep?.moveTo) {
+              console.log(`📍 Product → Sweep.moveTo("${resolvedSid}")`);
+              await sdk.Sweep.moveTo(resolvedSid, { transition: sdk.Sweep.Transition?.FLY || 2 });
+              setSelectedItem(item);
+              return;
+            }
+
+            // Try direct Mattertag.navigateToTag (fly transition)
+            if (sdk.Mattertag?.navigateToTag) {
+              const flyTransition = sdk.Mattertag.Transition?.FLY_IN || sdk.Mattertag.Transition?.FLYOVER || "transition.fly";
+              console.log(`🎯 Mattertag.navigateToTag("${resolvedSid}", ${flyTransition})`);
+              await sdk.Mattertag.navigateToTag(resolvedSid, flyTransition);
+              console.log(`✅ Flew to tag: ${resolvedSid}`);
+              // Close native Matterport popup and show custom product popup
+              try { sdk.Mattertag.close(resolvedSid); } catch {}
+              setSelectedItem(item);
+              return;
+            }
+
+            // Fallback: try Tag.open if Mattertag API not available
+            if (sdk.Tag?.open) {
+              console.log(`🎯 Tag.open("${resolvedSid}")`);
+              await sdk.Tag.open(resolvedSid);
+              console.log(`✅ Opened tag: ${resolvedSid}`);
+              // Close native popup and show custom product popup
+              try { sdk.Tag.close(resolvedSid); } catch {}
+              setSelectedItem(item);
+              return;
+            }
+
+            // Last resort: iframe
+            console.log("⚠️ No SDK fly method available, using iframe");
+            iframeFallback();
             setSelectedItem(item);
           } catch (err) {
-            console.log("SDK fly failed, using iframe:", err);
+            console.log("SDK fly failed, trying Sweep.moveTo as last SDK resort:", err);
+            try {
+              if (sdk.Sweep?.moveTo) {
+                await sdk.Sweep.moveTo(resolvedSid, { transition: sdk.Sweep.Transition?.FLY || 2 });
+                setSelectedItem(item);
+                return;
+              }
+            } catch (sweepErr) {
+              console.log("Sweep.moveTo also failed:", sweepErr);
+            }
             iframeFallback();
             setSelectedItem(item);
           }
         };
-        doFly();
+        tryNavigate();
       } else {
         // No SDK — use iframe deep link + show custom popup
         iframeFallback();
@@ -820,9 +835,66 @@ const TourViewer = () => {
     }
   }, [tour?.id, tour?.tourUrl, trackEvent]);
 
+  // Resolve sweep:floor:index SID or raw sweep UUID to actual sweep ID for SDK navigation
+  const resolveSweepSid = useCallback((sid: string): { isSweep: boolean; sweepId?: string } => {
+    // Match sweep:floor:index format
+    const match = sid.match(/^sweep:(\d+):(\d+)$/);
+    if (match) {
+      const floor = parseInt(match[1], 10);
+      const index = parseInt(match[2], 10) - 1; // convert 1-based to 0-based
+      const sweeps = sweepsRef.current;
+      if (!sweeps.length) return { isSweep: true }; // is a sweep but no data cached
+      const floorSweeps = sweeps.filter((s: any) => s.floor === floor || s.floorInfo?.sequence === floor);
+      const target = floorSweeps[index] || sweeps[index];
+      return { isSweep: true, sweepId: target?.sid || target?.id || target?.uuid };
+    }
+    // Check if it's a raw sweep UUID by matching against cached sweeps
+    const sweeps = sweepsRef.current;
+    if (sweeps.length > 0) {
+      const found = sweeps.find((s: any) =>
+        s.sid === sid || s.id === sid || s.uuid === sid
+      );
+      if (found) return { isSweep: true, sweepId: found.sid || found.id || found.uuid };
+    }
+    return { isSweep: false };
+  }, []);
+
   // Navigate to a Matterport tag by SID (used by hotel menu sections)
   // Uses iframe deep-link method (same as product navigation fallback)
   const navigateToMenuTag = useCallback((tagSid: string) => {
+    // Handle direct Matterport sweep URL
+    if (tagSid.startsWith("http")) {
+      setIframeSrc(tagSid);
+      setIframeKey((k) => k + 1);
+      setIframeLoaded(false);
+      return;
+    }
+    // Handle sweep: SID — navigate via SDK or iframe with sweep index
+    const { isSweep, sweepId } = resolveSweepSid(tagSid);
+    if (isSweep) {
+      const sdk = sdkRef.current;
+      if (sdk?.Sweep?.moveTo && sweepId) {
+        console.log(`📍 Sweep.moveTo("${sweepId}") from ${tagSid}`);
+        sdk.Sweep.moveTo(sweepId, { transition: sdk.Sweep.Transition?.FLY || 2 })
+          .catch(() => console.log("Sweep.moveTo failed, using iframe fallback"));
+        return;
+      }
+      // Iframe fallback: use ss= param with sweep index
+      if (tour?.tourUrl) {
+        const modelId = extractModelId(tour.tourUrl);
+        const match = tagSid.match(/^sweep:(\d+):(\d+)$/);
+        if (modelId && match) {
+          const sweepIdx = parseInt(match[2], 10) - 1;
+          const sweepUrl = `https://my.matterport.com/show/?m=${modelId}&play=1&qs=1&brand=0&title=0&ss=${sweepIdx}`;
+          console.log(`📍 Sweep iframe fallback: ss=${sweepIdx}`);
+          setIframeSrc(sweepUrl);
+          setIframeKey((k) => k + 1);
+          setIframeLoaded(false);
+          return;
+        }
+      }
+      return;
+    }
     if (!tour?.tourUrl) return;
     const tagKey = tagSid.trim().toLowerCase();
     const resolvedSid = tagsMapRef.current.get(tagKey) || savedTagsMapRef.current.get(tagKey) || tagSid;
@@ -833,338 +905,35 @@ const TourViewer = () => {
     setIframeSrc(tagUrl);
     setIframeKey((k) => k + 1);
     setIframeLoaded(false);
-  }, [tour?.tourUrl]);
+  }, [tour?.tourUrl, resolveSweepSid]);
 
-  // ===== GROUNDED DOT TRAIL NAVIGATION =====
-
-  // Place 3D Mattertag dots along the grounded path, then overlay canvas FX
-  const placePathDots = useCallback(async (pathPoints: { x: number; y: number; z: number }[]) => {
-    const sdk = sdkRef.current;
-    if (!sdk?.Mattertag?.add) { console.log("❌ No Mattertag.add"); return; }
-
-    // Remove old dots first
-    const oldSids = pathNodesRef.current;
-    if (oldSids.length > 0) {
-      try { await sdk.Mattertag.remove(oldSids); } catch {}
-      pathNodesRef.current = [];
-    }
-
-    // Sample dots every ~0.8m along the path
-    const dotPositions: { x: number; y: number; z: number }[] = [];
-    let accDist = 0;
-    dotPositions.push(pathPoints[0]);
-    for (let i = 1; i < pathPoints.length; i++) {
-      const prev = pathPoints[i - 1];
-      const curr = pathPoints[i];
-      const dx = curr.x - prev.x;
-      const dy = curr.y - prev.y;
-      const dz = curr.z - prev.z;
-      accDist += Math.sqrt(dx * dx + dy * dy + dz * dz);
-      if (accDist >= 0.8) {
-        dotPositions.push(curr);
-        accDist = 0;
-      }
-    }
-    // Always include the last point (destination)
-    const last = pathPoints[pathPoints.length - 1];
-    const lastDot = dotPositions[dotPositions.length - 1];
-    if (Math.abs(last.x - lastDot.x) > 0.1 || Math.abs(last.z - lastDot.z) > 0.1) {
-      dotPositions.push(last);
-    }
-
-    console.log(`🔵 Placing ${dotPositions.length} 3D dots (from ${pathPoints.length} path points)`);
-
-    // Place dots in batches of 20 (Mattertag API limit)
-    const allSids: string[] = [];
-    for (let batch = 0; batch < dotPositions.length; batch += 20) {
-      const chunk = dotPositions.slice(batch, batch + 20);
-      const descriptors = chunk.map(pos => ({
-        anchorPosition: { x: pos.x, y: pos.y, z: pos.z },
-        stemVector: { x: 0, y: 0.15, z: 0 }, // small stem up so disc is visible from above
-        label: "",
-        description: "",
-        color: { r: 0.25, g: 0.52, b: 0.96 }, // Google blue #4285F4
-        floorIndex: 0,
-      }));
-      try {
-        const sids = await sdk.Mattertag.add(descriptors);
-        if (Array.isArray(sids)) {
-          allSids.push(...sids);
-        }
-      } catch (e) {
-        console.log(`⚠️ Mattertag.add batch ${batch} failed:`, e);
-      }
-    }
-
-    pathNodesRef.current = allSids;
-    console.log(`✅ Placed ${allSids.length} 3D dots on floor`);
-  }, []);
-
-  // Draw canvas overlay: pulsing glow at dot positions + destination marker + direction chevrons
-  const drawNavLine = useCallback((pose: any) => {
-    const sdk = sdkRef.current;
-    const canvas = navCanvasRef.current;
-    const points = navPathPointsRef.current;
-    if (!sdk || !canvas || points.length < 2) return;
-
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    const iframe = document.getElementById("showcase-iframe");
-    const rect = iframe?.getBoundingClientRect() || canvas.getBoundingClientRect();
-    if (canvas.width !== rect.width || canvas.height !== rect.height) {
-      canvas.width = rect.width;
-      canvas.height = rect.height;
-    }
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    const showcaseSize = { w: rect.width, h: rect.height };
-    if (!sdk.Conversion?.worldToScreen) return;
-
-    // Project path points to screen
-    const screenPts: { x: number; y: number; visible: boolean }[] = [];
-    for (const pt of points) {
-      try {
-        const sp = sdk.Conversion.worldToScreen(pt, pose, showcaseSize);
-        const visible = sp && sp.z > 0
-          && sp.x >= -200 && sp.x <= canvas.width + 200
-          && sp.y >= -200 && sp.y <= canvas.height + 200;
-        screenPts.push({ x: sp?.x || 0, y: sp?.y || 0, visible: !!visible });
-      } catch {
-        screenPts.push({ x: 0, y: 0, visible: false });
-      }
-    }
-
-    // Track passed points
-    const camPos = pose.position;
-    let passedIndex = 0;
-    if (camPos) {
-      for (let i = 0; i < points.length; i++) {
-        const dx = points[i].x - camPos.x;
-        const dz = points[i].z - camPos.z;
-        if (dx * dx + dz * dz < 2.25) passedIndex = i + 1;
-      }
-    }
-    setNavStep(Math.max(0, points.length - passedIndex));
-    const startIdx = Math.max(0, passedIndex - 1);
-
-    // Collect visible segments
-    const segments: { x: number; y: number }[][] = [];
-    let seg: { x: number; y: number }[] = [];
-    for (let i = startIdx; i < screenPts.length; i++) {
-      if (screenPts[i].visible) {
-        seg.push(screenPts[i]);
-      } else if (seg.length > 0) {
-        segments.push(seg);
-        seg = [];
-      }
-    }
-    if (seg.length > 0) segments.push(seg);
-    if (segments.length === 0) return;
-
-    ctx.save();
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
-    const now = Date.now();
-
-    // ── Thin connecting line between dots (subtle, not the main visual) ──
-    for (const s of segments) {
-      if (s.length < 2) continue;
-      ctx.beginPath();
-      ctx.moveTo(s[0].x, s[0].y);
-      for (let i = 1; i < s.length; i++) ctx.lineTo(s[i].x, s[i].y);
-      ctx.strokeStyle = "rgba(66, 133, 244, 0.3)";
-      ctx.lineWidth = 4;
-      ctx.stroke();
-    }
-
-    // ── Pulsing glow at every ~5th screen point (matches 3D dot positions) ──
-    for (let i = startIdx; i < screenPts.length; i += 4) {
-      const sp = screenPts[i];
-      if (!sp.visible) continue;
-      const pulse = 0.5 + 0.5 * Math.sin((now / 500) + i * 0.4);
-      // Outer glow
-      ctx.beginPath();
-      ctx.arc(sp.x, sp.y, 10 + pulse * 6, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(66, 133, 244, ${0.08 + pulse * 0.12})`;
-      ctx.fill();
-    }
-
-    // ── Direction chevrons ──
-    for (const s of segments) {
-      if (s.length < 6) continue;
-      let accDist = 0;
-      for (let i = 1; i < s.length; i++) {
-        const dx = s[i].x - s[i - 1].x;
-        const dy = s[i].y - s[i - 1].y;
-        accDist += Math.sqrt(dx * dx + dy * dy);
-        if (accDist > 50) {
-          accDist = 0;
-          const angle = Math.atan2(dy, dx);
-          const pulse = 0.4 + 0.6 * Math.sin((now / 600) + i * 0.3);
-          ctx.save();
-          ctx.translate(s[i].x, s[i].y);
-          ctx.rotate(angle);
-          ctx.beginPath();
-          ctx.moveTo(-5, -4);
-          ctx.lineTo(2, 0);
-          ctx.lineTo(-5, 4);
-          ctx.strokeStyle = `rgba(255, 255, 255, ${0.3 + pulse * 0.4})`;
-          ctx.lineWidth = 2;
-          ctx.stroke();
-          ctx.restore();
-        }
-      }
-    }
-
-    // ── Destination pulse marker ──
-    const lastSeg = segments[segments.length - 1];
-    if (lastSeg && lastSeg.length > 0) {
-      const dest = lastSeg[lastSeg.length - 1];
-      const pulse = 0.5 + 0.5 * Math.sin(now / 300);
-      ctx.beginPath();
-      ctx.arc(dest.x, dest.y, 16 + pulse * 6, 0, Math.PI * 2);
-      ctx.fillStyle = "rgba(66, 133, 244, 0.2)";
-      ctx.fill();
-      ctx.beginPath();
-      ctx.arc(dest.x, dest.y, 8 + pulse * 2, 0, Math.PI * 2);
-      ctx.fillStyle = "rgba(66, 133, 244, 0.5)";
-      ctx.fill();
-      ctx.beginPath();
-      ctx.arc(dest.x, dest.y, 4, 0, Math.PI * 2);
-      ctx.fillStyle = "rgba(255, 255, 255, 0.95)";
-      ctx.fill();
-    }
-
-    ctx.restore();
-  }, []);
-
-  // Stop navigation: remove 3D dots, clear canvas, unsubscribe, reset state
-  const stopNavigation = useCallback(() => {
-    // Clear canvas overlay
-    const canvas = navCanvasRef.current;
-    if (canvas) {
-      const ctx = canvas.getContext("2d");
-      ctx?.clearRect(0, 0, canvas.width, canvas.height);
-    }
-    // Unsubscribe camera pose
-    try { navPoseSubRef.current?.cancel?.(); navPoseSubRef.current?.unsubscribe?.(); } catch {}
-    navPoseSubRef.current = null;
-    // Remove ALL 3D Mattertag dots
-    const sdk = sdkRef.current;
-    const sids = pathNodesRef.current;
-    if (sids.length > 0) {
-      console.log(`🗑️ Removing ${sids.length} 3D dots`);
-      if (sdk?.Mattertag?.remove) sdk.Mattertag.remove(sids).catch(() => {});
-      pathNodesRef.current = [];
-    }
-    navPathPointsRef.current = [];
-    totalDotsRef.current = 0;
-    setNavPath([]); setNavTarget(null); setNavStep(0);
-    navCancelledRef.current = true;
-    console.log("🛑 Navigation stopped");
-  }, []);
-
-  // Start live navigation: place 3D dots + subscribe to Camera.pose for canvas overlay
-  const startNavLine = useCallback((pathPoints: { x: number; y: number; z: number }[], destTag: { x: number; y: number; z: number }, destName: string) => {
-    const sdk = sdkRef.current;
-    if (!sdk) { console.log("❌ No SDK"); return; }
-
-    navPathPointsRef.current = pathPoints;
-    totalDotsRef.current = pathPoints.length;
-    setNavStep(pathPoints.length);
-    setNavArrived(null); // reset any previous arrival popup
-
-    console.log(`🗺️ startNavLine: ${pathPoints.length} points, Y range: ${Math.min(...pathPoints.map(p=>p.y)).toFixed(3)} to ${Math.max(...pathPoints.map(p=>p.y)).toFixed(3)}`);
-    console.log(`🗺️ SDK APIs:`, {
-      Conversion: !!sdk.Conversion?.worldToScreen,
-      MattertagAdd: !!sdk.Mattertag?.add,
-      CameraPose: !!sdk.Camera?.pose?.subscribe,
-    });
-
-    // Place 3D Mattertag dots along the grounded path
-    placePathDots(pathPoints);
-
-    // Debounce: only trigger arrival once per navigation session
-    const arrivedRef = { current: false };
-
-    let lastDraw = 0;
-    let drawCount = 0;
-
-    const handlePose = (pose: any) => {
-      if (!pose?.position) return;
-      if (drawCount < 2) console.log(`📐 Pose #${drawCount}:`, JSON.stringify(pose).substring(0, 200));
-
-      const now = Date.now();
-      // Throttle redraws to 400ms for performance (disposes old frame properly)
-      if (now - lastDraw < 400) return;
-      lastDraw = now;
-      drawCount++;
-
-      drawNavLine(pose);
-
-      // Arrival check — 1.5m threshold, debounced (arrivedRef prevents re-trigger)
-      if (!arrivedRef.current) {
-        const dx = pose.position.x - destTag.x;
-        const dz = pose.position.z - destTag.z;
-        if (dx * dx + dz * dz < 2.25) { // 1.5m radius
-          arrivedRef.current = true;
-          console.log("✅ وصلت! Arrived at destination");
-          stopNavigation();
-          setNavArrived({ name: destName });
-          // Auto-dismiss after 5s
-          setTimeout(() => setNavArrived(null), 5000);
-        }
-      }
-    };
-
-    if (sdk.Camera?.pose?.subscribe) {
-      const sub = sdk.Camera.pose.subscribe(handlePose);
-      navPoseSubRef.current = sub;
-    }
-
-    // Fallback after 2s
-    setTimeout(async () => {
-      if (drawCount === 0 && navPathPointsRef.current.length > 0) {
-        console.log("⚠️ No pose after 2s — fallback");
-        try {
-          if (sdk.Camera?.getPose) {
-            const pose = await sdk.Camera.getPose();
-            if (pose) handlePose(pose);
-          }
-        } catch {}
-      }
-    }, 2000);
-
-    setTimeout(() => stopNavigation(), 180000);
-  }, [drawNavLine, stopNavigation, placePathDots]);
-
-  // Interpolate points along a path for smooth dot placement
-  const interpolatePath = (points: {x: number; y: number; z: number}[], spacing: number = 0.8) => {
-    if (points.length < 2) return points;
-    const result: {x: number; y: number; z: number}[] = [points[0]];
-    for (let i = 1; i < points.length; i++) {
-      const prev = points[i - 1];
-      const curr = points[i];
-      const dx = curr.x - prev.x;
-      const dy = curr.y - prev.y;
-      const dz = curr.z - prev.z;
-      const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
-      const steps = Math.floor(dist / spacing);
-      for (let s = 1; s <= steps; s++) {
-        const t = s / (steps + 1);
-        result.push({ x: prev.x + dx * t, y: prev.y + dy * t, z: prev.z + dz * t });
-      }
-      result.push(curr);
-    }
-    return result;
-  };
-
-  // FLY directly to a tag using Mattertag.navigateToTag
+  // FLY directly to a tag using SDK Mattertag.navigateToTag
   const flyToTag = useCallback((tagSid: string) => {
+    // Handle direct Matterport sweep URL (e.g. https://my.matterport.com/show/?m=xxx&ss=48&sr=-.12,-.53)
+    if (tagSid.startsWith("http")) {
+      console.log(`🔗 Direct sweep link: ${tagSid}`);
+      setIframeSrc(tagSid);
+      setIframeKey((k) => k + 1);
+      setIframeLoaded(false);
+      setShowCard(false);
+      return;
+    }
+    // Handle sweep: SID — fly to sweep position
+    const { isSweep, sweepId } = resolveSweepSid(tagSid);
+    if (isSweep) {
+      const sdk = sdkRef.current;
+      if (sdk?.Sweep?.moveTo && sweepId) {
+        console.log(`📍 FLY to sweep: ${sweepId} (from ${tagSid})`);
+        sdk.Sweep.moveTo(sweepId, { transition: sdk.Sweep.Transition?.FLY || 2 })
+          .catch(() => navigateToMenuTag(tagSid));
+      } else {
+        navigateToMenuTag(tagSid);
+      }
+      setShowCard(false);
+      return;
+    }
     const sdk = sdkRef.current;
     if (!sdk?.Mattertag?.navigateToTag) {
-      // Fallback to iframe
       navigateToMenuTag(tagSid);
       return;
     }
@@ -1181,452 +950,22 @@ const TourViewer = () => {
       closeNative();
       setTimeout(closeNative, 200);
       setTimeout(closeNative, 500);
-    }).catch((err: any) => {
-      console.log("FLY failed, iframe fallback:", err);
+    }).catch(async (err: any) => {
+      console.log("Mattertag.navigateToTag failed, trying Sweep.moveTo:", err);
+      // Fallback: maybe it's a sweep UUID, not a tag SID
+      try {
+        if (sdk.Sweep?.moveTo) {
+          await sdk.Sweep.moveTo(resolvedSid, { transition: sdk.Sweep.Transition?.FLY || 2 });
+          console.log(`✅ Sweep.moveTo succeeded: ${resolvedSid}`);
+          return;
+        }
+      } catch (sweepErr: any) {
+        console.log("Sweep.moveTo also failed:", sweepErr);
+      }
       navigateToMenuTag(tagSid);
     });
-    setNavChoice(null);
-  }, [navigateToMenuTag]);
-
-  // WALK to a tag — draw grounded path on floor, user walks themselves
-  // Priority: Sweep graph A* (wall-aware) → Tag Dijkstra fallback (tight radius)
-  const walkToTag = useCallback(async (tagSid: string, label?: string) => {
-    const sdk = sdkRef.current;
-    const destLabel = label || "";
-    setNavChoice(null);
-    if (!sdk) { console.log("❌ WALK: No SDK"); navigateToMenuTag(tagSid); return; }
-
-    const tagKey = tagSid.trim().toLowerCase();
-    const resolvedSid = tagsMapRef.current.get(tagKey) || savedTagsMapRef.current.get(tagKey) || tagSid;
-    console.log(`🚶 WALK started for tag: ${resolvedSid}`);
-
-    try {
-      navCancelledRef.current = true;
-      await new Promise((r) => setTimeout(r, 50));
-      navCancelledRef.current = false;
-
-      // ══════════════════════════════════════════════════════
-      // STEP 1: Gather ALL available position data
-      // ══════════════════════════════════════════════════════
-
-      // 1a. Get ALL tag positions
-      let allTagPositions = new Map(tagPositionsRef.current);
-      if (allTagPositions.size < 5 && sdk.Mattertag?.getData) {
-        try {
-          const tags = await sdk.Mattertag.getData();
-          for (const t of tags) {
-            if (t.sid && t.anchorPosition) allTagPositions.set(t.sid, t.anchorPosition);
-          }
-          tagPositionsRef.current = allTagPositions;
-        } catch {}
-      }
-
-      // 1b. Get destination tag position
-      let tagPos: any = allTagPositions.get(resolvedSid) || null;
-      let foundTag: any = null;
-      if (!tagPos && sdk.Mattertag?.getData) {
-        const tags = await sdk.Mattertag.getData();
-        foundTag = tags.find((t: any) => t.sid === resolvedSid);
-        if (foundTag?.anchorPosition) tagPos = foundTag.anchorPosition;
-      }
-      if (!tagPos) { console.log("❌ WALK: No tag position found"); return; }
-
-      // 1c. Get camera position
-      let camPos: { x: number; y: number; z: number } | null = null;
-      try {
-        if (sdk.Camera?.getPose) {
-          const pose = await sdk.Camera.getPose();
-          if (pose?.position) camPos = { x: pose.position.x, y: pose.position.y, z: pose.position.z };
-        }
-        if (!camPos && sdk.Camera?.pose?.subscribe) {
-          camPos = await new Promise<{ x: number; y: number; z: number } | null>((resolve) => {
-            const timeout = setTimeout(() => resolve(null), 3000);
-            const sub = sdk.Camera.pose.subscribe((pose: any) => {
-              clearTimeout(timeout);
-              try { sub?.cancel?.(); sub?.unsubscribe?.(); } catch {}
-              resolve(pose?.position ? { x: pose.position.x, y: pose.position.y, z: pose.position.z } : null);
-            });
-          });
-        }
-      } catch {}
-      if (!camPos) {
-        camPos = { x: tagPos.x + 2, y: tagPos.y, z: tagPos.z + 2 };
-      }
-      console.log(`📍 Camera: ${camPos.x.toFixed(2)}, ${camPos.y.toFixed(2)}, ${camPos.z.toFixed(2)}`);
-      console.log(`📍 Target: ${tagPos.x.toFixed(2)}, ${tagPos.y.toFixed(2)}, ${tagPos.z.toFixed(2)}`);
-
-      // 1d. Collect ALL sweep data for puckPositions (floor Y) and positions
-      let allSweeps: { sid: string; position: any; puckPosition: any }[] = [];
-      try {
-        if (sdk.Sweep?.data?.subscribe) {
-          allSweeps = await new Promise((resolve) => {
-            const timeout = setTimeout(() => resolve([]), 3000);
-            const sub = sdk.Sweep.data.subscribe({
-              onCollectionUpdated: (collection: any) => {
-                clearTimeout(timeout);
-                try { sub?.cancel?.(); } catch {}
-                const sweeps: any[] = [];
-                if (collection) {
-                  for (const key of Object.keys(collection)) {
-                    const s = collection[key];
-                    if (s?.position) sweeps.push({ sid: s.sid || key, position: s.position, puckPosition: s.puckPosition });
-                  }
-                }
-                resolve(sweeps);
-              }
-            });
-          });
-        }
-      } catch {}
-      console.log(`📊 Sweep data: ${allSweeps.length} sweeps collected`);
-
-      // ══════════════════════════════════════════════════════
-      // STEP 2: DETERMINE FLOOR Y (the critical fix)
-      // ══════════════════════════════════════════════════════
-      const camY = camPos.y;
-      let floorY: number | null = null;
-
-      // ── Method A: Use the LOWEST puckPosition.y from sweeps on the same floor ──
-      if (allSweeps.length > 0) {
-        const puckYs = allSweeps
-          .filter(s => s.puckPosition?.y != null && Math.abs(s.position?.y - camY) < 3)
-          .map(s => s.puckPosition.y);
-        if (puckYs.length > 0) {
-          const lowestPuck = Math.min(...puckYs);
-          if (lowestPuck < camY - 0.3) {
-            floorY = lowestPuck + 0.05;
-            console.log(`📐 Floor Y from puckPositions: ${floorY.toFixed(3)} (${puckYs.length} sweeps, lowest=${lowestPuck.toFixed(3)})`);
-          }
-        }
-      }
-
-      // ── Method B: Raycast from multiple screen positions, reject near-camera hits ──
-      if (floorY === null && sdk.Renderer?.getWorldPositionData) {
-        try {
-          const iframe = document.getElementById("showcase-iframe");
-          const iRect = iframe?.getBoundingClientRect();
-          if (iRect) {
-            const probes = [
-              { x: iRect.width * 0.5, y: iRect.height * 0.95 },
-              { x: iRect.width * 0.3, y: iRect.height * 0.90 },
-              { x: iRect.width * 0.7, y: iRect.height * 0.90 },
-              { x: iRect.width * 0.5, y: iRect.height * 0.70 },
-              { x: iRect.width * 0.2, y: iRect.height * 0.85 },
-              { x: iRect.width * 0.8, y: iRect.height * 0.85 },
-            ];
-            const hits: number[] = [];
-            for (const p of probes) {
-              try {
-                const data = await sdk.Renderer.getWorldPositionData(p);
-                if (data?.position?.y != null) {
-                  const hy = data.position.y;
-                  // Only accept hits that are clearly BELOW camera (>1m below)
-                  if (hy < camY - 1.0) hits.push(hy);
-                }
-              } catch {}
-            }
-            if (hits.length > 0) {
-              floorY = Math.min(...hits) + 0.05;
-              console.log(`📐 Floor Y from raycast: ${floorY.toFixed(3)} (${hits.length} hits: ${hits.map(h => h.toFixed(2))})`);
-            }
-          }
-        } catch {}
-      }
-
-      // ── Method C: Use ALL sweep positions (not puck) — lowest is near floor ──
-      if (floorY === null && allSweeps.length > 0) {
-        const sweepYs = allSweeps
-          .filter(s => s.position?.y != null && Math.abs(s.position.y - camY) < 3)
-          .map(s => s.position.y);
-        if (sweepYs.length > 0) {
-          // Sweep position is at eye level (~1.5m above floor)
-          floorY = Math.min(...sweepYs) - 1.5;
-          console.log(`📐 Floor Y from sweep positions: ${floorY.toFixed(3)}`);
-        }
-      }
-
-      // ── Method D: Lowest tag Y - 1.2m ──
-      if (floorY === null) {
-        const tagYs: number[] = [];
-        allTagPositions.forEach((pos) => {
-          if (Math.abs(pos.y - camY) < 3) tagYs.push(pos.y);
-        });
-        if (tagYs.length > 0) {
-          floorY = Math.min(...tagYs) - 1.2;
-          console.log(`📐 Floor Y from min tag: ${floorY.toFixed(3)}`);
-        }
-      }
-
-      // ── Method E: Hardcoded offset ──
-      if (floorY === null) {
-        floorY = camY - 1.6;
-        console.log(`📐 Floor Y hardcoded: ${floorY.toFixed(3)}`);
-      }
-
-      // ── SAFETY: floorY MUST be at least 1m below camera. Period. ──
-      if (floorY > camY - 1.0) {
-        floorY = camY - 1.6;
-        console.log(`📐 Safety: forced floorY to ${floorY.toFixed(3)}`);
-      }
-
-      console.log(`📐 ✅ FINAL floorY=${floorY.toFixed(3)} | camY=${camY.toFixed(2)} | gap=${(camY - floorY).toFixed(2)}m`);
-
-      // ══════════════════════════════════════════════════════
-      // STEP 3: PATHFINDING (wall-aware)
-      // ══════════════════════════════════════════════════════
-      let pathWaypoints: { x: number; y: number; z: number }[] = [];
-      let pathSource = "none";
-
-      // ── Try A: Sweep graph + A* (official Matterport wall-aware pathfinding) ──
-      // Build spatial map of ALL sweep puckPositions for per-vertex floor snapping
-      const sweepPuckMap = new Map<string, { x: number; y: number; z: number }>();
-      const sweepFloorSamples: { x: number; y: number; z: number }[] = []; // all puck positions for spatial lookup
-      for (const s of allSweeps) {
-        if (s.sid && s.puckPosition) {
-          sweepPuckMap.set(s.sid, s.puckPosition);
-          sweepFloorSamples.push(s.puckPosition);
-        }
-      }
-      console.log(`📐 Sweep puck samples: ${sweepFloorSamples.length} (from ${allSweeps.length} sweeps)`);
-      if (sweepFloorSamples.length > 0) {
-        const ys = sweepFloorSamples.map(p => p.y);
-        console.log(`📐 Puck Y range: ${Math.min(...ys).toFixed(3)} to ${Math.max(...ys).toFixed(3)}`);
-      }
-
-      // Helper: find floor Y at any (x,z) by nearest sweep puckPosition (weighted avg of 3 nearest)
-      const snapToFloor = (x: number, z: number): number => {
-        if (sweepFloorSamples.length === 0) return floorY;
-        // Find 3 nearest pucks by horizontal distance
-        const scored = sweepFloorSamples.map(p => ({
-          y: p.y,
-          dist: Math.sqrt((p.x - x) ** 2 + (p.z - z) ** 2)
-        })).sort((a, b) => a.dist - b.dist);
-
-        if (scored[0].dist < 0.1) return scored[0].y + 0.05; // very close, use directly
-
-        // Inverse-distance weighted average of up to 3 nearest pucks
-        const nearest = scored.slice(0, Math.min(3, scored.length));
-        let weightSum = 0;
-        let ySum = 0;
-        for (const n of nearest) {
-          const w = 1 / Math.max(n.dist, 0.01);
-          weightSum += w;
-          ySum += n.y * w;
-        }
-        return (ySum / weightSum) + 0.05; // +5cm to avoid Z-fighting
-      };
-
-      if (allSweeps.length > 3) {
-        try {
-          const findNearest = (target: { x: number; z: number }) => {
-            let best = allSweeps[0];
-            let bestDist = Infinity;
-            for (const s of allSweeps) {
-              if (!s.position) continue;
-              const dx = s.position.x - target.x;
-              const dz = s.position.z - target.z;
-              const d = dx * dx + dz * dz;
-              if (d < bestDist) { bestDist = d; best = s; }
-            }
-            return best;
-          };
-          const startSweep = findNearest(camPos);
-          const endSweep = findNearest(tagPos);
-
-          if (startSweep?.sid && endSweep?.sid && startSweep.sid !== endSweep.sid) {
-            if (sdk.Sweep?.createGraph && sdk.Graph?.createAStarRunner) {
-              console.log(`🗺️ A* sweep graph: ${startSweep.sid} → ${endSweep.sid}`);
-              const graph = await sdk.Sweep.createGraph();
-              const startVertex = graph.vertex(startSweep.sid);
-              const endVertex = graph.vertex(endSweep.sid);
-              if (startVertex && endVertex) {
-                const runner = sdk.Graph.createAStarRunner(graph, startVertex, endVertex);
-                const result = runner.exec();
-                if (result?.path && result.path.length > 1) {
-                  // Start: user's feet on the floor
-                  pathWaypoints = [{ x: camPos.x, y: snapToFloor(camPos.x, camPos.z), z: camPos.z }];
-
-                  for (const vertex of result.path) {
-                    const data = vertex.data || vertex;
-                    if (!data?.position) continue;
-                    // Try 3 sources for floor Y: vertex.puckPosition → map lookup → snapToFloor
-                    const sid = data?.sid || data?.id || "";
-                    let groundY: number;
-                    if (data.puckPosition?.y != null) {
-                      groundY = data.puckPosition.y + 0.05;
-                    } else if (sweepPuckMap.has(sid)) {
-                      groundY = sweepPuckMap.get(sid)!.y + 0.05;
-                    } else {
-                      groundY = snapToFloor(data.position.x, data.position.z);
-                    }
-                    pathWaypoints.push({ x: data.position.x, y: groundY, z: data.position.z });
-                  }
-
-                  // End: destination grounded via snapToFloor
-                  pathWaypoints.push({ x: tagPos.x, y: snapToFloor(tagPos.x, tagPos.z), z: tagPos.z });
-                  pathSource = `A* (${result.path.length} sweeps, per-vertex floor snap)`;
-                  console.log(`✅ A* path: ${result.path.length} sweeps, Y per vertex`);
-                }
-              }
-            }
-          }
-        } catch (e) {
-          console.log(`⚠️ A* failed:`, e);
-        }
-      }
-
-      // ── Try B: Tag-based Dijkstra with TIGHT 3m radius ──
-      if (pathWaypoints.length < 2) {
-        console.log(`🗺️ Falling back to tag Dijkstra (${allTagPositions.size} tags)`);
-        const waypoints: { sid: string; x: number; y: number; z: number }[] = [];
-        allTagPositions.forEach((pos, sid) => {
-          waypoints.push({ sid, x: pos.x, y: pos.y, z: pos.z });
-        });
-        waypoints.push({ sid: "__cam__", x: camPos.x, y: camPos.y, z: camPos.z });
-        waypoints.push({ sid: "__dest__", x: tagPos.x, y: tagPos.y, z: tagPos.z });
-
-        const wpMap = new Map(waypoints.map(w => [w.sid, w]));
-        const neighbors = new Map<string, { sid: string; dist: number }[]>();
-
-        // TIGHT 3m radius for tags (avoid cross-wall connections)
-        for (const a of waypoints) {
-          const adj: { sid: string; dist: number }[] = [];
-          for (const b of waypoints) {
-            if (a.sid === b.sid) continue;
-            const dx = a.x - b.x;
-            const dy = a.y - b.y;
-            const dz = a.z - b.z;
-            const horizDist = Math.sqrt(dx * dx + dz * dz);
-            const maxR = (a.sid.startsWith("__") || b.sid.startsWith("__")) ? 6 : 3;
-            if (Math.abs(dy) < 1.5 && horizDist < maxR) {
-              adj.push({ sid: b.sid, dist: horizDist });
-            }
-          }
-          neighbors.set(a.sid, adj);
-        }
-
-        // Widen cam/dest to 10m if no neighbors
-        for (const nodeId of ["__cam__", "__dest__"]) {
-          if ((neighbors.get(nodeId) || []).length === 0) {
-            const node = wpMap.get(nodeId)!;
-            const adj: { sid: string; dist: number }[] = [];
-            for (const b of waypoints) {
-              if (b.sid === nodeId) continue;
-              const dx = node.x - b.x;
-              const dy = node.y - b.y;
-              const dz = node.z - b.z;
-              const horizDist = Math.sqrt(dx * dx + dz * dz);
-              if (Math.abs(dy) < 2 && horizDist < 10) {
-                adj.push({ sid: b.sid, dist: horizDist });
-              }
-            }
-            neighbors.set(nodeId, adj);
-          }
-        }
-
-        // Dijkstra
-        const dist = new Map<string, number>();
-        const prev = new Map<string, string>();
-        const unvisited = new Set(waypoints.map(w => w.sid));
-        for (const w of waypoints) dist.set(w.sid, Infinity);
-        dist.set("__cam__", 0);
-
-        while (unvisited.size > 0) {
-          let minNode: string | null = null;
-          let minDist = Infinity;
-          for (const sid of unvisited) {
-            if ((dist.get(sid) || Infinity) < minDist) {
-              minDist = dist.get(sid) || Infinity;
-              minNode = sid;
-            }
-          }
-          if (!minNode || minDist === Infinity) break;
-          if (minNode === "__dest__") break;
-          unvisited.delete(minNode);
-
-          for (const edge of (neighbors.get(minNode) || [])) {
-            if (!unvisited.has(edge.sid)) continue;
-            const alt = minDist + edge.dist;
-            if (alt < (dist.get(edge.sid) || Infinity)) {
-              dist.set(edge.sid, alt);
-              prev.set(edge.sid, minNode);
-            }
-          }
-        }
-
-        const found = dist.get("__dest__") !== Infinity && dist.get("__dest__") !== undefined;
-        if (found) {
-          const pathSids: string[] = [];
-          let cur: string | undefined = "__dest__";
-          while (cur && cur !== "__cam__") { pathSids.unshift(cur); cur = prev.get(cur); }
-          pathSids.unshift("__cam__");
-          for (const sid of pathSids) {
-            const w = wpMap.get(sid);
-            if (w) pathWaypoints.push({ x: w.x, y: w.y, z: w.z });
-          }
-          pathSource = `Dijkstra (${pathSids.length} tags, 3m radius)`;
-          console.log(`✅ Dijkstra: ${pathSids.length} waypoints → ${pathSids.filter(s => !s.startsWith("__")).join(" → ")}`);
-        } else {
-          // Last resort: straight line
-          pathWaypoints.push({ x: camPos.x, y: camPos.y, z: camPos.z });
-          pathWaypoints.push({ x: tagPos.x, y: tagPos.y, z: tagPos.z });
-          pathSource = "straight line (no path found)";
-        }
-      }
-
-      console.log(`🗺️ Path source: ${pathSource} (${pathWaypoints.length} waypoints)`);
-
-      // ══════════════════════════════════════════════════════
-      // STEP 4: GROUND EVERY POINT TO FLOOR (per-vertex snap)
-      // ══════════════════════════════════════════════════════
-      // For A* paths, Y is already per-sweep grounded.
-      // For Dijkstra/other, snap each point to nearest sweep puck Y.
-      let groundedPath: { x: number; y: number; z: number }[];
-
-      if (pathSource.includes("A*")) {
-        // Already grounded per-vertex in step 3
-        groundedPath = pathWaypoints.map(p => ({ x: p.x, y: p.y, z: p.z }));
-      } else if (sweepFloorSamples.length > 0) {
-        // Dijkstra: snap each waypoint to nearest sweep floor via spatial lookup
-        groundedPath = pathWaypoints.map(p => ({
-          x: p.x,
-          y: snapToFloor(p.x, p.z),
-          z: p.z,
-        }));
-        console.log(`📍 Dijkstra per-vertex snap Y: ${groundedPath.map(p => p.y.toFixed(2)).join(" → ")}`);
-      } else {
-        // No sweep data at all — global floorY
-        groundedPath = pathWaypoints.map(p => ({ x: p.x, y: floorY, z: p.z }));
-      }
-
-      // Log each waypoint with grounding info
-      for (let i = 0; i < groundedPath.length; i++) {
-        const orig = pathWaypoints[i];
-        const g = groundedPath[i];
-        console.log(`  📍 [${i}] origY=${orig.y.toFixed(2)} → groundedY=${g.y.toFixed(2)} | x=${g.x.toFixed(2)}, z=${g.z.toFixed(2)}`);
-      }
-
-      // Interpolate: Y smoothly follows floor contour between waypoints (stairs, ramps)
-      const pathPoints = interpolatePath(groundedPath, 0.5);
-      console.log(`📍 Final: ${pathPoints.length} interpolated points, Y range: ${Math.min(...pathPoints.map(p=>p.y)).toFixed(3)} → ${Math.max(...pathPoints.map(p=>p.y)).toFixed(3)}`);
-
-      // 5. Set UI state
-      setNavPath(groundedPath);
-      setNavTarget({ id: 0, tourId: 0, name: destLabel || foundTag?.label || tagSid, tagSid: resolvedSid } as TourItemData);
-
-      // 6. Start live canvas line navigation
-      startNavLine(pathPoints, { x: tagPos.x, y: tagPos.y, z: tagPos.z }, destLabel || foundTag?.label || resolvedSid);
-
-    } catch (err) {
-      console.log("❌ Walk failed:", err);
-      stopNavigation();
-    }
-  }, [navigateToMenuTag, flyToTag, stopNavigation, startNavLine]);
-
-  // Show navigation choice modal (called from HotelMenuSection item click)
-  const showNavChoice = useCallback((tagSid: string, label?: string) => {
-    setNavChoice({ tagSid, label: label || tagSid });
-  }, []);
+    setShowCard(false);
+  }, [navigateToMenuTag, resolveSweepSid]);
 
   // Navigate to a specific floor
   const navigateToFloor = useCallback((floorIndex: number) => {
@@ -1793,170 +1132,6 @@ const TourViewer = () => {
           referrerPolicy="no-referrer-when-downgrade"
           onLoad={() => setIframeLoaded(true)}
         />
-        {/* ===== NAVIGATION LINE CANVAS OVERLAY ===== */}
-        <canvas
-          ref={navCanvasRef}
-          className="absolute inset-0 w-full h-full pointer-events-none z-[10]"
-          style={{ opacity: navPath.length > 0 ? 1 : 0 }}
-        />
-        {/* ===== NAVIGATION PATH INDICATOR ===== */}
-        <AnimatePresence>
-          {navPath.length > 0 && navTarget && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="absolute top-4 left-1/2 -translate-x-1/2 z-[15] pointer-events-auto max-w-[calc(100vw-2rem)]"
-            >
-              <div className="bg-black/80 backdrop-blur-xl border border-white/20 rounded-2xl px-3 sm:px-5 py-3 flex items-center gap-3 sm:gap-4 shadow-2xl shadow-purple-500/10">
-                {/* Animated walking icon */}
-                <div className="relative w-10 h-10 flex items-center justify-center">
-                  <motion.div
-                    animate={{ scale: [1, 1.3, 1] }}
-                    transition={{ duration: 1.2, repeat: Infinity }}
-                    className="absolute inset-0 bg-purple-500/20 rounded-full"
-                  />
-                  <svg className="w-5 h-5 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                  </svg>
-                </div>
-
-                <div className="flex flex-col">
-                  <span className="text-white/90 text-sm font-semibold truncate max-w-[120px] sm:max-w-[200px]">
-                    {navTarget.name}
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-white/50 text-xs whitespace-nowrap">
-                      {navStep > 0 ? `${navStep} pas restants` : "Vous y êtes !"}
-                    </span>
-                    {/* Progress bar */}
-                    <div className="w-14 sm:w-20 h-1.5 bg-white/10 rounded-full overflow-hidden">
-                      <motion.div
-                        className="h-full bg-purple-400 rounded-full"
-                        animate={{ width: totalDotsRef.current > 0 ? `${Math.max(5, 100 - (navStep / totalDotsRef.current) * 100)}%` : '100%' }}
-                        transition={{ duration: 0.3 }}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Cancel button */}
-                <button
-                  onClick={() => stopNavigation()}
-                  className="ml-2 w-7 h-7 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors"
-                >
-                  <svg className="w-3.5 h-3.5 text-white/60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-        {/* ===== NAVIGATION CHOICE MODAL (Fly vs Walk) ===== */}
-        <AnimatePresence>
-          {navChoice && (
-            <>
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                onClick={() => setNavChoice(null)}
-                className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[35]"
-              />
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                className="fixed inset-0 z-[36] flex items-center justify-center p-4 pointer-events-none"
-              >
-                <div className="bg-gradient-to-b from-[#1a1a2e] to-[#0f0f1a] border border-white/15 rounded-2xl p-5 shadow-2xl shadow-purple-500/10 w-full max-w-[280px] pointer-events-auto">
-                  <p className="text-white/90 text-sm font-semibold text-center mb-1">Navigation</p>
-                  <p className="text-white/40 text-xs text-center mb-5 truncate">{navChoice.label}</p>
-
-                  <div className="flex flex-col gap-3">
-                    {/* Fly option */}
-                    <button
-                      onClick={() => { flyToTag(navChoice.tagSid); setShowCard(false); }}
-                      className="flex items-center gap-3 w-full px-4 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 transition-all shadow-lg shadow-purple-500/25 group"
-                    >
-                      <svg className="w-5 h-5 text-white shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                      </svg>
-                      <div className="text-left">
-                        <p className="text-white text-sm font-semibold">Fly</p>
-                        <p className="text-white/60 text-[10px]">Voler directement au tag</p>
-                      </div>
-                    </button>
-
-                    {/* Walk option */}
-                    <button
-                      onClick={() => { walkToTag(navChoice.tagSid, navChoice.label); setShowCard(false); }}
-                      className="flex items-center gap-3 w-full px-4 py-3 rounded-xl bg-white/[0.08] hover:bg-white/[0.15] border border-white/10 hover:border-white/20 transition-all group"
-                    >
-                      <svg className="w-5 h-5 text-purple-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-                      </svg>
-                      <div className="text-left">
-                        <p className="text-white/90 text-sm font-semibold">Navigate</p>
-                        <p className="text-white/40 text-[10px]">Marcher pas à pas avec chemin</p>
-                      </div>
-                    </button>
-                  </div>
-
-                  <button
-                    onClick={() => setNavChoice(null)}
-                    className="mt-4 w-full text-center text-white/30 text-xs hover:text-white/50 transition-colors"
-                  >
-                    Annuler
-                  </button>
-                </div>
-              </motion.div>
-            </>
-          )}
-        </AnimatePresence>
-        {/* ===== ARRIVAL POPUP (وصلت!) ===== */}
-        <AnimatePresence>
-          {navArrived && (
-            <>
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                onClick={() => setNavArrived(null)}
-                className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[40]"
-              />
-              <motion.div
-                initial={{ opacity: 0, scale: 0.8, y: 30 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.8, y: 30 }}
-                transition={{ type: "spring", damping: 20, stiffness: 300 }}
-                className="fixed inset-0 z-[41] flex items-center justify-center p-4 pointer-events-none"
-              >
-                <div className="bg-gradient-to-b from-[#0d2137] to-[#0a1628] border border-blue-400/30 rounded-2xl p-6 shadow-2xl shadow-blue-500/20 text-center w-full max-w-[300px] pointer-events-auto">
-                  {/* Success icon */}
-                  <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
-                    <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                    </svg>
-                  </div>
-                  {/* Arabic title */}
-                  <p className="text-2xl font-bold text-white mb-1">!وصلت</p>
-                  <p className="text-blue-300 text-sm font-medium mb-1">Vous êtes arrivé !</p>
-                  <p className="text-white/50 text-xs mb-4 truncate px-2">{navArrived.name}</p>
-                  {/* Dismiss button */}
-                  <button
-                    onClick={() => setNavArrived(null)}
-                    className="w-full px-4 py-2.5 rounded-xl bg-blue-500/20 hover:bg-blue-500/30 border border-blue-400/20 hover:border-blue-400/40 text-blue-200 text-sm font-medium transition-all"
-                  >
-                    Continuer l'exploration
-                  </button>
-                </div>
-              </motion.div>
-            </>
-          )}
-        </AnimatePresence>
         {/* 
           PrimeSpace overlay — covers Matterport branding at bottom-right
           Always visible (including clean mode) to hide Matterport logo
@@ -1964,13 +1139,13 @@ const TourViewer = () => {
         <div className="absolute bottom-0 left-0 right-0 z-[6] pointer-events-none flex justify-end px-3 sm:px-4 pb-0 sm:pb-3 lg:pb-3">
           <Link
             to="/"
-            className="pointer-events-auto w-auto max-w-[calc(100vw-1.5rem)] sm:min-w-[320px] lg:w-[420px] flex items-center gap-3 px-3 py-5 sm:py-4
+            className="pointer-events-auto w-auto sm:min-w-[320px] lg:w-[420px] flex items-center gap-3 px-3 py-5 sm:py-4
               bg-black/70 backdrop-blur-xl border border-white/15 shadow-2xl
               rounded-t-2xl sm:rounded-2xl
               border-b-0 sm:border-b
               hover:bg-black/80 hover:border-white/25 transition-all group"
           >
-            <img src="/logo.jpg" alt="PrimeSpace" className="w-12 h-12 shrink-0 rounded-xl object-cover shadow-lg shadow-purple-500/20 group-hover:shadow-purple-500/40 transition-shadow" />
+            <img src="/logo.jpg" alt="PrimeSpace" className="w-8 h-8 shrink-0 rounded-lg object-cover shadow-lg shadow-purple-500/20 group-hover:shadow-purple-500/40 transition-shadow" />
             <div className="flex-grow min-w-0">
               <p className="text-white/90 text-sm sm:text-base font-bold tracking-tight group-hover:text-white transition-colors">PrimeSpace</p>
               <p className="text-white/40 text-[10px] sm:text-[11px] font-medium">Studio 3D immersif</p>
@@ -2005,7 +1180,7 @@ const TourViewer = () => {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
             transition={{ delay: 0.5 }}
-            className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-20 pointer-events-auto"
+            className="absolute left-4 top-1/2 -translate-y-1/2 z-20 pointer-events-auto"
           >
             <div className="flex flex-col gap-1.5 p-1.5 rounded-2xl bg-black/60 backdrop-blur-xl border border-white/10">
               <div className="flex items-center justify-center py-1">
@@ -2182,7 +1357,7 @@ const TourViewer = () => {
                     className="w-full h-full object-cover"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                  <span className="absolute top-3 left-3 px-2.5 py-1 rounded-lg bg-purple-600/80 backdrop-blur-sm text-white text-[10px] font-semibold uppercase tracking-wider">
+                  <span className="absolute top-3 left-3 px-2.5 py-1 rounded-lg bg-white/10 backdrop-blur-md border border-white/[0.12] text-white/80 text-[10px] font-medium uppercase tracking-wider">
                     {tour.category}
                   </span>
                   <div className="absolute bottom-3 left-3 right-3">
@@ -2221,45 +1396,45 @@ const TourViewer = () => {
                 )}
 
                 {/* Info Items */}
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   {tour.surface && (
-                    <div className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.04] border border-white/[0.06]">
-                      <div className="w-8 h-8 rounded-lg bg-teal-500/15 flex items-center justify-center shrink-0">
-                        <Ruler className="w-4 h-4 text-teal-400" />
+                    <div className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.03] border border-white/[0.05]">
+                      <div className="w-8 h-8 rounded-lg bg-white/[0.06] flex items-center justify-center shrink-0">
+                        <Ruler className="w-4 h-4 text-white/50" />
                       </div>
                       <div>
                         <p className="text-white/30 text-[10px] uppercase tracking-wider font-medium">
                           Surface
                         </p>
-                        <p className="text-white/80 text-sm font-semibold">
+                        <p className="text-white/75 text-sm font-medium">
                           {tour.surface} m²
                         </p>
                       </div>
                     </div>
                   )}
-                  <div className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.04] border border-white/[0.06]">
-                    <div className="w-8 h-8 rounded-lg bg-purple-500/15 flex items-center justify-center shrink-0">
-                      <Tag className="w-4 h-4 text-purple-400" />
+                  <div className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.03] border border-white/[0.05]">
+                    <div className="w-8 h-8 rounded-lg bg-white/[0.06] flex items-center justify-center shrink-0">
+                      <Tag className="w-4 h-4 text-white/50" />
                     </div>
                     <div>
                       <p className="text-white/30 text-[10px] uppercase tracking-wider font-medium">
                         Catégorie
                       </p>
-                      <p className="text-white/80 text-sm font-semibold">
+                      <p className="text-white/75 text-sm font-medium">
                         {tour.category}
                       </p>
                     </div>
                   </div>
                   {tour.location && (
-                    <div className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.04] border border-white/[0.06]">
-                      <div className="w-8 h-8 rounded-lg bg-amber-500/15 flex items-center justify-center shrink-0">
-                        <MapPin className="w-4 h-4 text-amber-400" />
+                    <div className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.03] border border-white/[0.05]">
+                      <div className="w-8 h-8 rounded-lg bg-white/[0.06] flex items-center justify-center shrink-0">
+                        <MapPin className="w-4 h-4 text-white/50" />
                       </div>
                       <div className="min-w-0">
                         <p className="text-white/30 text-[10px] uppercase tracking-wider font-medium">
                           Localisation
                         </p>
-                        <p className="text-white/80 text-sm font-semibold truncate">
+                        <p className="text-white/75 text-sm font-medium truncate">
                           {tour.location}
                         </p>
                       </div>
@@ -2302,7 +1477,7 @@ const TourViewer = () => {
                     return (
                       <div className="rounded-xl overflow-hidden border border-white/[0.06]">
                         {allSections.map((sec, i) => (
-                          <HotelMenuSection key={i} title={sec.title} iconKey={sec.iconKey} items={sec.items} amenities={sec.amenities} onItemClick={showNavChoice} />
+                          <HotelMenuSection key={i} title={sec.title} iconKey={sec.iconKey} items={sec.items} amenities={sec.amenities} onItemClick={flyToTag} />
                         ))}
                       </div>
                     );
@@ -2370,7 +1545,7 @@ const TourViewer = () => {
                         {allSections.length > 0 && (
                           <div className="rounded-xl overflow-hidden border border-white/[0.06]">
                             {allSections.map((sec, i) => (
-                              <HotelMenuSection key={i} title={sec.title} iconKey={sec.iconKey} items={sec.items} amenities={sec.amenities} onItemClick={showNavChoice} />
+                              <HotelMenuSection key={i} title={sec.title} iconKey={sec.iconKey} items={sec.items} amenities={sec.amenities} onItemClick={flyToTag} />
                             ))}
                           </div>
                         )}
@@ -2530,7 +1705,7 @@ const TourViewer = () => {
                     </button>
                   </div>
                   <div className="flex items-center gap-2 mt-2">
-                    <span className="px-2 py-0.5 rounded-md bg-purple-500/20 text-purple-300 text-[10px] font-medium">
+                    <span className="px-2 py-0.5 rounded-md bg-white/[0.08] border border-white/[0.1] text-white/60 text-[10px] font-medium">
                       {tour.category}
                     </span>
                     {tour.surface && (
@@ -2570,7 +1745,7 @@ const TourViewer = () => {
                   return (
                     <div className="border-t border-white/[0.06] overflow-hidden">
                       {allSections.map((sec, i) => (
-                        <HotelMenuSection key={i} title={sec.title} iconKey={sec.iconKey} items={sec.items} amenities={sec.amenities} onItemClick={showNavChoice} />
+                        <HotelMenuSection key={i} title={sec.title} iconKey={sec.iconKey} items={sec.items} amenities={sec.amenities} onItemClick={flyToTag} />
                       ))}
                     </div>
                   );
@@ -2610,7 +1785,7 @@ const TourViewer = () => {
                       {allSections.length > 0 && (
                         <div className="border-t border-white/[0.06] overflow-hidden">
                           {allSections.map((sec, i) => (
-                            <HotelMenuSection key={i} title={sec.title} iconKey={sec.iconKey} items={sec.items} amenities={sec.amenities} onItemClick={showNavChoice} />
+                            <HotelMenuSection key={i} title={sec.title} iconKey={sec.iconKey} items={sec.items} amenities={sec.amenities} onItemClick={flyToTag} />
                           ))}
                         </div>
                       )}
@@ -3232,7 +2407,7 @@ const TourViewer = () => {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 380 }}
               transition={{ type: "spring", damping: 28, stiffness: 250 }}
-              className="absolute top-0 right-0 bottom-0 w-full sm:max-w-sm z-50 pointer-events-auto flex flex-col"
+              className="absolute top-0 right-0 bottom-0 w-full max-w-[100vw] sm:max-w-sm z-50 pointer-events-auto flex flex-col"
             >
               <div className="flex-1 bg-white flex flex-col shadow-2xl">
                 {/* Cart Header */}
@@ -3310,42 +2485,7 @@ const TourViewer = () => {
       {/* ===== BOTTOM: PRODUCT & SERVICE STRIP ===== */}
       {(tourItems.length > 0 || tourServices.length > 0 || gymCoaches.length > 0) && (
         <div className="shrink-0 bg-[#0d0d1a] border-t border-white/10">
-          {/* Toggle bar — always visible */}
-          <button
-            onClick={() => setBottomStripOpen(p => !p)}
-            className="w-full flex items-center justify-center gap-2 py-2 text-white/50 hover:text-white/80 transition-colors group"
-          >
-            <motion.svg
-              animate={{ rotate: bottomStripOpen ? 0 : 180 }}
-              transition={{ duration: 0.2 }}
-              className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-            </motion.svg>
-            <span className="text-[10px] font-semibold uppercase tracking-wider">
-              {bottomStripOpen ? "Masquer" : "Afficher"}
-            </span>
-            {!bottomStripOpen && (
-              <span className="ml-1 inline-flex items-center gap-1 bg-white/10 group-hover:bg-white/15 text-white/70 px-2 py-0.5 rounded-full text-[10px] font-semibold transition-colors">
-                {tourItems.length > 0 && <><ShoppingBag className="w-2.5 h-2.5" /> {tourItems.length}</>}
-                {tourItems.length > 0 && tourServices.length > 0 && <span className="text-white/30 mx-0.5">·</span>}
-                {tourServices.length > 0 && <><Briefcase className="w-2.5 h-2.5" /> {tourServices.length}</>}
-                {(tourItems.length > 0 || tourServices.length > 0) && gymCoaches.length > 0 && <span className="text-white/30 mx-0.5">·</span>}
-                {gymCoaches.length > 0 && <><User className="w-2.5 h-2.5" /> {gymCoaches.length}</>}
-              </span>
-            )}
-          </button>
-          {/* Collapsible content */}
-          <AnimatePresence initial={false}>
-          {bottomStripOpen && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ type: "spring", damping: 28, stiffness: 300 }}
-              className="overflow-hidden"
-            >
-          <div className="px-3 pb-3">
+          <div className="px-3 py-3">
             {/* Tab switcher when both exist */}
             {(tourItems.length > 0 ? 1 : 0) + (tourServices.length > 0 ? 1 : 0) + (gymCoaches.length > 0 ? 1 : 0) > 1 && (
               <div className="flex items-center justify-center gap-1 mb-2.5">
@@ -3520,9 +2660,6 @@ const TourViewer = () => {
               </div>
             )}
           </div>
-            </motion.div>
-          )}
-          </AnimatePresence>
         </div>
       )}
     </div>

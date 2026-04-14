@@ -432,7 +432,7 @@ const Admin = () => {
         const savedRes = await fetch(`/api/tours/${id}/tags`);
         if (savedRes.ok) {
           const savedData = await savedRes.json();
-          const saved = Array.isArray(savedData) ? savedData.map((t: any) => ({ name: t.name || "", sid: t.sid || "" })).filter((t: { name: string; sid: string }) => t.sid) : [];
+          const saved = Array.isArray(savedData) ? savedData.map((t: any) => ({ name: t.name || "", sid: t.sid || "" })).filter((t: { name: string; sid: string }) => t.sid && !t.name.startsWith("360°")) : [];
           if (saved.length > 0) {
             setDialogTags(saved);
             setDialogTagsLoading(false);
@@ -442,35 +442,83 @@ const Admin = () => {
       } catch {}
     }
 
-    // Fetch live from Matterport (tags + sweeps)
+    // Fetch sweeps via hidden Matterport iframe + SDK (only reliable method)
+    const fetchSdkData = (mid: string): Promise<{ sweeps: any[]; mattertags: any[] }> => {
+      return new Promise((resolve) => {
+        let done = false;
+        const result = { sweeps: [] as any[], mattertags: [] as any[] };
+        const finish = () => { if (done) return; done = true; clearTimeout(outerTimeout); cleanup(); resolve(result); };
+        const outerTimeout = setTimeout(() => finish(), 30000);
+        const iframe = document.createElement("iframe");
+        iframe.style.cssText = "width:300px;height:300px;position:fixed;left:0;top:0;z-index:-1;opacity:0.01;pointer-events:none";
+        iframe.allow = "xr-spatial-tracking";
+        iframe.src = `https://my.matterport.com/show/?m=${mid}&applicationKey=b7uar4u57xdec0zw7dwygt7md&play=1&qs=1&title=0&brand=0&help=0&hl=0`;
+        const cleanup = () => { try { document.body.removeChild(iframe); } catch {} };
+        document.body.appendChild(iframe);
+
+        const tryConnect = async () => {
+          try {
+            const { setupSdk } = await import("@matterport/sdk");
+            console.log("[SdkFetch] connecting...");
+            const sdk = await setupSdk("b7uar4u57xdec0zw7dwygt7md", { iframe, space: mid });
+            console.log("[SdkFetch] connected, subscribing...");
+            let pendingSubs = 2;
+            const checkDone = () => { if (pendingSubs <= 0) { console.log("[SdkFetch] got", result.mattertags.length, "tags +", result.sweeps.length, "sweeps"); finish(); } };
+
+            // Collect sweeps
+            let sweepDebounce: any;
+            const sweepSub = sdk.Sweep.data.subscribe({
+              onAdded(_i: string, item: any) {
+                result.sweeps.push(item);
+                clearTimeout(sweepDebounce);
+                sweepDebounce = setTimeout(() => { try { sweepSub.cancel(); } catch {} pendingSubs--; checkDone(); }, 3000);
+              },
+            });
+            setTimeout(() => { try { sweepSub.cancel(); } catch {} if (pendingSubs > 0) { pendingSubs--; checkDone(); } }, 15000);
+
+            // Collect mattertags
+            let tagDebounce: any;
+            const tagSub = sdk.Mattertag.data.subscribe({
+              onAdded(_i: string, item: any) {
+                result.mattertags.push(item);
+                clearTimeout(tagDebounce);
+                tagDebounce = setTimeout(() => { try { tagSub.cancel(); } catch {} pendingSubs--; checkDone(); }, 3000);
+              },
+            });
+            setTimeout(() => { try { tagSub.cancel(); } catch {} if (pendingSubs > 0) { pendingSubs--; checkDone(); } }, 15000);
+          } catch (err) {
+            console.log("[SdkFetch] error:", err);
+            finish();
+          }
+        };
+        setTimeout(tryConnect, 3000);
+        iframe.onerror = () => finish();
+      });
+    };
+
+    let savedTags: { name: string; sid: string }[] = [];
     try {
-      const [tagsRes, sweepsRes] = await Promise.all([
-        fetch(`/api/matterport/tags?modelId=${encodeURIComponent(modelId)}`),
-        fetch(`/api/matterport/sweeps?modelId=${encodeURIComponent(modelId)}`),
-      ]);
-      let combined: { name: string; sid: string }[] = [];
-      if (tagsRes.ok) {
-        const data = await tagsRes.json();
-        combined = (data.tags || []).map((t: any, i: number) => ({
-          name: stripMdLinks(t.label || t.description || `Tag ${i + 1}`),
-          sid: t.sid,
-        })).filter((t: { name: string; sid: string }) => t.sid);
-      }
-      if (sweepsRes.ok) {
-        const sData = await sweepsRes.json();
-        const sweepOptions = (sData.sweeps || []).map((s: any) => ({
-          name: `360° Vue ${s.index}${s.floorLabel ? ` (${s.floorLabel})` : ""}`,
-          sid: `sweep:${s.index}`,
-        }));
-        combined = [...combined, ...sweepOptions];
-      }
+      const sdkData = await fetchSdkData(modelId);
+
+      const sweepOptions = sdkData.sweeps.map((s: any, idx: number) => ({
+        name: `360° Vue ${idx + 1} — Étage ${s.floorInfo?.sequence ?? s.floor ?? '?'}`,
+        sid: s.id || s.sid || s.uuid,
+      })).filter((t: { name: string; sid: string }) => t.sid);
+
+      const liveMattertags = sdkData.mattertags.map((t: any) => ({
+        name: t.label || t.description || "(sans nom)",
+        sid: t.sid || t.id,
+      })).filter((t: { name: string; sid: string }) => t.sid);
+
+      const combined = [...liveMattertags, ...sweepOptions];
       if (combined.length > 0) {
         setDialogTags(combined);
+        savedTags = liveMattertags;
         if (isEdit && id) {
           fetch(`/api/tours/${id}/tags`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(combined.filter(t => !t.sid.startsWith("sweep:"))),
+            body: JSON.stringify(savedTags),
           }).catch(() => {});
         }
       }
@@ -721,53 +769,78 @@ const Admin = () => {
     fetch(`/api/tours/${tour.id}/tags`)
       .then((r) => r.ok ? r.json() : [])
       .then(async (savedData) => {
-        const saved = Array.isArray(savedData) ? savedData.map((t: any) => ({ name: t.name || "", sid: t.sid || "" })) : [];
+        const saved = Array.isArray(savedData) ? savedData.map((t: any) => ({ name: t.name || "", sid: t.sid || "" })).filter((t: { name: string; sid: string }) => !t.name.startsWith("360°")) : [];
         if (saved.length > 0) {
           setTourTags(saved);
           setTourTagsLoading(false);
         }
-        // Always fetch live tags + sweeps from Matterport to merge
+        // Fetch live tags + sweeps via SDK iframe
         if (modelId) {
           try {
-            const [tagsRes, sweepsRes] = await Promise.all([
-              fetch(`/api/matterport/tags?modelId=${encodeURIComponent(modelId)}`),
-              fetch(`/api/matterport/sweeps?modelId=${encodeURIComponent(modelId)}`),
-            ]);
-            let liveTags: { name: string; sid: string }[] = [];
-            if (tagsRes.ok) {
-              const data = await tagsRes.json();
-              liveTags = (data.tags || []).map((t: any, i: number) => ({
-                name: stripMdLinks(t.label || t.description || `Tag ${i + 1}`),
-                sid: t.sid,
-              }));
-            }
-            if (liveTags.length > 0) {
-              const merged = liveTags.map((lt) => {
-                const existing = saved.find((s) => s.sid === lt.sid);
-                return existing && existing.name ? existing : lt;
+            const fetchSdkData = (mid: string): Promise<{ sweeps: any[]; mattertags: any[] }> => {
+              return new Promise((resolve) => {
+                let done = false;
+                const result = { sweeps: [] as any[], mattertags: [] as any[] };
+                const finish = () => { if (done) return; done = true; clearTimeout(outerTimeout); cleanup(); resolve(result); };
+                const outerTimeout = setTimeout(() => finish(), 30000);
+                const iframe = document.createElement("iframe");
+                iframe.style.cssText = "width:300px;height:300px;position:fixed;left:0;top:0;z-index:-1;opacity:0.01;pointer-events:none";
+                iframe.allow = "xr-spatial-tracking";
+                iframe.src = `https://my.matterport.com/show/?m=${mid}&applicationKey=b7uar4u57xdec0zw7dwygt7md&play=1&qs=1&title=0&brand=0&help=0&hl=0`;
+                const cleanup = () => { try { document.body.removeChild(iframe); } catch {} };
+                document.body.appendChild(iframe);
+                const tryConnect = async () => {
+                  try {
+                    const { setupSdk } = await import("@matterport/sdk");
+                    const sdk = await setupSdk("b7uar4u57xdec0zw7dwygt7md", { iframe, space: mid });
+                    let pendingSubs = 2;
+                    const checkDone = () => { if (pendingSubs <= 0) finish(); };
+                    let sweepDebounce: any;
+                    const sweepSub = sdk.Sweep.data.subscribe({
+                      onAdded(_i: string, item: any) {
+                        result.sweeps.push(item);
+                        clearTimeout(sweepDebounce);
+                        sweepDebounce = setTimeout(() => { try { sweepSub.cancel(); } catch {} pendingSubs--; checkDone(); }, 3000);
+                      },
+                    });
+                    setTimeout(() => { try { sweepSub.cancel(); } catch {} if (pendingSubs > 0) { pendingSubs--; checkDone(); } }, 15000);
+                    let tagDebounce: any;
+                    const tagSub = sdk.Mattertag.data.subscribe({
+                      onAdded(_i: string, item: any) {
+                        result.mattertags.push(item);
+                        clearTimeout(tagDebounce);
+                        tagDebounce = setTimeout(() => { try { tagSub.cancel(); } catch {} pendingSubs--; checkDone(); }, 3000);
+                      },
+                    });
+                    setTimeout(() => { try { tagSub.cancel(); } catch {} if (pendingSubs > 0) { pendingSubs--; checkDone(); } }, 15000);
+                  } catch { finish(); }
+                };
+                setTimeout(tryConnect, 3000);
+                iframe.onerror = () => finish();
               });
-              let combined = [...merged];
-              if (sweepsRes.ok) {
-                const sData = await sweepsRes.json();
-                const sweepOptions = (sData.sweeps || []).map((s: any) => ({
-                  name: `360° Vue ${s.index}${s.floorLabel ? ` (${s.floorLabel})` : ""}`,
-                  sid: `sweep:${s.index}`,
-                }));
-                combined = [...combined, ...sweepOptions];
-              }
+            };
+
+            const sdkData = await fetchSdkData(modelId);
+            const liveMattertags = sdkData.mattertags.map((t: any) => ({
+              name: t.label || t.description || "(sans nom)",
+              sid: t.sid || t.id,
+            })).filter((t: { name: string; sid: string }) => t.sid);
+            const sweepOptions = sdkData.sweeps.map((s: any, idx: number) => ({
+              name: `360° Vue ${idx + 1} — Étage ${s.floorInfo?.sequence ?? s.floor ?? '?'}`,
+              sid: s.id || s.sid || s.uuid,
+            })).filter((t: { name: string; sid: string }) => t.sid);
+
+            const combined = [...(liveMattertags.length > 0 ? liveMattertags : saved), ...sweepOptions];
+            if (combined.length > 0) {
               setTourTags(combined);
-              fetch(`/api/tours/${tour.id}/tags`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(merged),
-              }).catch(() => {});
-            } else if (sweepsRes.ok) {
-              const sData = await sweepsRes.json();
-              const sweepOptions = (sData.sweeps || []).map((s: any) => ({
-                name: `360° Vue ${s.index}${s.floorLabel ? ` (${s.floorLabel})` : ""}`,
-                sid: `sweep:${s.index}`,
-              }));
-              if (sweepOptions.length > 0) setTourTags([...saved, ...sweepOptions]);
+              // Save mattertags to DB
+              if (liveMattertags.length > 0) {
+                fetch(`/api/tours/${tour.id}/tags`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify(liveMattertags),
+                }).catch(() => {});
+              }
             }
           } catch {}
         }
@@ -844,16 +917,38 @@ const Admin = () => {
     setTagFinderTags([]);
 
     try {
-      const res = await fetch(`/api/matterport/tags?modelId=${encodeURIComponent(modelId)}`);
-      if (!res.ok) {
-        throw new Error(`Erreur serveur (${res.status})`);
-      }
-      const data = await res.json();
-      if (data.error) {
-        throw new Error(data.error);
-      }
+      // Fetch mattertags via hidden iframe + SDK
+      const rawTags: any[] = await new Promise((resolve) => {
+        let done = false;
+        const finish = (result: any[]) => { if (done) return; done = true; clearTimeout(outerTimeout); cleanup(); resolve(result); };
+        const outerTimeout = setTimeout(() => finish([]), 30000);
+        const iframe = document.createElement("iframe");
+        iframe.style.cssText = "width:300px;height:300px;position:fixed;left:0;top:0;z-index:-1;opacity:0.01;pointer-events:none";
+        iframe.allow = "xr-spatial-tracking";
+        iframe.src = `https://my.matterport.com/show/?m=${modelId}&applicationKey=b7uar4u57xdec0zw7dwygt7md&play=1&qs=1&title=0&brand=0&help=0&hl=0`;
+        const cleanup = () => { try { document.body.removeChild(iframe); } catch {} };
+        document.body.appendChild(iframe);
+        const tryConnect = async () => {
+          try {
+            const { setupSdk } = await import("@matterport/sdk");
+            const sdk = await setupSdk("b7uar4u57xdec0zw7dwygt7md", { iframe, space: modelId });
+            const collected: any[] = [];
+            let debounce: any;
+            const sub = sdk.Mattertag.data.subscribe({
+              onAdded(_index: string, item: any) {
+                collected.push(item);
+                clearTimeout(debounce);
+                debounce = setTimeout(() => { try { sub.cancel(); } catch {} finish(collected); }, 3000);
+              },
+            });
+            setTimeout(() => { try { sub.cancel(); } catch {} finish(collected); }, 20000);
+          } catch { finish([]); }
+        };
+        setTimeout(tryConnect, 3000);
+        iframe.onerror = () => finish([]);
+      });
 
-      const allTags: TagInfo[] = (data.tags || []).map((t: any) => ({
+      const allTags: TagInfo[] = rawTags.map((t: any) => ({
         sid: t.sid,
         label: stripMdLinks(t.label || "(sans nom)"),
         description: (t.description || "").slice(0, 100),
@@ -1186,20 +1281,21 @@ const Admin = () => {
                                 className="h-8 text-sm flex-1"
                               />
                               <Select
-                                value={item.tagSid || "__none__"}
+                                value={item.tagSid?.startsWith("http") ? "__link__" : (item.tagSid || "__none__")}
                                 onValueChange={(v) => {
                                   const updated = [...menuSections];
                                   const items = [...sec.items];
-                                  items[iIdx] = { ...item, tagSid: v === "__none__" ? "" : v };
+                                  items[iIdx] = { ...item, tagSid: v === "__none__" ? "" : v === "__link__" ? "https://" : v };
                                   updated[sIdx] = { ...sec, items };
                                   setMenuSections(updated);
                                 }}
                               >
-                                <SelectTrigger className="h-8 text-xs w-[140px]">
+                                <SelectTrigger className="h-8 text-xs w-[200px]">
                                   <SelectValue placeholder={dialogTagsLoading ? "Chargement..." : dialogTags.length === 0 ? "Aucun tag" : "Tag"} />
                                 </SelectTrigger>
                                 <SelectContent>
                                   <SelectItem value="__none__">Aucun tag</SelectItem>
+                                  <SelectItem value="__link__">📍 Coller un lien 360°</SelectItem>
                                   {dialogTags.map((tag) => (
                                     <SelectItem key={tag.sid} value={tag.sid}>
                                       <span className="flex items-center gap-1"><Tag className="w-3 h-3" />{tag.name}</span>
@@ -1207,6 +1303,20 @@ const Admin = () => {
                                   ))}
                                 </SelectContent>
                               </Select>
+                              {item.tagSid?.startsWith("http") && (
+                                <Input
+                                  value={item.tagSid?.startsWith("http") ? item.tagSid : ""}
+                                  onChange={(e) => {
+                                    const updated = [...menuSections];
+                                    const items = [...sec.items];
+                                    items[iIdx] = { ...item, tagSid: e.target.value };
+                                    updated[sIdx] = { ...sec, items };
+                                    setMenuSections(updated);
+                                  }}
+                                  placeholder="https://my.matterport.com/show/?m=...&ss=48&sr=..."
+                                  className="h-8 text-xs w-[280px]"
+                                />
+                              )}
                               <Button
                                 type="button"
                                 size="sm"
@@ -1285,10 +1395,10 @@ const Admin = () => {
                         <div>
                           <label className="text-xs text-muted-foreground mb-1 block">Tag Matterport (SID)</label>
                           <Select
-                            value={room.tagSid || "__none__"}
+                            value={room.tagSid?.startsWith("http") ? "__link__" : (room.tagSid || "__none__")}
                             onValueChange={(v) => {
                               const updated = [...hotelRooms];
-                              updated[idx] = { ...room, tagSid: v === "__none__" ? "" : v };
+                              updated[idx] = { ...room, tagSid: v === "__none__" ? "" : v === "__link__" ? "https://" : v };
                               setHotelRooms(updated);
                             }}
                           >
@@ -1297,6 +1407,7 @@ const Admin = () => {
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="__none__">Aucun tag</SelectItem>
+                              <SelectItem value="__link__">📍 Coller un lien 360°</SelectItem>
                               {dialogTags.map((tag) => (
                                 <SelectItem key={tag.sid} value={tag.sid}>
                                   <span className="flex items-center gap-1"><Tag className="w-3 h-3" />{tag.name}</span>
@@ -1304,6 +1415,18 @@ const Admin = () => {
                               ))}
                             </SelectContent>
                           </Select>
+                          {room.tagSid?.startsWith("http") && (
+                            <Input
+                              value={room.tagSid}
+                              onChange={(e) => {
+                                const updated = [...hotelRooms];
+                                updated[idx] = { ...room, tagSid: e.target.value };
+                                setHotelRooms(updated);
+                              }}
+                              placeholder="https://my.matterport.com/show/?m=...&ss=48&sr=..."
+                              className="mt-2 text-xs"
+                            />
+                          )}
                         </div>
                       </div>
                       <div className="grid grid-cols-2 gap-3">
@@ -1709,7 +1832,7 @@ const Admin = () => {
                             </Select>
                             <Input value={item.name} onChange={(e) => { const u = [...gymSections]; const items = [...sec.items]; items[iIdx] = { ...item, name: e.target.value }; u[sIdx] = { ...sec, items }; setGymSections(u); }} placeholder="Nom" className="h-8 text-sm flex-1" />
                             <Select value={item.tagSid || "__none__"} onValueChange={(v) => { const u = [...gymSections]; const items = [...sec.items]; items[iIdx] = { ...item, tagSid: v === "__none__" ? "" : v }; u[sIdx] = { ...sec, items }; setGymSections(u); }}>
-                              <SelectTrigger className="h-8 text-xs w-[140px]"><SelectValue placeholder={dialogTagsLoading ? "Chargement..." : dialogTags.length === 0 ? "Aucun tag" : "Tag"} /></SelectTrigger>
+                              <SelectTrigger className="h-8 text-xs w-[200px]"><SelectValue placeholder={dialogTagsLoading ? "Chargement..." : dialogTags.length === 0 ? "Aucun tag" : "Tag"} /></SelectTrigger>
                               <SelectContent>
                                 <SelectItem value="__none__">Aucun tag</SelectItem>
                                 {dialogTags.map((tag) => (<SelectItem key={tag.sid} value={tag.sid}><span className="flex items-center gap-1"><Tag className="w-3 h-3" />{tag.name}</span></SelectItem>))}
