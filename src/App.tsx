@@ -32,6 +32,7 @@ import TourViewer from "./pages/TourViewer";
 import TourStats from "./pages/TourStats";
 import TagFinder from "./pages/TagFinder";
 import AnalyticsDashboard from "./pages/AnalyticsDashboard";
+import VirtualStaging from "./pages/VirtualStaging";
 import AddTourForm from "@/components/AddTourForm";
 
 const ShareRedirect = () => {
@@ -75,6 +76,7 @@ const App = () => (
               <Route path="/admin/stats/:id" element={<TourStats />} />
               <Route path="/admin/analytics" element={<AnalyticsDashboard />} />
               <Route path="/admin/tags" element={<TagFinder />} />
+              <Route path="/admin/staging/:id" element={<VirtualStaging />} />
               <Route path="/admin" element={<Admin />} />
               <Route path="/admin/add-tour-test" element={<AddTourForm />} />
               <Route path="/login" element={<Login />} />
