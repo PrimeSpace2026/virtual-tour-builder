@@ -442,6 +442,44 @@ const Admin = () => {
       } catch {}
     }
 
+    // Fetch live sweeps via hidden Matterport SDK iframe
+    const fetchSweepsViaSdk = (mid: string): Promise<any[]> => {
+      return new Promise((resolve) => {
+        const timeout = setTimeout(() => resolve([]), 12000);
+        const iframe = document.createElement("iframe");
+        iframe.style.cssText = "width:1px;height:1px;position:absolute;left:-9999px;opacity:0;pointer-events:none";
+        iframe.src = `https://my.matterport.com/show/?m=${mid}&applicationKey=b7uar4u57xdec0zw7dwygt7md&play=0&qs=1&title=0&brand=0`;
+        document.body.appendChild(iframe);
+        iframe.onload = async () => {
+          try {
+            const MP = (window as any).MP_SDK;
+            if (MP?.connect) {
+              const sdk = await MP.connect(iframe, "b7uar4u57xdec0zw7dwygt7md", "3.10");
+              const sweepData = await sdk.Sweep.getData();
+              clearTimeout(timeout);
+              document.body.removeChild(iframe);
+              resolve(sweepData || []);
+              return;
+            }
+          } catch {}
+          // Fallback: try @matterport/sdk setupSdk
+          try {
+            const { setupSdk } = await import("@matterport/sdk");
+            const sdk = await setupSdk("b7uar4u57xdec0zw7dwygt7md", { iframe, space: mid });
+            const sweepData = await sdk.Sweep.getData();
+            clearTimeout(timeout);
+            document.body.removeChild(iframe);
+            resolve(sweepData || []);
+          } catch {
+            clearTimeout(timeout);
+            document.body.removeChild(iframe);
+            resolve([]);
+          }
+        };
+        iframe.onerror = () => { clearTimeout(timeout); document.body.removeChild(iframe); resolve([]); };
+      });
+    };
+
     // Fetch live from Matterport via backend proxy
     const BACKEND = "https://back-end-tp6x.onrender.com";
     let savedTags: { name: string; sid: string }[] = [];
@@ -449,7 +487,7 @@ const Admin = () => {
       let rawTags: any[] = [];
       let rawSweeps: any[] = [];
 
-      // Fetch tags + sweeps via backend proxy (server-side, no CORS)
+      // Try backend proxy first
       try {
         const [tagsRes, sweepsRes] = await Promise.all([
           fetch(`${BACKEND}/api/matterport/tags?modelId=${modelId}`),
@@ -465,19 +503,16 @@ const Admin = () => {
         }
       } catch {}
 
-      // Fallback: direct Graph API if proxy failed
-      if (rawTags.length === 0 && rawSweeps.length === 0) {
-        const graphQuery = `{ model(id: "${modelId}") { mattertags { sid label description anchorPosition { x y z } } sweeps { id uuid position { x y z } floor neighbors } } }`;
-        const graphRes = await fetch("https://my.matterport.com/api/models/graph", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ query: graphQuery }),
-        });
-        if (graphRes.ok) {
-          const gData = await graphRes.json();
-          rawTags = gData?.data?.model?.mattertags || [];
-          rawSweeps = gData?.data?.model?.sweeps || [];
-        }
+      // Fallback: use hidden iframe + SDK to get sweeps
+      if (rawSweeps.length === 0) {
+        try {
+          const sdkSweeps = await fetchSweepsViaSdk(modelId);
+          rawSweeps = sdkSweeps.map((s: any) => ({
+            id: s.sid || s.id || s.uuid,
+            uuid: s.uuid || s.sid || s.id,
+            floor: s.floor ?? s.floorInfo?.sequence ?? '?',
+          }));
+        } catch {}
       }
 
       let combined: { name: string; sid: string }[] = [];
@@ -764,7 +799,7 @@ const Admin = () => {
             let rawTags: any[] = [];
             let rawSweeps: any[] = [];
 
-            // Fetch via backend proxy (server-side, no CORS)
+            // Fetch via backend proxy
             try {
               const [tagsRes, sweepsRes] = await Promise.all([
                 fetch(`${BACKEND}/api/matterport/tags?modelId=${modelId}`),
@@ -780,19 +815,36 @@ const Admin = () => {
               }
             } catch {}
 
-            // Fallback: direct Graph API
-            if (rawTags.length === 0 && rawSweeps.length === 0) {
-              const graphQuery = `{ model(id: "${modelId}") { mattertags { sid label description } sweeps { id uuid floor } } }`;
-              const graphRes = await fetch("https://my.matterport.com/api/models/graph", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ query: graphQuery }),
-              });
-              if (graphRes.ok) {
-                const gData = await graphRes.json();
-                rawTags = gData?.data?.model?.mattertags || [];
-                rawSweeps = gData?.data?.model?.sweeps || [];
-              }
+            // Fallback: hidden iframe + SDK for sweeps
+            if (rawSweeps.length === 0) {
+              try {
+                const fetchSweepsViaSdk = (mid: string): Promise<any[]> => {
+                  return new Promise((resolve) => {
+                    const timeout = setTimeout(() => resolve([]), 12000);
+                    const iframe = document.createElement("iframe");
+                    iframe.style.cssText = "width:1px;height:1px;position:absolute;left:-9999px;opacity:0;pointer-events:none";
+                    iframe.src = `https://my.matterport.com/show/?m=${mid}&applicationKey=b7uar4u57xdec0zw7dwygt7md&play=0&qs=1&title=0&brand=0`;
+                    document.body.appendChild(iframe);
+                    iframe.onload = async () => {
+                      try {
+                        const { setupSdk } = await import("@matterport/sdk");
+                        const sdk = await setupSdk("b7uar4u57xdec0zw7dwygt7md", { iframe, space: mid });
+                        const sweepData = await sdk.Sweep.getData();
+                        clearTimeout(timeout);
+                        document.body.removeChild(iframe);
+                        resolve(sweepData || []);
+                      } catch { clearTimeout(timeout); document.body.removeChild(iframe); resolve([]); }
+                    };
+                    iframe.onerror = () => { clearTimeout(timeout); document.body.removeChild(iframe); resolve([]); };
+                  });
+                };
+                const sdkSweeps = await fetchSweepsViaSdk(modelId);
+                rawSweeps = sdkSweeps.map((s: any) => ({
+                  id: s.sid || s.id || s.uuid,
+                  uuid: s.uuid || s.sid || s.id,
+                  floor: s.floor ?? s.floorInfo?.sequence ?? '?',
+                }));
+              } catch {}
             }
 
             const liveTags = rawTags.map((t: any, i: number) => ({
