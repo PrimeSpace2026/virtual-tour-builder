@@ -491,10 +491,10 @@ const Admin = () => {
       let rawSweeps: any[] = [];
       try {
         const sdkSweeps = await fetchSweepsViaSdk(modelId);
+        console.log("[fetchDialogTags] sdkSweeps:", sdkSweeps.length, sdkSweeps.slice(0, 2));
         rawSweeps = sdkSweeps.map((s: any) => ({
-          id: s.sid || s.id || s.uuid,
-          uuid: s.uuid || s.sid || s.id,
-          floor: s.floor ?? s.floorInfo?.sequence ?? '?',
+          id: s.id || s.sid || s.uuid,
+          floor: s.floorInfo?.sequence ?? s.floor ?? '?',
         }));
       } catch {}
 
@@ -502,7 +502,7 @@ const Admin = () => {
       const existing = dialogTags.filter(t => !t.name.startsWith("360°"));
       const sweepOptions = rawSweeps.map((s: any, idx: number) => ({
         name: `360° Vue ${idx + 1} — Étage ${s.floor ?? '?'}`,
-        sid: s.id || s.uuid,
+        sid: s.id,
       })).filter((s: { name: string; sid: string }) => s.sid);
 
       const combined = [...existing, ...sweepOptions];
@@ -805,10 +805,12 @@ const Admin = () => {
             };
 
             const sdkSweeps = await fetchSweepsViaSdk(modelId);
+            console.log("[openItems] sdkSweeps:", sdkSweeps.length, sdkSweeps.slice(0, 2));
             const sweepOptions = sdkSweeps.map((s: any, idx: number) => ({
-              name: `360° Vue ${idx + 1} — Étage ${s.floor ?? s.floorInfo?.sequence ?? '?'}`,
-              sid: s.sid || s.id || s.uuid,
+              name: `360° Vue ${idx + 1} — Étage ${s.floorInfo?.sequence ?? s.floor ?? '?'}`,
+              sid: s.id || s.sid || s.uuid,
             })).filter((s: { name: string; sid: string }) => s.sid);
+            console.log("[openItems] sweepOptions:", sweepOptions.length, sweepOptions.slice(0, 2));
 
             if (sweepOptions.length > 0) {
               setTourTags([...saved, ...sweepOptions]);
