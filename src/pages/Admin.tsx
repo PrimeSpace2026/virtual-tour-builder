@@ -1106,6 +1106,9 @@ const Admin = () => {
                       <Button variant="outline" size="sm" onClick={() => navigate(`/admin/stats/${tour.id}`)} title="Statistiques">
                         <BarChart3 className="w-4 h-4" />
                       </Button>
+                      <Button variant="outline" size="sm" onClick={() => navigate(`/admin/staging/${tour.id}`)} title="Virtual Staging">
+                        <Layers className="w-4 h-4" />
+                      </Button>
                       <Button variant="outline" size="sm" onClick={() => openEdit(tour)}>
                         <Pencil className="w-4 h-4" />
                       </Button>
