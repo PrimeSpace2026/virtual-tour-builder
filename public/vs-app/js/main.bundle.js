@@ -83252,47 +83252,68 @@ class Main extends react.Component {
             return url.replace('https://static.matterport.com/', window.location.origin + '/mp-models/');
         };
         // Materials are now auto-fixed in the render loop — no per-object fixMaterials needed
+        // ─── Fix View state (camera lock that still allows staging interaction) ───
+        let lockedPose = null;
+        let lockPoseSub = null;
+        let lockWheelHandler = null;
+        let lockIframeDoc = null;
+        let restoring = false;
         window.addEventListener('message', (event) => Main_awaiter(this, void 0, void 0, function* () {
-            var _a, _b, _c, _d;
+            var _a, _b, _c;
             const { type, payload } = event.data || {};
             if (type === 'VS_LOCK_CAMERA') {
                 try {
-                    // Prevent all navigation: sweep transitions, zoom, pan, rotate
-                    sdk.Camera.allowMove = false;
-                    // Also try to prevent sweep transition
-                    const iframe = document.getElementById('sdk-iframe');
-                    const iframeDoc = (iframe === null || iframe === void 0 ? void 0 : iframe.contentDocument) || ((_a = iframe === null || iframe === void 0 ? void 0 : iframe.contentWindow) === null || _a === void 0 ? void 0 : _a.document);
-                    if (iframeDoc) {
-                        // Add a transparent overlay to block pointer interaction with Matterport
-                        let overlay = iframeDoc.getElementById('vs-camera-lock-overlay');
-                        if (!overlay) {
-                            overlay = iframeDoc.createElement('div');
-                            overlay.id = 'vs-camera-lock-overlay';
-                            overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;cursor:crosshair;';
-                            iframeDoc.body.appendChild(overlay);
+                    // Save current camera pose (sweep + rotation)
+                    const pose = yield sdk.Camera.pose.waitUntil((p) => !!p);
+                    lockedPose = {
+                        sweep: pose.sweep,
+                        rotation: { x: pose.rotation.x, y: pose.rotation.y },
+                    };
+                    // Subscribe to pose changes and snap back if camera drifts
+                    lockPoseSub = sdk.Camera.pose.subscribe((newPose) => Main_awaiter(this, void 0, void 0, function* () {
+                        var _e, _f;
+                        if (!lockedPose || restoring)
+                            return;
+                        const sweepChanged = newPose.sweep !== lockedPose.sweep;
+                        const rotDrift = Math.abs(newPose.rotation.x - lockedPose.rotation.x) +
+                            Math.abs(newPose.rotation.y - lockedPose.rotation.y);
+                        if (sweepChanged || rotDrift > 2) {
+                            restoring = true;
+                            try {
+                                yield sdk.Sweep.moveTo(lockedPose.sweep, {
+                                    rotation: lockedPose.rotation,
+                                    transition: (_f = (_e = sdk.Sweep.Transition) === null || _e === void 0 ? void 0 : _e.INSTANT) !== null && _f !== void 0 ? _f : 0,
+                                });
+                            }
+                            catch (_g) { }
+                            restoring = false;
                         }
+                    }));
+                    // Block wheel zoom on the iframe
+                    const iframe = document.getElementById('sdk-iframe');
+                    lockIframeDoc = (iframe === null || iframe === void 0 ? void 0 : iframe.contentDocument) || ((_a = iframe === null || iframe === void 0 ? void 0 : iframe.contentWindow) === null || _a === void 0 ? void 0 : _a.document) || null;
+                    if (lockIframeDoc) {
+                        lockWheelHandler = (e) => { e.preventDefault(); e.stopPropagation(); };
+                        lockIframeDoc.addEventListener('wheel', lockWheelHandler, { capture: true, passive: false });
                     }
-                    console.log('[VS-Bridge] Camera locked');
+                    console.log('[VS-Bridge] View fixed — sweep:', lockedPose.sweep, 'rot:', lockedPose.rotation.x.toFixed(1), lockedPose.rotation.y.toFixed(1));
                 }
                 catch (e) {
-                    console.warn('[VS-Bridge] Lock camera error:', e);
+                    console.warn('[VS-Bridge] Fix view error:', e);
                 }
             }
             if (type === 'VS_UNLOCK_CAMERA') {
-                try {
-                    sdk.Camera.allowMove = true;
-                    const iframe = document.getElementById('sdk-iframe');
-                    const iframeDoc = (iframe === null || iframe === void 0 ? void 0 : iframe.contentDocument) || ((_b = iframe === null || iframe === void 0 ? void 0 : iframe.contentWindow) === null || _b === void 0 ? void 0 : _b.document);
-                    if (iframeDoc) {
-                        const overlay = iframeDoc.getElementById('vs-camera-lock-overlay');
-                        if (overlay)
-                            overlay.remove();
-                    }
-                    console.log('[VS-Bridge] Camera unlocked');
+                lockedPose = null;
+                restoring = false;
+                if (lockPoseSub === null || lockPoseSub === void 0 ? void 0 : lockPoseSub.cancel)
+                    lockPoseSub.cancel();
+                lockPoseSub = null;
+                if (lockIframeDoc && lockWheelHandler) {
+                    lockIframeDoc.removeEventListener('wheel', lockWheelHandler, { capture: true });
                 }
-                catch (e) {
-                    console.warn('[VS-Bridge] Unlock camera error:', e);
-                }
+                lockWheelHandler = null;
+                lockIframeDoc = null;
+                console.log('[VS-Bridge] View unfixed');
             }
             if (type === 'VS_GET_WORLD_POSITION') {
                 // Get 3D world position from normalized screen coords
@@ -83347,7 +83368,7 @@ class Main extends react.Component {
                         try {
                             old.stop();
                         }
-                        catch (_e) { }
+                        catch (_d) { }
                     }
                     const sceneObject = yield sdk.Scene.deserialize(JSON.stringify(sceneJson));
                     sceneObject.start();
@@ -83477,7 +83498,7 @@ class Main extends react.Component {
                 let dragging = true;
                 let lastUpdate = 0;
                 const iframe = document.getElementById('sdk-iframe');
-                const iframeDoc = (iframe === null || iframe === void 0 ? void 0 : iframe.contentDocument) || ((_c = iframe === null || iframe === void 0 ? void 0 : iframe.contentWindow) === null || _c === void 0 ? void 0 : _c.document);
+                const iframeDoc = (iframe === null || iframe === void 0 ? void 0 : iframe.contentDocument) || ((_b = iframe === null || iframe === void 0 ? void 0 : iframe.contentWindow) === null || _b === void 0 ? void 0 : _b.document);
                 // Stop drag helper
                 const stopDrag = (finalPayload) => {
                     dragging = false;
@@ -83594,7 +83615,7 @@ class Main extends react.Component {
                     }
                 });
                 // Listen for click on the iframe content (same-origin) or use overlay as fallback
-                const iframeDoc = iframe.contentDocument || ((_d = iframe.contentWindow) === null || _d === void 0 ? void 0 : _d.document);
+                const iframeDoc = iframe.contentDocument || ((_c = iframe.contentWindow) === null || _c === void 0 ? void 0 : _c.document);
                 const handleClick = (e) => Main_awaiter(this, void 0, void 0, function* () {
                     // Remove listener immediately
                     if (iframeDoc)

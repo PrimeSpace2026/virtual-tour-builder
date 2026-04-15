@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   ArrowLeft, Plus, Trash2, Save, RotateCw, Move, Maximize2, Upload,
-  Pencil, Eye, Undo2, Keyboard, ChevronDown, ChevronRight, Hand, Check, Lock, Unlock,
+  Pencil, Eye, Undo2, Keyboard, ChevronDown, ChevronRight, Hand, Check, Crosshair, Navigation,
 } from "lucide-react";
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -571,11 +571,11 @@ export default function VirtualStaging() {
                   ? "bg-amber-500 text-white shadow-lg shadow-amber-500/30"
                   : "bg-black/50 text-white/70 hover:bg-black/70 hover:text-white"
               }`}
-              title={cameraLocked ? "Unlock Camera" : "Lock Camera"}
+              title={cameraLocked ? "Unfix View" : "Fix View"}
             >
-              {cameraLocked ? <Lock size={18} /> : <Unlock size={18} />}
+              {cameraLocked ? <Crosshair size={18} /> : <Navigation size={18} />}
               <span className="absolute right-full mr-2 top-1/2 -translate-y-1/2 px-2 py-1 rounded bg-black/90 text-white text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition">
-                {cameraLocked ? "Unlock Camera" : "Lock Camera"}
+                {cameraLocked ? "Unfix View" : "Fix View — freeze camera while staging"}
               </span>
             </button>
           </div>
