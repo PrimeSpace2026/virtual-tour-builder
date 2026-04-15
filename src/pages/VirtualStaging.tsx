@@ -442,8 +442,10 @@ export default function VirtualStaging() {
 
   if (!tourId) return <div className="p-8 text-white">Tour ID manquant</div>;
 
+  const isLocal = typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
+  const vsAppBase = isLocal ? "http://localhost:8000" : "/vs-app";
   const bundleSrc = modelId
-    ? `http://localhost:8000/?m=${modelId}&applicationKey=${SDK_KEY}&play=1&qs=1&title=0&brand=0&help=0&hl=0`
+    ? `${vsAppBase}/?m=${modelId}&applicationKey=${SDK_KEY}&play=1&qs=1&title=0&brand=0&help=0&hl=0`
     : null;
 
   /* ═══════════════════════════════════════════════════════════════════
