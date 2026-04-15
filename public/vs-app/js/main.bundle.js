@@ -83244,6 +83244,13 @@ class Main extends react.Component {
         // Track scene objects by index so we can update/remove them
         const sceneObjects = new Map();
         let objectCounter = 0;
+        // Rewrite static.matterport.com URLs to go through same-origin proxy (avoids CORS)
+        const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+        const fixModelUrl = (url) => {
+            if (!isProduction || !url)
+                return url;
+            return url.replace('https://static.matterport.com/', window.location.origin + '/mp-models/');
+        };
         // Materials are now auto-fixed in the render loop — no per-object fixMaterials needed
         window.addEventListener('message', (event) => Main_awaiter(this, void 0, void 0, function* () {
             var _a, _b, _c, _d;
@@ -83322,7 +83329,7 @@ class Main extends react.Component {
                                         {
                                             type: 'mp.gltfLoader',
                                             inputs: {
-                                                url: obj.modelUrl,
+                                                url: fixModelUrl(obj.modelUrl),
                                                 localScale: { x: obj.localScale || 1, y: obj.localScale || 1, z: obj.localScale || 1 },
                                                 localPosition: { x: 0, y: 0, z: 0 },
                                                 localRotation: { x: 0, y: obj.localRotationY || 0, z: 0 },
@@ -83413,7 +83420,7 @@ class Main extends react.Component {
                                     {
                                         type: 'mp.gltfLoader',
                                         inputs: {
-                                            url: obj.modelUrl,
+                                            url: fixModelUrl(obj.modelUrl),
                                             localScale: { x: obj.localScale || 1, y: obj.localScale || 1, z: obj.localScale || 1 },
                                             localPosition: { x: 0, y: 0, z: 0 },
                                             localRotation: { x: 0, y: obj.localRotationY || 0, z: 0 },
