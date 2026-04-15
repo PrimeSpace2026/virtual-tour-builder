@@ -385,24 +385,27 @@ export default function VirtualStaging() {
     saveStagingData();
 
     try {
+      let created = 0, updated = 0;
       for (const obj of placedObjects) {
         const body = { ...obj };
-        delete (body as any)._idx; // strip runtime field
+        delete (body as any)._idx; // strip runtime fields
+        delete (body as any)._confirmed;
 
         if (obj.id) {
           await fetch(`/api/tours/${tourId}/staged-objects/${obj.id}`, {
             method: "PUT", headers: { "Content-Type": "application/json" },
             body: JSON.stringify(body),
           });
+          updated++;
         } else {
           const res = await fetch(`/api/tours/${tourId}/staged-objects`, {
             method: "POST", headers: { "Content-Type": "application/json" },
             body: JSON.stringify(body),
           });
-          if (res.ok) obj.id = (await res.json()).id;
+          if (res.ok) { obj.id = (await res.json()).id; created++; }
         }
       }
-      showToast(`Saved ${placedObjects.length} objects`);
+      showToast(`✓ Saved ${placedObjects.length} objects (${created} new, ${updated} updated)`);
     } catch (err) {
       console.error("[VStaging] Save error:", err);
       showToast("Save failed");

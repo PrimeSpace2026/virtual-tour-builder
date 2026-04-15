@@ -614,19 +614,6 @@ const TourViewer = () => {
         if (cancelled) return;
         console.log("✅ SDK connecté (setupSdk)");
 
-        // Also load staged objects via postMessage if available
-        fetch(`/api/tours/${id}/staged-objects`)
-          .then(r => r.ok ? r.json() : [])
-          .then(data => {
-            if (Array.isArray(data) && data.length > 0) {
-              iframeRef.current?.contentWindow?.postMessage(
-                { type: "VS_LOAD_OBJECTS", payload: data }, "*"
-              );
-              console.log(`✅ Sent ${data.length} staged objects`);
-            }
-          })
-          .catch(() => {});
-
         // Wait for model to be fully loaded (PLAYING phase) before querying data
         await new Promise<void>((resolve) => {
           const sub = sdk.App.state.subscribe((appState: any) => {
@@ -679,8 +666,7 @@ const TourViewer = () => {
         setSdkConnected(true);
         console.log("✅ SDK ready for navigation");
 
-        // Staged objects are loaded via postMessage (see VS_SDK_READY handler above)
-        // This avoids cross-origin issues when iframe is on a different port
+        // Staged objects are managed via admin-only VirtualStaging page
 
         // Listen for model state changes (e.g. defurnished toggle) and restore tags
         try {
