@@ -290,7 +290,7 @@ function extractModelId(tourUrl: string): string | null {
 
 const CURRENCY_SYMBOLS: Record<string, string> = { EUR: "€", USD: "$", TND: "TND", GBP: "£" };
 
-function buildEmbedUrl(tourUrl: string, withSdkKey = false): string {
+function buildEmbedUrl(tourUrl: string, _withSdkKey = false): string {
   const modelId = extractModelId(tourUrl);
   if (!modelId) return tourUrl;
   return `https://my.matterport.com/show/?m=${modelId}&play=1&qs=1&title=0&vr=0&dh=0&f=0&search=0&lang=fr&applicationKey=${SDK_KEY}`;
@@ -600,16 +600,32 @@ const TourViewer = () => {
 
     const connectSdk = async () => {
       try {
+        const modelId = extractModelId(tour.tourUrl);
+        if (!modelId) throw new Error("No model ID");
+
+        // Use @matterport/sdk setupSdk which handles cross-origin iframe communication
         const { setupSdk } = await import("@matterport/sdk");
+        console.log("[SDK] Connecting via setupSdk...");
         const sdk = await Promise.race([
-          setupSdk(SDK_KEY, {
-            iframe: iframeRef.current!,
-            space: extractModelId(tour.tourUrl) || "",
-          }),
-          new Promise<never>((_, reject) => setTimeout(() => reject(new Error("SDK timeout")), 10000)),
-        ]);
+          setupSdk(SDK_KEY, { iframe: iframeRef.current!, space: modelId }),
+          new Promise<never>((_, reject) => setTimeout(() => reject(new Error("SDK timeout")), 30000)),
+        ]) as any;
+
         if (cancelled) return;
-        console.log("✅ SDK connecté, waiting for model...");
+        console.log("✅ SDK connecté (setupSdk)");
+
+        // Also load staged objects via postMessage if available
+        fetch(`/api/tours/${id}/staged-objects`)
+          .then(r => r.ok ? r.json() : [])
+          .then(data => {
+            if (Array.isArray(data) && data.length > 0) {
+              iframeRef.current?.contentWindow?.postMessage(
+                { type: "VS_LOAD_OBJECTS", payload: data }, "*"
+              );
+              console.log(`✅ Sent ${data.length} staged objects`);
+            }
+          })
+          .catch(() => {});
 
         // Wait for model to be fully loaded (PLAYING phase) before querying data
         await new Promise<void>((resolve) => {
@@ -662,6 +678,9 @@ const TourViewer = () => {
         sdkRef.current = sdk;
         setSdkConnected(true);
         console.log("✅ SDK ready for navigation");
+
+        // Staged objects are loaded via postMessage (see VS_SDK_READY handler above)
+        // This avoids cross-origin issues when iframe is on a different port
 
         // Listen for model state changes (e.g. defurnished toggle) and restore tags
         try {
