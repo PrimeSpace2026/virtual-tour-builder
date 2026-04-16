@@ -663,14 +663,22 @@ const TourViewer = () => {
         // Log sweep name when navigating to a new panorama
         try {
           let lastSweep = "";
+          let loggedKeys = false;
           sdk.Camera.pose.subscribe((pose: any) => {
             if (pose?.sweep && pose.sweep !== lastSweep) {
               lastSweep = pose.sweep;
               const sweeps = sweepsRef.current;
-              const idx = sweeps.findIndex((s: any) => s.sid === pose.sweep || s.id === pose.sweep || s.uuid === pose.sweep);
+              if (!loggedKeys && sweeps.length > 0) {
+                loggedKeys = true;
+                console.log("📋 Sweep keys:", Object.keys(sweeps[0]), "sample:", JSON.stringify(sweeps[0]).slice(0, 300));
+              }
+              const idx = sweeps.findIndex((s: any) =>
+                s.sid === pose.sweep || s.id === pose.sweep || s.uuid === pose.sweep ||
+                String(s.sid) === String(pose.sweep) || String(s.id) === String(pose.sweep)
+              );
               const sweep = idx >= 0 ? sweeps[idx] : null;
               const floor = sweep?.floorInfo?.sequence ?? sweep?.floor ?? "?";
-              console.log(`🔵 Sweep: "${pose.sweep}" — Vue ${idx + 1} — Étage ${floor}`);
+              console.log(`🔵 Sweep: "${pose.sweep}" — Vue ${idx >= 0 ? idx + 1 : "?"} / ${sweeps.length} — Étage ${floor}`);
             }
           });
         } catch {}
