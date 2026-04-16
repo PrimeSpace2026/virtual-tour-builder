@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useI18n } from "@/i18n";
 import { motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowRight, Play, ExternalLink, Filter, Loader2, MapPin, LayoutGrid } from "lucide-react";
+import { ArrowRight, Play, ExternalLink, Filter, Loader2, MapPin, LayoutGrid, DoorOpen } from "lucide-react";
 import { Layout } from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { SectionHeading } from "@/components/SectionHeading";
@@ -77,6 +77,7 @@ interface Project {
   latitude: number | null;
   longitude: number | null;
   location: string;
+  chambersCount: number;
 }
 
 const Portfolio = () => {
@@ -97,18 +98,29 @@ const Portfolio = () => {
   const fetchTours = () => {
     fetch("/api/tours")
       .then((res) => res.json())
-      .then((tours) => {
-        const mapped = tours.map((t: any) => ({
-          id: t.id,
-          image: t.imageUrl || fallbackImages[t.category] || portfolioHotel,
-          title: t.name,
-          category: t.category,
-          description: t.description,
-          size: t.surface ? `${t.surface} m²` : "",
-          tourUrl: t.tourUrl || "",
-          latitude: t.latitude,
-          longitude: t.longitude,
-          location: t.location || "",
+      .then(async (tours) => {
+        const mapped = await Promise.all(tours.map(async (t: any) => {
+          let chambersCount = 0;
+          try {
+            const chRes = await fetch(`/api/tours/${t.id}/chambers`);
+            if (chRes.ok) {
+              const chData = await chRes.json();
+              chambersCount = Array.isArray(chData) ? chData.length : 0;
+            }
+          } catch {}
+          return {
+            id: t.id,
+            image: t.imageUrl || fallbackImages[t.category] || portfolioHotel,
+            title: t.name,
+            category: t.category,
+            description: t.description,
+            size: t.surface ? `${t.surface} m²` : "",
+            tourUrl: t.tourUrl || "",
+            latitude: t.latitude,
+            longitude: t.longitude,
+            location: t.location || "",
+            chambersCount,
+          };
         }));
         setProjects(mapped);
       })
@@ -354,9 +366,17 @@ const Portfolio = () => {
                     {project.description}
                   </p>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-secondary font-medium">
-                      {project.size}
-                    </span>
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm text-secondary font-medium">
+                        {project.size}
+                      </span>
+                      {project.chambersCount > 0 && (
+                        <span className="flex items-center gap-1 text-xs text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full font-medium">
+                          <DoorOpen className="w-3 h-3" />
+                          {project.chambersCount} {project.chambersCount === 1 ? "chambre" : "chambres"}
+                        </span>
+                      )}
+                    </div>
                     <span className="text-sm text-foreground hover:text-secondary transition-colors flex items-center gap-1">
                       {T(t.portfolio.viewTour)}
                       {project.tourUrl?.startsWith("http") && !project.tourUrl.includes("my.matterport.com/show/?m=") ? (

@@ -8,6 +8,7 @@ export default defineConfig(({ mode }) => {
   const apiProxyTarget = env.VITE_API_PROXY_TARGET || "http://localhost:8081";
 
   return {
+    appType: "spa",
     server: {
       host: "::",
       port: 8082,

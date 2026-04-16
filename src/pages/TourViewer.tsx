@@ -55,6 +55,7 @@ import {
   Award,
   Mail,
   User,
+  Menu,
 } from "lucide-react";
 
 const SDK_KEY = "b7uar4u57xdec0zw7dwygt7md";
@@ -79,6 +80,9 @@ interface HotelRoom {
   bedType: string;
   capacity: number | null;
   amenities: string[];
+  imageUrl?: string;
+  price?: number | null;
+  currency?: string;
 }
 
 const AMENITY_ICONS: Record<string, { icon: React.ComponentType<{ className?: string }>; label: string }> = {
@@ -141,7 +145,7 @@ const GYM_EQUIPMENT_ICONS: Record<string, { icon: React.ComponentType<{ classNam
 interface MenuSectionProps {
   title: string;
   iconKey: string;
-  items: { name: string; iconKey: string; sub?: string; tagSid?: string }[];
+  items: { name: string; iconKey: string; sub?: string; tagSid?: string; imageUrl?: string }[];
   amenities?: string[];
   onItemClick?: (tagSid: string) => void;
 }
@@ -178,7 +182,11 @@ const HotelMenuSection = ({ title, iconKey, items, amenities, onItemClick }: Men
                 onClick={() => hasTag && onItemClick?.(item.tagSid!)}
                 className={`flex items-center gap-3 px-5 py-2.5 ml-4 mr-2 rounded-lg transition-all ${hasTag ? "cursor-pointer hover:bg-white/[0.06]" : "cursor-default"}`}
               >
-                <ItemIcon className="w-3.5 h-3.5 text-white/30 shrink-0" />
+                {item.imageUrl ? (
+                  <img src={item.imageUrl} alt={item.name} className="w-10 h-10 rounded-lg object-cover shrink-0 border border-white/10" />
+                ) : (
+                  <ItemIcon className="w-3.5 h-3.5 text-white/30 shrink-0" />
+                )}
                 <div className="flex-1 min-w-0">
                   <p className="text-white/70 text-[12px] font-normal truncate">{item.name}</p>
                   {item.sub && <p className="text-white/30 text-[10px] truncate mt-0.5">{item.sub}</p>}
@@ -252,6 +260,17 @@ interface TourServiceData {
   whatsapp: string;
   instagram: string;
   facebook: string;
+}
+
+interface ChamberData {
+  id: number;
+  tourId: number;
+  name: string;
+  description: string;
+  imageUrl: string;
+  price: number | null;
+  currency: string;
+  tagSid?: string;
 }
 
 interface GymCoachData {
@@ -372,11 +391,16 @@ const TourViewer = () => {
   }, [cart]);
   const [showProducts, setShowProducts] = useState(false);
   const [showServices, setShowServices] = useState(false);
+  const [showChambers, setShowChambers] = useState(false);
   const [tourServices, setTourServices] = useState<TourServiceData[]>([]);
+  const [tourChambers, setTourChambers] = useState<ChamberData[]>([]);
   const [selectedService, setSelectedService] = useState<TourServiceData | null>(null);
+  const [selectedChamber, setSelectedChamber] = useState<ChamberData | null>(null);
   const [selectedCoach, setSelectedCoach] = useState<GymCoachData | null>(null);
   const [gymCoaches, setGymCoaches] = useState<GymCoachData[]>([]);
-  const [bottomTab, setBottomTab] = useState<"products" | "services" | "coaches">("products");
+  const [bottomTab, setBottomTab] = useState<"products" | "services" | "chambers" | "coaches">("products");
+  const [bottomStripOpen, setBottomStripOpen] = useState(true);
+  const [bottomStripConfig, setBottomStripConfig] = useState({ products: true, services: true, chambers: true });
 
   // Match a product by name/id/tagSid from a URL param
   const matchProduct = useCallback((param: string) => {
@@ -452,11 +476,14 @@ const TourViewer = () => {
       fetch(`/api/tours/${id}/services`)
         .then((r) => r.json())
         .catch(() => []),
+      fetch(`/api/tours/${id}/chambers`)
+        .then((r) => r.json())
+        .catch(() => []),
       fetch(`/api/tours/${id}/tags`)
         .then((r) => r.ok ? r.json() : [])
         .catch(() => []),
     ])
-      .then(([tourData, tours, itemsData, servicesData, tagsData]) => {
+      .then(([tourData, tours, itemsData, servicesData, chambersData, tagsData]) => {
         setTour(tourData);
         setAllTours(tours);
         // Parse gym coaches from metadataJson
@@ -466,10 +493,27 @@ const TourViewer = () => {
             setGymCoaches(Array.isArray(meta.coaches) ? meta.coaches : []);
           } catch { setGymCoaches([]); }
         } else { setGymCoaches([]); }
+        // Parse bottom strip config from metadataJson
+        if (tourData.metadataJson) {
+          try {
+            const meta = JSON.parse(tourData.metadataJson);
+            if (meta.bottomStrip) setBottomStripConfig(meta.bottomStrip);
+          } catch {}
+        }
         const items = Array.isArray(itemsData) ? itemsData : [];
         setTourItems(items);
         tourItemsRef.current = items;
-        setTourServices(Array.isArray(servicesData) ? servicesData : []);
+        const services = Array.isArray(servicesData) ? servicesData : [];
+        const chambers = Array.isArray(chambersData) ? chambersData : [];
+        setTourServices(services);
+        setTourChambers(chambers);
+        // Auto-select first available tab (respecting bottomStrip config)
+        let bsc = { products: true, services: true, chambers: true };
+        if (tourData.metadataJson) { try { const m = JSON.parse(tourData.metadataJson); if (m.bottomStrip) bsc = m.bottomStrip; } catch {} }
+        if (items.length > 0 && bsc.products) setBottomTab("products");
+        else if (services.length > 0 && bsc.services) setBottomTab("services");
+        else if (chambers.length > 0 && bsc.chambers) setBottomTab("chambers");
+        else if (tourData.category === "Gym & Fitness") setBottomTab("coaches");
         // Build saved tags map (name → SID) for production tag resolution
         const savedMap = new Map<string, string>();
         if (Array.isArray(tagsData)) {
@@ -869,6 +913,85 @@ const TourViewer = () => {
     }
   }, [tour?.id, tour?.tourUrl, trackEvent]);
 
+  // Navigate to a chamber's tag in the 3D tour (same logic as navigateToProduct)
+  const navigateToChamber = useCallback((ch: ChamberData) => {
+    if (tour?.id) trackEvent(tour.id, "chamber_click", ch.name, String(ch.id));
+
+    // Show popup after delay so the fly animation is visible
+    const showPopupLater = () => setTimeout(() => setSelectedChamber(ch), 2000);
+
+    if (ch.tagSid && tour?.tourUrl) {
+      const tagKey = ch.tagSid.trim().toLowerCase();
+      const resolvedSid = tagsMapRef.current.get(tagKey) || savedTagsMapRef.current.get(tagKey) || ch.tagSid;
+      const sdk = sdkRef.current;
+
+      const iframeFallback = () => {
+        const modelId = extractModelId(tour.tourUrl);
+        if (!modelId) return;
+        const tagUrl = `https://my.matterport.com/show/?m=${modelId}&play=1&qs=1&brand=0&title=0&mls=2&help=0&hl=0&tag=${encodeURIComponent(resolvedSid)}&mt=1&pin=1`;
+        console.log(`🏨 Chamber iframe deep link to tag: ${resolvedSid}`);
+        setIframeSrc(tagUrl);
+        setIframeKey((k) => k + 1);
+        setIframeLoaded(false);
+      };
+
+      if (sdk) {
+        const tryNavigate = async () => {
+          try {
+            const sweeps = sweepsRef.current;
+            const isSweepId = sweeps.length > 0 && sweeps.some((s: any) => s.sid === resolvedSid || s.id === resolvedSid || s.uuid === resolvedSid);
+            if (isSweepId && sdk.Sweep?.moveTo) {
+              console.log(`📍 Chamber → Sweep.moveTo("${resolvedSid}")`);
+              await sdk.Sweep.moveTo(resolvedSid, { transition: sdk.Sweep.Transition?.FLY || 2 });
+              showPopupLater();
+              return;
+            }
+
+            if (sdk.Mattertag?.navigateToTag) {
+              const flyTransition = sdk.Mattertag.Transition?.FLY_IN || sdk.Mattertag.Transition?.FLYOVER || "transition.fly";
+              console.log(`🏨 Mattertag.navigateToTag("${resolvedSid}", ${flyTransition})`);
+              await sdk.Mattertag.navigateToTag(resolvedSid, flyTransition);
+              console.log(`✅ Flew to chamber tag: ${resolvedSid}`);
+              try { sdk.Mattertag.close(resolvedSid); } catch {}
+              showPopupLater();
+              return;
+            }
+
+            if (sdk.Tag?.open) {
+              console.log(`🏨 Tag.open("${resolvedSid}")`);
+              await sdk.Tag.open(resolvedSid);
+              try { sdk.Tag.close(resolvedSid); } catch {}
+              showPopupLater();
+              return;
+            }
+
+            iframeFallback();
+            showPopupLater();
+          } catch (err) {
+            console.log("Chamber SDK fly failed, trying Sweep.moveTo:", err);
+            try {
+              if (sdk.Sweep?.moveTo) {
+                await sdk.Sweep.moveTo(resolvedSid, { transition: sdk.Sweep.Transition?.FLY || 2 });
+                showPopupLater();
+                return;
+              }
+            } catch (sweepErr) {
+              console.log("Sweep.moveTo also failed:", sweepErr);
+            }
+            iframeFallback();
+            showPopupLater();
+          }
+        };
+        tryNavigate();
+      } else {
+        iframeFallback();
+        showPopupLater();
+      }
+    } else {
+      setSelectedChamber(ch);
+    }
+  }, [tour?.id, tour?.tourUrl, trackEvent]);
+
   // Resolve sweep:floor:index SID or raw sweep UUID to actual sweep ID for SDK navigation
   const resolveSweepSid = useCallback((sid: string): { isSweep: boolean; sweepId?: string } => {
     // Match sweep:floor:index format
@@ -1037,12 +1160,14 @@ const TourViewer = () => {
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        if (selectedCoach) setSelectedCoach(null);
+        if (selectedChamber) setSelectedChamber(null);
+        else if (selectedCoach) setSelectedCoach(null);
         else if (selectedService) setSelectedService(null);
         else if (selectedTag) setSelectedTag(null);
         else if (selectedItem) setSelectedItem(null);
         else if (activeTagFilter) setActiveTagFilter(null);
         else if (showCart) setShowCart(false);
+        else if (showChambers) setShowChambers(false);
         else if (showServices) setShowServices(false);
         else if (showProducts) setShowProducts(false);
         else if (showShare) setShowShare(false);
@@ -1166,35 +1291,15 @@ const TourViewer = () => {
           referrerPolicy="no-referrer-when-downgrade"
           onLoad={() => setIframeLoaded(true)}
         />
-        {/* 
-          PrimeSpace overlay — covers Matterport branding at bottom-right
-          Always visible (including clean mode) to hide Matterport logo
-        */}
-        <div className="absolute bottom-0 left-0 right-0 z-[6] pointer-events-none flex justify-end px-3 sm:px-4 pb-0 sm:pb-3 lg:pb-3">
-          <Link
-            to="/"
-            className="pointer-events-auto w-auto sm:min-w-[320px] lg:w-[420px] flex items-center gap-3 px-3 py-5 sm:py-4
-              bg-black/70 backdrop-blur-xl border border-white/15 shadow-2xl
-              rounded-t-2xl sm:rounded-2xl
-              border-b-0 sm:border-b
-              hover:bg-black/80 hover:border-white/25 transition-all group"
-          >
-            <img src="/logo.jpg" alt="PrimeSpace" className="w-8 h-8 shrink-0 rounded-lg object-cover shadow-lg shadow-purple-500/20 group-hover:shadow-purple-500/40 transition-shadow" />
-            <div className="flex-grow min-w-0">
-              <p className="text-white/90 text-sm sm:text-base font-bold tracking-tight group-hover:text-white transition-colors">PrimeSpace</p>
-              <p className="text-white/40 text-[10px] sm:text-[11px] font-medium">Studio 3D immersif</p>
-            </div>
-          </Link>
-        </div>
       </div>
 
-      {/* ===== TOP-LEFT: Back Button ===== */}
+      {/* ===== TOP-LEFT: Back Button + Logo ===== */}
       {!isClean && (
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.3 }}
-          className="absolute top-4 left-4 z-30 pointer-events-auto"
+          className="absolute top-4 left-4 z-30 pointer-events-auto flex items-center gap-2"
         >
           <button
             onClick={() => navigate("/portfolio")}
@@ -1203,6 +1308,15 @@ const TourViewer = () => {
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
             <span className="text-xs font-medium hidden sm:inline">Retour</span>
           </button>
+          <Link
+            to="/"
+            className="flex items-center gap-2 pl-1.5 pr-3 py-1.5 rounded-full bg-black/50 backdrop-blur-2xl border border-white/[0.12] hover:bg-black/70 hover:border-white/20 shadow-lg shadow-black/30 transition-all group"
+          >
+            <div className="w-7 h-7 rounded-full overflow-hidden">
+              <img src="/logo.jpg" alt="PrimeSpace" className="w-full h-full object-cover" />
+            </div>
+            <span className="text-white/90 text-xs font-semibold tracking-tight group-hover:text-white transition-colors hidden sm:inline">PrimeSpace</span>
+          </Link>
         </motion.div>
       )}
 
@@ -1255,39 +1369,8 @@ const TourViewer = () => {
               : "bg-black/60 border-white/10 text-white/70 hover:text-white hover:bg-black/80"
           }`}
         >
-          <Eye className="w-4 h-4" />
-          <span className="hidden sm:inline">Info</span>
+          <Menu className="w-4 h-4" />
         </button>
-
-        {/* Products */}
-        {tourItems.length > 0 && (
-          <button
-            onClick={() => setShowProducts(!showProducts)}
-            className={`flex items-center gap-1.5 px-2 sm:px-3 py-2 sm:py-2.5 rounded-xl backdrop-blur-xl border text-xs font-medium transition-all ${
-              showProducts
-                ? "bg-white/15 border-white/20 text-white"
-                : "bg-black/60 border-white/10 text-white/70 hover:text-white hover:bg-black/80"
-            }`}
-          >
-            <ShoppingBag className="w-4 h-4" />
-            <span className="hidden sm:inline">Produits</span>
-          </button>
-        )}
-
-        {/* Services */}
-        {tourServices.length > 0 && (
-          <button
-            onClick={() => setShowServices(!showServices)}
-            className={`flex items-center gap-1.5 px-2 sm:px-3 py-2 sm:py-2.5 rounded-xl backdrop-blur-xl border text-xs font-medium transition-all ${
-              showServices
-                ? "bg-white/15 border-white/20 text-white"
-                : "bg-black/60 border-white/10 text-white/70 hover:text-white hover:bg-black/80"
-            }`}
-          >
-            <Briefcase className="w-4 h-4" />
-            <span className="hidden sm:inline">Services</span>
-          </button>
-        )}
 
         {/* Cart */}
         {cart.length > 0 && (
@@ -1476,6 +1559,36 @@ const TourViewer = () => {
                   )}
                 </div>
 
+                {/* Products & Services quick access */}
+                {(tourItems.length > 0 || tourServices.length > 0) && (
+                  <div className="flex gap-2">
+                    {tourItems.length > 0 && (
+                      <button
+                        onClick={() => { setShowCard(false); setShowProducts(true); }}
+                        className="flex-1 flex items-center justify-center gap-2 p-3 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.08] transition-all group"
+                      >
+                        <ShoppingBag className="w-4 h-4 text-purple-400" />
+                        <div className="text-left">
+                          <p className="text-white/80 text-xs font-semibold group-hover:text-white transition-colors">Produits</p>
+                          <p className="text-white/30 text-[10px]">{tourItems.length} article{tourItems.length > 1 ? "s" : ""}</p>
+                        </div>
+                      </button>
+                    )}
+                    {tourServices.length > 0 && (
+                      <button
+                        onClick={() => { setShowCard(false); setShowServices(true); }}
+                        className="flex-1 flex items-center justify-center gap-2 p-3 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.08] transition-all group"
+                      >
+                        <Briefcase className="w-4 h-4 text-teal-400" />
+                        <div className="text-left">
+                          <p className="text-white/80 text-xs font-semibold group-hover:text-white transition-colors">Services</p>
+                          <p className="text-white/30 text-[10px]">{tourServices.length} service{tourServices.length > 1 ? "s" : ""}</p>
+                        </div>
+                      </button>
+                    )}
+                  </div>
+                )}
+
                 {/* Hotel Menu — Canyon Ranch style for Hôtellerie */}
                 {tour.category === "Hôtellerie" && tour.metadataJson && (() => {
                   try {
@@ -1491,8 +1604,9 @@ const TourViewer = () => {
                       items: rooms.map(r => ({
                         name: r.name || "Chambre",
                         iconKey: "bed",
-                        sub: `${r.bedType || ""} ${r.capacity ? `· ${r.capacity} pers.` : ""}`.trim(),
+                        sub: [r.bedType, r.capacity ? `${r.capacity} pers.` : "", r.price ? `${r.price} ${r.currency || "TND"}` : ""].filter(Boolean).join(" · "),
                         tagSid: r.tagSid || undefined,
+                        imageUrl: r.imageUrl || undefined,
                       })),
                     }] : [];
 
@@ -1750,6 +1864,37 @@ const TourViewer = () => {
                   </div>
                 </div>
               </div>
+
+              {/* Mobile: Products & Services quick access */}
+              {(tourItems.length > 0 || tourServices.length > 0) && (
+                <div className="flex gap-2 px-3 pb-2">
+                  {tourItems.length > 0 && (
+                    <button
+                      onClick={() => { setShowCard(false); setShowProducts(true); }}
+                      className="flex-1 flex items-center justify-center gap-2 p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.08] transition-all group"
+                    >
+                      <ShoppingBag className="w-3.5 h-3.5 text-purple-400" />
+                      <div className="text-left">
+                        <p className="text-white/80 text-[11px] font-semibold group-hover:text-white transition-colors">Produits</p>
+                        <p className="text-white/30 text-[9px]">{tourItems.length}</p>
+                      </div>
+                    </button>
+                  )}
+                  {tourServices.length > 0 && (
+                    <button
+                      onClick={() => { setShowCard(false); setShowServices(true); }}
+                      className="flex-1 flex items-center justify-center gap-2 p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.08] transition-all group"
+                    >
+                      <Briefcase className="w-3.5 h-3.5 text-teal-400" />
+                      <div className="text-left">
+                        <p className="text-white/80 text-[11px] font-semibold group-hover:text-white transition-colors">Services</p>
+                        <p className="text-white/30 text-[9px]">{tourServices.length}</p>
+                      </div>
+                    </button>
+                  )}
+                </div>
+              )}
+
               {/* Mobile: Hotel Menu */}
               {tour.category === "Hôtellerie" && tour.metadataJson && (() => {
                 try {
@@ -1762,7 +1907,7 @@ const TourViewer = () => {
                     title: "Hébergements",
                     iconKey: "bed",
                     amenities: allAmenities,
-                    items: rooms.map(r => ({ name: r.name || "Chambre", iconKey: "bed", sub: `${r.bedType || ""} ${r.capacity ? `· ${r.capacity}p` : ""}`.trim(), tagSid: r.tagSid || undefined })),
+                    items: rooms.map(r => ({ name: r.name || "Chambre", iconKey: "bed", sub: [r.bedType, r.capacity ? `${r.capacity}p` : "", r.price ? `${r.price} ${r.currency || "TND"}` : ""].filter(Boolean).join(" · "), tagSid: r.tagSid || undefined, imageUrl: r.imageUrl || undefined })),
                   }] : [];
 
                   const allSections = [
@@ -2188,6 +2333,64 @@ const TourViewer = () => {
         )}
       </AnimatePresence>
 
+      {/* ===== CHAMBERS LIST PANEL (right side) ===== */}
+      <AnimatePresence>
+        {showChambers && tourChambers.length > 0 && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowChambers(false)}
+              className="absolute inset-0 bg-black/20 z-30"
+            />
+            <motion.div
+              initial={{ opacity: 0, x: 360 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 360 }}
+              transition={{ type: "spring", damping: 28, stiffness: 250 }}
+              className="absolute bottom-0 left-0 right-0 md:bottom-4 md:left-auto md:top-16 md:right-4 w-full md:w-[320px] z-[35] pointer-events-auto flex flex-col max-h-[60vh] md:max-h-none"
+            >
+              <div className="flex-1 rounded-t-2xl md:rounded-2xl bg-black/80 md:bg-black/70 backdrop-blur-2xl border border-white/10 overflow-hidden flex flex-col shadow-2xl">
+                <div className="p-4 border-b border-white/[0.06] flex items-center justify-between shrink-0">
+                  <h2 className="text-white font-semibold text-sm flex items-center gap-2">
+                    <DoorOpen className="w-4 h-4" />
+                    Chambres ({tourChambers.length})
+                  </h2>
+                  <button onClick={() => setShowChambers(false)} className="w-7 h-7 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/50 hover:text-white transition-all">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                <div className="flex-1 overflow-y-auto p-3 space-y-2">
+                  {tourChambers.map((ch) => (
+                    <div
+                      key={ch.id}
+                      onClick={() => { setShowChambers(false); navigateToChamber(ch); }}
+                      className="w-full flex items-center gap-3 p-3 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.08] transition-all group cursor-pointer"
+                    >
+                      {ch.imageUrl ? (
+                        <img src={ch.imageUrl} alt={ch.name} className="w-14 h-14 rounded-lg object-cover shrink-0 bg-white" />
+                      ) : (
+                        <div className="w-14 h-14 rounded-lg bg-white/10 flex items-center justify-center shrink-0">
+                          <DoorOpen className="w-5 h-5 text-white/30" />
+                        </div>
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <p className="text-white/80 text-sm font-medium group-hover:text-white transition-colors">{ch.name}</p>
+                        {ch.description && <p className="text-white/30 text-[10px] line-clamp-2">{ch.description}</p>}
+                        {ch.price != null && (
+                          <p className="text-purple-300 text-xs font-bold mt-1">{ch.price} <span className="text-white/40">{ch.currency || "TND"}</span></p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
       {/* ===== SERVICE DETAIL POPUP ===== */}
       <AnimatePresence>
         {selectedService && (
@@ -2274,6 +2477,121 @@ const TourViewer = () => {
                         Facebook
                       </a>
                     )}
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* ===== CHAMBER DETAIL POPUP ===== */}
+      <AnimatePresence>
+        {selectedChamber && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSelectedChamber(null)}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100]"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 40 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 40 }}
+              transition={{ type: "spring", damping: 28, stiffness: 300 }}
+              className="fixed inset-0 flex items-center justify-center z-[100] pointer-events-none p-4"
+            >
+              <div className="bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col w-full max-w-[440px] max-h-[90vh] pointer-events-auto">
+                {/* Close */}
+                <button
+                  onClick={() => setSelectedChamber(null)}
+                  className="absolute top-3 right-3 z-10 w-9 h-9 rounded-full bg-black/30 backdrop-blur-md hover:bg-black/50 flex items-center justify-center text-white transition-all"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+
+                {/* Hero Image */}
+                {selectedChamber.imageUrl ? (
+                  <div className="relative">
+                    <img src={selectedChamber.imageUrl} alt={selectedChamber.name} className="w-full h-56 object-cover" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+                    {selectedChamber.price != null && (
+                      <div className="absolute bottom-4 left-4">
+                        <div className="bg-white/95 backdrop-blur-md rounded-xl px-4 py-2 shadow-lg">
+                          <p className="text-xs text-gray-500 font-medium">À partir de</p>
+                          <p className="text-xl font-bold text-gray-900">{selectedChamber.price} <span className="text-sm font-medium text-gray-500">{selectedChamber.currency || "TND"}</span><span className="text-xs text-gray-400 font-normal"> / nuit</span></p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="w-full h-44 bg-gradient-to-br from-amber-50 via-orange-50 to-rose-50 flex items-center justify-center relative">
+                    <DoorOpen className="w-20 h-20 text-amber-200" />
+                    {selectedChamber.price != null && (
+                      <div className="absolute bottom-4 left-4">
+                        <div className="bg-white/95 backdrop-blur-md rounded-xl px-4 py-2 shadow-lg">
+                          <p className="text-xs text-gray-500 font-medium">À partir de</p>
+                          <p className="text-xl font-bold text-gray-900">{selectedChamber.price} <span className="text-sm font-medium text-gray-500">{selectedChamber.currency || "TND"}</span><span className="text-xs text-gray-400 font-normal"> / nuit</span></p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Content */}
+                <div className="p-6 overflow-y-auto flex-1 min-h-0">
+                  <h3 className="text-xl font-bold text-gray-900 mb-1">{selectedChamber.name}</h3>
+                  {selectedChamber.description && (
+                    <p className="text-sm text-gray-500 leading-relaxed mt-2">{selectedChamber.description}</p>
+                  )}
+
+                  {/* Features pills from description */}
+                  {selectedChamber.description && selectedChamber.description.includes("·") && (
+                    <div className="flex flex-wrap gap-2 mt-4">
+                      {selectedChamber.description.split("·").map((part, i) => (
+                        <span key={i} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gray-50 border border-gray-100 text-xs font-medium text-gray-600">
+                          {part.trim()}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Divider */}
+                  <div className="my-5 border-t border-gray-100" />
+
+                  {/* Book Now Button */}
+                  <button
+                    onClick={() => {
+                      const msg = encodeURIComponent(`Bonjour, je souhaite réserver la chambre "${selectedChamber.name}"${selectedChamber.price != null ? ` (${selectedChamber.price} ${selectedChamber.currency || "TND"}/nuit)` : ""}. Merci.`);
+                      window.open(`https://wa.me/21654757573?text=${msg}`, "_blank", "noopener,noreferrer");
+                    }}
+                    className="w-full py-4 rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 hover:from-amber-600 hover:via-orange-600 hover:to-rose-600 text-white font-bold text-base shadow-lg shadow-orange-500/25 hover:shadow-orange-500/40 transition-all duration-300 flex items-center justify-center gap-3 group"
+                  >
+                    <svg className="w-5 h-5 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                    Réserver maintenant
+                  </button>
+
+                  {/* Secondary actions */}
+                  <div className="flex gap-3 mt-3">
+                    <a
+                      href="tel:+21654757573"
+                      className="flex-1 py-3 rounded-xl bg-gray-50 hover:bg-gray-100 text-gray-700 font-medium text-sm transition-colors flex items-center justify-center gap-2 border border-gray-100"
+                    >
+                      <Phone className="w-4 h-4" />
+                      Appeler
+                    </a>
+                    <button
+                      onClick={() => {
+                        const msg = encodeURIComponent(`Bonjour, je souhaite avoir plus d'informations sur la chambre "${selectedChamber.name}". Merci.`);
+                        window.open(`https://wa.me/21654757573?text=${msg}`, "_blank", "noopener,noreferrer");
+                      }}
+                      className="flex-1 py-3 rounded-xl bg-green-50 hover:bg-green-100 text-green-700 font-medium text-sm transition-colors flex items-center justify-center gap-2 border border-green-100"
+                    >
+                      <MessageCircle className="w-4 h-4" />
+                      WhatsApp
+                    </button>
                   </div>
                 </div>
               </div>
@@ -2517,13 +2835,26 @@ const TourViewer = () => {
       </div>{/* END TOP: MATTERPORT 3D VIEWER */}
 
       {/* ===== BOTTOM: PRODUCT & SERVICE STRIP ===== */}
-      {(tourItems.length > 0 || tourServices.length > 0 || gymCoaches.length > 0) && (
+      {((tourItems.length > 0 && bottomStripConfig.products) || (tourServices.length > 0 && bottomStripConfig.services) || (tourChambers.length > 0 && bottomStripConfig.chambers) || gymCoaches.length > 0) && (
         <div className="shrink-0 bg-[#0d0d1a] border-t border-white/10">
-          <div className="px-3 py-3">
+          {/* Toggle handle */}
+          <button
+            onClick={() => setBottomStripOpen(!bottomStripOpen)}
+            className="w-full flex items-center justify-center py-1.5 hover:bg-white/[0.03] transition-colors group"
+          >
+            <ChevronDown className={`w-4 h-4 text-white/30 group-hover:text-white/60 transition-all duration-300 ${bottomStripOpen ? "rotate-0" : "rotate-180"}`} />
+          </button>
+          <motion.div
+            initial={false}
+            animate={{ height: bottomStripOpen ? "auto" : 0, opacity: bottomStripOpen ? 1 : 0 }}
+            transition={{ duration: 0.3, ease: "easeInOut" }}
+            className="overflow-hidden"
+          >
+          <div className="px-3 pb-3">
             {/* Tab switcher when both exist */}
-            {(tourItems.length > 0 ? 1 : 0) + (tourServices.length > 0 ? 1 : 0) + (gymCoaches.length > 0 ? 1 : 0) > 1 && (
+            {((tourItems.length > 0 && bottomStripConfig.products) ? 1 : 0) + ((tourServices.length > 0 && bottomStripConfig.services) ? 1 : 0) + ((tourChambers.length > 0 && bottomStripConfig.chambers) ? 1 : 0) + (gymCoaches.length > 0 ? 1 : 0) > 1 && (
               <div className="flex items-center justify-center gap-1 mb-2.5">
-                {tourItems.length > 0 && (
+                {tourItems.length > 0 && bottomStripConfig.products && (
                   <button
                     onClick={() => setBottomTab("products")}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold uppercase tracking-wider transition-all ${bottomTab === "products" ? "bg-white/15 text-white" : "text-white/40 hover:text-white/70"}`}
@@ -2531,12 +2862,20 @@ const TourViewer = () => {
                     <ShoppingBag className="w-3 h-3" /> Produits ({tourItems.length})
                   </button>
                 )}
-                {tourServices.length > 0 && (
+                {tourServices.length > 0 && bottomStripConfig.services && (
                   <button
                     onClick={() => setBottomTab("services")}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold uppercase tracking-wider transition-all ${bottomTab === "services" ? "bg-white/15 text-white" : "text-white/40 hover:text-white/70"}`}
                   >
                     <Briefcase className="w-3 h-3" /> Services ({tourServices.length})
+                  </button>
+                )}
+                {tourChambers.length > 0 && bottomStripConfig.chambers && (
+                  <button
+                    onClick={() => setBottomTab("chambers")}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold uppercase tracking-wider transition-all ${bottomTab === "chambers" ? "bg-white/15 text-white" : "text-white/40 hover:text-white/70"}`}
+                  >
+                    <DoorOpen className="w-3 h-3" /> Chambres ({tourChambers.length})
                   </button>
                 )}
                 {gymCoaches.length > 0 && (
@@ -2668,6 +3007,41 @@ const TourViewer = () => {
               </div>
             )}
 
+            {/* Chambers strip */}
+            {bottomTab === "chambers" && tourChambers.length > 0 && (
+              <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide justify-center">
+                {tourChambers.map((ch) => (
+                  <button
+                    key={ch.id}
+                    onClick={() => navigateToChamber(ch)}
+                    className="flex-shrink-0 flex items-center gap-2.5 bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.08] rounded-xl p-2 pr-4 transition-all group"
+                  >
+                    <div className="w-12 h-12 rounded-lg bg-white overflow-hidden flex items-center justify-center shrink-0">
+                      {ch.imageUrl ? (
+                        <img src={ch.imageUrl} alt={ch.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <DoorOpen className="w-5 h-5 text-gray-300" />
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-white/80 text-xs font-semibold truncate max-w-[110px] group-hover:text-white transition-colors">{ch.name}</p>
+                      {ch.price != null && (
+                        <p className="text-purple-300 text-xs font-bold mt-0.5">{ch.price} <span className="text-white/30 text-[10px]">{ch.currency || "TND"}</span></p>
+                      )}
+                    </div>
+                  </button>
+                ))}
+                {tourChambers.length > 3 && (
+                  <button
+                    onClick={() => setShowChambers(true)}
+                    className="flex-shrink-0 px-3 py-2 rounded-xl bg-white/[0.05] border border-white/[0.08] text-white/50 hover:text-white hover:bg-white/[0.1] transition-all text-xs font-medium"
+                  >
+                    Voir tout
+                  </button>
+                )}
+              </div>
+            )}
+
             {/* Coaches strip */}
             {bottomTab === "coaches" && gymCoaches.length > 0 && (
               <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide justify-center">
@@ -2694,6 +3068,7 @@ const TourViewer = () => {
               </div>
             )}
           </div>
+          </motion.div>
         </div>
       )}
     </div>

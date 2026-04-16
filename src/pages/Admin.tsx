@@ -82,6 +82,9 @@ interface HotelRoom {
   bedType: string;
   capacity: number | null;
   amenities: string[];
+  imageUrl: string;
+  price: number | null;
+  currency: string;
 }
 
 interface MenuItemData {
@@ -365,6 +368,8 @@ const Admin = () => {
   const [gymClasses, setGymClasses] = useState<GymClass[]>([]);
   const [gymSections, setGymSections] = useState<MenuSectionData[]>([]);
   const [gymCoaches, setGymCoaches] = useState<GymCoach[]>([]);
+  // Bottom strip visibility toggles
+  const [bottomStrip, setBottomStrip] = useState({ products: true, services: true, chambers: true });
   // Tags for the create/edit dialog (auto-fetched from tour URL)
   const [dialogTags, setDialogTags] = useState<{ name: string; sid: string; thumbnail?: string }[]>([]);
   const [dialogTagsLoading, setDialogTagsLoading] = useState(false);
@@ -688,7 +693,8 @@ const Admin = () => {
         setGymClasses(meta.classes || []);
         setGymSections(meta.gymSections || []);
         setGymCoaches(meta.coaches || []);
-      } catch { setHotelRooms([]); setMenuSections([]); setGymSpaces([]); setGymEquipment([]); setGymPlans([]); setGymClasses([]); setGymSections([]); setGymCoaches([]); }
+        setBottomStrip(meta.bottomStrip || { products: true, services: true, chambers: true });
+      } catch { setHotelRooms([]); setMenuSections([]); setGymSpaces([]); setGymEquipment([]); setGymPlans([]); setGymClasses([]); setGymSections([]); setGymCoaches([]); setBottomStrip({ products: true, services: true, chambers: true }); }
     } else {
       setHotelRooms([]);
       setMenuSections([]);
@@ -698,6 +704,7 @@ const Admin = () => {
       setGymClasses([]);
       setGymSections([]);
       setGymCoaches([]);
+      setBottomStrip({ products: true, services: true, chambers: true });
     }
     setDialogOpen(true);
   };
@@ -710,10 +717,21 @@ const Admin = () => {
     // Attach hotel rooms as metadataJson when Hôtellerie
     const payload: Record<string, unknown> = { ...editTour };
     if (editTour.category === "Hôtellerie" && (hotelRooms.length > 0 || menuSections.length > 0)) {
-      payload.metadataJson = JSON.stringify({ rooms: hotelRooms, sections: menuSections });
+      payload.metadataJson = JSON.stringify({ rooms: hotelRooms, sections: menuSections, bottomStrip });
     }
     if (editTour.category === "Gym & Fitness" && (gymSpaces.length > 0 || gymEquipment.length > 0 || gymPlans.length > 0 || gymClasses.length > 0 || gymSections.length > 0 || gymCoaches.length > 0)) {
-      payload.metadataJson = JSON.stringify({ spaces: gymSpaces, equipment: gymEquipment, plans: gymPlans, classes: gymClasses, gymSections, coaches: gymCoaches } as GymMetadata);
+      payload.metadataJson = JSON.stringify({ spaces: gymSpaces, equipment: gymEquipment, plans: gymPlans, classes: gymClasses, gymSections, coaches: gymCoaches, bottomStrip } as GymMetadata);
+    }
+    // For other categories, save bottomStrip if any toggle is off
+    if (!payload.metadataJson) {
+      payload.metadataJson = JSON.stringify({ bottomStrip });
+    } else {
+      // Ensure bottomStrip is in existing metadataJson
+      try {
+        const existing = JSON.parse(payload.metadataJson as string);
+        existing.bottomStrip = bottomStrip;
+        payload.metadataJson = JSON.stringify(existing);
+      } catch {}
     }
     const method = isEditing ? "PUT" : "POST";
     const url = isEditing ? `/api/tours/${editTour.id}` : "/api/tours";
@@ -732,6 +750,37 @@ const Admin = () => {
       });
     }
     if (res.ok) {
+      const savedTour = await res.json().catch(() => null);
+      const tourId = savedTour?.id || editTour.id;
+
+      // Sync hotel rooms to chambers API so they appear in the bottom strip
+      if (editTour.category === "Hôtellerie" && tourId) {
+        try {
+          // Delete existing chambers
+          const existing = await fetch(`/api/tours/${tourId}/chambers`).then(r => r.ok ? r.json() : []).catch(() => []);
+          for (const ch of existing) {
+            await fetch(`/api/tours/${tourId}/chambers/${ch.id}`, { method: "DELETE" }).catch(() => {});
+          }
+          // Create new chambers from hotelRooms
+          for (const room of hotelRooms) {
+            if (!room.name) continue;
+            await fetch(`/api/tours/${tourId}/chambers`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                tourId,
+                name: room.name,
+                description: [room.bedType, room.capacity ? `${room.capacity} pers.` : "", (room.amenities || []).join(", ")].filter(Boolean).join(" · "),
+                imageUrl: room.imageUrl || "",
+                price: room.price ?? null,
+                currency: room.currency || "TND",
+                tagSid: room.tagSid || "",
+              }),
+            }).catch(() => {});
+          }
+        } catch {}
+      }
+
       toast({ title: isEditing ? "Visite modifiée" : "Visite créée" });
       setDialogOpen(false);
       fetchTours();
@@ -1193,6 +1242,38 @@ const Admin = () => {
                 )}
               </div>
             </div>
+
+            {/* Bottom Strip Visibility Toggles */}
+            <div className="rounded-xl border p-4 space-y-3">
+              <label className="text-sm font-medium block">Barre inférieure (Tour Viewer)</label>
+              <p className="text-xs text-muted-foreground">Choisir les sections visibles dans la barre en bas du tour</p>
+              <div className="flex flex-wrap gap-3">
+                {(["products", "services", "chambers"] as const).map((key) => {
+                  const labels = { products: "Produits", services: "Services", chambers: "Chambres" };
+                  const active = bottomStrip[key];
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => setBottomStrip({ ...bottomStrip, [key]: !active })}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-medium transition-all ${
+                        active
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "bg-muted/50 text-muted-foreground border-muted-foreground/20"
+                      }`}
+                    >
+                      <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                        active ? "border-primary-foreground" : "border-muted-foreground/40"
+                      }`}>
+                        {active && <div className="w-2 h-2 rounded-full bg-primary-foreground" />}
+                      </div>
+                      {labels[key]}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             {/* Hotel Rooms — only for Hôtellerie */}
             {editTour.category === "Hôtellerie" && (
               <div className="space-y-4">
@@ -1377,7 +1458,7 @@ const Admin = () => {
                       type="button"
                       size="sm"
                       variant="outline"
-                      onClick={() => setHotelRooms([...hotelRooms, { name: "", tagSid: "", bedType: "", capacity: null, amenities: [] }])}
+                      onClick={() => setHotelRooms([...hotelRooms, { name: "", tagSid: "", bedType: "", capacity: null, amenities: [], imageUrl: "", price: null, currency: "TND" }])}
                     >
                       <Plus className="w-4 h-4 mr-1" /> Chambre
                     </Button>
@@ -1449,6 +1530,52 @@ const Admin = () => {
                           )}
                         </div>
                       </div>
+                      {/* Image URL */}
+                      <div>
+                        <label className="text-xs text-muted-foreground mb-1 block">Image de la chambre</label>
+                        <div className="flex gap-2 items-center">
+                          <Input
+                            value={room.imageUrl || ""}
+                            onChange={(e) => {
+                              const updated = [...hotelRooms];
+                              updated[idx] = { ...room, imageUrl: e.target.value };
+                              setHotelRooms(updated);
+                            }}
+                            placeholder="https://..."
+                            className="flex-1"
+                          />
+                          <label className="cursor-pointer inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-border text-xs font-medium hover:bg-muted transition-colors">
+                            <Upload className="w-3.5 h-3.5" />
+                            Upload
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={async (e) => {
+                                const file = e.target.files?.[0];
+                                if (!file) return;
+                                const formData = new FormData();
+                                formData.append("file", file);
+                                try {
+                                  const res = await fetch("/api/upload", { method: "POST", body: formData });
+                                  const data = await res.json();
+                                  if (data.url) {
+                                    const updated = [...hotelRooms];
+                                    updated[idx] = { ...room, imageUrl: data.url };
+                                    setHotelRooms(updated);
+                                    toast({ title: "Image uploadée ✓" });
+                                  }
+                                } catch {
+                                  toast({ title: "Erreur upload", variant: "destructive" });
+                                }
+                              }}
+                            />
+                          </label>
+                        </div>
+                        {room.imageUrl && (
+                          <img src={room.imageUrl} alt={room.name} className="w-16 h-16 rounded-lg object-cover mt-2 border border-border" />
+                        )}
+                      </div>
                       <div className="grid grid-cols-2 gap-3">
                         <div>
                           <label className="text-xs text-muted-foreground mb-1 block">Type de lit</label>
@@ -1482,6 +1609,35 @@ const Admin = () => {
                               setHotelRooms(updated);
                             }}
                             placeholder="2"
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-xs text-muted-foreground mb-1 block">Prix / nuit</label>
+                          <Input
+                            type="number"
+                            min={0}
+                            step="any"
+                            value={room.price ?? ""}
+                            onChange={(e) => {
+                              const updated = [...hotelRooms];
+                              updated[idx] = { ...room, price: e.target.value ? Number(e.target.value) : null };
+                              setHotelRooms(updated);
+                            }}
+                            placeholder="150"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs text-muted-foreground mb-1 block">Devise</label>
+                          <Input
+                            value={room.currency || "TND"}
+                            onChange={(e) => {
+                              const updated = [...hotelRooms];
+                              updated[idx] = { ...room, currency: e.target.value };
+                              setHotelRooms(updated);
+                            }}
+                            placeholder="TND"
                           />
                         </div>
                       </div>
