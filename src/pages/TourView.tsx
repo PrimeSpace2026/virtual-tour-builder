@@ -1,0 +1,242 @@
+import { useState, useEffect } from "react";
+import { useParams, Link } from "react-router-dom";
+import { ArrowLeft, Info, ShoppingBag, Briefcase, DoorOpen, X, Phone, MessageCircle } from "lucide-react";
+import {
+  getTourById,
+  getTourItems,
+  getTourServices,
+  getTourChambers,
+  type Tour,
+  type TourItem,
+  type TourServiceEntry,
+  type Chamber,
+} from "@/lib/api";
+
+type TabType = "items" | "services" | "chambers";
+
+const TourView = () => {
+  const { id } = useParams<{ id: string }>();
+  const [tour, setTour] = useState<Tour | null>(null);
+  const [items, setItems] = useState<TourItem[]>([]);
+  const [services, setServices] = useState<TourServiceEntry[]>([]);
+  const [chambers, setChambers] = useState<Chamber[]>([]);
+  const [activeTab, setActiveTab] = useState<TabType | null>(null);
+  const [showInfo, setShowInfo] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
+
+  useEffect(() => {
+    if (!id) return;
+    const tourId = parseInt(id, 10);
+
+    Promise.all([
+      getTourById(tourId),
+      getTourItems(tourId),
+      getTourServices(tourId),
+      getTourChambers(tourId),
+    ])
+      .then(([t, it, sv, ch]) => {
+        setTour(t);
+        setItems(it);
+        setServices(sv);
+        setChambers(ch);
+      })
+      .catch(() => setNotFound(true))
+      .finally(() => setLoading(false));
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="fixed inset-0 bg-[#1a1a2e] flex items-center justify-center">
+        <div className="w-10 h-10 border-4 border-purple-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (notFound || !tour) {
+    return (
+      <div className="fixed inset-0 bg-[#1a1a2e] flex flex-col items-center justify-center text-white gap-4">
+        <h2 className="text-2xl font-bold">Visite introuvable</h2>
+        <p className="text-gray-400">Cette visite n'existe pas ou a été supprimée.</p>
+        <Link to="/portfolio" className="text-purple-400 hover:underline">Retour au Portfolio</Link>
+      </div>
+    );
+  }
+
+  const hasItems = items.length > 0;
+  const hasServices = services.length > 0;
+  const hasChambers = chambers.length > 0;
+  const hasAnyTab = hasItems || hasServices || hasChambers;
+
+  return (
+    <div className="fixed inset-0 bg-[#1a1a2e] text-white overflow-hidden">
+      {/* Top navbar */}
+      <div className="absolute top-0 left-0 right-0 z-30 flex items-center justify-between px-4 py-3 bg-gradient-to-b from-black/70 to-transparent">
+        <Link to="/portfolio" className="flex items-center gap-2 text-white/80 hover:text-white text-sm font-semibold">
+          <span className="text-purple-400 font-bold text-lg">PrimeSpace</span>
+          <span className="text-white/50 text-xs">Studio 3D immersif</span>
+        </Link>
+      </div>
+
+      {/* Matterport iframe */}
+      <iframe
+        src={tour.tourUrl || ""}
+        className="absolute inset-0 w-full h-full"
+        frameBorder="0"
+        allowFullScreen
+        allow="xr-spatial-tracking"
+      />
+
+      {/* Side buttons */}
+      <div className="absolute left-4 top-1/2 -translate-y-1/2 z-20 flex flex-col gap-3">
+        <Link
+          to="/portfolio"
+          className="flex items-center gap-2 bg-black/60 backdrop-blur-sm rounded-full px-3 py-2 text-xs font-medium hover:bg-black/80 transition"
+        >
+          <ArrowLeft className="w-4 h-4" /> Retour
+        </Link>
+        <button
+          onClick={() => { setShowInfo(!showInfo); setActiveTab(null); }}
+          className={`flex items-center gap-2 bg-black/60 backdrop-blur-sm rounded-full px-3 py-2 text-xs font-medium hover:bg-black/80 transition ${showInfo ? "ring-2 ring-purple-500" : ""}`}
+        >
+          <Info className="w-4 h-4" /> Info
+        </button>
+        {hasItems && (
+          <button
+            onClick={() => { setActiveTab(activeTab === "items" ? null : "items"); setShowInfo(false); }}
+            className={`flex items-center gap-2 bg-black/60 backdrop-blur-sm rounded-full px-3 py-2 text-xs font-medium hover:bg-black/80 transition ${activeTab === "items" ? "ring-2 ring-purple-500" : ""}`}
+          >
+            <ShoppingBag className="w-4 h-4" /> Produits
+          </button>
+        )}
+        {hasServices && (
+          <button
+            onClick={() => { setActiveTab(activeTab === "services" ? null : "services"); setShowInfo(false); }}
+            className={`flex items-center gap-2 bg-black/60 backdrop-blur-sm rounded-full px-3 py-2 text-xs font-medium hover:bg-black/80 transition ${activeTab === "services" ? "ring-2 ring-purple-500" : ""}`}
+          >
+            <Briefcase className="w-4 h-4" /> Services
+          </button>
+        )}
+        {hasChambers && (
+          <button
+            onClick={() => { setActiveTab(activeTab === "chambers" ? null : "chambers"); setShowInfo(false); }}
+            className={`flex items-center gap-2 bg-black/60 backdrop-blur-sm rounded-full px-3 py-2 text-xs font-medium hover:bg-black/80 transition ${activeTab === "chambers" ? "ring-2 ring-purple-500" : ""}`}
+          >
+            <DoorOpen className="w-4 h-4" /> Chambres
+          </button>
+        )}
+      </div>
+
+      {/* Info panel */}
+      {showInfo && (
+        <div className="absolute bottom-0 left-0 right-0 z-20 bg-black/80 backdrop-blur-md p-6 animate-in slide-in-from-bottom">
+          <button onClick={() => setShowInfo(false)} className="absolute top-3 right-3 text-white/60 hover:text-white">
+            <X className="w-5 h-5" />
+          </button>
+          <h2 className="text-xl font-bold mb-2">{tour.name}</h2>
+          <p className="text-gray-300 text-sm mb-2">{tour.description}</p>
+          <div className="flex gap-4 text-xs text-gray-400">
+            {tour.category && <span className="bg-purple-500/20 text-purple-300 px-2 py-1 rounded-full">{tour.category}</span>}
+            {tour.surface > 0 && <span>{tour.surface} m²</span>}
+          </div>
+        </div>
+      )}
+
+      {/* Bottom panel for items/services/chambers */}
+      {activeTab && hasAnyTab && (
+        <div className="absolute bottom-0 left-0 right-0 z-20 bg-black/80 backdrop-blur-md animate-in slide-in-from-bottom">
+          <button onClick={() => setActiveTab(null)} className="absolute top-3 right-3 text-white/60 hover:text-white">
+            <X className="w-5 h-5" />
+          </button>
+
+          {/* Tabs */}
+          <div className="flex justify-center gap-6 pt-3 pb-2 border-b border-white/10">
+            {hasItems && (
+              <button
+                onClick={() => setActiveTab("items")}
+                className={`flex items-center gap-1.5 text-xs font-semibold pb-2 transition ${activeTab === "items" ? "text-purple-400 border-b-2 border-purple-400" : "text-gray-400 hover:text-white"}`}
+              >
+                <ShoppingBag className="w-3.5 h-3.5" /> PRODUITS ({items.length})
+              </button>
+            )}
+            {hasServices && (
+              <button
+                onClick={() => setActiveTab("services")}
+                className={`flex items-center gap-1.5 text-xs font-semibold pb-2 transition ${activeTab === "services" ? "text-purple-400 border-b-2 border-purple-400" : "text-gray-400 hover:text-white"}`}
+              >
+                <Briefcase className="w-3.5 h-3.5" /> SERVICES ({services.length})
+              </button>
+            )}
+            {hasChambers && (
+              <button
+                onClick={() => setActiveTab("chambers")}
+                className={`flex items-center gap-1.5 text-xs font-semibold pb-2 transition ${activeTab === "chambers" ? "text-purple-400 border-b-2 border-purple-400" : "text-gray-400 hover:text-white"}`}
+              >
+                <DoorOpen className="w-3.5 h-3.5" /> CHAMBRES ({chambers.length})
+              </button>
+            )}
+          </div>
+
+          {/* Tab content */}
+          <div className="flex gap-4 overflow-x-auto p-4">
+            {activeTab === "items" &&
+              items.map((item) => (
+                <div key={item.id} className="flex-shrink-0 flex items-center gap-3 bg-white/5 rounded-xl p-3 min-w-[200px]">
+                  {item.imageUrl && (
+                    <img src={item.imageUrl} alt={item.name} className="w-14 h-14 rounded-lg object-cover" />
+                  )}
+                  <div>
+                    <p className="text-sm font-semibold truncate max-w-[140px]">{item.name}</p>
+                    {item.price != null && (
+                      <p className="text-purple-400 text-xs font-bold">{item.price} <span className="text-gray-400">{item.currency || "TND"}</span></p>
+                    )}
+                  </div>
+                </div>
+              ))}
+
+            {activeTab === "services" &&
+              services.map((svc) => (
+                <div key={svc.id} className="flex-shrink-0 flex items-center gap-3 bg-white/5 rounded-xl p-3 min-w-[200px]">
+                  {svc.imageUrl && (
+                    <img src={svc.imageUrl} alt={svc.name} className="w-14 h-14 rounded-lg object-cover" />
+                  )}
+                  <div>
+                    <p className="text-sm font-semibold truncate max-w-[140px]">{svc.name}</p>
+                    <div className="flex gap-2 mt-1">
+                      {svc.phone && (
+                        <a href={`tel:${svc.phone}`} className="text-green-400 hover:text-green-300">
+                          <Phone className="w-3.5 h-3.5" />
+                        </a>
+                      )}
+                      {svc.whatsapp && (
+                        <a href={`https://wa.me/${svc.whatsapp.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer" className="text-green-400 hover:text-green-300">
+                          <MessageCircle className="w-3.5 h-3.5" />
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+            {activeTab === "chambers" &&
+              chambers.map((ch) => (
+                <div key={ch.id} className="flex-shrink-0 flex items-center gap-3 bg-white/5 rounded-xl p-3 min-w-[200px]">
+                  {ch.imageUrl && (
+                    <img src={ch.imageUrl} alt={ch.name} className="w-14 h-14 rounded-lg object-cover" />
+                  )}
+                  <div>
+                    <p className="text-sm font-semibold truncate max-w-[140px]">{ch.name}</p>
+                    {ch.price != null && (
+                      <p className="text-purple-400 text-xs font-bold">{ch.price} <span className="text-gray-400">{ch.currency || "TND"}</span></p>
+                    )}
+                  </div>
+                </div>
+              ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default TourView;
