@@ -651,16 +651,25 @@ const TourViewer = () => {
           }
         } catch {}
 
-        // Cache sweep data via subscription (getData doesn't exist in Matterport SDK)
+        // Cache sweep data via subscription
         try {
           sdk.Sweep.data.subscribe({
             onCollectionUpdated(collection: any) {
-              const arr: any[] = [];
-              collection.forEach((item: any, key: string) => {
-                arr.push({ ...item, sid: key });
-              });
-              sweepsRef.current = arr;
-              console.log(`📍 Cached ${arr.length} sweeps`, arr.length > 0 ? arr[0] : "");
+              try {
+                const arr: any[] = [];
+                if (collection && typeof collection === "object") {
+                  for (const key of Object.keys(collection)) {
+                    const item = collection[key];
+                    if (item && typeof item === "object") {
+                      arr.push({ ...item, sid: key });
+                    }
+                  }
+                }
+                sweepsRef.current = arr;
+                console.log(`📍 Cached ${arr.length} sweeps`, arr.length > 0 ? Object.keys(arr[0]) : "empty");
+              } catch (innerErr) {
+                console.log("Sweep parse error:", innerErr, "collection type:", typeof collection, collection);
+              }
             }
           });
         } catch (e) { console.log("Sweep cache error:", e); }
