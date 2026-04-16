@@ -271,6 +271,7 @@ interface ChamberData {
   price: number | null;
   currency: string;
   tagSid?: string;
+  bookingUrl?: string;
 }
 
 interface GymCoachData {
@@ -2564,6 +2565,12 @@ const TourViewer = () => {
                   {/* Book Now Button */}
                   <button
                     onClick={() => {
+                      if (selectedChamber.bookingUrl && selectedChamber.bookingUrl.trim()) {
+                        const url = selectedChamber.bookingUrl.trim();
+                        const normalized = /^https?:\/\//i.test(url) ? url : `https://${url}`;
+                        window.open(normalized, "_blank", "noopener,noreferrer");
+                        return;
+                      }
                       const msg = encodeURIComponent(`Bonjour, je souhaite réserver la chambre "${selectedChamber.name}"${selectedChamber.price != null ? ` (${selectedChamber.price} ${selectedChamber.currency || "TND"}/nuit)` : ""}. Merci.`);
                       window.open(`https://wa.me/21654757573?text=${msg}`, "_blank", "noopener,noreferrer");
                     }}

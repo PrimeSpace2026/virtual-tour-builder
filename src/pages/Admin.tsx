@@ -85,6 +85,7 @@ interface HotelRoom {
   imageUrl: string;
   price: number | null;
   currency: string;
+  bookingUrl: string;
 }
 
 interface MenuItemData {
@@ -775,6 +776,7 @@ const Admin = () => {
                 price: room.price ?? null,
                 currency: room.currency || "TND",
                 tagSid: room.tagSid || "",
+                bookingUrl: room.bookingUrl || "",
               }),
             }).catch(() => {});
           }
@@ -1458,7 +1460,7 @@ const Admin = () => {
                       type="button"
                       size="sm"
                       variant="outline"
-                      onClick={() => setHotelRooms([...hotelRooms, { name: "", tagSid: "", bedType: "", capacity: null, amenities: [], imageUrl: "", price: null, currency: "TND" }])}
+                      onClick={() => setHotelRooms([...hotelRooms, { name: "", tagSid: "", bedType: "", capacity: null, amenities: [], imageUrl: "", price: null, currency: "TND", bookingUrl: "" }])}
                     >
                       <Plus className="w-4 h-4 mr-1" /> Chambre
                     </Button>
@@ -1640,6 +1642,20 @@ const Admin = () => {
                             placeholder="TND"
                           />
                         </div>
+                      </div>
+                      <div>
+                        <label className="text-xs text-muted-foreground mb-1 block">Lien de réservation (optionnel)</label>
+                        <Input
+                          type="url"
+                          value={room.bookingUrl || ""}
+                          onChange={(e) => {
+                            const updated = [...hotelRooms];
+                            updated[idx] = { ...room, bookingUrl: e.target.value };
+                            setHotelRooms(updated);
+                          }}
+                          placeholder="https://booking.com/..."
+                        />
+                        <p className="text-[11px] text-muted-foreground mt-1">Si vide, le bouton "Réserver maintenant" ouvrira WhatsApp.</p>
                       </div>
                       <div>
                         <label className="text-xs text-muted-foreground mb-1 block">Équipements</label>
