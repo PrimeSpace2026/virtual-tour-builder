@@ -660,6 +660,21 @@ const TourViewer = () => {
           }
         } catch (e) { console.log("Sweep cache error:", e); }
 
+        // Log sweep name when navigating to a new panorama
+        try {
+          let lastSweep = "";
+          sdk.Camera.pose.subscribe((pose: any) => {
+            if (pose?.sweep && pose.sweep !== lastSweep) {
+              lastSweep = pose.sweep;
+              const sweeps = sweepsRef.current;
+              const idx = sweeps.findIndex((s: any) => s.sid === pose.sweep || s.id === pose.sweep || s.uuid === pose.sweep);
+              const sweep = idx >= 0 ? sweeps[idx] : null;
+              const floor = sweep?.floorInfo?.sequence ?? sweep?.floor ?? "?";
+              console.log(`🔵 Sweep: "${pose.sweep}" — Vue ${idx + 1} — Étage ${floor}`);
+            }
+          });
+        } catch {}
+
         // NOW set SDK as ready — model is loaded & tags are cached
         if (cancelled) return;
         sdkRef.current = sdk;
