@@ -344,7 +344,7 @@ const Admin = () => {
   const [serviceDragOver, setServiceDragOver] = useState(false);
   const [activeEntityTab, setActiveEntityTab] = useState<"products" | "services">("products");
   // Tags for dropdown
-  const [tourTags, setTourTags] = useState<{ name: string; sid: string }[]>([]);
+  const [tourTags, setTourTags] = useState<{ name: string; sid: string; thumbnail?: string }[]>([]);
   const [tourTagsLoading, setTourTagsLoading] = useState(false);
   const [showAddTag, setShowAddTag] = useState(false);
   const [newTagName, setNewTagName] = useState("");
@@ -366,7 +366,7 @@ const Admin = () => {
   const [gymSections, setGymSections] = useState<MenuSectionData[]>([]);
   const [gymCoaches, setGymCoaches] = useState<GymCoach[]>([]);
   // Tags for the create/edit dialog (auto-fetched from tour URL)
-  const [dialogTags, setDialogTags] = useState<{ name: string; sid: string }[]>([]);
+  const [dialogTags, setDialogTags] = useState<{ name: string; sid: string; thumbnail?: string }[]>([]);
   const [dialogTagsLoading, setDialogTagsLoading] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -500,10 +500,15 @@ const Admin = () => {
     try {
       const sdkData = await fetchSdkData(modelId);
 
-      const sweepOptions = sdkData.sweeps.map((s: any, idx: number) => ({
-        name: `360° Vue ${idx + 1} — Étage ${s.floorInfo?.sequence ?? s.floor ?? '?'}`,
-        sid: s.id || s.sid || s.uuid,
-      })).filter((t: { name: string; sid: string }) => t.sid);
+      const sweepOptions = sdkData.sweeps.map((s: any, idx: number) => {
+        const sid = s.id || s.sid || s.uuid;
+        const panoId = s.uuid || s.id || sid;
+        return {
+          name: `360° Vue ${idx + 1} — Étage ${s.floorInfo?.sequence ?? s.floor ?? '?'}`,
+          sid,
+          thumbnail: `https://my.matterport.com/api/player/models/${modelId}/panos/${panoId}/thumbnail`,
+        };
+      }).filter((t: any) => t.sid);
 
       const liveMattertags = sdkData.mattertags.map((t: any) => ({
         name: t.label || t.description || "(sans nom)",
@@ -825,10 +830,15 @@ const Admin = () => {
               name: t.label || t.description || "(sans nom)",
               sid: t.sid || t.id,
             })).filter((t: { name: string; sid: string }) => t.sid);
-            const sweepOptions = sdkData.sweeps.map((s: any, idx: number) => ({
-              name: `360° Vue ${idx + 1} — Étage ${s.floorInfo?.sequence ?? s.floor ?? '?'}`,
-              sid: s.id || s.sid || s.uuid,
-            })).filter((t: { name: string; sid: string }) => t.sid);
+            const sweepOptions = sdkData.sweeps.map((s: any, idx: number) => {
+              const sid = s.id || s.sid || s.uuid;
+              const panoId = s.uuid || s.id || sid;
+              return {
+                name: `360° Vue ${idx + 1} — Étage ${s.floorInfo?.sequence ?? s.floor ?? '?'}`,
+                sid,
+                thumbnail: `https://my.matterport.com/api/player/models/${modelId}/panos/${panoId}/thumbnail`,
+              };
+            }).filter((t: any) => t.sid);
 
             const combined = [...(liveMattertags.length > 0 ? liveMattertags : saved), ...sweepOptions];
             if (combined.length > 0) {
@@ -1413,7 +1423,14 @@ const Admin = () => {
                               <SelectItem value="__link__">📍 Coller un lien 360°</SelectItem>
                               {dialogTags.map((tag) => (
                                 <SelectItem key={tag.sid} value={tag.sid}>
-                                  <span className="flex items-center gap-1"><Tag className="w-3 h-3" />{tag.name}</span>
+                                  <span className="flex items-center gap-2">
+                                    {tag.thumbnail ? (
+                                      <img src={tag.thumbnail} alt="" className="w-8 h-8 rounded object-cover flex-shrink-0" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                                    ) : (
+                                      <Tag className="w-3 h-3 flex-shrink-0" />
+                                    )}
+                                    <span className="truncate">{tag.name}</span>
+                                  </span>
                                 </SelectItem>
                               ))}
                             </SelectContent>
@@ -2115,7 +2132,12 @@ const Admin = () => {
                               <SelectItem value="__none__">— Aucun tag —</SelectItem>
                               {tourTags.map((tag, i) => (
                                 <SelectItem key={`${tag.sid}-${i}`} value={tag.sid || tag.name}>
-                                  {tag.name}{tag.sid ? ` (${tag.sid.slice(0, 10)}…)` : " (pas de SID)"}
+                                  <span className="flex items-center gap-2">
+                                    {tag.thumbnail ? (
+                                      <img src={tag.thumbnail} alt="" className="w-8 h-8 rounded object-cover flex-shrink-0" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                                    ) : null}
+                                    <span className="truncate">{tag.name}{tag.sid ? ` (${tag.sid.slice(0, 10)}…)` : " (pas de SID)"}</span>
+                                  </span>
                                 </SelectItem>
                               ))}
                             </SelectContent>
@@ -2311,7 +2333,12 @@ const Admin = () => {
                               <SelectItem value="__none__">— Aucun tag —</SelectItem>
                               {tourTags.map((tag, i) => (
                                 <SelectItem key={`svc-${tag.sid}-${i}`} value={tag.sid || tag.name}>
-                                  {tag.name}{tag.sid ? ` (${tag.sid.slice(0, 10)}…)` : " (pas de SID)"}
+                                  <span className="flex items-center gap-2">
+                                    {tag.thumbnail ? (
+                                      <img src={tag.thumbnail} alt="" className="w-8 h-8 rounded object-cover flex-shrink-0" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                                    ) : null}
+                                    <span className="truncate">{tag.name}{tag.sid ? ` (${tag.sid.slice(0, 10)}…)` : " (pas de SID)"}</span>
+                                  </span>
                                 </SelectItem>
                               ))}
                             </SelectContent>
