@@ -26,6 +26,7 @@ import {
   Phone,
   MessageCircle,
   Briefcase,
+  DoorOpen,
 } from "lucide-react";
 
 const SDK_KEY = "b7uar4u57xdec0zw7dwygt7md";
@@ -71,6 +72,16 @@ interface TourServiceData {
   whatsapp: string;
   instagram: string;
   facebook: string;
+}
+
+interface ChamberData {
+  id: number;
+  tourId: number;
+  name: string;
+  description: string;
+  imageUrl: string;
+  price: number | null;
+  currency: string;
 }
 
 interface TagItem {
@@ -176,7 +187,9 @@ const TourViewer = () => {
   const [showServices, setShowServices] = useState(false);
   const [tourServices, setTourServices] = useState<TourServiceData[]>([]);
   const [selectedService, setSelectedService] = useState<TourServiceData | null>(null);
-  const [bottomTab, setBottomTab] = useState<"products" | "services">("products");
+  const [tourChambers, setTourChambers] = useState<ChamberData[]>([]);
+  const [showChambers, setShowChambers] = useState(false);
+  const [bottomTab, setBottomTab] = useState<"products" | "services" | "chambers">("products");
 
   // Match a product by name/id/tagSid from a URL param
   const matchProduct = useCallback((param: string) => {
@@ -252,17 +265,21 @@ const TourViewer = () => {
       fetch(`/api/tours/${id}/services`)
         .then((r) => r.json())
         .catch(() => []),
+      fetch(`/api/tours/${id}/chambers`)
+        .then((r) => r.json())
+        .catch(() => []),
       fetch(`/api/tours/${id}/tags`)
         .then((r) => r.ok ? r.json() : [])
         .catch(() => []),
     ])
-      .then(([tourData, tours, itemsData, servicesData, tagsData]) => {
+      .then(([tourData, tours, itemsData, servicesData, chambersData, tagsData]) => {
         setTour(tourData);
         setAllTours(tours);
         const items = Array.isArray(itemsData) ? itemsData : [];
         setTourItems(items);
         tourItemsRef.current = items;
         setTourServices(Array.isArray(servicesData) ? servicesData : []);
+        setTourChambers(Array.isArray(chambersData) ? chambersData : []);
         // Build saved tags map (name → SID) for production tag resolution
         const savedMap = new Map<string, string>();
         if (Array.isArray(tagsData)) {
@@ -669,6 +686,7 @@ const TourViewer = () => {
         else if (activeTagFilter) setActiveTagFilter(null);
         else if (showCart) setShowCart(false);
         else if (showServices) setShowServices(false);
+        else if (showChambers) setShowChambers(false);
         else if (showProducts) setShowProducts(false);
         else if (showShare) setShowShare(false);
         else setShowCard(false);
@@ -912,6 +930,21 @@ const TourViewer = () => {
           >
             <Briefcase className="w-4 h-4" />
             <span className="hidden sm:inline">Services</span>
+          </button>
+        )}
+
+        {/* Chambers */}
+        {tourChambers.length > 0 && (
+          <button
+            onClick={() => setShowChambers(!showChambers)}
+            className={`flex items-center gap-1.5 px-2 sm:px-3 py-2 sm:py-2.5 rounded-xl backdrop-blur-xl border text-xs font-medium transition-all ${
+              showChambers
+                ? "bg-white/15 border-white/20 text-white"
+                : "bg-black/60 border-white/10 text-white/70 hover:text-white hover:bg-black/80"
+            }`}
+          >
+            <DoorOpen className="w-4 h-4" />
+            <span className="hidden sm:inline">Chambres</span>
           </button>
         )}
 
@@ -1554,6 +1587,65 @@ const TourViewer = () => {
         )}
       </AnimatePresence>
 
+      {/* ===== CHAMBERS LIST PANEL (right side) ===== */}
+      <AnimatePresence>
+        {showChambers && tourChambers.length > 0 && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowChambers(false)}
+              className="absolute inset-0 bg-black/20 z-30"
+            />
+            <motion.div
+              initial={{ opacity: 0, x: 360 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 360 }}
+              transition={{ type: "spring", damping: 28, stiffness: 250 }}
+              className="absolute bottom-0 left-0 right-0 md:bottom-4 md:left-auto md:top-16 md:right-4 w-full md:w-[320px] z-[35] pointer-events-auto flex flex-col max-h-[60vh] md:max-h-none"
+            >
+              <div className="flex-1 rounded-t-2xl md:rounded-2xl bg-black/80 md:bg-black/70 backdrop-blur-2xl border border-white/10 overflow-hidden flex flex-col shadow-2xl">
+                <div className="p-4 border-b border-white/[0.06] flex items-center justify-between shrink-0">
+                  <h2 className="text-white font-semibold text-sm flex items-center gap-2">
+                    <DoorOpen className="w-4 h-4" />
+                    Chambres ({tourChambers.length})
+                  </h2>
+                  <button onClick={() => setShowChambers(false)} className="w-7 h-7 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/50 hover:text-white transition-all">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                <div className="flex-1 overflow-y-auto p-3 space-y-2">
+                  {tourChambers.map((ch) => (
+                    <div
+                      key={ch.id}
+                      className="w-full flex items-center gap-3 p-3 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.08] transition-all group"
+                    >
+                      {ch.imageUrl ? (
+                        <img src={ch.imageUrl} alt={ch.name} className="w-12 h-12 rounded-lg object-cover shrink-0 bg-white" />
+                      ) : (
+                        <div className="w-12 h-12 rounded-lg bg-white/10 flex items-center justify-center shrink-0">
+                          <DoorOpen className="w-5 h-5 text-white/30" />
+                        </div>
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <p className="text-white/80 text-sm font-medium truncate group-hover:text-white transition-colors">{ch.name}</p>
+                        {ch.description && <p className="text-white/30 text-[10px] line-clamp-1">{ch.description}</p>}
+                      </div>
+                      {ch.price != null && (
+                        <p className="text-purple-300 text-xs font-bold shrink-0">
+                          {ch.price} <span className="text-white/30">{CURRENCY_SYMBOLS[ch.currency] || ch.currency || "TND"}</span>
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
       {/* ===== SERVICE DETAIL POPUP ===== */}
       <AnimatePresence>
         {selectedService && (
@@ -1740,12 +1832,13 @@ const TourViewer = () => {
       </div>{/* END TOP: MATTERPORT 3D VIEWER */}
 
       {/* ===== BOTTOM: PRODUCT & SERVICE STRIP ===== */}
-      {(tourItems.length > 0 || tourServices.length > 0) && (
+      {(tourItems.length > 0 || tourServices.length > 0 || tourChambers.length > 0) && (
         <div className="shrink-0 bg-[#0d0d1a] border-t border-white/10">
           <div className="px-3 py-3">
-            {/* Tab switcher when both exist */}
-            {tourItems.length > 0 && tourServices.length > 0 && (
+            {/* Tab switcher when multiple types exist */}
+            {(tourItems.length > 0 ? 1 : 0) + (tourServices.length > 0 ? 1 : 0) + (tourChambers.length > 0 ? 1 : 0) > 1 && (
               <div className="flex items-center justify-center gap-1 mb-2.5">
+                {tourItems.length > 0 && (
                 <button
                   onClick={() => setBottomTab("products")}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold uppercase tracking-wider transition-all ${
@@ -1756,6 +1849,8 @@ const TourViewer = () => {
                 >
                   <ShoppingBag className="w-3 h-3" /> Produits ({tourItems.length})
                 </button>
+                )}
+                {tourServices.length > 0 && (
                 <button
                   onClick={() => setBottomTab("services")}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold uppercase tracking-wider transition-all ${
@@ -1766,6 +1861,19 @@ const TourViewer = () => {
                 >
                   <Briefcase className="w-3 h-3" /> Services ({tourServices.length})
                 </button>
+                )}
+                {tourChambers.length > 0 && (
+                <button
+                  onClick={() => setBottomTab("chambers")}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold uppercase tracking-wider transition-all ${
+                    bottomTab === "chambers"
+                      ? "bg-white/15 text-white"
+                      : "text-white/40 hover:text-white/70"
+                  }`}
+                >
+                  <DoorOpen className="w-3 h-3" /> Chambres ({tourChambers.length})
+                </button>
+                )}
               </div>
             )}
 
@@ -1879,6 +1987,42 @@ const TourViewer = () => {
                 {tourServices.length > 3 && (
                   <button
                     onClick={() => setShowServices(true)}
+                    className="flex-shrink-0 px-3 py-2 rounded-xl bg-white/[0.05] border border-white/[0.08] text-white/50 hover:text-white hover:bg-white/[0.1] transition-all text-xs font-medium"
+                  >
+                    Voir tout
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Chambers strip */}
+            {bottomTab === "chambers" && tourChambers.length > 0 && (
+              <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide justify-center">
+                {tourChambers.map((ch) => (
+                  <div
+                    key={ch.id}
+                    className="flex-shrink-0 flex items-center gap-2.5 bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.08] rounded-xl p-2 pr-4 transition-all group"
+                  >
+                    <div className="w-12 h-12 rounded-lg bg-white overflow-hidden flex items-center justify-center shrink-0">
+                      {ch.imageUrl ? (
+                        <img src={ch.imageUrl} alt={ch.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <DoorOpen className="w-5 h-5 text-gray-300" />
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-white/80 text-xs font-semibold truncate max-w-[120px] group-hover:text-white transition-colors">{ch.name}</p>
+                      {ch.price != null && (
+                        <p className="text-purple-300 text-xs font-bold mt-0.5">
+                          {ch.price} <span className="text-white/30 text-[10px]">{CURRENCY_SYMBOLS[ch.currency] || ch.currency || "TND"}</span>
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                {tourChambers.length > 3 && (
+                  <button
+                    onClick={() => setShowChambers(true)}
                     className="flex-shrink-0 px-3 py-2 rounded-xl bg-white/[0.05] border border-white/[0.08] text-white/50 hover:text-white hover:bg-white/[0.1] transition-all text-xs font-medium"
                   >
                     Voir tout

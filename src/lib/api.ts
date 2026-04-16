@@ -8,6 +8,42 @@ export interface Tour {
   imageUrl: string;
   surface: number;
   tourUrl: string;
+  metadataJson?: string;
+}
+
+export interface TourItem {
+  id: number;
+  tourId: number;
+  name: string;
+  description: string;
+  imageUrl: string;
+  price: number | null;
+  currency: string;
+  externalUrl: string;
+  brand: string;
+  showAddToCart: boolean;
+}
+
+export interface TourServiceEntry {
+  id: number;
+  tourId: number;
+  name: string;
+  description: string;
+  imageUrl: string;
+  phone: string;
+  whatsapp: string;
+  instagram: string;
+  facebook: string;
+}
+
+export interface Chamber {
+  id: number;
+  tourId: number;
+  name: string;
+  description: string;
+  imageUrl: string;
+  price: number | null;
+  currency: string;
 }
 
 export async function getTours(): Promise<Tour[]> {
@@ -45,4 +81,22 @@ export async function updateTour(id: number, tour: Omit<Tour, "id">): Promise<To
 export async function deleteTour(id: number): Promise<void> {
   const res = await fetch(`${API_BASE}/tours/${id}`, { method: "DELETE" });
   if (!res.ok) throw new Error("Failed to delete tour");
+}
+
+export async function getTourItems(tourId: number): Promise<TourItem[]> {
+  const res = await fetch(`${API_BASE}/tours/${tourId}/items`);
+  if (!res.ok) return [];
+  return res.json();
+}
+
+export async function getTourServices(tourId: number): Promise<TourServiceEntry[]> {
+  const res = await fetch(`${API_BASE}/tours/${tourId}/services`);
+  if (!res.ok) return [];
+  return res.json();
+}
+
+export async function getTourChambers(tourId: number): Promise<Chamber[]> {
+  const res = await fetch(`${API_BASE}/tours/${tourId}/chambers`);
+  if (!res.ok) return [];
+  return res.json();
 }
