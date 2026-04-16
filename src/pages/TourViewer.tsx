@@ -651,31 +651,28 @@ const TourViewer = () => {
           }
         } catch {}
 
-        // Cache sweep data for sweep: SID resolution
+        // Cache sweep data via subscription (getData doesn't exist in Matterport SDK)
         try {
-          if (sdk.Sweep?.getData) {
-            const allSweeps = await sdk.Sweep.getData();
-            sweepsRef.current = allSweeps;
-            console.log(`📍 Cached ${allSweeps.length} sweeps`);
-          }
+          sdk.Sweep.data.subscribe({
+            onCollectionUpdated(collection: any) {
+              const arr: any[] = [];
+              collection.forEach((item: any, key: string) => {
+                arr.push({ ...item, sid: key });
+              });
+              sweepsRef.current = arr;
+              console.log(`📍 Cached ${arr.length} sweeps`, arr.length > 0 ? arr[0] : "");
+            }
+          });
         } catch (e) { console.log("Sweep cache error:", e); }
 
         // Log sweep name when navigating to a new panorama
         try {
           let lastSweep = "";
-          let loggedKeys = false;
           sdk.Camera.pose.subscribe((pose: any) => {
             if (pose?.sweep && pose.sweep !== lastSweep) {
               lastSweep = pose.sweep;
               const sweeps = sweepsRef.current;
-              if (!loggedKeys && sweeps.length > 0) {
-                loggedKeys = true;
-                console.log("📋 Sweep keys:", Object.keys(sweeps[0]), "sample:", JSON.stringify(sweeps[0]).slice(0, 300));
-              }
-              const idx = sweeps.findIndex((s: any) =>
-                s.sid === pose.sweep || s.id === pose.sweep || s.uuid === pose.sweep ||
-                String(s.sid) === String(pose.sweep) || String(s.id) === String(pose.sweep)
-              );
+              const idx = sweeps.findIndex((s: any) => s.sid === pose.sweep);
               const sweep = idx >= 0 ? sweeps[idx] : null;
               const floor = sweep?.floorInfo?.sequence ?? sweep?.floor ?? "?";
               console.log(`🔵 Sweep: "${pose.sweep}" — Vue ${idx >= 0 ? idx + 1 : "?"} / ${sweeps.length} — Étage ${floor}`);
