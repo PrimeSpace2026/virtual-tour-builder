@@ -103,7 +103,7 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   wifi: Wifi, tv: Tv, bath: Bath, briefcase: Briefcase,
   calendar: CalendarDays, shield: ShieldCheck, play: PlayCircle,
   layers: Layers, lock: Lock, snowflake: Snowflake, wine: Wine,
-  balcony: DoorOpen, clock: Clock, banknote: Banknote, trophy: Trophy, droplets: Droplets,
+  balcony: DoorOpen, door: DoorOpen, clock: Clock, banknote: Banknote, trophy: Trophy, droplets: Droplets,
   award: Award, user: User,
 };
 
@@ -398,8 +398,10 @@ const TourViewer = () => {
   const [selectedService, setSelectedService] = useState<TourServiceData | null>(null);
   const [selectedChamber, setSelectedChamber] = useState<ChamberData | null>(null);
   const [selectedCoach, setSelectedCoach] = useState<GymCoachData | null>(null);
+  const [selectedImmoRoom, setSelectedImmoRoom] = useState<{ name: string; type: string; tagSid: string; imageUrl: string; description: string } | null>(null);
   const [gymCoaches, setGymCoaches] = useState<GymCoachData[]>([]);
-  const [bottomTab, setBottomTab] = useState<"products" | "services" | "chambers" | "coaches">("products");
+  const [immoRooms, setImmoRooms] = useState<{ name: string; type: string; tagSid: string; imageUrl: string; description: string }[]>([]);
+  const [bottomTab, setBottomTab] = useState<"products" | "services" | "chambers" | "coaches" | "rooms">("products");
   const [bottomStripOpen, setBottomStripOpen] = useState(true);
   const [bottomStripConfig, setBottomStripConfig] = useState({ products: true, services: true, chambers: true });
 
@@ -494,6 +496,13 @@ const TourViewer = () => {
             setGymCoaches(Array.isArray(meta.coaches) ? meta.coaches : []);
           } catch { setGymCoaches([]); }
         } else { setGymCoaches([]); }
+        // Parse immobilier rooms from metadataJson
+        if (tourData.category === "Immobilier" && tourData.metadataJson) {
+          try {
+            const meta = JSON.parse(tourData.metadataJson);
+            setImmoRooms(Array.isArray(meta.immobilierRooms) ? meta.immobilierRooms : []);
+          } catch { setImmoRooms([]); }
+        } else { setImmoRooms([]); }
         // Parse bottom strip config from metadataJson
         if (tourData.metadataJson) {
           try {
@@ -514,6 +523,9 @@ const TourViewer = () => {
         if (items.length > 0 && bsc.products) setBottomTab("products");
         else if (services.length > 0 && bsc.services) setBottomTab("services");
         else if (chambers.length > 0 && bsc.chambers) setBottomTab("chambers");
+        else if (tourData.category === "Immobilier") {
+          try { const m = JSON.parse(tourData.metadataJson || "{}"); if (Array.isArray(m.immobilierRooms) && m.immobilierRooms.length > 0) setBottomTab("rooms"); } catch {}
+        }
         else if (tourData.category === "Gym & Fitness") setBottomTab("coaches");
         // Build saved tags map (name → SID) for production tag resolution
         const savedMap = new Map<string, string>();
@@ -1161,7 +1173,8 @@ const TourViewer = () => {
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        if (selectedChamber) setSelectedChamber(null);
+        if (selectedImmoRoom) setSelectedImmoRoom(null);
+        else if (selectedChamber) setSelectedChamber(null);
         else if (selectedCoach) setSelectedCoach(null);
         else if (selectedService) setSelectedService(null);
         else if (selectedTag) setSelectedTag(null);
@@ -1185,6 +1198,7 @@ const TourViewer = () => {
     selectedTag,
     selectedItem,
     selectedCoach,
+    selectedImmoRoom,
     showShare,
     showCard,
     showCart,
@@ -1731,6 +1745,89 @@ const TourViewer = () => {
                   } catch { return null; }
                 })()}
 
+                {/* Immobilier Property Info */}
+                {tour.category === "Immobilier" && tour.metadataJson && (() => {
+                  try {
+                    const meta = JSON.parse(tour.metadataJson);
+                    const immo = meta.immobilier;
+                    const immoRooms: { name: string; type: string; tagSid: string; imageUrl: string; description: string }[] = meta.immobilierRooms || [];
+                    if (!immo) return null;
+                    const details: { label: string; value: string }[] = [];
+                    if (immo.propertyType) details.push({ label: "Type", value: immo.propertyType });
+                    if (immo.transactionType) details.push({ label: "Transaction", value: immo.transactionType });
+                    if (immo.price) details.push({ label: "Prix", value: `${immo.price.toLocaleString()} ${immo.currency || "TND"}` });
+                    if (immo.rooms) details.push({ label: "Pièces", value: `${immo.rooms}` });
+                    if (immo.bedrooms) details.push({ label: "Chambres", value: `${immo.bedrooms}` });
+                    if (immo.bathrooms) details.push({ label: "Salles de bain", value: `${immo.bathrooms}` });
+                    if (immo.floor != null) details.push({ label: "Étage", value: immo.totalFloors ? `${immo.floor} / ${immo.totalFloors}` : `${immo.floor}` });
+                    if (immo.yearBuilt) details.push({ label: "Année", value: `${immo.yearBuilt}` });
+                    if (immo.condition) details.push({ label: "État", value: immo.condition });
+                    if (immo.heatingType) details.push({ label: "Chauffage", value: immo.heatingType });
+                    if (immo.energyClass) details.push({ label: "Énergie", value: `Classe ${immo.energyClass}` });
+                    const amenities: string[] = [];
+                    if (immo.furnished) amenities.push("Meublé");
+                    if (immo.parking) amenities.push(immo.parkingSpaces ? `Parking (${immo.parkingSpaces})` : "Parking");
+                    if (immo.elevator) amenities.push("Ascenseur");
+                    if (immo.balcony) amenities.push("Balcon");
+                    if (immo.terrace) amenities.push(immo.terraceArea ? `Terrasse ${immo.terraceArea}m²` : "Terrasse");
+                    if (immo.garden) amenities.push(immo.gardenArea ? `Jardin ${immo.gardenArea}m²` : "Jardin");
+                    if (immo.pool) amenities.push("Piscine");
+                    if (immo.airConditioning) amenities.push("Climatisation");
+                    if (immo.basement) amenities.push("Sous-sol");
+                    if (details.length === 0 && amenities.length === 0 && immoRooms.length === 0) return null;
+                    return (
+                      <>
+                      <div className="rounded-xl overflow-hidden border border-white/[0.06] bg-white/[0.02]">
+                        {details.length > 0 && (
+                          <div className="p-3 space-y-1.5">
+                            <p className="text-white/25 text-[10px] uppercase tracking-widest font-semibold mb-2">Caractéristiques</p>
+                            <div className="grid grid-cols-2 gap-x-3 gap-y-1">
+                              {details.map((d, i) => (
+                                <div key={i} className="flex justify-between py-1 border-b border-white/[0.04]">
+                                  <span className="text-white/40 text-xs">{d.label}</span>
+                                  <span className="text-white/80 text-xs font-medium">{d.value}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        {amenities.length > 0 && (
+                          <div className="p-3 border-t border-white/[0.06]">
+                            <p className="text-white/25 text-[10px] uppercase tracking-widest font-semibold mb-2">Commodités</p>
+                            <div className="flex flex-wrap gap-1.5">
+                              {amenities.map((a, i) => (
+                                <span key={i} className="px-2 py-0.5 rounded-full bg-white/[0.06] text-white/60 text-[10px]">{a}</span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      {immoRooms.length > 0 && (
+                        <div className="rounded-xl overflow-hidden border border-white/[0.06]">
+                          <HotelMenuSection
+                            title="Pièces"
+                            iconKey="door"
+                            items={immoRooms.map(r => ({
+                              name: r.name || r.type || "Pièce",
+                              iconKey: "door",
+                              sub: r.description ? r.description.slice(0, 60) + (r.description.length > 60 ? "…" : "") : r.type || "",
+                              tagSid: r.tagSid || undefined,
+                              imageUrl: r.imageUrl || undefined,
+                            }))}
+                            amenities={[]}
+                            onItemClick={(tagSid) => {
+                              const room = immoRooms.find(r => r.tagSid === tagSid);
+                              if (room && (room.imageUrl || room.description)) setSelectedImmoRoom(room);
+                              flyToTag(tagSid);
+                            }}
+                          />
+                        </div>
+                      )}
+                      </>
+                    );
+                  } catch { return null; }
+                })()}
+
                 {/* Navigation - Other tours */}
                 {!isClean && (prevTour || nextTour) && (
                   <div className="pt-2 border-t border-white/[0.06]">
@@ -1991,6 +2088,88 @@ const TourViewer = () => {
                           ))}
                         </div>
                       )}
+                    </>
+                  );
+                } catch { return null; }
+              })()}
+              {/* Mobile: Immobilier Info */}
+              {tour.category === "Immobilier" && tour.metadataJson && (() => {
+                try {
+                  const meta = JSON.parse(tour.metadataJson);
+                  const immo = meta.immobilier;
+                  const immoRooms: { name: string; type: string; tagSid: string; imageUrl: string; description: string }[] = meta.immobilierRooms || [];
+                  if (!immo) return null;
+                  const details: { label: string; value: string }[] = [];
+                  if (immo.propertyType) details.push({ label: "Type", value: immo.propertyType });
+                  if (immo.transactionType) details.push({ label: "Transaction", value: immo.transactionType });
+                  if (immo.price) details.push({ label: "Prix", value: `${immo.price.toLocaleString()} ${immo.currency || "TND"}` });
+                  if (immo.rooms) details.push({ label: "Pièces", value: `${immo.rooms}` });
+                  if (immo.bedrooms) details.push({ label: "Chambres", value: `${immo.bedrooms}` });
+                  if (immo.bathrooms) details.push({ label: "SdB", value: `${immo.bathrooms}` });
+                  if (immo.floor != null) details.push({ label: "Étage", value: immo.totalFloors ? `${immo.floor}/${immo.totalFloors}` : `${immo.floor}` });
+                  if (immo.yearBuilt) details.push({ label: "Année", value: `${immo.yearBuilt}` });
+                  if (immo.condition) details.push({ label: "État", value: immo.condition });
+                  if (immo.heatingType) details.push({ label: "Chauffage", value: immo.heatingType });
+                  if (immo.energyClass) details.push({ label: "Énergie", value: `Classe ${immo.energyClass}` });
+                  const amenities: string[] = [];
+                  if (immo.furnished) amenities.push("Meublé");
+                  if (immo.parking) amenities.push(immo.parkingSpaces ? `Parking (${immo.parkingSpaces})` : "Parking");
+                  if (immo.elevator) amenities.push("Ascenseur");
+                  if (immo.balcony) amenities.push("Balcon");
+                  if (immo.terrace) amenities.push(immo.terraceArea ? `Terrasse ${immo.terraceArea}m²` : "Terrasse");
+                  if (immo.garden) amenities.push(immo.gardenArea ? `Jardin ${immo.gardenArea}m²` : "Jardin");
+                  if (immo.pool) amenities.push("Piscine");
+                  if (immo.airConditioning) amenities.push("Climatisation");
+                  if (immo.basement) amenities.push("Sous-sol");
+                  if (details.length === 0 && amenities.length === 0 && immoRooms.length === 0) return null;
+                  return (
+                    <>
+                    <div className="border-t border-white/[0.06] bg-white/[0.02]">
+                      {details.length > 0 && (
+                        <div className="p-3 space-y-1.5">
+                          <p className="text-white/25 text-[10px] uppercase tracking-widest font-semibold mb-2">Caractéristiques</p>
+                          <div className="grid grid-cols-2 gap-x-3 gap-y-1">
+                            {details.map((d, i) => (
+                              <div key={i} className="flex justify-between py-1 border-b border-white/[0.04]">
+                                <span className="text-white/40 text-xs">{d.label}</span>
+                                <span className="text-white/80 text-xs font-medium">{d.value}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {amenities.length > 0 && (
+                        <div className="p-3 border-t border-white/[0.06]">
+                          <p className="text-white/25 text-[10px] uppercase tracking-widest font-semibold mb-2">Commodités</p>
+                          <div className="flex flex-wrap gap-1.5">
+                            {amenities.map((a, i) => (
+                              <span key={i} className="px-2 py-0.5 rounded-full bg-white/[0.06] text-white/60 text-[10px]">{a}</span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    {immoRooms.length > 0 && (
+                      <div className="border-t border-white/[0.06] overflow-hidden">
+                        <HotelMenuSection
+                          title="Pièces"
+                          iconKey="door"
+                          items={immoRooms.map(r => ({
+                            name: r.name || r.type || "Pièce",
+                            iconKey: "door",
+                            sub: r.description ? r.description.slice(0, 60) + (r.description.length > 60 ? "…" : "") : r.type || "",
+                            tagSid: r.tagSid || undefined,
+                            imageUrl: r.imageUrl || undefined,
+                          }))}
+                          amenities={[]}
+                          onItemClick={(tagSid) => {
+                            const room = immoRooms.find(r => r.tagSid === tagSid);
+                            if (room && (room.imageUrl || room.description)) setSelectedImmoRoom(room);
+                            flyToTag(tagSid);
+                          }}
+                        />
+                      </div>
+                    )}
                     </>
                   );
                 } catch { return null; }
@@ -2750,6 +2929,60 @@ const TourViewer = () => {
         )}
       </AnimatePresence>
 
+      {/* ===== IMMOBILIER ROOM POPUP ===== */}
+      <AnimatePresence>
+        {selectedImmoRoom && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSelectedImmoRoom(null)}
+              className="fixed inset-0 bg-black/50 z-[100]"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.92, y: 30 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.92, y: 30 }}
+              transition={{ type: "spring", damping: 25, stiffness: 280 }}
+              className="fixed inset-0 flex items-center justify-center z-[100] pointer-events-none p-4"
+            >
+              <div className="bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col w-full max-w-[440px] max-h-[90vh] pointer-events-auto relative">
+                <button
+                  onClick={() => setSelectedImmoRoom(null)}
+                  className="absolute top-3 right-3 z-10 w-8 h-8 rounded-full bg-black/40 hover:bg-black/60 flex items-center justify-center text-white transition-all"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+                {selectedImmoRoom.imageUrl && (
+                  <img src={selectedImmoRoom.imageUrl} alt={selectedImmoRoom.name} className="w-full h-56 object-cover" />
+                )}
+                <div className="p-5 space-y-3">
+                  <div>
+                    <h3 className="text-gray-900 font-bold text-lg">{selectedImmoRoom.name || selectedImmoRoom.type}</h3>
+                    {selectedImmoRoom.type && selectedImmoRoom.name !== selectedImmoRoom.type && (
+                      <p className="text-gray-400 text-sm">{selectedImmoRoom.type}</p>
+                    )}
+                  </div>
+                  {selectedImmoRoom.description && (
+                    <p className="text-sm text-gray-600 leading-relaxed">{selectedImmoRoom.description}</p>
+                  )}
+                  {selectedImmoRoom.tagSid && (
+                    <button
+                      onClick={() => { flyToTag(selectedImmoRoom.tagSid); setSelectedImmoRoom(null); }}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium text-sm transition-colors"
+                    >
+                      <MapPin className="w-4 h-4" />
+                      Voir en 3D
+                    </button>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
       {/* ===== CART PANEL ===== */}
       <AnimatePresence>
         {showCart && (
@@ -2842,7 +3075,7 @@ const TourViewer = () => {
       </div>{/* END TOP: MATTERPORT 3D VIEWER */}
 
       {/* ===== BOTTOM: PRODUCT & SERVICE STRIP ===== */}
-      {((tourItems.length > 0 && bottomStripConfig.products) || (tourServices.length > 0 && bottomStripConfig.services) || (tourChambers.length > 0 && bottomStripConfig.chambers) || gymCoaches.length > 0) && (
+      {((tourItems.length > 0 && bottomStripConfig.products) || (tourServices.length > 0 && bottomStripConfig.services) || (tourChambers.length > 0 && bottomStripConfig.chambers) || gymCoaches.length > 0 || (immoRooms.length > 0 && bottomStripConfig.chambers)) && (
         <div className="shrink-0 bg-[#0d0d1a] border-t border-white/10">
           {/* Toggle handle */}
           <button
@@ -2859,7 +3092,7 @@ const TourViewer = () => {
           >
           <div className="px-3 pb-3">
             {/* Tab switcher when both exist */}
-            {((tourItems.length > 0 && bottomStripConfig.products) ? 1 : 0) + ((tourServices.length > 0 && bottomStripConfig.services) ? 1 : 0) + ((tourChambers.length > 0 && bottomStripConfig.chambers) ? 1 : 0) + (gymCoaches.length > 0 ? 1 : 0) > 1 && (
+            {((tourItems.length > 0 && bottomStripConfig.products) ? 1 : 0) + ((tourServices.length > 0 && bottomStripConfig.services) ? 1 : 0) + ((tourChambers.length > 0 && bottomStripConfig.chambers) ? 1 : 0) + (gymCoaches.length > 0 ? 1 : 0) + ((immoRooms.length > 0 && bottomStripConfig.chambers) ? 1 : 0) > 1 && (
               <div className="flex items-center justify-center gap-1 mb-2.5">
                 {tourItems.length > 0 && bottomStripConfig.products && (
                   <button
@@ -2877,12 +3110,20 @@ const TourViewer = () => {
                     <Briefcase className="w-3 h-3" /> Services ({tourServices.length})
                   </button>
                 )}
-                {tourChambers.length > 0 && bottomStripConfig.chambers && (
+                {tourChambers.length > 0 && bottomStripConfig.chambers && tour?.category !== "Immobilier" && (
                   <button
                     onClick={() => setBottomTab("chambers")}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold uppercase tracking-wider transition-all ${bottomTab === "chambers" ? "bg-white/15 text-white" : "text-white/40 hover:text-white/70"}`}
                   >
                     <DoorOpen className="w-3 h-3" /> Chambres ({tourChambers.length})
+                  </button>
+                )}
+                {immoRooms.length > 0 && bottomStripConfig.chambers && (
+                  <button
+                    onClick={() => setBottomTab("rooms")}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold uppercase tracking-wider transition-all ${bottomTab === "rooms" ? "bg-white/15 text-white" : "text-white/40 hover:text-white/70"}`}
+                  >
+                    <DoorOpen className="w-3 h-3" /> Pièces ({immoRooms.length})
                   </button>
                 )}
                 {gymCoaches.length > 0 && (
@@ -3046,6 +3287,36 @@ const TourViewer = () => {
                     Voir tout
                   </button>
                 )}
+              </div>
+            )}
+
+            {/* Immobilier rooms strip */}
+            {bottomTab === "rooms" && immoRooms.length > 0 && (
+              <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide justify-center">
+                {immoRooms.map((room, ri) => (
+                  <button
+                    key={ri}
+                    onClick={() => {
+                      if (room.imageUrl || room.description) setSelectedImmoRoom(room);
+                      if (room.tagSid) flyToTag(room.tagSid);
+                    }}
+                    className="flex-shrink-0 flex items-center gap-2.5 bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.08] rounded-xl p-2 pr-4 transition-all group"
+                  >
+                    <div className="w-12 h-12 rounded-lg bg-white overflow-hidden flex items-center justify-center shrink-0">
+                      {room.imageUrl ? (
+                        <img src={room.imageUrl} alt={room.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <DoorOpen className="w-5 h-5 text-gray-300" />
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-white/80 text-xs font-semibold truncate max-w-[110px] group-hover:text-white transition-colors">{room.name || room.type}</p>
+                      {room.type && room.name !== room.type && (
+                        <p className="text-white/30 text-[10px] truncate mt-0.5">{room.type}</p>
+                      )}
+                    </div>
+                  </button>
+                ))}
               </div>
             )}
 

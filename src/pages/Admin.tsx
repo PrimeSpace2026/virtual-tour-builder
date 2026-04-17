@@ -145,6 +145,77 @@ interface GymMetadata {
   coaches: GymCoach[];
 }
 
+// ── Immobilier types ──
+interface ImmobilierData {
+  propertyType: string;
+  transactionType: string;
+  price: number | null;
+  currency: string;
+  rooms: number | null;
+  bedrooms: number | null;
+  bathrooms: number | null;
+  floor: number | null;
+  totalFloors: number | null;
+  yearBuilt: number | null;
+  condition: string;
+  heatingType: string;
+  energyClass: string;
+  furnished: boolean;
+  parking: boolean;
+  parkingSpaces: number | null;
+  elevator: boolean;
+  balcony: boolean;
+  terrace: boolean;
+  terraceArea: number | null;
+  garden: boolean;
+  gardenArea: number | null;
+  pool: boolean;
+  airConditioning: boolean;
+  basement: boolean;
+}
+
+interface ImmobilierRoom {
+  name: string;
+  type: string;
+  tagSid: string;
+  imageUrl: string;
+  description: string;
+}
+
+const IMMO_ROOM_TYPES = [
+  "Salon", "Cuisine", "Chambre", "Salle de bain", "Bureau",
+  "Terrasse", "Jardin", "Garage", "Entrée", "Couloir",
+  "Balcon", "Buanderie", "Cave", "Grenier", "Dressing",
+];
+
+const DEFAULT_IMMOBILIER: ImmobilierData = {
+  propertyType: "",
+  transactionType: "",
+  price: null,
+  currency: "TND",
+  rooms: null,
+  bedrooms: null,
+  bathrooms: null,
+  floor: null,
+  totalFloors: null,
+  yearBuilt: null,
+  condition: "",
+  heatingType: "",
+  energyClass: "",
+  furnished: false,
+  parking: false,
+  parkingSpaces: null,
+  elevator: false,
+  balcony: false,
+  terrace: false,
+  terraceArea: null,
+  garden: false,
+  gardenArea: null,
+  pool: false,
+  airConditioning: false,
+  basement: false,
+};
+
 const COACH_SPECIALTY_OPTIONS = [
   { key: "musculation", label: "Musculation", icon: Dumbbell },
   { key: "cardio", label: "Cardio", icon: Heart },
@@ -369,6 +440,9 @@ const Admin = () => {
   const [gymClasses, setGymClasses] = useState<GymClass[]>([]);
   const [gymSections, setGymSections] = useState<MenuSectionData[]>([]);
   const [gymCoaches, setGymCoaches] = useState<GymCoach[]>([]);
+  // Immobilier
+  const [immobilierData, setImmobilierData] = useState<ImmobilierData>({ ...DEFAULT_IMMOBILIER });
+  const [immobilierRooms, setImmobilierRooms] = useState<ImmobilierRoom[]>([]);
   // Bottom strip visibility toggles
   const [bottomStrip, setBottomStrip] = useState({ products: true, services: true, chambers: true });
   // Tags for the create/edit dialog (auto-fetched from tour URL)
@@ -694,8 +768,10 @@ const Admin = () => {
         setGymClasses(meta.classes || []);
         setGymSections(meta.gymSections || []);
         setGymCoaches(meta.coaches || []);
+        setImmobilierData({ ...DEFAULT_IMMOBILIER, ...meta.immobilier });
+        setImmobilierRooms(meta.immobilierRooms || []);
         setBottomStrip(meta.bottomStrip || { products: true, services: true, chambers: true });
-      } catch { setHotelRooms([]); setMenuSections([]); setGymSpaces([]); setGymEquipment([]); setGymPlans([]); setGymClasses([]); setGymSections([]); setGymCoaches([]); setBottomStrip({ products: true, services: true, chambers: true }); }
+      } catch { setHotelRooms([]); setMenuSections([]); setGymSpaces([]); setGymEquipment([]); setGymPlans([]); setGymClasses([]); setGymSections([]); setGymCoaches([]); setImmobilierData({ ...DEFAULT_IMMOBILIER }); setImmobilierRooms([]); setBottomStrip({ products: true, services: true, chambers: true }); }
     } else {
       setHotelRooms([]);
       setMenuSections([]);
@@ -705,6 +781,8 @@ const Admin = () => {
       setGymClasses([]);
       setGymSections([]);
       setGymCoaches([]);
+      setImmobilierData({ ...DEFAULT_IMMOBILIER });
+      setImmobilierRooms([]);
       setBottomStrip({ products: true, services: true, chambers: true });
     }
     setDialogOpen(true);
@@ -722,6 +800,9 @@ const Admin = () => {
     }
     if (editTour.category === "Gym & Fitness" && (gymSpaces.length > 0 || gymEquipment.length > 0 || gymPlans.length > 0 || gymClasses.length > 0 || gymSections.length > 0 || gymCoaches.length > 0)) {
       payload.metadataJson = JSON.stringify({ spaces: gymSpaces, equipment: gymEquipment, plans: gymPlans, classes: gymClasses, gymSections, coaches: gymCoaches, bottomStrip } as GymMetadata);
+    }
+    if (editTour.category === "Immobilier") {
+      payload.metadataJson = JSON.stringify({ immobilier: immobilierData, immobilierRooms, bottomStrip });
     }
     // For other categories, save bottomStrip if any toggle is off
     if (!payload.metadataJson) {
@@ -1251,7 +1332,7 @@ const Admin = () => {
               <p className="text-xs text-muted-foreground">Choisir les sections visibles dans la barre en bas du tour</p>
               <div className="flex flex-wrap gap-3">
                 {(["products", "services", "chambers"] as const).map((key) => {
-                  const labels = { products: "Produits", services: "Services", chambers: "Chambres" };
+                  const labels = { products: "Produits", services: "Services", chambers: editTour.category === "Immobilier" ? "Pièces" : "Chambres" };
                   const active = bottomStrip[key];
                   return (
                     <button
@@ -1731,6 +1812,305 @@ const Admin = () => {
                   {hotelRooms.length === 0 && (
                     <p className="text-xs text-muted-foreground text-center py-3">Aucune chambre ajoutée</p>
                   )}
+                </div>
+              </div>
+            )}
+
+            {/* ══════ Immobilier Form ══════ */}
+            {editTour.category === "Immobilier" && (
+              <div className="space-y-4">
+                {/* Type de bien & Transaction */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium mb-1 block flex items-center gap-2"><Home className="w-4 h-4" /> Type de bien</label>
+                    <Select value={immobilierData.propertyType} onValueChange={(v) => setImmobilierData({ ...immobilierData, propertyType: v })}>
+                      <SelectTrigger><SelectValue placeholder="Sélectionner..." /></SelectTrigger>
+                      <SelectContent>
+                        {["Appartement", "Maison", "Villa", "Studio", "Duplex", "Penthouse", "Terrain", "Local commercial", "Bureau"].map((t) => (
+                          <SelectItem key={t} value={t}>{t}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-1 block flex items-center gap-2"><Banknote className="w-4 h-4" /> Type de transaction</label>
+                    <Select value={immobilierData.transactionType} onValueChange={(v) => setImmobilierData({ ...immobilierData, transactionType: v })}>
+                      <SelectTrigger><SelectValue placeholder="Sélectionner..." /></SelectTrigger>
+                      <SelectContent>
+                        {["Vente", "Location", "Location saisonnière", "Colocation"].map((t) => (
+                          <SelectItem key={t} value={t}>{t}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {/* Prix */}
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="col-span-2">
+                    <label className="text-sm font-medium mb-1 block">Prix</label>
+                    <Input type="number" value={immobilierData.price ?? ""} onChange={(e) => setImmobilierData({ ...immobilierData, price: e.target.value ? Number(e.target.value) : null })} placeholder="350000" />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Devise</label>
+                    <Select value={immobilierData.currency} onValueChange={(v) => setImmobilierData({ ...immobilierData, currency: v })}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {["TND", "EUR", "USD"].map((c) => (<SelectItem key={c} value={c}>{c}</SelectItem>))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {/* Pièces */}
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <label className="text-sm font-medium mb-1 block flex items-center gap-2"><DoorOpen className="w-4 h-4" /> Pièces</label>
+                    <Input type="number" min={0} value={immobilierData.rooms ?? ""} onChange={(e) => setImmobilierData({ ...immobilierData, rooms: e.target.value ? Number(e.target.value) : null })} />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-1 block flex items-center gap-2"><BedDouble className="w-4 h-4" /> Chambres</label>
+                    <Input type="number" min={0} value={immobilierData.bedrooms ?? ""} onChange={(e) => setImmobilierData({ ...immobilierData, bedrooms: e.target.value ? Number(e.target.value) : null })} />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-1 block flex items-center gap-2"><Bath className="w-4 h-4" /> Salles de bain</label>
+                    <Input type="number" min={0} value={immobilierData.bathrooms ?? ""} onChange={(e) => setImmobilierData({ ...immobilierData, bathrooms: e.target.value ? Number(e.target.value) : null })} />
+                  </div>
+                </div>
+
+                {/* Étage & Année */}
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Étage</label>
+                    <Input type="number" min={0} value={immobilierData.floor ?? ""} onChange={(e) => setImmobilierData({ ...immobilierData, floor: e.target.value ? Number(e.target.value) : null })} />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Nb. étages</label>
+                    <Input type="number" min={0} value={immobilierData.totalFloors ?? ""} onChange={(e) => setImmobilierData({ ...immobilierData, totalFloors: e.target.value ? Number(e.target.value) : null })} />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Année construction</label>
+                    <Input type="number" min={1900} max={2099} value={immobilierData.yearBuilt ?? ""} onChange={(e) => setImmobilierData({ ...immobilierData, yearBuilt: e.target.value ? Number(e.target.value) : null })} />
+                  </div>
+                </div>
+
+                {/* État & Chauffage & Énergie */}
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">État</label>
+                    <Select value={immobilierData.condition} onValueChange={(v) => setImmobilierData({ ...immobilierData, condition: v })}>
+                      <SelectTrigger><SelectValue placeholder="Sélectionner..." /></SelectTrigger>
+                      <SelectContent>
+                        {["Neuf", "Bon état", "Rénové", "À rénover"].map((c) => (<SelectItem key={c} value={c}>{c}</SelectItem>))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Chauffage</label>
+                    <Select value={immobilierData.heatingType} onValueChange={(v) => setImmobilierData({ ...immobilierData, heatingType: v })}>
+                      <SelectTrigger><SelectValue placeholder="Sélectionner..." /></SelectTrigger>
+                      <SelectContent>
+                        {["Central", "Individuel", "Gaz", "Électrique", "Climatisation réversible", "Aucun"].map((h) => (<SelectItem key={h} value={h}>{h}</SelectItem>))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Classe énergie</label>
+                    <Select value={immobilierData.energyClass} onValueChange={(v) => setImmobilierData({ ...immobilierData, energyClass: v })}>
+                      <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+                      <SelectContent>
+                        {["A", "B", "C", "D", "E", "F", "G"].map((e) => (<SelectItem key={e} value={e}>{e}</SelectItem>))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {/* Commodités (toggles) */}
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Commodités</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    {[
+                      { key: "furnished" as const, label: "Meublé" },
+                      { key: "parking" as const, label: "Parking" },
+                      { key: "elevator" as const, label: "Ascenseur" },
+                      { key: "balcony" as const, label: "Balcon" },
+                      { key: "terrace" as const, label: "Terrasse" },
+                      { key: "garden" as const, label: "Jardin" },
+                      { key: "pool" as const, label: "Piscine" },
+                      { key: "airConditioning" as const, label: "Climatisation" },
+                      { key: "basement" as const, label: "Sous-sol / Cave" },
+                    ].map(({ key, label }) => (
+                      <div key={key} className="flex items-center justify-between rounded-md border px-3 py-2">
+                        <span className="text-sm">{label}</span>
+                        <Switch checked={immobilierData[key] as boolean} onCheckedChange={(v) => setImmobilierData({ ...immobilierData, [key]: v })} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Parking spaces (conditional) */}
+                {immobilierData.parking && (
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Nombre de places parking</label>
+                    <Input type="number" min={1} value={immobilierData.parkingSpaces ?? ""} onChange={(e) => setImmobilierData({ ...immobilierData, parkingSpaces: e.target.value ? Number(e.target.value) : null })} />
+                  </div>
+                )}
+
+                {/* Terrace area (conditional) */}
+                {immobilierData.terrace && (
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Surface terrasse (m²)</label>
+                    <Input type="number" min={0} value={immobilierData.terraceArea ?? ""} onChange={(e) => setImmobilierData({ ...immobilierData, terraceArea: e.target.value ? Number(e.target.value) : null })} />
+                  </div>
+                )}
+
+                {/* Garden area (conditional) */}
+                {immobilierData.garden && (
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Surface jardin (m²)</label>
+                    <Input type="number" min={0} value={immobilierData.gardenArea ?? ""} onChange={(e) => setImmobilierData({ ...immobilierData, gardenArea: e.target.value ? Number(e.target.value) : null })} />
+                  </div>
+                )}
+
+                {/* ── Pièces / Rooms ── */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium flex items-center gap-2">
+                      <DoorOpen className="w-4 h-4" /> Pièces de la propriété
+                    </label>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setImmobilierRooms([...immobilierRooms, { name: "", type: "", tagSid: "", imageUrl: "", description: "" }])}
+                    >
+                      <Plus className="w-4 h-4 mr-1" /> Pièce
+                    </Button>
+                  </div>
+                  <div className="space-y-3">
+                    {immobilierRooms.map((room, idx) => (
+                      <div key={idx} className="relative border rounded-xl p-4 space-y-3">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          className="absolute top-2 right-2 h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+                          onClick={() => setImmobilierRooms(immobilierRooms.filter((_, i) => i !== idx))}
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="text-xs text-muted-foreground mb-1 block">Type de pièce</label>
+                            <Select
+                              value={room.type}
+                              onValueChange={(v) => {
+                                const u = [...immobilierRooms]; u[idx] = { ...room, type: v, name: room.name || v }; setImmobilierRooms(u);
+                              }}
+                            >
+                              <SelectTrigger><SelectValue placeholder="Choisir..." /></SelectTrigger>
+                              <SelectContent>
+                                {IMMO_ROOM_TYPES.map((t) => (<SelectItem key={t} value={t}>{t}</SelectItem>))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div>
+                            <label className="text-xs text-muted-foreground mb-1 block">Nom affiché</label>
+                            <Input
+                              value={room.name}
+                              onChange={(e) => { const u = [...immobilierRooms]; u[idx] = { ...room, name: e.target.value }; setImmobilierRooms(u); }}
+                              placeholder="Salon principal"
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="text-xs text-muted-foreground mb-1 block">Description (optionnel)</label>
+                          <Input
+                            value={room.description}
+                            onChange={(e) => { const u = [...immobilierRooms]; u[idx] = { ...room, description: e.target.value }; setImmobilierRooms(u); }}
+                            placeholder="Grande pièce lumineuse avec vue mer..."
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs text-muted-foreground mb-1 block">Tag Matterport (SID)</label>
+                          <Select
+                            value={room.tagSid?.startsWith("http") ? "__link__" : (room.tagSid || "__none__")}
+                            onValueChange={(v) => {
+                              const u = [...immobilierRooms]; u[idx] = { ...room, tagSid: v === "__none__" ? "" : v === "__link__" ? "https://" : v }; setImmobilierRooms(u);
+                            }}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder={dialogTagsLoading ? "Chargement..." : dialogTags.length === 0 ? "Aucun tag" : "Choisir un tag"} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="__none__">Aucun tag</SelectItem>
+                              <SelectItem value="__link__">📍 Coller un lien 360°</SelectItem>
+                              {dialogTags.map((tag) => (
+                                <SelectItem key={tag.sid} value={tag.sid}>
+                                  <span className="flex items-center gap-2">
+                                    {tag.thumbnail ? (
+                                      <img src={tag.thumbnail} alt="" className="w-8 h-8 rounded object-cover flex-shrink-0" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                                    ) : (
+                                      <Tag className="w-3 h-3 flex-shrink-0" />
+                                    )}
+                                    <span className="truncate">{tag.name}</span>
+                                  </span>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          {room.tagSid?.startsWith("http") && (
+                            <Input
+                              value={room.tagSid}
+                              onChange={(e) => { const u = [...immobilierRooms]; u[idx] = { ...room, tagSid: e.target.value }; setImmobilierRooms(u); }}
+                              placeholder="https://my.matterport.com/show/?m=...&ss=48&sr=..."
+                              className="mt-2 text-xs"
+                            />
+                          )}
+                        </div>
+                        <div>
+                          <label className="text-xs text-muted-foreground mb-1 block">Image de la pièce</label>
+                          <div className="flex gap-2 items-center">
+                            <Input
+                              value={room.imageUrl || ""}
+                              onChange={(e) => { const u = [...immobilierRooms]; u[idx] = { ...room, imageUrl: e.target.value }; setImmobilierRooms(u); }}
+                              placeholder="https://..."
+                              className="flex-1"
+                            />
+                            <label className="cursor-pointer inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-border text-xs font-medium hover:bg-muted transition-colors">
+                              <Upload className="w-3.5 h-3.5" />
+                              Upload
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={async (e) => {
+                                  const file = e.target.files?.[0];
+                                  if (!file) return;
+                                  const formData = new FormData();
+                                  formData.append("file", file);
+                                  try {
+                                    const res = await fetch("/api/upload", { method: "POST", body: formData });
+                                    const data = await res.json();
+                                    if (data.url) {
+                                      const u = [...immobilierRooms]; u[idx] = { ...room, imageUrl: data.url }; setImmobilierRooms(u);
+                                      toast({ title: "Image uploadée ✓" });
+                                    }
+                                  } catch { toast({ title: "Erreur upload", variant: "destructive" }); }
+                                }}
+                              />
+                            </label>
+                          </div>
+                          {room.imageUrl && (
+                            <img src={room.imageUrl} alt={room.name} className="w-16 h-16 rounded-lg object-cover mt-2 border border-border" />
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                    {immobilierRooms.length === 0 && (
+                      <p className="text-xs text-muted-foreground text-center py-3">Aucune pièce ajoutée</p>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
