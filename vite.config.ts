@@ -5,7 +5,7 @@ import { componentTagger } from "lovable-tagger";
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
-  const apiProxyTarget = env.VITE_API_PROXY_TARGET || "http://localhost:8081";
+  const apiProxyTarget = env.VITE_API_PROXY_TARGET || "http://localhost:8082";  
   return {
     appType: "spa",
     server: {
