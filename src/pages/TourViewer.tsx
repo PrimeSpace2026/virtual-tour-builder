@@ -87,12 +87,12 @@ interface HotelRoom {
 
 const AMENITY_ICONS: Record<string, { icon: React.ComponentType<{ className?: string }>; label: string }> = {
   wifi: { icon: Wifi, label: "WiFi" },
-  ac: { icon: Snowflake, label: "Climatisation" },
+  ac: { icon: Snowflake, label: "Air Conditioning" },
   tv: { icon: Tv, label: "TV" },
   minibar: { icon: Wine, label: "Mini-bar" },
-  bathroom: { icon: Bath, label: "Salle de bain" },
-  balcony: { icon: DoorOpen, label: "Balcon" },
-  safe: { icon: Lock, label: "Coffre-fort" },
+  bathroom: { icon: Bath, label: "Bathroom" },
+  balcony: { icon: DoorOpen, label: "Balcony" },
+  safe: { icon: Lock, label: "Safe" },
 };
 
 /* ── Icon map for section/item keys → React icon components ── */
@@ -108,7 +108,7 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
 };
 
 const COACH_SPECIALTY_LABELS: Record<string, { icon: React.ComponentType<{ className?: string }>; label: string }> = {
-  musculation: { icon: Dumbbell, label: "Musculation" },
+  musculation: { icon: Dumbbell, label: "Weight Training" },
   cardio: { icon: Heart, label: "Cardio" },
   yoga: { icon: Sparkles, label: "Yoga" },
   crossfit: { icon: Trophy, label: "CrossFit" },
@@ -117,26 +117,26 @@ const COACH_SPECIALTY_LABELS: Record<string, { icon: React.ComponentType<{ class
   stretching: { icon: Heart, label: "Stretching" },
   pilates: { icon: Sparkles, label: "Pilates" },
   cycling: { icon: PlayCircle, label: "Cycling" },
-  swimming: { icon: Droplets, label: "Natation" },
-  rehab: { icon: ShieldCheck, label: "Rééducation" },
-  weight_loss: { icon: Star, label: "Perte de poids" },
+  swimming: { icon: Droplets, label: "Swimming" },
+  rehab: { icon: ShieldCheck, label: "Rehabilitation" },
+  weight_loss: { icon: Star, label: "Weight Loss" },
 };
 
 const GYM_EQUIPMENT_ICONS: Record<string, { icon: React.ComponentType<{ className?: string }>; label: string }> = {
   cardio: { icon: Heart, label: "Cardio" },
-  weights: { icon: Dumbbell, label: "Poids libres" },
-  machines: { icon: Star, label: "Machines guidées" },
+  weights: { icon: Dumbbell, label: "Free Weights" },
+  machines: { icon: Star, label: "Guided Machines" },
   crossfit: { icon: Trophy, label: "CrossFit" },
-  pool: { icon: Droplets, label: "Piscine" },
+  pool: { icon: Droplets, label: "Pool" },
   sauna: { icon: Sparkles, label: "Sauna" },
   hammam: { icon: Bath, label: "Hammam" },
   boxing: { icon: ShieldCheck, label: "Ring / Boxing" },
-  yoga: { icon: Heart, label: "Studio yoga" },
+  yoga: { icon: Heart, label: "Yoga Studio" },
   cycling: { icon: PlayCircle, label: "Cycling" },
-  locker: { icon: Lock, label: "Vestiaires" },
+  locker: { icon: Lock, label: "Locker Rooms" },
   parking: { icon: ShieldCheck, label: "Parking" },
   wifi: { icon: Wifi, label: "WiFi" },
-  ac: { icon: Snowflake, label: "Climatisation" },
+  ac: { icon: Snowflake, label: "Air Conditioning" },
 };
 
 /* Section colors removed — modern monochrome design */
@@ -203,7 +203,7 @@ const HotelMenuSection = ({ title, iconKey, items, amenities, onItemClick }: Men
                 className="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-white/[0.04] transition-colors"
               >
                 <Sparkles className="w-3.5 h-3.5 text-white/30 shrink-0" />
-                <span className="text-white/40 text-[11px] font-medium flex-1 text-left uppercase tracking-wider">Équipements</span>
+                <span className="text-white/40 text-[11px] font-medium flex-1 text-left uppercase tracking-wider">Equipment</span>
                 <ChevronDown className={`w-3.5 h-3.5 text-white/25 transition-transform duration-300 ${amenitiesOpen ? "rotate-180" : ""}`} />
               </button>
               {amenitiesOpen && (
@@ -313,7 +313,7 @@ const CURRENCY_SYMBOLS: Record<string, string> = { EUR: "€", USD: "$", TND: "T
 function buildEmbedUrl(tourUrl: string, _withSdkKey = false): string {
   const modelId = extractModelId(tourUrl);
   if (!modelId) return tourUrl;
-  return `https://my.matterport.com/show/?m=${modelId}&play=1&qs=1&title=0&vr=0&dh=0&f=0&search=0&lang=fr&applicationKey=${SDK_KEY}`;
+  return `https://my.matterport.com/show/?m=${modelId}&play=1&qs=1&title=0&vr=0&dh=0&f=0&search=0&hr=0&gt=0&hl=0&lang=fr&applicationKey=${SDK_KEY}`;
 }
 
 const TourViewer = () => {
@@ -327,6 +327,7 @@ const TourViewer = () => {
   const tagsMapRef = useRef<Map<string, string>>(new Map()); // tagName (lowercase) → SID
   const savedTagsMapRef = useRef<Map<string, string>>(new Map()); // saved tags from DB: name (lowercase) → SID
   const sweepsRef = useRef<any[]>([]); // cached sweep objects from SDK
+  const chamberSweepRef = useRef<string>(""); // tracks active chamber for auto-dismiss
   const visitIdRef = useRef<number | null>(null);
   const visitStartRef = useRef<number>(Date.now());
 
@@ -404,6 +405,15 @@ const TourViewer = () => {
   const [bottomTab, setBottomTab] = useState<"products" | "services" | "chambers" | "coaches" | "rooms">("products");
   const [bottomStripOpen, setBottomStripOpen] = useState(true);
   const [bottomStripConfig, setBottomStripConfig] = useState({ products: true, services: true, chambers: true });
+  const userOpenedStripRef = useRef(false);
+
+  // Auto-close bottom strip after 1 second on initial load
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (!userOpenedStripRef.current) setBottomStripOpen(false);
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Match a product by name/id/tagSid from a URL param
   const matchProduct = useCallback((param: string) => {
@@ -520,12 +530,12 @@ const TourViewer = () => {
         // Auto-select first available tab (respecting bottomStrip config)
         let bsc = { products: true, services: true, chambers: true };
         if (tourData.metadataJson) { try { const m = JSON.parse(tourData.metadataJson); if (m.bottomStrip) bsc = m.bottomStrip; } catch {} }
-        if (items.length > 0 && bsc.products) setBottomTab("products");
-        else if (services.length > 0 && bsc.services) setBottomTab("services");
-        else if (chambers.length > 0 && bsc.chambers) setBottomTab("chambers");
+        if (chambers.length > 0 && bsc.chambers) setBottomTab("chambers");
         else if (tourData.category === "Immobilier") {
           try { const m = JSON.parse(tourData.metadataJson || "{}"); if (Array.isArray(m.immobilierRooms) && m.immobilierRooms.length > 0) setBottomTab("rooms"); } catch {}
         }
+        else if (items.length > 0 && bsc.products) setBottomTab("products");
+        else if (services.length > 0 && bsc.services) setBottomTab("services");
         else if (tourData.category === "Gym & Fitness") setBottomTab("coaches");
         // Build saved tags map (name → SID) for production tag resolution
         const savedMap = new Map<string, string>();
@@ -599,7 +609,7 @@ const TourViewer = () => {
 
     const handleTagClick = async (sdk: any, tagSid: string) => {
       try {
-        console.log("🏷️ Tag cliqué — SID:", tagSid);
+        console.log("🏷️ Tag clicked — SID:", tagSid);
         let tagLabel = "";
         let tagData: TagItem | null = null;
 
@@ -669,7 +679,7 @@ const TourViewer = () => {
         ]) as any;
 
         if (cancelled) return;
-        console.log("✅ SDK connecté (setupSdk)");
+        console.log("✅ SDK connected (setupSdk)");
 
         // Wait for model to be fully loaded (PLAYING phase) before querying data
         await new Promise<void>((resolve) => {
@@ -686,7 +696,7 @@ const TourViewer = () => {
         try {
           const floorsData = await sdk.Floor.getData();
           if (floorsData && floorsData.totalFloors > 1) {
-            const floorList = floorsData.floorNames.map((name: string, i: number) => ({ index: i, name: name || `Étage ${i}` }));
+            const floorList = floorsData.floorNames.map((name: string, i: number) => ({ index: i, name: name || `Floor ${i}` }));
             setFloors(floorList);
             setCurrentFloor(floorsData.currentFloor);
           }
@@ -734,6 +744,7 @@ const TourViewer = () => {
         // Log sweep name when navigating to a new panorama
         try {
           let lastSweep = "";
+          let sweepsSinceChamber = 0;
           sdk.Camera.pose.subscribe((pose: any) => {
             if (pose?.sweep && pose.sweep !== lastSweep) {
               lastSweep = pose.sweep;
@@ -741,7 +752,19 @@ const TourViewer = () => {
               const idx = sweeps.findIndex((s: any) => s.sid === pose.sweep);
               const sweep = idx >= 0 ? sweeps[idx] : null;
               const floor = sweep?.floorInfo?.sequence ?? sweep?.floor ?? "?";
-              console.log(`🔵 Sweep: "${pose.sweep}" — Vue ${idx >= 0 ? idx + 1 : "?"} / ${sweeps.length} — Étage ${floor}`);
+              console.log(`🔵 Sweep: "${pose.sweep}" — View ${idx >= 0 ? idx + 1 : "?"} / ${sweeps.length} — Floor ${floor}`);
+
+              // Auto-dismiss Book Now when user navigates away from chamber
+              if (chamberSweepRef.current) {
+                sweepsSinceChamber++;
+                if (sweepsSinceChamber > 1) {
+                  setSelectedChamber(null);
+                  chamberSweepRef.current = "";
+                  sweepsSinceChamber = 0;
+                }
+              } else {
+                sweepsSinceChamber = 0;
+              }
             }
           });
         } catch {}
@@ -800,7 +823,7 @@ const TourViewer = () => {
         // Do NOT use allowAction(false) as it blocks navigateToTag fly transitions
       } catch (err) {
         if (cancelled) return;
-        console.log("⚠️ SDK échoué sur localhost:", err);
+        console.log("⚠️ SDK failed on localhost:", err);
         setSdkFailed(true);
       }
     };
@@ -931,7 +954,7 @@ const TourViewer = () => {
     if (tour?.id) trackEvent(tour.id, "chamber_click", ch.name, String(ch.id));
 
     // Show popup after delay so the fly animation is visible
-    const showPopupLater = () => setTimeout(() => setSelectedChamber(ch), 2000);
+    const showPopupLater = () => setTimeout(() => { chamberSweepRef.current = ch.tagSid || "active"; setSelectedChamber(ch); }, 2000);
 
     if (ch.tagSid && tour?.tourUrl) {
       const tagKey = ch.tagSid.trim().toLowerCase();
@@ -1174,7 +1197,7 @@ const TourViewer = () => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         if (selectedImmoRoom) setSelectedImmoRoom(null);
-        else if (selectedChamber) setSelectedChamber(null);
+        else if (selectedChamber) { setSelectedChamber(null); chamberSweepRef.current = ""; }
         else if (selectedCoach) setSelectedCoach(null);
         else if (selectedService) setSelectedService(null);
         else if (selectedTag) setSelectedTag(null);
@@ -1243,16 +1266,16 @@ const TourViewer = () => {
         <div className="text-center max-w-md px-6">
           <Building2 className="w-16 h-16 text-purple-400/40 mx-auto mb-6" />
           <h2 className="text-2xl font-bold text-white mb-3">
-            Visite introuvable
+            Tour Not Found
           </h2>
           <p className="text-white/40 mb-8">
-            Cette visite n'existe pas ou a été supprimée.
+            This tour does not exist or has been deleted.
           </p>
           <button
             onClick={() => navigate("/portfolio")}
             className="px-6 py-3 bg-purple-600 hover:bg-purple-500 text-white rounded-xl font-medium transition-all"
           >
-            Retour au Portfolio
+            Back to Portfolio
           </button>
         </div>
       </div>
@@ -1286,7 +1309,7 @@ const TourViewer = () => {
                   />
                 </div>
                 <p className="text-white/50 text-sm tracking-wider uppercase mb-2">
-                  Chargement de l'expérience 3D
+                  Loading 3D Experience
                 </p>
                 <p className="text-white/25 text-xs">{tour.name}</p>
               </div>
@@ -1321,7 +1344,7 @@ const TourViewer = () => {
             className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-black/60 backdrop-blur-xl border border-white/10 text-white/80 hover:text-white hover:bg-black/80 transition-all group"
           >
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
-            <span className="text-xs font-medium hidden sm:inline">Retour</span>
+            <span className="text-xs font-medium hidden sm:inline">Back</span>
           </button>
           <Link
             to="/"
@@ -1394,7 +1417,7 @@ const TourViewer = () => {
             className="relative flex items-center gap-1.5 px-2 sm:px-3 py-2 sm:py-2.5 rounded-xl bg-purple-600/80 backdrop-blur-xl border border-purple-400/30 text-white text-xs font-medium transition-all hover:bg-purple-500/80"
           >
             <ShoppingCart className="w-4 h-4" />
-            <span className="hidden sm:inline">Panier</span>
+            <span className="hidden sm:inline">Cart</span>
             <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
               {cartCount}
             </span>
@@ -1422,7 +1445,7 @@ const TourViewer = () => {
                 className="absolute right-0 top-12 w-[calc(100vw-2rem)] sm:w-72 rounded-xl bg-black/80 backdrop-blur-2xl border border-white/10 p-4 shadow-2xl"
               >
                 <p className="text-white/60 text-[10px] font-semibold uppercase tracking-widest mb-3">
-                  Partager cette visite
+                  Share this tour
                 </p>
                 <div className="flex items-center gap-2 bg-white/5 rounded-lg p-2 border border-white/5">
                   <input
@@ -1440,7 +1463,7 @@ const TourViewer = () => {
                     ) : (
                       <Copy className="w-3 h-3" />
                     )}
-                    {copied ? "Copié!" : "Copier"}
+                    {copied ? "Copied!" : "Copy"}
                   </button>
                 </div>
               </motion.div>
@@ -1459,6 +1482,33 @@ const TourViewer = () => {
             <Maximize className="w-4 h-4" />
           )}
         </button>
+
+        {/* Book Now — appears when a chamber is selected */}
+        <AnimatePresence>
+          {selectedChamber && (
+            <motion.button
+              initial={{ opacity: 0, scale: 0.8, x: 20 }}
+              animate={{ opacity: 1, scale: 1, x: 0 }}
+              exit={{ opacity: 0, scale: 0.8, x: 20 }}
+              transition={{ type: "spring", damping: 22, stiffness: 300 }}
+              onClick={() => {
+                if (selectedChamber.bookingUrl && selectedChamber.bookingUrl.trim()) {
+                  const url = selectedChamber.bookingUrl.trim();
+                  const normalized = /^https?:\/\//i.test(url) ? url : `https://${url}`;
+                  window.open(normalized, "_blank", "noopener,noreferrer");
+                  return;
+                }
+                const msg = encodeURIComponent(`Hello, I would like to book the room "${selectedChamber.name}"${selectedChamber.price != null ? ` (${selectedChamber.price} ${selectedChamber.currency || "TND"}/night)` : ""}. Thank you.`);
+                window.open(`https://wa.me/21654757573?text=${msg}`, "_blank", "noopener,noreferrer");
+              }}
+              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-violet-500 hover:from-purple-700 hover:to-violet-600 border border-purple-400/30 text-white text-xs font-bold shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50 transition-all"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+              <span className="hidden sm:inline">Book Now</span>
+              <span className="sm:hidden">Book</span>
+            </motion.button>
+          )}
+        </AnimatePresence>
       </motion.div>
 
       {/* ===== RIGHT SIDE: INFO CARD ===== */}
@@ -1550,7 +1600,7 @@ const TourViewer = () => {
                     </div>
                     <div>
                       <p className="text-white/30 text-[10px] uppercase tracking-wider font-medium">
-                        Catégorie
+                        Category
                       </p>
                       <p className="text-white/75 text-sm font-medium">
                         {tour.category}
@@ -1564,7 +1614,7 @@ const TourViewer = () => {
                       </div>
                       <div className="min-w-0">
                         <p className="text-white/30 text-[10px] uppercase tracking-wider font-medium">
-                          Localisation
+                          Location
                         </p>
                         <p className="text-white/75 text-sm font-medium truncate">
                           {tour.location}
@@ -1584,7 +1634,7 @@ const TourViewer = () => {
                       >
                         <ShoppingBag className="w-4 h-4 text-purple-400" />
                         <div className="text-left">
-                          <p className="text-white/80 text-xs font-semibold group-hover:text-white transition-colors">Produits</p>
+                          <p className="text-white/80 text-xs font-semibold group-hover:text-white transition-colors">Products</p>
                           <p className="text-white/30 text-[10px]">{tourItems.length} article{tourItems.length > 1 ? "s" : ""}</p>
                         </div>
                       </button>
@@ -1613,11 +1663,11 @@ const TourViewer = () => {
                     const allAmenities = Array.from(new Set(rooms.flatMap(r => r.amenities || [])));
 
                     const autoRoomSection = rooms.length > 0 ? [{
-                      title: "Hébergements",
+                      title: "Accommodations",
                       iconKey: "bed",
                       amenities: allAmenities,
                       items: rooms.map(r => ({
-                        name: r.name || "Chambre",
+                        name: r.name || "Room",
                         iconKey: "bed",
                         sub: [r.bedType, r.capacity ? `${r.capacity} pers.` : "", r.price ? `${r.price} ${r.currency || "TND"}` : ""].filter(Boolean).join(" · "),
                         tagSid: r.tagSid || undefined,
@@ -1658,11 +1708,11 @@ const TourViewer = () => {
                     const gymCustomSections: { title: string; icon: string; items: { name: string; icon: string; tagSid?: string }[] }[] = meta.gymSections || [];
 
                     const spacesSection = gymSpaces.length > 0 ? [{
-                      title: "Espaces",
+                      title: "Spaces",
                       iconKey: "dumbbell",
                       amenities: gymEquipment,
                       items: gymSpaces.map(s => ({
-                        name: s.name || "Espace",
+                        name: s.name || "Space",
                         iconKey: s.icon || "dumbbell",
                         sub: s.schedule ? `🕐 ${s.schedule}` : "",
                         tagSid: s.tagSid || undefined,
@@ -1670,7 +1720,7 @@ const TourViewer = () => {
                     }] : [];
 
                     const plansSection = gymPlans.length > 0 ? [{
-                      title: "Abonnements",
+                      title: "Memberships",
                       iconKey: "star",
                       amenities: [] as string[],
                       items: gymPlans.map(p => ({
@@ -1681,11 +1731,11 @@ const TourViewer = () => {
                     }] : [];
 
                     const classesSection = gymClasses.length > 0 ? [{
-                      title: "Cours collectifs",
+                      title: "Group Classes",
                       iconKey: "users",
                       amenities: [] as string[],
                       items: gymClasses.map(c => ({
-                        name: c.name || "Cours",
+                        name: c.name || "Class",
                         iconKey: c.icon || "heart",
                         sub: c.schedule || "",
                       })),
@@ -1715,7 +1765,7 @@ const TourViewer = () => {
                         {coaches.length > 0 && (
                           <div className="space-y-2">
                             <p className="text-white/25 text-[10px] uppercase tracking-widest font-semibold">
-                              Nos Coachs
+                              Our Coaches
                             </p>
                             {coaches.map((coach, ci) => (
                               <button
@@ -1755,60 +1805,35 @@ const TourViewer = () => {
                     const details: { label: string; value: string }[] = [];
                     if (immo.propertyType) details.push({ label: "Type", value: immo.propertyType });
                     if (immo.transactionType) details.push({ label: "Transaction", value: immo.transactionType });
-                    if (immo.price) details.push({ label: "Prix", value: `${immo.price.toLocaleString()} ${immo.currency || "TND"}` });
-                    if (immo.rooms) details.push({ label: "Pièces", value: `${immo.rooms}` });
-                    if (immo.bedrooms) details.push({ label: "Chambres", value: `${immo.bedrooms}` });
-                    if (immo.bathrooms) details.push({ label: "Salles de bain", value: `${immo.bathrooms}` });
-                    if (immo.floor != null) details.push({ label: "Étage", value: immo.totalFloors ? `${immo.floor} / ${immo.totalFloors}` : `${immo.floor}` });
-                    if (immo.yearBuilt) details.push({ label: "Année", value: `${immo.yearBuilt}` });
-                    if (immo.condition) details.push({ label: "État", value: immo.condition });
-                    if (immo.heatingType) details.push({ label: "Chauffage", value: immo.heatingType });
-                    if (immo.energyClass) details.push({ label: "Énergie", value: `Classe ${immo.energyClass}` });
+                    if (immo.price) details.push({ label: "Price", value: `${immo.price.toLocaleString()} ${immo.currency || "TND"}` });
+                    if (immo.rooms) details.push({ label: "Rooms", value: `${immo.rooms}` });
+                    if (immo.bedrooms) details.push({ label: "Bedrooms", value: `${immo.bedrooms}` });
+                    if (immo.bathrooms) details.push({ label: "Bathrooms", value: `${immo.bathrooms}` });
+                    if (immo.floor != null) details.push({ label: "Floor", value: immo.totalFloors ? `${immo.floor} / ${immo.totalFloors}` : `${immo.floor}` });
+                    if (immo.yearBuilt) details.push({ label: "Year", value: `${immo.yearBuilt}` });
+                    if (immo.condition) details.push({ label: "Condition", value: immo.condition });
+                    if (immo.heatingType) details.push({ label: "Heating", value: immo.heatingType });
+                    if (immo.energyClass) details.push({ label: "Energy", value: `Class ${immo.energyClass}` });
                     const amenities: string[] = [];
-                    if (immo.furnished) amenities.push("Meublé");
+                    if (immo.furnished) amenities.push("Furnished");
                     if (immo.parking) amenities.push(immo.parkingSpaces ? `Parking (${immo.parkingSpaces})` : "Parking");
-                    if (immo.elevator) amenities.push("Ascenseur");
-                    if (immo.balcony) amenities.push("Balcon");
-                    if (immo.terrace) amenities.push(immo.terraceArea ? `Terrasse ${immo.terraceArea}m²` : "Terrasse");
-                    if (immo.garden) amenities.push(immo.gardenArea ? `Jardin ${immo.gardenArea}m²` : "Jardin");
-                    if (immo.pool) amenities.push("Piscine");
-                    if (immo.airConditioning) amenities.push("Climatisation");
-                    if (immo.basement) amenities.push("Sous-sol");
+                    if (immo.elevator) amenities.push("Elevator");
+                    if (immo.balcony) amenities.push("Balcony");
+                    if (immo.terrace) amenities.push(immo.terraceArea ? `Terrace ${immo.terraceArea}m²` : "Terrace");
+                    if (immo.garden) amenities.push(immo.gardenArea ? `Garden ${immo.gardenArea}m²` : "Garden");
+                    if (immo.pool) amenities.push("Pool");
+                    if (immo.airConditioning) amenities.push("Air Conditioning");
+                    if (immo.basement) amenities.push("Basement");
                     if (details.length === 0 && amenities.length === 0 && immoRooms.length === 0) return null;
                     return (
                       <>
-                      <div className="rounded-xl overflow-hidden border border-white/[0.06] bg-white/[0.02]">
-                        {details.length > 0 && (
-                          <div className="p-3 space-y-1.5">
-                            <p className="text-white/25 text-[10px] uppercase tracking-widest font-semibold mb-2">Caractéristiques</p>
-                            <div className="grid grid-cols-2 gap-x-3 gap-y-1">
-                              {details.map((d, i) => (
-                                <div key={i} className="flex justify-between py-1 border-b border-white/[0.04]">
-                                  <span className="text-white/40 text-xs">{d.label}</span>
-                                  <span className="text-white/80 text-xs font-medium">{d.value}</span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                        {amenities.length > 0 && (
-                          <div className="p-3 border-t border-white/[0.06]">
-                            <p className="text-white/25 text-[10px] uppercase tracking-widest font-semibold mb-2">Commodités</p>
-                            <div className="flex flex-wrap gap-1.5">
-                              {amenities.map((a, i) => (
-                                <span key={i} className="px-2 py-0.5 rounded-full bg-white/[0.06] text-white/60 text-[10px]">{a}</span>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
                       {immoRooms.length > 0 && (
                         <div className="rounded-xl overflow-hidden border border-white/[0.06]">
                           <HotelMenuSection
-                            title="Pièces"
+                            title="Rooms"
                             iconKey="door"
                             items={immoRooms.map(r => ({
-                              name: r.name || r.type || "Pièce",
+                              name: r.name || r.type || "Room",
                               iconKey: "door",
                               sub: r.description ? r.description.slice(0, 60) + (r.description.length > 60 ? "…" : "") : r.type || "",
                               tagSid: r.tagSid || undefined,
@@ -1823,6 +1848,31 @@ const TourViewer = () => {
                           />
                         </div>
                       )}
+                      <div className="rounded-xl overflow-hidden border border-white/[0.06] bg-white/[0.02]">
+                        {details.length > 0 && (
+                          <div className="p-3 space-y-1.5">
+                            <p className="text-white/25 text-[10px] uppercase tracking-widest font-semibold mb-2">Features</p>
+                            <div className="grid grid-cols-2 gap-x-3 gap-y-1">
+                              {details.map((d, i) => (
+                                <div key={i} className="flex justify-between py-1 border-b border-white/[0.04]">
+                                  <span className="text-white/40 text-xs">{d.label}</span>
+                                  <span className="text-white/80 text-xs font-medium">{d.value}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        {amenities.length > 0 && (
+                          <div className="p-3 border-t border-white/[0.06]">
+                            <p className="text-white/25 text-[10px] uppercase tracking-widest font-semibold mb-2">Amenities</p>
+                            <div className="flex flex-wrap gap-1.5">
+                              {amenities.map((a, i) => (
+                                <span key={i} className="px-2 py-0.5 rounded-full bg-white/[0.06] text-white/60 text-[10px]">{a}</span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
                       </>
                     );
                   } catch { return null; }
@@ -1832,7 +1882,7 @@ const TourViewer = () => {
                 {!isClean && (prevTour || nextTour) && (
                   <div className="pt-2 border-t border-white/[0.06]">
                     <p className="text-white/25 text-[10px] uppercase tracking-widest font-semibold mb-2">
-                      Autres visites
+                      Other tours
                     </p>
                     <div className="space-y-2">
                       {prevTour && (
@@ -1900,7 +1950,7 @@ const TourViewer = () => {
                       PrimeSpace Studio
                     </p>
                     <p className="text-white/20 text-[9px]">
-                      Expériences 3D immersives
+                      Immersive 3D Experiences
                     </p>
                   </div>
                   <ExternalLink className="w-3 h-3 text-white/15 ml-auto shrink-0" />
@@ -1973,7 +2023,7 @@ const TourViewer = () => {
                     >
                       <ShoppingBag className="w-3.5 h-3.5 text-purple-400" />
                       <div className="text-left">
-                        <p className="text-white/80 text-[11px] font-semibold group-hover:text-white transition-colors">Produits</p>
+                        <p className="text-white/80 text-[11px] font-semibold group-hover:text-white transition-colors">Products</p>
                         <p className="text-white/30 text-[9px]">{tourItems.length}</p>
                       </div>
                     </button>
@@ -2002,10 +2052,10 @@ const TourViewer = () => {
                   const allAmenities = Array.from(new Set(rooms.flatMap(r => r.amenities || [])));
 
                   const autoRoomSection = rooms.length > 0 ? [{
-                    title: "Hébergements",
+                    title: "Accommodations",
                     iconKey: "bed",
                     amenities: allAmenities,
-                    items: rooms.map(r => ({ name: r.name || "Chambre", iconKey: "bed", sub: [r.bedType, r.capacity ? `${r.capacity}p` : "", r.price ? `${r.price} ${r.currency || "TND"}` : ""].filter(Boolean).join(" · "), tagSid: r.tagSid || undefined, imageUrl: r.imageUrl || undefined })),
+                    items: rooms.map(r => ({ name: r.name || "Room", iconKey: "bed", sub: [r.bedType, r.capacity ? `${r.capacity}p` : "", r.price ? `${r.price} ${r.currency || "TND"}` : ""].filter(Boolean).join(" · "), tagSid: r.tagSid || undefined, imageUrl: r.imageUrl || undefined })),
                   }] : [];
 
                   const allSections = [
@@ -2040,16 +2090,16 @@ const TourViewer = () => {
                   const gymCustomSections: { title: string; icon: string; items: { name: string; icon: string; tagSid?: string }[] }[] = meta.gymSections || [];
 
                   const spacesSection = gymSpaces.length > 0 ? [{
-                    title: "Espaces", iconKey: "dumbbell", amenities: gymEquipment,
-                    items: gymSpaces.map(s => ({ name: s.name || "Espace", iconKey: s.icon || "dumbbell", sub: s.schedule ? `🕐 ${s.schedule}` : "", tagSid: s.tagSid || undefined })),
+                    title: "Spaces", iconKey: "dumbbell", amenities: gymEquipment,
+                    items: gymSpaces.map(s => ({ name: s.name || "Space", iconKey: s.icon || "dumbbell", sub: s.schedule ? `🕐 ${s.schedule}` : "", tagSid: s.tagSid || undefined })),
                   }] : [];
                   const plansSection = gymPlans.length > 0 ? [{
-                    title: "Abonnements", iconKey: "star", amenities: [] as string[],
+                    title: "Memberships", iconKey: "star", amenities: [] as string[],
                     items: gymPlans.map(p => ({ name: p.name || "Plan", iconKey: "star", sub: [p.price, p.duration].filter(Boolean).join(" · ") })),
                   }] : [];
                   const classesSection = gymClasses.length > 0 ? [{
-                    title: "Cours collectifs", iconKey: "users", amenities: [] as string[],
-                    items: gymClasses.map(c => ({ name: c.name || "Cours", iconKey: c.icon || "heart", sub: c.schedule || "" })),
+                    title: "Group Classes", iconKey: "users", amenities: [] as string[],
+                    items: gymClasses.map(c => ({ name: c.name || "Class", iconKey: c.icon || "heart", sub: c.schedule || "" })),
                   }] : [];
                   const allSections = [...spacesSection, ...plansSection, ...classesSection, ...gymCustomSections.map(s => ({
                     title: s.title, iconKey: s.icon, amenities: [] as string[],
@@ -2068,7 +2118,7 @@ const TourViewer = () => {
                       )}
                       {coaches.length > 0 && (
                         <div className="border-t border-white/[0.06] p-3 space-y-2">
-                          <p className="text-white/25 text-[10px] uppercase tracking-widest font-semibold">Nos Coachs</p>
+                          <p className="text-white/25 text-[10px] uppercase tracking-widest font-semibold">Our Coaches</p>
                           {coaches.map((coach, ci) => (
                             <button key={ci} onClick={() => setSelectedCoach(coach)}
                               className="w-full flex items-center gap-3 p-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.07] transition-all group"
@@ -2102,60 +2152,35 @@ const TourViewer = () => {
                   const details: { label: string; value: string }[] = [];
                   if (immo.propertyType) details.push({ label: "Type", value: immo.propertyType });
                   if (immo.transactionType) details.push({ label: "Transaction", value: immo.transactionType });
-                  if (immo.price) details.push({ label: "Prix", value: `${immo.price.toLocaleString()} ${immo.currency || "TND"}` });
-                  if (immo.rooms) details.push({ label: "Pièces", value: `${immo.rooms}` });
-                  if (immo.bedrooms) details.push({ label: "Chambres", value: `${immo.bedrooms}` });
-                  if (immo.bathrooms) details.push({ label: "SdB", value: `${immo.bathrooms}` });
-                  if (immo.floor != null) details.push({ label: "Étage", value: immo.totalFloors ? `${immo.floor}/${immo.totalFloors}` : `${immo.floor}` });
-                  if (immo.yearBuilt) details.push({ label: "Année", value: `${immo.yearBuilt}` });
-                  if (immo.condition) details.push({ label: "État", value: immo.condition });
-                  if (immo.heatingType) details.push({ label: "Chauffage", value: immo.heatingType });
-                  if (immo.energyClass) details.push({ label: "Énergie", value: `Classe ${immo.energyClass}` });
+                  if (immo.price) details.push({ label: "Price", value: `${immo.price.toLocaleString()} ${immo.currency || "TND"}` });
+                  if (immo.rooms) details.push({ label: "Rooms", value: `${immo.rooms}` });
+                  if (immo.bedrooms) details.push({ label: "Bedrooms", value: `${immo.bedrooms}` });
+                  if (immo.bathrooms) details.push({ label: "Bath", value: `${immo.bathrooms}` });
+                  if (immo.floor != null) details.push({ label: "Floor", value: immo.totalFloors ? `${immo.floor}/${immo.totalFloors}` : `${immo.floor}` });
+                  if (immo.yearBuilt) details.push({ label: "Year", value: `${immo.yearBuilt}` });
+                  if (immo.condition) details.push({ label: "Condition", value: immo.condition });
+                  if (immo.heatingType) details.push({ label: "Heating", value: immo.heatingType });
+                  if (immo.energyClass) details.push({ label: "Energy", value: `Class ${immo.energyClass}` });
                   const amenities: string[] = [];
-                  if (immo.furnished) amenities.push("Meublé");
+                  if (immo.furnished) amenities.push("Furnished");
                   if (immo.parking) amenities.push(immo.parkingSpaces ? `Parking (${immo.parkingSpaces})` : "Parking");
-                  if (immo.elevator) amenities.push("Ascenseur");
-                  if (immo.balcony) amenities.push("Balcon");
-                  if (immo.terrace) amenities.push(immo.terraceArea ? `Terrasse ${immo.terraceArea}m²` : "Terrasse");
-                  if (immo.garden) amenities.push(immo.gardenArea ? `Jardin ${immo.gardenArea}m²` : "Jardin");
-                  if (immo.pool) amenities.push("Piscine");
-                  if (immo.airConditioning) amenities.push("Climatisation");
-                  if (immo.basement) amenities.push("Sous-sol");
+                  if (immo.elevator) amenities.push("Elevator");
+                  if (immo.balcony) amenities.push("Balcony");
+                  if (immo.terrace) amenities.push(immo.terraceArea ? `Terrace ${immo.terraceArea}m²` : "Terrace");
+                  if (immo.garden) amenities.push(immo.gardenArea ? `Garden ${immo.gardenArea}m²` : "Garden");
+                  if (immo.pool) amenities.push("Pool");
+                  if (immo.airConditioning) amenities.push("Air Conditioning");
+                  if (immo.basement) amenities.push("Basement");
                   if (details.length === 0 && amenities.length === 0 && immoRooms.length === 0) return null;
                   return (
                     <>
-                    <div className="border-t border-white/[0.06] bg-white/[0.02]">
-                      {details.length > 0 && (
-                        <div className="p-3 space-y-1.5">
-                          <p className="text-white/25 text-[10px] uppercase tracking-widest font-semibold mb-2">Caractéristiques</p>
-                          <div className="grid grid-cols-2 gap-x-3 gap-y-1">
-                            {details.map((d, i) => (
-                              <div key={i} className="flex justify-between py-1 border-b border-white/[0.04]">
-                                <span className="text-white/40 text-xs">{d.label}</span>
-                                <span className="text-white/80 text-xs font-medium">{d.value}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                      {amenities.length > 0 && (
-                        <div className="p-3 border-t border-white/[0.06]">
-                          <p className="text-white/25 text-[10px] uppercase tracking-widest font-semibold mb-2">Commodités</p>
-                          <div className="flex flex-wrap gap-1.5">
-                            {amenities.map((a, i) => (
-                              <span key={i} className="px-2 py-0.5 rounded-full bg-white/[0.06] text-white/60 text-[10px]">{a}</span>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
                     {immoRooms.length > 0 && (
                       <div className="border-t border-white/[0.06] overflow-hidden">
                         <HotelMenuSection
-                          title="Pièces"
+                          title="Rooms"
                           iconKey="door"
                           items={immoRooms.map(r => ({
-                            name: r.name || r.type || "Pièce",
+                            name: r.name || r.type || "Room",
                             iconKey: "door",
                             sub: r.description ? r.description.slice(0, 60) + (r.description.length > 60 ? "…" : "") : r.type || "",
                             tagSid: r.tagSid || undefined,
@@ -2170,6 +2195,31 @@ const TourViewer = () => {
                         />
                       </div>
                     )}
+                    <div className="border-t border-white/[0.06] bg-white/[0.02]">
+                      {details.length > 0 && (
+                        <div className="p-3 space-y-1.5">
+                          <p className="text-white/25 text-[10px] uppercase tracking-widest font-semibold mb-2">Features</p>
+                          <div className="grid grid-cols-2 gap-x-3 gap-y-1">
+                            {details.map((d, i) => (
+                              <div key={i} className="flex justify-between py-1 border-b border-white/[0.04]">
+                                <span className="text-white/40 text-xs">{d.label}</span>
+                                <span className="text-white/80 text-xs font-medium">{d.value}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {amenities.length > 0 && (
+                        <div className="p-3 border-t border-white/[0.06]">
+                          <p className="text-white/25 text-[10px] uppercase tracking-widest font-semibold mb-2">Amenities</p>
+                          <div className="flex flex-wrap gap-1.5">
+                            {amenities.map((a, i) => (
+                              <span key={i} className="px-2 py-0.5 rounded-full bg-white/[0.06] text-white/60 text-[10px]">{a}</span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                     </>
                   );
                 } catch { return null; }
@@ -2181,7 +2231,7 @@ const TourViewer = () => {
                       to={`/view/${prevTour.id}`}
                       className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-white/40 hover:text-white/70 text-xs transition-colors border-r border-white/[0.06]"
                     >
-                      <ChevronLeft className="w-3.5 h-3.5" /> Précédent
+                      <ChevronLeft className="w-3.5 h-3.5" /> Previous
                     </Link>
                   ) : (
                     <div className="flex-1" />
@@ -2191,7 +2241,7 @@ const TourViewer = () => {
                       to={`/view/${nextTour.id}`}
                       className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-white/40 hover:text-white/70 text-xs transition-colors"
                     >
-                      Suivant <ChevronRight className="w-3.5 h-3.5" />
+                      Next <ChevronRight className="w-3.5 h-3.5" />
                     </Link>
                   ) : (
                     <div className="flex-1" />
@@ -2294,7 +2344,7 @@ const TourViewer = () => {
                           className="flex-1 h-[52px] bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 text-white font-bold rounded-2xl transition-all hover:shadow-[0_4px_24px_rgba(124,58,237,0.4)] flex items-center justify-center gap-2.5 text-[13px]"
                         >
                           <ShoppingCart className="w-4 h-4" />
-                          Ajouter au panier
+                          Add to cart
                         </button>
                       )}
                       {selectedItem?.externalUrl && (
@@ -2304,7 +2354,7 @@ const TourViewer = () => {
                           rel="noopener noreferrer"
                           className="h-[52px] px-5 bg-white/[0.07] hover:bg-white/[0.12] text-white/70 hover:text-white font-semibold rounded-2xl transition-all flex items-center justify-center gap-2 text-[13px] border border-white/[0.08]"
                         >
-                          Acheter
+                          Buy
                           <ExternalLink className="w-3.5 h-3.5" />
                         </a>
                       )}
@@ -2313,7 +2363,7 @@ const TourViewer = () => {
                           onClick={() => { setSelectedTag(null); }}
                           className="flex-1 h-[52px] bg-white/[0.07] hover:bg-white/[0.12] text-white/70 hover:text-white font-semibold rounded-2xl transition-all flex items-center justify-center gap-2 text-[13px] border border-white/[0.08]"
                         >
-                          Fermer
+                          Close
                         </button>
                       )}
                     </div>
@@ -2347,7 +2397,7 @@ const TourViewer = () => {
                 <div className="p-4 border-b border-white/[0.06] flex items-center justify-between shrink-0">
                   <h2 className="text-white font-semibold text-sm flex items-center gap-2">
                     <ShoppingBag className="w-4 h-4" />
-                    Produits ({tourItems.length})
+                    Products ({tourItems.length})
                   </h2>
                   <button onClick={() => setShowProducts(false)} className="w-7 h-7 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/50 hover:text-white transition-all">
                     <X className="w-3.5 h-3.5" />
@@ -2385,7 +2435,7 @@ const TourViewer = () => {
                         <button
                           onClick={(e) => { e.stopPropagation(); addToCart(item); }}
                           className="w-8 h-8 rounded-lg bg-purple-600/80 hover:bg-purple-500 flex items-center justify-center text-white shrink-0 opacity-0 group-hover:opacity-100 transition-all"
-                          title="Ajouter au panier"
+                          title="Add to cart"
                         >
                           <Plus className="w-4 h-4" />
                         </button>
@@ -2414,7 +2464,7 @@ const TourViewer = () => {
                               {item.description && (
                                 <p className="text-gray-500 text-xs leading-relaxed mt-2 line-clamp-3">{item.description}</p>
                               )}
-                              <p className="text-purple-500 text-[10px] font-semibold mt-3 uppercase tracking-wider">Cliquez pour voir dans la visite →</p>
+                              <p className="text-purple-500 text-[10px] font-semibold mt-3 uppercase tracking-wider">Click to view in the tour →</p>
                             </div>
                           </div>
                         </div>
@@ -2497,7 +2547,7 @@ const TourViewer = () => {
                             href={`tel:${svc.phone}`}
                             onClick={(e) => e.stopPropagation()}
                             className="w-7 h-7 rounded-lg bg-blue-600/80 hover:bg-blue-500 flex items-center justify-center text-white transition-all"
-                            title="Appeler"
+                            title="Call"
                           >
                             <Phone className="w-3.5 h-3.5" />
                           </a>
@@ -2535,7 +2585,7 @@ const TourViewer = () => {
                 <div className="p-4 border-b border-white/[0.06] flex items-center justify-between shrink-0">
                   <h2 className="text-white font-semibold text-sm flex items-center gap-2">
                     <DoorOpen className="w-4 h-4" />
-                    Chambres ({tourChambers.length})
+                    Rooms ({tourChambers.length})
                   </h2>
                   <button onClick={() => setShowChambers(false)} className="w-7 h-7 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/50 hover:text-white transition-all">
                     <X className="w-3.5 h-3.5" />
@@ -2665,127 +2715,6 @@ const TourViewer = () => {
         )}
       </AnimatePresence>
 
-      {/* ===== CHAMBER DETAIL POPUP ===== */}
-      <AnimatePresence>
-        {selectedChamber && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setSelectedChamber(null)}
-              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100]"
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9, y: 40 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 40 }}
-              transition={{ type: "spring", damping: 28, stiffness: 300 }}
-              className="fixed inset-0 flex items-center justify-center z-[100] pointer-events-none p-4"
-            >
-              <div className="bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col w-full max-w-[440px] max-h-[90vh] pointer-events-auto">
-                {/* Close */}
-                <button
-                  onClick={() => setSelectedChamber(null)}
-                  className="absolute top-3 right-3 z-10 w-9 h-9 rounded-full bg-black/30 backdrop-blur-md hover:bg-black/50 flex items-center justify-center text-white transition-all"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-
-                {/* Hero Image */}
-                {selectedChamber.imageUrl ? (
-                  <div className="relative">
-                    <img src={selectedChamber.imageUrl} alt={selectedChamber.name} className="w-full h-56 object-cover" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
-                    {selectedChamber.price != null && (
-                      <div className="absolute bottom-4 left-4">
-                        <div className="bg-white/95 backdrop-blur-md rounded-xl px-4 py-2 shadow-lg">
-                          <p className="text-xs text-gray-500 font-medium">À partir de</p>
-                          <p className="text-xl font-bold text-gray-900">{selectedChamber.price} <span className="text-sm font-medium text-gray-500">{selectedChamber.currency || "TND"}</span><span className="text-xs text-gray-400 font-normal"> / nuit</span></p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="w-full h-44 bg-gradient-to-br from-amber-50 via-orange-50 to-rose-50 flex items-center justify-center relative">
-                    <DoorOpen className="w-20 h-20 text-amber-200" />
-                    {selectedChamber.price != null && (
-                      <div className="absolute bottom-4 left-4">
-                        <div className="bg-white/95 backdrop-blur-md rounded-xl px-4 py-2 shadow-lg">
-                          <p className="text-xs text-gray-500 font-medium">À partir de</p>
-                          <p className="text-xl font-bold text-gray-900">{selectedChamber.price} <span className="text-sm font-medium text-gray-500">{selectedChamber.currency || "TND"}</span><span className="text-xs text-gray-400 font-normal"> / nuit</span></p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Content */}
-                <div className="p-6 overflow-y-auto flex-1 min-h-0">
-                  <h3 className="text-xl font-bold text-gray-900 mb-1">{selectedChamber.name}</h3>
-                  {selectedChamber.description && (
-                    <p className="text-sm text-gray-500 leading-relaxed mt-2">{selectedChamber.description}</p>
-                  )}
-
-                  {/* Features pills from description */}
-                  {selectedChamber.description && selectedChamber.description.includes("·") && (
-                    <div className="flex flex-wrap gap-2 mt-4">
-                      {selectedChamber.description.split("·").map((part, i) => (
-                        <span key={i} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gray-50 border border-gray-100 text-xs font-medium text-gray-600">
-                          {part.trim()}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Divider */}
-                  <div className="my-5 border-t border-gray-100" />
-
-                  {/* Book Now Button */}
-                  <button
-                    onClick={() => {
-                      if (selectedChamber.bookingUrl && selectedChamber.bookingUrl.trim()) {
-                        const url = selectedChamber.bookingUrl.trim();
-                        const normalized = /^https?:\/\//i.test(url) ? url : `https://${url}`;
-                        window.open(normalized, "_blank", "noopener,noreferrer");
-                        return;
-                      }
-                      const msg = encodeURIComponent(`Bonjour, je souhaite réserver la chambre "${selectedChamber.name}"${selectedChamber.price != null ? ` (${selectedChamber.price} ${selectedChamber.currency || "TND"}/nuit)` : ""}. Merci.`);
-                      window.open(`https://wa.me/21654757573?text=${msg}`, "_blank", "noopener,noreferrer");
-                    }}
-                    className="w-full py-4 rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 hover:from-amber-600 hover:via-orange-600 hover:to-rose-600 text-white font-bold text-base shadow-lg shadow-orange-500/25 hover:shadow-orange-500/40 transition-all duration-300 flex items-center justify-center gap-3 group"
-                  >
-                    <svg className="w-5 h-5 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                    Réserver maintenant
-                  </button>
-
-                  {/* Secondary actions */}
-                  <div className="flex gap-3 mt-3">
-                    <a
-                      href="tel:+21654757573"
-                      className="flex-1 py-3 rounded-xl bg-gray-50 hover:bg-gray-100 text-gray-700 font-medium text-sm transition-colors flex items-center justify-center gap-2 border border-gray-100"
-                    >
-                      <Phone className="w-4 h-4" />
-                      Appeler
-                    </a>
-                    <button
-                      onClick={() => {
-                        const msg = encodeURIComponent(`Bonjour, je souhaite avoir plus d'informations sur la chambre "${selectedChamber.name}". Merci.`);
-                        window.open(`https://wa.me/21654757573?text=${msg}`, "_blank", "noopener,noreferrer");
-                      }}
-                      className="flex-1 py-3 rounded-xl bg-green-50 hover:bg-green-100 text-green-700 font-medium text-sm transition-colors flex items-center justify-center gap-2 border border-green-100"
-                    >
-                      <MessageCircle className="w-4 h-4" />
-                      WhatsApp
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
-
       {/* ===== COACH PROFILE POPUP ===== */}
       <AnimatePresence>
         {selectedCoach && (
@@ -2839,7 +2768,7 @@ const TourViewer = () => {
                   {/* Specialties chips */}
                   {selectedCoach.specialties && selectedCoach.specialties.length > 0 && (
                     <div>
-                      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Spécialités</p>
+                      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Specialties</p>
                       <div className="flex flex-wrap gap-1.5">
                         {selectedCoach.specialties.map((s, si) => {
                           const spec = COACH_SPECIALTY_LABELS[s];
@@ -2871,7 +2800,7 @@ const TourViewer = () => {
                         <div className="flex items-start gap-2.5 p-2.5 rounded-lg bg-gray-50">
                           <Trophy className="w-4 h-4 text-purple-500 mt-0.5 shrink-0" />
                           <div>
-                            <p className="text-[10px] text-gray-400 font-semibold uppercase">Expérience</p>
+                            <p className="text-[10px] text-gray-400 font-semibold uppercase">Experience</p>
                             <p className="text-sm text-gray-700">{selectedCoach.experience}</p>
                           </div>
                         </div>
@@ -2880,7 +2809,7 @@ const TourViewer = () => {
                         <div className="flex items-start gap-2.5 p-2.5 rounded-lg bg-gray-50">
                           <Clock className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
                           <div>
-                            <p className="text-[10px] text-gray-400 font-semibold uppercase">Disponibilité</p>
+                            <p className="text-[10px] text-gray-400 font-semibold uppercase">Availability</p>
                             <p className="text-sm text-gray-700">{selectedCoach.schedule}</p>
                           </div>
                         </div>
@@ -2973,7 +2902,7 @@ const TourViewer = () => {
                       className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium text-sm transition-colors"
                     >
                       <MapPin className="w-4 h-4" />
-                      Voir en 3D
+                      View in 3D
                     </button>
                   )}
                 </div>
@@ -3006,7 +2935,7 @@ const TourViewer = () => {
                 <div className="p-4 border-b flex items-center justify-between shrink-0 bg-[#1a5c4f] text-white">
                   <h2 className="font-bold text-base flex items-center gap-2">
                     <ShoppingCart className="w-5 h-5" />
-                    Mon Panier ({cartCount})
+                    My Cart ({cartCount})
                   </h2>
                   <button onClick={() => setShowCart(false)} className="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center transition-all">
                     <X className="w-4 h-4" />
@@ -3056,7 +2985,7 @@ const TourViewer = () => {
                     <span className="text-xl font-bold text-gray-900">{cartTotal.toFixed(2)} {cart[0]?.item.currency ? CURRENCY_SYMBOLS[cart[0].item.currency] || cart[0].item.currency : "€"}</span>
                   </div>
                   <button className="w-full py-3.5 bg-[#1a5c4f] hover:bg-[#144a40] text-white font-semibold rounded-xl transition-colors text-sm">
-                    VOIR LE RÉCAPITULATIF
+                    VIEW SUMMARY
                   </button>
                 </div>
               </div>
@@ -3076,13 +3005,13 @@ const TourViewer = () => {
 
       {/* ===== BOTTOM: PRODUCT & SERVICE STRIP ===== */}
       {((tourItems.length > 0 && bottomStripConfig.products) || (tourServices.length > 0 && bottomStripConfig.services) || (tourChambers.length > 0 && bottomStripConfig.chambers) || gymCoaches.length > 0 || (immoRooms.length > 0 && bottomStripConfig.chambers)) && (
-        <div className="shrink-0 bg-[#0d0d1a] border-t border-white/10">
+        <div className="shrink-0 bg-gradient-to-r from-black via-[#0a0520] to-[#110835] border-t border-white/10">
           {/* Toggle handle */}
           <button
-            onClick={() => setBottomStripOpen(!bottomStripOpen)}
+            onClick={() => { if (!bottomStripOpen) userOpenedStripRef.current = true; setBottomStripOpen(!bottomStripOpen); }}
             className="w-full flex items-center justify-center py-1.5 hover:bg-white/[0.03] transition-colors group"
           >
-            <ChevronDown className={`w-4 h-4 text-white/30 group-hover:text-white/60 transition-all duration-300 ${bottomStripOpen ? "rotate-0" : "rotate-180"}`} />
+            <ChevronDown className={`w-4 h-4 text-purple-400 group-hover:text-purple-300 transition-all duration-300 ${bottomStripOpen ? "rotate-0" : "rotate-180"}`} />
           </button>
           <motion.div
             initial={false}
@@ -3099,7 +3028,7 @@ const TourViewer = () => {
                     onClick={() => setBottomTab("products")}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold uppercase tracking-wider transition-all ${bottomTab === "products" ? "bg-white/15 text-white" : "text-white/40 hover:text-white/70"}`}
                   >
-                    <ShoppingBag className="w-3 h-3" /> Produits ({tourItems.length})
+                    <ShoppingBag className="w-3 h-3" /> Products ({tourItems.length})
                   </button>
                 )}
                 {tourServices.length > 0 && bottomStripConfig.services && (
@@ -3115,7 +3044,7 @@ const TourViewer = () => {
                     onClick={() => setBottomTab("chambers")}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold uppercase tracking-wider transition-all ${bottomTab === "chambers" ? "bg-white/15 text-white" : "text-white/40 hover:text-white/70"}`}
                   >
-                    <DoorOpen className="w-3 h-3" /> Chambres ({tourChambers.length})
+                    <DoorOpen className="w-3 h-3" /> Rooms ({tourChambers.length})
                   </button>
                 )}
                 {immoRooms.length > 0 && bottomStripConfig.chambers && (
@@ -3123,7 +3052,7 @@ const TourViewer = () => {
                     onClick={() => setBottomTab("rooms")}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold uppercase tracking-wider transition-all ${bottomTab === "rooms" ? "bg-white/15 text-white" : "text-white/40 hover:text-white/70"}`}
                   >
-                    <DoorOpen className="w-3 h-3" /> Pièces ({immoRooms.length})
+                    <DoorOpen className="w-3 h-3" /> Rooms ({immoRooms.length})
                   </button>
                 )}
                 {gymCoaches.length > 0 && (
@@ -3131,7 +3060,7 @@ const TourViewer = () => {
                     onClick={() => setBottomTab("coaches")}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold uppercase tracking-wider transition-all ${bottomTab === "coaches" ? "bg-white/15 text-white" : "text-white/40 hover:text-white/70"}`}
                   >
-                    <User className="w-3 h-3" /> Coachs ({gymCoaches.length})
+                    <User className="w-3 h-3" /> Coaches ({gymCoaches.length})
                   </button>
                 )}
               </div>
@@ -3140,18 +3069,18 @@ const TourViewer = () => {
             {/* Active filter label (products only) */}
             {bottomTab === "products" && activeTagFilter && (
               <div className="flex items-center justify-center gap-2 mb-2">
-                <span className="text-white/60 text-[10px] font-medium uppercase tracking-wider">Produit lié au tag</span>
+                <span className="text-white/60 text-[10px] font-medium uppercase tracking-wider">Product linked to tag</span>
                 <button
                   onClick={() => setActiveTagFilter(null)}
                   className="text-white/40 hover:text-white text-[10px] underline transition-colors"
                 >
-                  Voir tout
+                  View all
                 </button>
               </div>
             )}
 
             {/* Products strip */}
-            {(bottomTab === "products" || (tourServices.length === 0 && gymCoaches.length === 0)) && tourItems.length > 0 && (
+            {bottomTab === "products" && tourItems.length > 0 && (
               <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide justify-center">
                 {tourItems
                   .filter(i => !activeTagFilter || i.tagSid?.trim().toLowerCase() === activeTagFilter.trim().toLowerCase())
@@ -3183,7 +3112,7 @@ const TourViewer = () => {
                     onClick={() => setShowProducts(true)}
                     className="flex-shrink-0 px-3 py-2 rounded-xl bg-white/[0.05] border border-white/[0.08] text-white/50 hover:text-white hover:bg-white/[0.1] transition-all text-xs font-medium"
                   >
-                    Voir tout
+                    View all
                   </button>
                 )}
               </div>
@@ -3249,7 +3178,7 @@ const TourViewer = () => {
                     onClick={() => setShowServices(true)}
                     className="flex-shrink-0 px-3 py-2 rounded-xl bg-white/[0.05] border border-white/[0.08] text-white/50 hover:text-white hover:bg-white/[0.1] transition-all text-xs font-medium"
                   >
-                    Voir tout
+                    View all
                   </button>
                 )}
               </div>
@@ -3284,7 +3213,7 @@ const TourViewer = () => {
                     onClick={() => setShowChambers(true)}
                     className="flex-shrink-0 px-3 py-2 rounded-xl bg-white/[0.05] border border-white/[0.08] text-white/50 hover:text-white hover:bg-white/[0.1] transition-all text-xs font-medium"
                   >
-                    Voir tout
+                    View all
                   </button>
                 )}
               </div>

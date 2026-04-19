@@ -45,6 +45,14 @@ export default function VirtualStaging() {
   const { id: tourId } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
+  useEffect(() => {
+    const token = sessionStorage.getItem("admin_token");
+    if (!token) { navigate("/login"); return; }
+    fetch("/api/auth/verify", { headers: { Authorization: `Bearer ${token}` } })
+      .then((r) => { if (!r.ok) throw new Error(); })
+      .catch(() => { sessionStorage.removeItem("admin_token"); navigate("/login"); });
+  }, [navigate]);
+
   /* ── Core state ── */
   const [tour, setTour] = useState<any>(null);
   const [modelId, setModelId] = useState<string | null>(null);

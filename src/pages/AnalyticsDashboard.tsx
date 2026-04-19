@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   ArrowLeft, Eye, Clock, MousePointerClick, ShoppingCart, Tag, BarChart3,
   Users, TrendingUp, Globe, Hash, Monitor, MapPin, Filter, ArrowUpDown, Flame,
@@ -78,11 +78,20 @@ const heatColor = (ratio: number) => {
 };
 
 const AnalyticsDashboard = () => {
+  const navigate = useNavigate();
   const [stats, setStats] = useState<GlobalStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [filterTourId, setFilterTourId] = useState<number | null>(null);
   const [sortField, setSortField] = useState<"visits" | "productClicks" | "tagClicks" | "addToCart">("visits");
   const [sortAsc, setSortAsc] = useState(false);
+
+  useEffect(() => {
+    const token = sessionStorage.getItem("admin_token");
+    if (!token) { navigate("/login"); return; }
+    fetch("/api/auth/verify", { headers: { Authorization: `Bearer ${token}` } })
+      .then((r) => { if (!r.ok) throw new Error(); })
+      .catch(() => { sessionStorage.removeItem("admin_token"); navigate("/login"); });
+  }, [navigate]);
 
   useEffect(() => {
     fetch("/api/analytics/global/stats")

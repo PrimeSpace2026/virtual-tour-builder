@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, Eye, Clock, MousePointerClick, ShoppingCart, Tag, BarChart3, Users, TrendingUp, Box, Layers, Camera, Calendar, Globe, Hash, Monitor, MapPin } from "lucide-react";
 import { ComposableMap, Geographies, Geography, Marker, ZoomableGroup } from "react-simple-maps";
 
@@ -43,6 +43,7 @@ interface MatterportInfo {
 
 const TourStats = () => {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [stats, setStats] = useState<StatsData | null>(null);
   const [tourName, setTourName] = useState("");
   const [tourUrl, setTourUrl] = useState("");
@@ -50,6 +51,14 @@ const TourStats = () => {
   const [mpInfo, setMpInfo] = useState<MatterportInfo | null>(null);
   const [tagCount, setTagCount] = useState<number>(0);
   const [itemCount, setItemCount] = useState<number>(0);
+
+  useEffect(() => {
+    const token = sessionStorage.getItem("admin_token");
+    if (!token) { navigate("/login"); return; }
+    fetch("/api/auth/verify", { headers: { Authorization: `Bearer ${token}` } })
+      .then((r) => { if (!r.ok) throw new Error(); })
+      .catch(() => { sessionStorage.removeItem("admin_token"); navigate("/login"); });
+  }, [navigate]);
 
   useEffect(() => {
     if (!id) return;

@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useSearchParams, Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useSearchParams, Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, Copy, Check, Loader2, Tag, Search } from "lucide-react";
 
 interface TagInfo {
@@ -9,6 +9,7 @@ interface TagInfo {
 }
 
 const TagFinder = () => {
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const tourUrlParam = searchParams.get("tourUrl") || "";
   const tourIdParam = searchParams.get("tourId") || "";
@@ -18,6 +19,14 @@ const TagFinder = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [copiedSid, setCopiedSid] = useState<string | null>(null);
+
+  useEffect(() => {
+    const token = sessionStorage.getItem("admin_token");
+    if (!token) { navigate("/login"); return; }
+    fetch("/api/auth/verify", { headers: { Authorization: `Bearer ${token}` } })
+      .then((r) => { if (!r.ok) throw new Error(); })
+      .catch(() => { sessionStorage.removeItem("admin_token"); navigate("/login"); });
+  }, [navigate]);
 
   const loadTags = async () => {
     if (!tourUrl.trim()) return;
