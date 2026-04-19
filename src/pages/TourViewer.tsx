@@ -321,6 +321,7 @@ const CATEGORY_DISPLAY: Record<string, string> = {
   "Immobilier": "Real Estate",
   "Hôtellerie": "Hospitality",
   "Hotellerie": "Hospitality",
+  "HÃ´tellerie": "Hospitality",
   "Commerce": "Retail",
   "Restaurant": "Restaurant",
   "Entreprise": "Business",
