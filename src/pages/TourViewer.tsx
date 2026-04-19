@@ -368,6 +368,20 @@ const displayPropertyType = (v?: string) => (v ? (PROPERTY_TYPE_DISPLAY[v] || v)
 const displayTransactionType = (v?: string) => (v ? (TRANSACTION_TYPE_DISPLAY[v] || v) : "");
 const displayCondition = (v?: string) => (v ? (CONDITION_DISPLAY[v] || v) : "");
 const displayHeating = (v?: string) => (v ? (HEATING_DISPLAY[v] || v) : "");
+// Normalize category for conditional checks (handles French + mojibake + English)
+const normalizeCategory = (v?: string): string => {
+  if (!v) return "";
+  const map: Record<string, string> = {
+    "Hôtellerie": "Hôtellerie",
+    "Hotellerie": "Hôtellerie",
+    "HÃ´tellerie": "Hôtellerie",
+    "Hospitality": "Hôtellerie",
+    "Immobilier": "Immobilier",
+    "Real Estate": "Immobilier",
+    "Gym & Fitness": "Gym & Fitness",
+  };
+  return map[v] || v;
+};
 
 const TourViewer = () => {
   const { id } = useParams<{ id: string }>();
@@ -553,14 +567,14 @@ const TourViewer = () => {
         setTour(tourData);
         setAllTours(tours);
         // Parse gym coaches from metadataJson
-        if (tourData.category === "Gym & Fitness" && tourData.metadataJson) {
+        if (normalizeCategory(tourData.category) === "Gym & Fitness" && tourData.metadataJson) {
           try {
             const meta = JSON.parse(tourData.metadataJson);
             setGymCoaches(Array.isArray(meta.coaches) ? meta.coaches : []);
           } catch { setGymCoaches([]); }
         } else { setGymCoaches([]); }
         // Parse immobilier rooms from metadataJson
-        if (tourData.category === "Immobilier" && tourData.metadataJson) {
+        if (normalizeCategory(tourData.category) === "Immobilier" && tourData.metadataJson) {
           try {
             const meta = JSON.parse(tourData.metadataJson);
             setImmoRooms(Array.isArray(meta.immobilierRooms) ? meta.immobilierRooms : []);
@@ -584,12 +598,12 @@ const TourViewer = () => {
         let bsc = { products: true, services: true, chambers: true };
         if (tourData.metadataJson) { try { const m = JSON.parse(tourData.metadataJson); if (m.bottomStrip) bsc = m.bottomStrip; } catch {} }
         if (chambers.length > 0 && bsc.chambers) setBottomTab("chambers");
-        else if (tourData.category === "Immobilier") {
+        else if (normalizeCategory(tourData.category) === "Immobilier") {
           try { const m = JSON.parse(tourData.metadataJson || "{}"); if (Array.isArray(m.immobilierRooms) && m.immobilierRooms.length > 0) setBottomTab("rooms"); } catch {}
         }
         else if (items.length > 0 && bsc.products) setBottomTab("products");
         else if (services.length > 0 && bsc.services) setBottomTab("services");
-        else if (tourData.category === "Gym & Fitness") setBottomTab("coaches");
+        else if (normalizeCategory(tourData.category) === "Gym & Fitness") setBottomTab("coaches");
         // Build saved tags map (name → SID) for production tag resolution
         const savedMap = new Map<string, string>();
         if (Array.isArray(tagsData)) {
@@ -1718,7 +1732,7 @@ const TourViewer = () => {
                 )}
 
                 {/* Hotel Menu — Canyon Ranch style for Hôtellerie */}
-                {tour.category === "Hôtellerie" && tour.metadataJson && (() => {
+                {normalizeCategory(tour.category) === "Hôtellerie" && tour.metadataJson && (() => {
                   try {
                     const meta = JSON.parse(tour.metadataJson);
                     const customSections: { title: string; icon: string; items: { name: string; icon: string; tagSid?: string }[] }[] = meta.sections || [];
@@ -1761,7 +1775,7 @@ const TourViewer = () => {
                 })()}
 
                 {/* Gym & Fitness Menu */}
-                {tour.category === "Gym & Fitness" && tour.metadataJson && (() => {
+                {normalizeCategory(tour.category) === "Gym & Fitness" && tour.metadataJson && (() => {
                   try {
                     const meta = JSON.parse(tour.metadataJson);
                     const gymSpaces: { name: string; tagSid: string; icon: string; schedule: string }[] = meta.spaces || [];
@@ -1859,7 +1873,7 @@ const TourViewer = () => {
                 })()}
 
                 {/* Immobilier Property Info */}
-                {tour.category === "Immobilier" && tour.metadataJson && (() => {
+                {normalizeCategory(tour.category) === "Immobilier" && tour.metadataJson && (() => {
                   try {
                     const meta = JSON.parse(tour.metadataJson);
                     const immo = meta.immobilier;
@@ -2107,7 +2121,7 @@ const TourViewer = () => {
               )}
 
               {/* Mobile: Hotel Menu */}
-              {tour.category === "Hôtellerie" && tour.metadataJson && (() => {
+              {normalizeCategory(tour.category) === "Hôtellerie" && tour.metadataJson && (() => {
                 try {
                   const meta = JSON.parse(tour.metadataJson);
                   const customSections: { title: string; icon: string; items: { name: string; icon: string; tagSid?: string }[] }[] = meta.sections || [];
@@ -2143,7 +2157,7 @@ const TourViewer = () => {
               })()}
 
               {/* Mobile: Gym Menu */}
-              {tour.category === "Gym & Fitness" && tour.metadataJson && (() => {
+              {normalizeCategory(tour.category) === "Gym & Fitness" && tour.metadataJson && (() => {
                 try {
                   const meta = JSON.parse(tour.metadataJson);
                   const gymSpaces: { name: string; tagSid: string; icon: string; schedule: string }[] = meta.spaces || [];
@@ -2206,7 +2220,7 @@ const TourViewer = () => {
                 } catch { return null; }
               })()}
               {/* Mobile: Immobilier Info */}
-              {tour.category === "Immobilier" && tour.metadataJson && (() => {
+              {normalizeCategory(tour.category) === "Immobilier" && tour.metadataJson && (() => {
                 try {
                   const meta = JSON.parse(tour.metadataJson);
                   const immo = meta.immobilier;
@@ -3102,7 +3116,7 @@ const TourViewer = () => {
                     <Briefcase className="w-3 h-3" /> Services ({tourServices.length})
                   </button>
                 )}
-                {tourChambers.length > 0 && bottomStripConfig.chambers && tour?.category !== "Immobilier" && (
+                {tourChambers.length > 0 && bottomStripConfig.chambers && normalizeCategory(tour?.category) !== "Immobilier" && (
                   <button
                     onClick={() => setBottomTab("chambers")}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold uppercase tracking-wider transition-all ${bottomTab === "chambers" ? "bg-white/15 text-white" : "text-white/40 hover:text-white/70"}`}
