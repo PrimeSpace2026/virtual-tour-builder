@@ -313,8 +313,60 @@ const CURRENCY_SYMBOLS: Record<string, string> = { EUR: "€", USD: "$", TND: "T
 function buildEmbedUrl(tourUrl: string, _withSdkKey = false): string {
   const modelId = extractModelId(tourUrl);
   if (!modelId) return tourUrl;
-  return `https://my.matterport.com/show/?m=${modelId}&play=1&qs=1&title=0&vr=0&dh=0&f=0&search=0&hr=0&gt=0&hl=0&lang=fr&applicationKey=${SDK_KEY}`;
+  return `https://my.matterport.com/show/?m=${modelId}&play=1&qs=1&title=0&vr=0&dh=0&f=0&search=0&hr=0&gt=0&hl=0&nt=0&brand=0&help=0&mls=2&fp=0&measurements=0&tour=0&views=0&pin=0&portal=0&lang=en&applicationKey=${SDK_KEY}`;
 }
+
+// Display translation maps (data stored in DB stays in original language)
+const CATEGORY_DISPLAY: Record<string, string> = {
+  "Immobilier": "Real Estate",
+  "Hôtellerie": "Hospitality",
+  "Hotellerie": "Hospitality",
+  "Commerce": "Retail",
+  "Restaurant": "Restaurant",
+  "Entreprise": "Business",
+  "Wedding venue": "Wedding Venue",
+  "Gym & Fitness": "Gym & Fitness",
+};
+const PROPERTY_TYPE_DISPLAY: Record<string, string> = {
+  "Maison": "House",
+  "Appartement": "Apartment",
+  "Villa": "Villa",
+  "Studio": "Studio",
+  "Bureau": "Office",
+  "Commerce": "Commercial",
+  "Terrain": "Land",
+  "Duplex": "Duplex",
+};
+const TRANSACTION_TYPE_DISPLAY: Record<string, string> = {
+  "Location": "Rental",
+  "Vente": "Sale",
+  "Achat": "Purchase",
+};
+const CONDITION_DISPLAY: Record<string, string> = {
+  "Neuf": "New",
+  "Bon état": "Good condition",
+  "Bon Ã©tat": "Good condition",
+  "À rénover": "Needs renovation",
+  "Ã rÃ©nover": "Needs renovation",
+  "Rénové": "Renovated",
+  "RÃ©novÃ©": "Renovated",
+  "Ancien": "Old",
+};
+const HEATING_DISPLAY: Record<string, string> = {
+  "Électrique": "Electric",
+  "Ãlectrique": "Electric",
+  "Gaz": "Gas",
+  "Solaire": "Solar",
+  "Fioul": "Oil",
+  "Bois": "Wood",
+  "Pompe à chaleur": "Heat pump",
+  "Aucun": "None",
+};
+const displayCategory = (v?: string) => (v ? (CATEGORY_DISPLAY[v] || v) : "");
+const displayPropertyType = (v?: string) => (v ? (PROPERTY_TYPE_DISPLAY[v] || v) : "");
+const displayTransactionType = (v?: string) => (v ? (TRANSACTION_TYPE_DISPLAY[v] || v) : "");
+const displayCondition = (v?: string) => (v ? (CONDITION_DISPLAY[v] || v) : "");
+const displayHeating = (v?: string) => (v ? (HEATING_DISPLAY[v] || v) : "");
 
 const TourViewer = () => {
   const { id } = useParams<{ id: string }>();
@@ -771,6 +823,16 @@ const TourViewer = () => {
 
         // NOW set SDK as ready — model is loaded & tags are cached
         if (cancelled) return;
+        // Hide remaining UI elements via SDK Settings
+        try {
+          await Promise.allSettled([
+            sdk.Settings.update('labels', false),
+            sdk.Settings.update('highlightReel', false),
+            sdk.Settings.update('help', false),
+          ]);
+          console.log("✅ SDK UI elements hidden");
+        } catch (e) { console.log("Settings update error:", e); }
+
         sdkRef.current = sdk;
         setSdkConnected(true);
         console.log("✅ SDK ready for navigation");
@@ -877,7 +939,7 @@ const TourViewer = () => {
       const iframeFallback = () => {
         const modelId = extractModelId(tour.tourUrl);
         if (!modelId) return;
-        const tagUrl = `https://my.matterport.com/show/?m=${modelId}&play=1&qs=1&brand=0&title=0&mls=2&help=0&hl=0&tag=${encodeURIComponent(resolvedSid)}&mt=1&pin=1`;
+        const tagUrl = `https://my.matterport.com/show/?m=${modelId}&play=1&qs=1&title=0&vr=0&dh=0&f=0&search=0&hr=0&gt=0&hl=0&nt=0&brand=0&help=0&mls=2&fp=0&measurements=0&tour=0&views=0&pin=0&portal=0&lang=en&tag=${encodeURIComponent(resolvedSid)}&mt=1&pin=1`;
         console.log(`🎯 Iframe deep link to tag: ${resolvedSid}`);
         setIframeSrc(tagUrl);
         setIframeKey((k) => k + 1);
@@ -964,7 +1026,7 @@ const TourViewer = () => {
       const iframeFallback = () => {
         const modelId = extractModelId(tour.tourUrl);
         if (!modelId) return;
-        const tagUrl = `https://my.matterport.com/show/?m=${modelId}&play=1&qs=1&brand=0&title=0&mls=2&help=0&hl=0&tag=${encodeURIComponent(resolvedSid)}&mt=1&pin=1`;
+        const tagUrl = `https://my.matterport.com/show/?m=${modelId}&play=1&qs=1&title=0&vr=0&dh=0&f=0&search=0&hr=0&gt=0&hl=0&nt=0&brand=0&help=0&mls=2&fp=0&measurements=0&tour=0&views=0&pin=0&portal=0&lang=en&tag=${encodeURIComponent(resolvedSid)}&mt=1&pin=1`;
         console.log(`🏨 Chamber iframe deep link to tag: ${resolvedSid}`);
         setIframeSrc(tagUrl);
         setIframeKey((k) => k + 1);
@@ -1078,7 +1140,7 @@ const TourViewer = () => {
         const match = tagSid.match(/^sweep:(\d+):(\d+)$/);
         if (modelId && match) {
           const sweepIdx = parseInt(match[2], 10) - 1;
-          const sweepUrl = `https://my.matterport.com/show/?m=${modelId}&play=1&qs=1&brand=0&title=0&ss=${sweepIdx}`;
+          const sweepUrl = `https://my.matterport.com/show/?m=${modelId}&play=1&qs=1&title=0&vr=0&dh=0&f=0&search=0&hr=0&gt=0&hl=0&nt=0&brand=0&help=0&mls=2&fp=0&measurements=0&tour=0&views=0&pin=0&portal=0&lang=en&ss=${sweepIdx}`;
           console.log(`📍 Sweep iframe fallback: ss=${sweepIdx}`);
           setIframeSrc(sweepUrl);
           setIframeKey((k) => k + 1);
@@ -1093,7 +1155,7 @@ const TourViewer = () => {
     const resolvedSid = tagsMapRef.current.get(tagKey) || savedTagsMapRef.current.get(tagKey) || tagSid;
     const modelId = extractModelId(tour.tourUrl);
     if (!modelId) return;
-    const tagUrl = `https://my.matterport.com/show/?m=${modelId}&play=1&qs=1&brand=0&title=0&mls=2&help=0&hl=0&tag=${encodeURIComponent(resolvedSid)}&mt=1&pin=1`;
+    const tagUrl = `https://my.matterport.com/show/?m=${modelId}&play=1&qs=1&title=0&vr=0&dh=0&f=0&search=0&hr=0&gt=0&hl=0&nt=0&brand=0&help=0&mls=2&fp=0&measurements=0&tour=0&views=0&pin=0&portal=0&lang=en&tag=${encodeURIComponent(resolvedSid)}&mt=1&pin=1`;
     console.log(`🏷️ Menu tag → iframe deep link: ${resolvedSid}`);
     setIframeSrc(tagUrl);
     setIframeKey((k) => k + 1);
@@ -1540,7 +1602,7 @@ const TourViewer = () => {
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
                   <span className="absolute top-3 left-3 px-2.5 py-1 rounded-lg bg-white/10 backdrop-blur-md border border-white/[0.12] text-white/80 text-[10px] font-medium uppercase tracking-wider">
-                    {tour.category}
+                    {displayCategory(tour.category)}
                   </span>
                   <div className="absolute bottom-3 left-3 right-3">
                     <h2 className="text-white font-bold text-lg leading-tight">
@@ -1603,7 +1665,7 @@ const TourViewer = () => {
                         Category
                       </p>
                       <p className="text-white/75 text-sm font-medium">
-                        {tour.category}
+                        {displayCategory(tour.category)}
                       </p>
                     </div>
                   </div>
@@ -1803,16 +1865,16 @@ const TourViewer = () => {
                     const immoRooms: { name: string; type: string; tagSid: string; imageUrl: string; description: string }[] = meta.immobilierRooms || [];
                     if (!immo) return null;
                     const details: { label: string; value: string }[] = [];
-                    if (immo.propertyType) details.push({ label: "Type", value: immo.propertyType });
-                    if (immo.transactionType) details.push({ label: "Transaction", value: immo.transactionType });
+                    if (immo.propertyType) details.push({ label: "Type", value: displayPropertyType(immo.propertyType) });
+                    if (immo.transactionType) details.push({ label: "Transaction", value: displayTransactionType(immo.transactionType) });
                     if (immo.price) details.push({ label: "Price", value: `${immo.price.toLocaleString()} ${immo.currency || "TND"}` });
                     if (immo.rooms) details.push({ label: "Rooms", value: `${immo.rooms}` });
                     if (immo.bedrooms) details.push({ label: "Bedrooms", value: `${immo.bedrooms}` });
                     if (immo.bathrooms) details.push({ label: "Bathrooms", value: `${immo.bathrooms}` });
                     if (immo.floor != null) details.push({ label: "Floor", value: immo.totalFloors ? `${immo.floor} / ${immo.totalFloors}` : `${immo.floor}` });
                     if (immo.yearBuilt) details.push({ label: "Year", value: `${immo.yearBuilt}` });
-                    if (immo.condition) details.push({ label: "Condition", value: immo.condition });
-                    if (immo.heatingType) details.push({ label: "Heating", value: immo.heatingType });
+                    if (immo.condition) details.push({ label: "Condition", value: displayCondition(immo.condition) });
+                    if (immo.heatingType) details.push({ label: "Heating", value: displayHeating(immo.heatingType) });
                     if (immo.energyClass) details.push({ label: "Energy", value: `Class ${immo.energyClass}` });
                     const amenities: string[] = [];
                     if (immo.furnished) amenities.push("Furnished");
@@ -1902,7 +1964,7 @@ const TourViewer = () => {
                               {prevTour.name}
                             </p>
                             <p className="text-white/30 text-[10px]">
-                              {prevTour.category}
+                              {displayCategory(prevTour.category)}
                             </p>
                           </div>
                           <ChevronLeft className="w-3.5 h-3.5 text-white/20 shrink-0" />
@@ -1925,7 +1987,7 @@ const TourViewer = () => {
                               {nextTour.name}
                             </p>
                             <p className="text-white/30 text-[10px]">
-                              {nextTour.category}
+                              {displayCategory(nextTour.category)}
                             </p>
                           </div>
                           <ChevronRight className="w-3.5 h-3.5 text-white/20 shrink-0" />
@@ -1942,8 +2004,8 @@ const TourViewer = () => {
                   to="/"
                   className="flex items-center gap-2.5 p-2 rounded-xl hover:bg-white/[0.04] transition-all group"
                 >
-                  <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-purple-600 to-teal-500 flex items-center justify-center shrink-0">
-                    <span className="text-white font-bold text-[10px]">P</span>
+                  <div className="w-7 h-7 rounded-lg overflow-hidden shrink-0">
+                    <img src="/logo.jpg" alt="PrimeSpace" className="w-full h-full object-cover" />
                   </div>
                   <div className="min-w-0">
                     <p className="text-white/60 text-[11px] font-semibold group-hover:text-white/80 transition-colors">
@@ -2002,7 +2064,7 @@ const TourViewer = () => {
                   </div>
                   <div className="flex items-center gap-2 mt-2">
                     <span className="px-2 py-0.5 rounded-md bg-white/[0.08] border border-white/[0.1] text-white/60 text-[10px] font-medium">
-                      {tour.category}
+                      {displayCategory(tour.category)}
                     </span>
                     {tour.surface && (
                       <span className="text-white/30 text-[10px]">
@@ -2150,16 +2212,16 @@ const TourViewer = () => {
                   const immoRooms: { name: string; type: string; tagSid: string; imageUrl: string; description: string }[] = meta.immobilierRooms || [];
                   if (!immo) return null;
                   const details: { label: string; value: string }[] = [];
-                  if (immo.propertyType) details.push({ label: "Type", value: immo.propertyType });
-                  if (immo.transactionType) details.push({ label: "Transaction", value: immo.transactionType });
+                  if (immo.propertyType) details.push({ label: "Type", value: displayPropertyType(immo.propertyType) });
+                  if (immo.transactionType) details.push({ label: "Transaction", value: displayTransactionType(immo.transactionType) });
                   if (immo.price) details.push({ label: "Price", value: `${immo.price.toLocaleString()} ${immo.currency || "TND"}` });
                   if (immo.rooms) details.push({ label: "Rooms", value: `${immo.rooms}` });
                   if (immo.bedrooms) details.push({ label: "Bedrooms", value: `${immo.bedrooms}` });
                   if (immo.bathrooms) details.push({ label: "Bath", value: `${immo.bathrooms}` });
                   if (immo.floor != null) details.push({ label: "Floor", value: immo.totalFloors ? `${immo.floor}/${immo.totalFloors}` : `${immo.floor}` });
                   if (immo.yearBuilt) details.push({ label: "Year", value: `${immo.yearBuilt}` });
-                  if (immo.condition) details.push({ label: "Condition", value: immo.condition });
-                  if (immo.heatingType) details.push({ label: "Heating", value: immo.heatingType });
+                  if (immo.condition) details.push({ label: "Condition", value: displayCondition(immo.condition) });
+                  if (immo.heatingType) details.push({ label: "Heating", value: displayHeating(immo.heatingType) });
                   if (immo.energyClass) details.push({ label: "Energy", value: `Class ${immo.energyClass}` });
                   const amenities: string[] = [];
                   if (immo.furnished) amenities.push("Furnished");
@@ -2319,7 +2381,7 @@ const TourViewer = () => {
                       <div className="mb-2.5">
                         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-purple-500/15 text-purple-300 text-[10px] font-semibold uppercase tracking-wider">
                           <Tag className="w-3 h-3" />
-                          {tour.category}
+                          {displayCategory(tour.category)}
                         </span>
                       </div>
                     )}
