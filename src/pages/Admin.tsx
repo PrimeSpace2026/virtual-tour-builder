@@ -275,6 +275,8 @@ const SECTION_ICON_OPTIONS = [
   { key: "utensils", label: "Restauration", icon: UtensilsCrossed },
   { key: "dumbbell", label: "Fitness", icon: Dumbbell },
   { key: "calendar", label: "Événements", icon: CalendarDays },
+  { key: "users", label: "Salle de réunion", icon: Users },
+  { key: "briefcase", label: "Business", icon: Briefcase },
   { key: "heart", label: "Bien-être", icon: Heart },
   { key: "palmtree", label: "Loisirs", icon: Palmtree },
   { key: "shield", label: "Services", icon: ShieldCheck },
@@ -444,7 +446,7 @@ const Admin = () => {
   const [immobilierData, setImmobilierData] = useState<ImmobilierData>({ ...DEFAULT_IMMOBILIER });
   const [immobilierRooms, setImmobilierRooms] = useState<ImmobilierRoom[]>([]);
   // Bottom strip visibility toggles
-  const [bottomStrip, setBottomStrip] = useState({ products: true, services: true, chambers: true });
+  const [bottomStrip, setBottomStrip] = useState<{ products: boolean; services: boolean; chambers: boolean; customSections?: Record<string, boolean> }>({ products: true, services: true, chambers: true, customSections: {} });
   // Tags for the create/edit dialog (auto-fetched from tour URL)
   const [dialogTags, setDialogTags] = useState<{ name: string; sid: string; thumbnail?: string }[]>([]);
   const [dialogTagsLoading, setDialogTagsLoading] = useState(false);
@@ -812,8 +814,8 @@ const Admin = () => {
         setGymCoaches(meta.coaches || []);
         setImmobilierData({ ...DEFAULT_IMMOBILIER, ...meta.immobilier });
         setImmobilierRooms(meta.immobilierRooms || []);
-        setBottomStrip(meta.bottomStrip || { products: true, services: true, chambers: true });
-      } catch { setHotelRooms([]); setMenuSections([]); setGymSpaces([]); setGymEquipment([]); setGymPlans([]); setGymClasses([]); setGymSections([]); setGymCoaches([]); setImmobilierData({ ...DEFAULT_IMMOBILIER }); setImmobilierRooms([]); setBottomStrip({ products: true, services: true, chambers: true }); }
+        setBottomStrip({ products: true, services: true, chambers: true, customSections: {}, ...(meta.bottomStrip || {}) });
+      } catch { setHotelRooms([]); setMenuSections([]); setGymSpaces([]); setGymEquipment([]); setGymPlans([]); setGymClasses([]); setGymSections([]); setGymCoaches([]); setImmobilierData({ ...DEFAULT_IMMOBILIER }); setImmobilierRooms([]); setBottomStrip({ products: true, services: true, chambers: true, customSections: {} }); }
     } else {
       setHotelRooms([]);
       setMenuSections([]);
@@ -825,7 +827,7 @@ const Admin = () => {
       setGymCoaches([]);
       setImmobilierData({ ...DEFAULT_IMMOBILIER });
       setImmobilierRooms([]);
-      setBottomStrip({ products: true, services: true, chambers: true });
+      setBottomStrip({ products: true, services: true, chambers: true, customSections: {} });
     }
     setDialogOpen(true);
   };
@@ -1396,7 +1398,53 @@ const Admin = () => {
                     </button>
                   );
                 })}
+                {/* Custom sections toggles (hotel menuSections + gym gymSections) */}
+                {(() => {
+                  const customs: { key: string; label: string; iconKey: string }[] = [];
+                  if (editTour.category === "Hôtellerie") {
+                    menuSections.forEach((s, i) => {
+                      const title = (s.title || "").trim();
+                      if (title) customs.push({ key: title, label: title, iconKey: s.icon });
+                    });
+                  }
+                  if (editTour.category === "Gym & Fitness") {
+                    (gymSections || []).forEach((s: { title?: string; icon?: string }, i: number) => {
+                      const title = (s.title || "").trim();
+                      if (title) customs.push({ key: title, label: title, iconKey: s.icon || "layers" });
+                    });
+                  }
+                  return customs.map(({ key, label, iconKey }) => {
+                    const cs = bottomStrip.customSections || {};
+                    const active = cs[key] !== false; // default ON
+                    const IconObj = SECTION_ICON_OPTIONS.find(o => o.key === iconKey);
+                    const Icn = IconObj?.icon || Layers;
+                    return (
+                      <button
+                        key={`cs-${key}`}
+                        type="button"
+                        onClick={() => setBottomStrip({ ...bottomStrip, customSections: { ...cs, [key]: !active } })}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-medium transition-all ${
+                          active
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "bg-muted/50 text-muted-foreground border-muted-foreground/20"
+                        }`}
+                      >
+                        <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                          active ? "border-primary-foreground" : "border-muted-foreground/40"
+                        }`}>
+                          {active && <div className="w-2 h-2 rounded-full bg-primary-foreground" />}
+                        </div>
+                        <Icn className="w-3.5 h-3.5" />
+                        {label}
+                      </button>
+                    );
+                  });
+                })()}
               </div>
+              {((editTour.category === "Hôtellerie" && menuSections.filter(s => (s.title || "").trim()).length === 0) ||
+                (editTour.category === "Gym & Fitness" && (gymSections || []).filter((s: { title?: string }) => (s.title || "").trim()).length === 0)) && (
+                <p className="text-xs text-muted-foreground italic">💡 Ajoutez des sections personnalisées ci-dessous pour les afficher dans la barre inférieure.</p>
+              )}
             </div>
 
             {/* Hotel Rooms — only for Hôtellerie */}

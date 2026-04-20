@@ -469,9 +469,9 @@ const TourViewer = () => {
   const [selectedImmoRoom, setSelectedImmoRoom] = useState<{ name: string; type: string; tagSid: string; imageUrl: string; description: string } | null>(null);
   const [gymCoaches, setGymCoaches] = useState<GymCoachData[]>([]);
   const [immoRooms, setImmoRooms] = useState<{ name: string; type: string; tagSid: string; imageUrl: string; description: string }[]>([]);
-  const [bottomTab, setBottomTab] = useState<"products" | "services" | "chambers" | "coaches" | "rooms">("products");
+  const [bottomTab, setBottomTab] = useState<string>("products");
   const [bottomStripOpen, setBottomStripOpen] = useState(true);
-  const [bottomStripConfig, setBottomStripConfig] = useState({ products: true, services: true, chambers: true });
+  const [bottomStripConfig, setBottomStripConfig] = useState<{ products: boolean; services: boolean; chambers: boolean; customSections?: Record<string, boolean> }>({ products: true, services: true, chambers: true, customSections: {} });
   const userOpenedStripRef = useRef(false);
 
   // Auto-close bottom strip after 1 second on initial load
@@ -1743,7 +1743,7 @@ const TourViewer = () => {
                 {normalizeCategory(tour.category) === "Hôtellerie" && tour.metadataJson && (() => {
                   try {
                     const meta = JSON.parse(tour.metadataJson);
-                    const customSections: { title: string; icon: string; items: { name: string; icon: string; tagSid?: string }[] }[] = meta.sections || [];
+                    const customSections: { title: string; icon: string; items: { name: string; icon: string; tagSid?: string }[] }[] = (meta.sections || []).filter((s: { title: string }) => bottomStripConfig.customSections?.[s.title] !== false);
                     const rooms: HotelRoom[] = meta.rooms || [];
                     const allAmenities = Array.from(new Set(rooms.flatMap(r => r.amenities || [])));
 
@@ -1790,7 +1790,7 @@ const TourViewer = () => {
                     const gymEquipment: string[] = meta.equipment || [];
                     const gymPlans: { name: string; price: string; duration: string }[] = meta.plans || [];
                     const gymClasses: { name: string; icon: string; schedule: string }[] = meta.classes || [];
-                    const gymCustomSections: { title: string; icon: string; items: { name: string; icon: string; tagSid?: string }[] }[] = meta.gymSections || [];
+                    const gymCustomSections: { title: string; icon: string; items: { name: string; icon: string; tagSid?: string }[] }[] = (meta.gymSections || []).filter((s: { title: string }) => bottomStripConfig.customSections?.[s.title] !== false);
 
                     const spacesSection = gymSpaces.length > 0 ? [{
                       title: "Spaces",
@@ -2132,7 +2132,7 @@ const TourViewer = () => {
               {normalizeCategory(tour.category) === "Hôtellerie" && tour.metadataJson && (() => {
                 try {
                   const meta = JSON.parse(tour.metadataJson);
-                  const customSections: { title: string; icon: string; items: { name: string; icon: string; tagSid?: string }[] }[] = meta.sections || [];
+                  const customSections: { title: string; icon: string; items: { name: string; icon: string; tagSid?: string }[] }[] = (meta.sections || []).filter((s: { title: string }) => bottomStripConfig.customSections?.[s.title] !== false);
                   const rooms: HotelRoom[] = meta.rooms || [];
                   const allAmenities = Array.from(new Set(rooms.flatMap(r => r.amenities || [])));
 
@@ -2172,7 +2172,7 @@ const TourViewer = () => {
                   const gymEquipment: string[] = meta.equipment || [];
                   const gymPlans: { name: string; price: string; duration: string }[] = meta.plans || [];
                   const gymClasses: { name: string; icon: string; schedule: string }[] = meta.classes || [];
-                  const gymCustomSections: { title: string; icon: string; items: { name: string; icon: string; tagSid?: string }[] }[] = meta.gymSections || [];
+                  const gymCustomSections: { title: string; icon: string; items: { name: string; icon: string; tagSid?: string }[] }[] = (meta.gymSections || []).filter((s: { title: string }) => bottomStripConfig.customSections?.[s.title] !== false);
 
                   const spacesSection = gymSpaces.length > 0 ? [{
                     title: "Spaces", iconKey: "dumbbell", amenities: gymEquipment,
@@ -3089,7 +3089,25 @@ const TourViewer = () => {
       </div>{/* END TOP: MATTERPORT 3D VIEWER */}
 
       {/* ===== BOTTOM: PRODUCT & SERVICE STRIP ===== */}
-      {((tourItems.length > 0 && bottomStripConfig.products) || (tourServices.length > 0 && bottomStripConfig.services) || (tourChambers.length > 0 && bottomStripConfig.chambers) || gymCoaches.length > 0 || (immoRooms.length > 0 && bottomStripConfig.chambers)) && (
+      {(() => {
+        // Compute custom strip sections (hotel + gym) once for all use
+        let stripCustoms: { key: string; title: string; iconKey: string; items: { name: string; icon: string; tagSid?: string }[] }[] = [];
+        if (tour?.metadataJson) {
+          try {
+            const meta = JSON.parse(tour.metadataJson);
+            const fromHotel = (meta.sections || []) as { title: string; icon: string; items: { name: string; icon: string; tagSid?: string }[] }[];
+            const fromGym = (meta.gymSections || []) as { title: string; icon: string; items: { name: string; icon: string; tagSid?: string }[] }[];
+            stripCustoms = [...fromHotel, ...fromGym]
+              .filter(s => (s.title || "").trim() && (s.items || []).length > 0)
+              .filter(s => bottomStripConfig.customSections?.[s.title] !== false)
+              .map(s => ({ key: `cs:${s.title}`, title: s.title, iconKey: s.icon || "layers", items: s.items }));
+          } catch { /* ignore */ }
+        }
+        const hasAnyStandard = (tourItems.length > 0 && bottomStripConfig.products) || (tourServices.length > 0 && bottomStripConfig.services) || (tourChambers.length > 0 && bottomStripConfig.chambers) || gymCoaches.length > 0 || (immoRooms.length > 0 && bottomStripConfig.chambers);
+        if (!hasAnyStandard && stripCustoms.length === 0) return null;
+        const tabCount = ((tourItems.length > 0 && bottomStripConfig.products) ? 1 : 0) + ((tourServices.length > 0 && bottomStripConfig.services) ? 1 : 0) + ((tourChambers.length > 0 && bottomStripConfig.chambers) ? 1 : 0) + (gymCoaches.length > 0 ? 1 : 0) + ((immoRooms.length > 0 && bottomStripConfig.chambers) ? 1 : 0) + stripCustoms.length;
+        const activeCustom = stripCustoms.find(c => c.key === bottomTab);
+        return (
         <div className="shrink-0 bg-gradient-to-r from-black via-[#0a0520] to-[#110835] border-t border-white/10">
           {/* Toggle handle */}
           <button
@@ -3106,8 +3124,8 @@ const TourViewer = () => {
           >
           <div className="px-3 pb-3">
             {/* Tab switcher when both exist */}
-            {((tourItems.length > 0 && bottomStripConfig.products) ? 1 : 0) + ((tourServices.length > 0 && bottomStripConfig.services) ? 1 : 0) + ((tourChambers.length > 0 && bottomStripConfig.chambers) ? 1 : 0) + (gymCoaches.length > 0 ? 1 : 0) + ((immoRooms.length > 0 && bottomStripConfig.chambers) ? 1 : 0) > 1 && (
-              <div className="flex items-center justify-center gap-1 mb-2.5">
+            {tabCount > 1 && (
+              <div className="flex items-center justify-center gap-1 mb-2.5 flex-wrap">
                 {tourItems.length > 0 && bottomStripConfig.products && (
                   <button
                     onClick={() => setBottomTab("products")}
@@ -3148,6 +3166,18 @@ const TourViewer = () => {
                     <User className="w-3 h-3" /> Coaches ({gymCoaches.length})
                   </button>
                 )}
+                {stripCustoms.map((cs) => {
+                  const Icn = ICON_MAP[cs.iconKey] || Layers;
+                  return (
+                    <button
+                      key={cs.key}
+                      onClick={() => setBottomTab(cs.key)}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold uppercase tracking-wider transition-all ${bottomTab === cs.key ? "bg-white/15 text-white" : "text-white/40 hover:text-white/70"}`}
+                    >
+                      <Icn className="w-3 h-3" /> {cs.title} ({cs.items.length})
+                    </button>
+                  );
+                })}
               </div>
             )}
 
@@ -3359,10 +3389,41 @@ const TourViewer = () => {
                 ))}
               </div>
             )}
+
+            {/* Custom section strip */}
+            {activeCustom && (
+              <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide justify-center">
+                {activeCustom.items.map((item, idx) => {
+                  const Icn = ICON_MAP[item.icon] || Layers;
+                  return (
+                    <button
+                      key={idx}
+                      onClick={() => {
+                        if (!item.tagSid) return;
+                        if (item.tagSid.startsWith("http")) {
+                          window.open(item.tagSid, "_blank");
+                        } else {
+                          flyToTag(item.tagSid);
+                        }
+                      }}
+                      className="flex-shrink-0 flex items-center gap-2.5 bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.08] rounded-xl p-2 pr-4 transition-all group"
+                    >
+                      <div className="w-12 h-12 rounded-lg bg-purple-500/20 flex items-center justify-center shrink-0 border border-purple-400/30">
+                        <Icn className="w-5 h-5 text-purple-300" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-white/80 text-xs font-semibold truncate max-w-[120px] group-hover:text-white transition-colors">{item.name}</p>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
           </motion.div>
         </div>
-      )}
+        );
+      })()}
     </div>
   );
 };
