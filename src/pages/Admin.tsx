@@ -734,6 +734,48 @@ const Admin = () => {
     if (file) handleServiceImageUpload(file);
   };
 
+  // Item (product) image upload — drag & drop
+  const [itemUploading, setItemUploading] = useState(false);
+  const [itemDragOver, setItemDragOver] = useState(false);
+  const handleItemImageUpload = async (file: File) => {
+    if (!file.type.startsWith("image/")) {
+      toast({ title: "Erreur", description: "Le fichier doit être une image", variant: "destructive" });
+      return;
+    }
+    setItemUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/upload", { method: "POST", body: formData });
+      const data = await res.json();
+      if (data.url) {
+        setEditItem((prev) => ({ ...prev, imageUrl: data.url }));
+        toast({ title: "Image uploadée" });
+      } else {
+        toast({ title: "Erreur upload", description: data.error || "Erreur inconnue", variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "Erreur", description: "Échec de l'upload", variant: "destructive" });
+    } finally {
+      setItemUploading(false);
+    }
+  };
+  const onItemDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setItemDragOver(false);
+    const file = e.dataTransfer.files[0];
+    if (file) handleItemImageUpload(file);
+  }, []);
+  const onItemDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setItemDragOver(true);
+  }, []);
+  const onItemDragLeave = useCallback(() => setItemDragOver(false), []);
+  const onItemFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) handleItemImageUpload(file);
+  };
+
   const openCreate = () => {
     setEditTour(emptyTour);
     setIsEditing(false);
@@ -2640,11 +2682,35 @@ const Admin = () => {
                     <Textarea value={editItem.description} onChange={(e) => setEditItem({ ...editItem, description: e.target.value })} rows={3} placeholder="Description du produit..." />
                   </div>
                   <div>
-                    <label className="text-sm font-medium mb-1 block">Image du produit (URL)</label>
-                    <Input value={editItem.imageUrl} onChange={(e) => setEditItem({ ...editItem, imageUrl: e.target.value })} placeholder="https://..." />
-                    {editItem.imageUrl && (
-                      <img src={editItem.imageUrl} alt="preview" className="w-24 h-24 object-cover rounded-lg mt-2 border" />
-                    )}
+                    <label className="text-sm font-medium mb-1 block">Image du produit</label>
+                    <div
+                      onDrop={onItemDrop}
+                      onDragOver={onItemDragOver}
+                      onDragLeave={onItemDragLeave}
+                      className={`relative border-2 border-dashed rounded-xl p-6 text-center transition-colors cursor-pointer ${
+                        itemDragOver ? "border-secondary bg-secondary/10" : "border-muted-foreground/30 hover:border-secondary/50"
+                      }`}
+                    >
+                      {editItem.imageUrl ? (
+                        <div className="relative">
+                          <img src={editItem.imageUrl} alt="preview" className="w-full h-40 object-cover rounded-lg" />
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setEditItem({ ...editItem, imageUrl: "" }); }}
+                            className="absolute top-2 right-2 bg-destructive text-destructive-foreground rounded-full p-1"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ) : (
+                        <label className="cursor-pointer block">
+                          <Upload className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
+                          <p className="text-sm text-muted-foreground">
+                            {itemUploading ? "Upload en cours..." : "Glisser-déposer une image ici ou cliquer"}
+                          </p>
+                          <input type="file" accept="image/*" className="hidden" onChange={onItemFileSelect} />
+                        </label>
+                      )}
+                    </div>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>

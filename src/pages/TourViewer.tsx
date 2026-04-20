@@ -1417,7 +1417,15 @@ const TourViewer = () => {
           className="absolute top-4 left-4 z-30 pointer-events-auto flex items-center gap-2"
         >
           <button
-            onClick={() => navigate("/portfolio")}
+            onClick={() => {
+              if (selectedChamber) {
+                flyToTag("Reception");
+                setSelectedChamber(null);
+                chamberSweepRef.current = "";
+              } else {
+                navigate("/portfolio");
+              }
+            }}
             className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-black/60 backdrop-blur-xl border border-white/10 text-white/80 hover:text-white hover:bg-black/80 transition-all group"
           >
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
