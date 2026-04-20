@@ -310,10 +310,69 @@ function extractModelId(tourUrl: string): string | null {
 
 const CURRENCY_SYMBOLS: Record<string, string> = { EUR: "€", USD: "$", TND: "TND", GBP: "£" };
 
-function buildEmbedUrl(tourUrl: string, _withSdkKey = false): string {
+type MatterportFeatures = {
+  // View modes
+  dollhouse?: boolean;
+  floorplan?: boolean;
+  // UI controls
+  title?: boolean;
+  vr?: boolean;
+  floorSelector?: boolean;
+  search?: boolean;
+  guidedTour?: boolean;
+  highlights?: boolean;
+  highlightReel?: boolean;
+  nameplate?: boolean;
+  brand?: boolean;
+  help?: boolean;
+  mls?: boolean;
+  measurements?: boolean;
+  autoTour?: boolean;
+  views?: boolean;
+  pin?: boolean;
+  portal?: boolean;
+};
+
+function buildMatterportUrl(
+  modelId: string,
+  features: MatterportFeatures = {},
+  extraParams: Record<string, string> = {},
+  withSdkKey = false
+): string {
+  const b = (v?: boolean) => (v ? "1" : "0");
+  const params = new URLSearchParams({
+    m: modelId,
+    play: "1",
+    qs: "1",
+    title: b(features.title),
+    vr: b(features.vr),
+    dh: b(features.dollhouse),
+    f: b(features.floorSelector),
+    search: b(features.search),
+    hr: b(features.highlightReel),
+    gt: b(features.guidedTour),
+    hl: b(features.highlights),
+    nt: b(features.nameplate),
+    brand: b(features.brand),
+    help: b(features.help),
+    mls: features.mls ? "1" : "2",
+    fp: b(features.floorplan),
+    measurements: b(features.measurements),
+    tour: b(features.autoTour),
+    views: b(features.views),
+    pin: b(features.pin),
+    portal: b(features.portal),
+    lang: "en",
+  });
+  for (const [k, v] of Object.entries(extraParams)) params.set(k, v);
+  if (withSdkKey) params.set("applicationKey", SDK_KEY);
+  return `https://my.matterport.com/show/?${params.toString()}`;
+}
+
+function buildEmbedUrl(tourUrl: string, _withSdkKey = false, features: MatterportFeatures = {}): string {
   const modelId = extractModelId(tourUrl);
   if (!modelId) return tourUrl;
-  return `https://my.matterport.com/show/?m=${modelId}&play=1&qs=1&title=0&vr=0&dh=0&f=0&search=0&hr=0&gt=0&hl=0&nt=0&brand=0&help=0&mls=2&fp=0&measurements=0&tour=0&views=0&pin=0&portal=0&lang=en&applicationKey=${SDK_KEY}`;
+  return buildMatterportUrl(modelId, features, {}, true);
 }
 
 // Display translation maps (data stored in DB stays in original language)
@@ -472,6 +531,8 @@ const TourViewer = () => {
   const [bottomTab, setBottomTab] = useState<string>("products");
   const [bottomStripOpen, setBottomStripOpen] = useState(true);
   const [bottomStripConfig, setBottomStripConfig] = useState<{ products: boolean; services: boolean; chambers: boolean; customSections?: Record<string, boolean> }>({ products: true, services: true, chambers: true, customSections: {} });
+  const [matterportFeatures, setMatterportFeatures] = useState<MatterportFeatures>({});
+  const matterportFeaturesRef = useRef<MatterportFeatures>({});
   const userOpenedStripRef = useRef(false);
 
   // Auto-close bottom strip after 1 second on initial load
@@ -585,6 +646,11 @@ const TourViewer = () => {
           try {
             const meta = JSON.parse(tourData.metadataJson);
             if (meta.bottomStrip) setBottomStripConfig(meta.bottomStrip);
+            if (meta.matterportFeatures && typeof meta.matterportFeatures === "object") {
+              const mf: MatterportFeatures = { ...meta.matterportFeatures };
+              setMatterportFeatures(mf);
+              matterportFeaturesRef.current = mf;
+            }
           } catch {}
         }
         const items = Array.isArray(itemsData) ? itemsData : [];
@@ -617,7 +683,7 @@ const TourViewer = () => {
         savedTagsMapRef.current = savedMap;
         // Set initial iframe URL
         const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
-        setIframeSrc(buildEmbedUrl(tourData.tourUrl, isLocal));
+        setIframeSrc(buildEmbedUrl(tourData.tourUrl, isLocal, matterportFeaturesRef.current));
         setLoading(false);
         setShowCard(true);
       })
@@ -840,11 +906,16 @@ const TourViewer = () => {
         if (cancelled) return;
         // Hide remaining UI elements via SDK Settings
         try {
-          await Promise.allSettled([
+          const settingsUpdates = [
             sdk.Settings.update('labels', false),
-            sdk.Settings.update('highlightReel', false),
-            sdk.Settings.update('help', false),
-          ]);
+          ];
+          if (!matterportFeaturesRef.current.help) {
+            settingsUpdates.push(sdk.Settings.update('help', false));
+          }
+          if (!matterportFeaturesRef.current.highlightReel) {
+            settingsUpdates.push(sdk.Settings.update('highlightReel', false));
+          }
+          await Promise.allSettled(settingsUpdates);
           console.log("✅ SDK UI elements hidden");
         } catch (e) { console.log("Settings update error:", e); }
 
@@ -954,7 +1025,7 @@ const TourViewer = () => {
       const iframeFallback = () => {
         const modelId = extractModelId(tour.tourUrl);
         if (!modelId) return;
-        const tagUrl = `https://my.matterport.com/show/?m=${modelId}&play=1&qs=1&title=0&vr=0&dh=0&f=0&search=0&hr=0&gt=0&hl=0&nt=0&brand=0&help=0&mls=2&fp=0&measurements=0&tour=0&views=0&pin=0&portal=0&lang=en&tag=${encodeURIComponent(resolvedSid)}&mt=1&pin=1`;
+        const tagUrl = buildMatterportUrl(modelId, matterportFeaturesRef.current, { tag: resolvedSid, mt: "1", pin: "1" });
         console.log(`🎯 Iframe deep link to tag: ${resolvedSid}`);
         setIframeSrc(tagUrl);
         setIframeKey((k) => k + 1);
@@ -1041,7 +1112,7 @@ const TourViewer = () => {
       const iframeFallback = () => {
         const modelId = extractModelId(tour.tourUrl);
         if (!modelId) return;
-        const tagUrl = `https://my.matterport.com/show/?m=${modelId}&play=1&qs=1&title=0&vr=0&dh=0&f=0&search=0&hr=0&gt=0&hl=0&nt=0&brand=0&help=0&mls=2&fp=0&measurements=0&tour=0&views=0&pin=0&portal=0&lang=en&tag=${encodeURIComponent(resolvedSid)}&mt=1&pin=1`;
+        const tagUrl = buildMatterportUrl(modelId, matterportFeaturesRef.current, { tag: resolvedSid, mt: "1", pin: "1" });
         console.log(`🏨 Chamber iframe deep link to tag: ${resolvedSid}`);
         setIframeSrc(tagUrl);
         setIframeKey((k) => k + 1);
@@ -1155,7 +1226,7 @@ const TourViewer = () => {
         const match = tagSid.match(/^sweep:(\d+):(\d+)$/);
         if (modelId && match) {
           const sweepIdx = parseInt(match[2], 10) - 1;
-          const sweepUrl = `https://my.matterport.com/show/?m=${modelId}&play=1&qs=1&title=0&vr=0&dh=0&f=0&search=0&hr=0&gt=0&hl=0&nt=0&brand=0&help=0&mls=2&fp=0&measurements=0&tour=0&views=0&pin=0&portal=0&lang=en&ss=${sweepIdx}`;
+          const sweepUrl = buildMatterportUrl(modelId, matterportFeaturesRef.current, { ss: String(sweepIdx) });
           console.log(`📍 Sweep iframe fallback: ss=${sweepIdx}`);
           setIframeSrc(sweepUrl);
           setIframeKey((k) => k + 1);
@@ -1170,7 +1241,7 @@ const TourViewer = () => {
     const resolvedSid = tagsMapRef.current.get(tagKey) || savedTagsMapRef.current.get(tagKey) || tagSid;
     const modelId = extractModelId(tour.tourUrl);
     if (!modelId) return;
-    const tagUrl = `https://my.matterport.com/show/?m=${modelId}&play=1&qs=1&title=0&vr=0&dh=0&f=0&search=0&hr=0&gt=0&hl=0&nt=0&brand=0&help=0&mls=2&fp=0&measurements=0&tour=0&views=0&pin=0&portal=0&lang=en&tag=${encodeURIComponent(resolvedSid)}&mt=1&pin=1`;
+    const tagUrl = buildMatterportUrl(modelId, matterportFeaturesRef.current, { tag: resolvedSid, mt: "1", pin: "1" });
     console.log(`🏷️ Menu tag → iframe deep link: ${resolvedSid}`);
     setIframeSrc(tagUrl);
     setIframeKey((k) => k + 1);
@@ -1743,7 +1814,7 @@ const TourViewer = () => {
                 {normalizeCategory(tour.category) === "Hôtellerie" && tour.metadataJson && (() => {
                   try {
                     const meta = JSON.parse(tour.metadataJson);
-                    const customSections: { title: string; icon: string; items: { name: string; icon: string; tagSid?: string }[] }[] = (meta.sections || []).filter((s: { title: string }) => bottomStripConfig.customSections?.[s.title] !== false);
+                    const customSections: { title: string; icon: string; items: { name: string; icon: string; tagSid?: string }[] }[] = (meta.sections || []);
                     const rooms: HotelRoom[] = meta.rooms || [];
                     const allAmenities = Array.from(new Set(rooms.flatMap(r => r.amenities || [])));
 
@@ -1790,7 +1861,7 @@ const TourViewer = () => {
                     const gymEquipment: string[] = meta.equipment || [];
                     const gymPlans: { name: string; price: string; duration: string }[] = meta.plans || [];
                     const gymClasses: { name: string; icon: string; schedule: string }[] = meta.classes || [];
-                    const gymCustomSections: { title: string; icon: string; items: { name: string; icon: string; tagSid?: string }[] }[] = (meta.gymSections || []).filter((s: { title: string }) => bottomStripConfig.customSections?.[s.title] !== false);
+                    const gymCustomSections: { title: string; icon: string; items: { name: string; icon: string; tagSid?: string }[] }[] = (meta.gymSections || []);
 
                     const spacesSection = gymSpaces.length > 0 ? [{
                       title: "Spaces",
@@ -2132,7 +2203,7 @@ const TourViewer = () => {
               {normalizeCategory(tour.category) === "Hôtellerie" && tour.metadataJson && (() => {
                 try {
                   const meta = JSON.parse(tour.metadataJson);
-                  const customSections: { title: string; icon: string; items: { name: string; icon: string; tagSid?: string }[] }[] = (meta.sections || []).filter((s: { title: string }) => bottomStripConfig.customSections?.[s.title] !== false);
+                  const customSections: { title: string; icon: string; items: { name: string; icon: string; tagSid?: string }[] }[] = (meta.sections || []);
                   const rooms: HotelRoom[] = meta.rooms || [];
                   const allAmenities = Array.from(new Set(rooms.flatMap(r => r.amenities || [])));
 
@@ -2172,7 +2243,7 @@ const TourViewer = () => {
                   const gymEquipment: string[] = meta.equipment || [];
                   const gymPlans: { name: string; price: string; duration: string }[] = meta.plans || [];
                   const gymClasses: { name: string; icon: string; schedule: string }[] = meta.classes || [];
-                  const gymCustomSections: { title: string; icon: string; items: { name: string; icon: string; tagSid?: string }[] }[] = (meta.gymSections || []).filter((s: { title: string }) => bottomStripConfig.customSections?.[s.title] !== false);
+                  const gymCustomSections: { title: string; icon: string; items: { name: string; icon: string; tagSid?: string }[] }[] = (meta.gymSections || []);
 
                   const spacesSection = gymSpaces.length > 0 ? [{
                     title: "Spaces", iconKey: "dumbbell", amenities: gymEquipment,

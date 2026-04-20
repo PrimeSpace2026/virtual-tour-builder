@@ -447,6 +447,17 @@ const Admin = () => {
   const [immobilierRooms, setImmobilierRooms] = useState<ImmobilierRoom[]>([]);
   // Bottom strip visibility toggles
   const [bottomStrip, setBottomStrip] = useState<{ products: boolean; services: boolean; chambers: boolean; customSections?: Record<string, boolean> }>({ products: true, services: true, chambers: true, customSections: {} });
+  // Matterport viewer feature toggles (all URL params)
+  type MatterportFeatures = {
+    dollhouse?: boolean; floorplan?: boolean;
+    title?: boolean; vr?: boolean; floorSelector?: boolean;
+    search?: boolean; guidedTour?: boolean;
+    highlights?: boolean; highlightReel?: boolean;
+    nameplate?: boolean; brand?: boolean; help?: boolean; mls?: boolean;
+    measurements?: boolean; autoTour?: boolean;
+    views?: boolean; pin?: boolean; portal?: boolean;
+  };
+  const [matterportFeatures, setMatterportFeatures] = useState<MatterportFeatures>({});
   // Tags for the create/edit dialog (auto-fetched from tour URL)
   const [dialogTags, setDialogTags] = useState<{ name: string; sid: string; thumbnail?: string }[]>([]);
   const [dialogTagsLoading, setDialogTagsLoading] = useState(false);
@@ -815,7 +826,8 @@ const Admin = () => {
         setImmobilierData({ ...DEFAULT_IMMOBILIER, ...meta.immobilier });
         setImmobilierRooms(meta.immobilierRooms || []);
         setBottomStrip({ products: true, services: true, chambers: true, customSections: {}, ...(meta.bottomStrip || {}) });
-      } catch { setHotelRooms([]); setMenuSections([]); setGymSpaces([]); setGymEquipment([]); setGymPlans([]); setGymClasses([]); setGymSections([]); setGymCoaches([]); setImmobilierData({ ...DEFAULT_IMMOBILIER }); setImmobilierRooms([]); setBottomStrip({ products: true, services: true, chambers: true, customSections: {} }); }
+        setMatterportFeatures({ ...(meta.matterportFeatures || {}) });
+      } catch { setHotelRooms([]); setMenuSections([]); setGymSpaces([]); setGymEquipment([]); setGymPlans([]); setGymClasses([]); setGymSections([]); setGymCoaches([]); setImmobilierData({ ...DEFAULT_IMMOBILIER }); setImmobilierRooms([]); setBottomStrip({ products: true, services: true, chambers: true, customSections: {} }); setMatterportFeatures({}); }
     } else {
       setHotelRooms([]);
       setMenuSections([]);
@@ -828,6 +840,7 @@ const Admin = () => {
       setImmobilierData({ ...DEFAULT_IMMOBILIER });
       setImmobilierRooms([]);
       setBottomStrip({ products: true, services: true, chambers: true, customSections: {} });
+      setMatterportFeatures({});
     }
     setDialogOpen(true);
   };
@@ -840,22 +853,23 @@ const Admin = () => {
     // Attach hotel rooms as metadataJson when Hôtellerie
     const payload: Record<string, unknown> = { ...editTour };
     if (editTour.category === "Hôtellerie" && (hotelRooms.length > 0 || menuSections.length > 0)) {
-      payload.metadataJson = JSON.stringify({ rooms: hotelRooms, sections: menuSections, bottomStrip });
+      payload.metadataJson = JSON.stringify({ rooms: hotelRooms, sections: menuSections, bottomStrip, matterportFeatures });
     }
     if (editTour.category === "Gym & Fitness" && (gymSpaces.length > 0 || gymEquipment.length > 0 || gymPlans.length > 0 || gymClasses.length > 0 || gymSections.length > 0 || gymCoaches.length > 0)) {
-      payload.metadataJson = JSON.stringify({ spaces: gymSpaces, equipment: gymEquipment, plans: gymPlans, classes: gymClasses, gymSections, coaches: gymCoaches, bottomStrip } as GymMetadata);
+      payload.metadataJson = JSON.stringify({ spaces: gymSpaces, equipment: gymEquipment, plans: gymPlans, classes: gymClasses, gymSections, coaches: gymCoaches, bottomStrip, matterportFeatures } as GymMetadata);
     }
     if (editTour.category === "Immobilier") {
-      payload.metadataJson = JSON.stringify({ immobilier: immobilierData, immobilierRooms, bottomStrip });
+      payload.metadataJson = JSON.stringify({ immobilier: immobilierData, immobilierRooms, bottomStrip, matterportFeatures });
     }
     // For other categories, save bottomStrip if any toggle is off
     if (!payload.metadataJson) {
-      payload.metadataJson = JSON.stringify({ bottomStrip });
+      payload.metadataJson = JSON.stringify({ bottomStrip, matterportFeatures });
     } else {
       // Ensure bottomStrip is in existing metadataJson
       try {
         const existing = JSON.parse(payload.metadataJson as string);
         existing.bottomStrip = bottomStrip;
+        existing.matterportFeatures = matterportFeatures;
         payload.metadataJson = JSON.stringify(existing);
       } catch {}
     }
@@ -1445,6 +1459,83 @@ const Admin = () => {
                 (editTour.category === "Gym & Fitness" && (gymSections || []).filter((s: { title?: string }) => (s.title || "").trim()).length === 0)) && (
                 <p className="text-xs text-muted-foreground italic">💡 Ajoutez des sections personnalisées ci-dessous pour les afficher dans la barre inférieure.</p>
               )}
+            </div>
+
+            {/* Matterport Viewer Features */}
+            <div className="rounded-xl border p-4 space-y-4">
+              <label className="text-sm font-medium block">Fonctionnalités Matterport</label>
+              <p className="text-xs text-muted-foreground">Choisir les contrôles et fonctionnalités affichés dans le viewer Matterport</p>
+              {(() => {
+                const groups: { title: string; items: { key: keyof typeof matterportFeatures; label: string }[] }[] = [
+                  {
+                    title: "Modes de vue",
+                    items: [
+                      { key: "dollhouse", label: "Dollhouse" },
+                      { key: "floorplan", label: "Plan d'étage" },
+                      { key: "floorSelector", label: "Sélecteur d'étage" },
+                      { key: "vr", label: "Mode VR" },
+                    ],
+                  },
+                  {
+                    title: "Highlights & Tour",
+                    items: [
+                      { key: "highlights", label: "Highlights" },
+                      { key: "highlightReel", label: "Bande de highlights" },
+                      { key: "guidedTour", label: "Visite guidée" },
+                      { key: "autoTour", label: "Auto Tour" },
+                      { key: "views", label: "Vues" },
+                    ],
+                  },
+                  {
+                    title: "Outils",
+                    items: [
+                      { key: "measurements", label: "Mesures" },
+                      { key: "search", label: "Recherche" },
+                      { key: "pin", label: "Pin" },
+                      { key: "portal", label: "Portail" },
+                    ],
+                  },
+                  {
+                    title: "Branding & Infos",
+                    items: [
+                      { key: "title", label: "Titre" },
+                      { key: "nameplate", label: "Nameplate" },
+                      { key: "brand", label: "Branding Matterport" },
+                      { key: "mls", label: "MLS" },
+                      { key: "help", label: "Aide" },
+                    ],
+                  },
+                ];
+                return groups.map((g) => (
+                  <div key={g.title} className="space-y-2">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{g.title}</p>
+                    <div className="flex flex-wrap gap-2">
+                      {g.items.map(({ key, label }) => {
+                        const active = !!matterportFeatures[key];
+                        return (
+                          <button
+                            key={String(key)}
+                            type="button"
+                            onClick={() => setMatterportFeatures({ ...matterportFeatures, [key]: !active })}
+                            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-medium transition-all ${
+                              active
+                                ? "bg-primary text-primary-foreground border-primary"
+                                : "bg-muted/50 text-muted-foreground border-muted-foreground/20"
+                            }`}
+                          >
+                            <div className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center ${
+                              active ? "border-primary-foreground" : "border-muted-foreground/40"
+                            }`}>
+                              {active && <div className="w-1.5 h-1.5 rounded-full bg-primary-foreground" />}
+                            </div>
+                            {label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ));
+              })()}
             </div>
 
             {/* Hotel Rooms — only for Hôtellerie */}
