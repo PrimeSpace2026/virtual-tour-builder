@@ -1094,6 +1094,9 @@ const TourViewer = () => {
         iframeFallback();
         setSelectedItem(item);
       }
+    } else {
+      // No tag — just open the popup so the user can see product details
+      setSelectedItem(item);
     }
   }, [tour?.id, tour?.tourUrl, trackEvent]);
 
