@@ -15,9 +15,8 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   const [lang, setLangState] = useState<Lang>(() => {
     const saved = localStorage.getItem("lang") as Lang;
     if (saved === "fr" || saved === "en") return saved;
-    // Detect browser language
-    const browserLang = navigator.language.slice(0, 2);
-    return browserLang === "en" ? "en" : "fr";
+    // Default to English
+    return "en";
   });
 
   const setLang = (newLang: Lang) => {
