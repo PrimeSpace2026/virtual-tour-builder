@@ -1101,8 +1101,12 @@ const TourViewer = () => {
   const navigateToChamber = useCallback((ch: ChamberData) => {
     if (tour?.id) trackEvent(tour.id, "chamber_click", ch.name, String(ch.id));
 
-    // Show popup after delay so the fly animation is visible
-    const showPopupLater = () => setTimeout(() => { chamberSweepRef.current = ch.tagSid || "active"; setSelectedChamber(ch); }, 2000);
+    // Mark chamber as entered immediately so the Back button flies to Reception
+    // even before the Book Now popup appears.
+    chamberSweepRef.current = ch.tagSid || "active";
+
+    // Show Book Now popup immediately
+    const showPopupLater = () => { chamberSweepRef.current = ch.tagSid || "active"; setSelectedChamber(ch); };
 
     if (ch.tagSid && tour?.tourUrl) {
       const tagKey = ch.tagSid.trim().toLowerCase();
@@ -1489,7 +1493,7 @@ const TourViewer = () => {
         >
           <button
             onClick={() => {
-              if (selectedChamber) {
+              if (selectedChamber || chamberSweepRef.current) {
                 flyToTag("Reception");
                 setSelectedChamber(null);
                 chamberSweepRef.current = "";

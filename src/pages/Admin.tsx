@@ -1386,11 +1386,11 @@ const Admin = () => {
 
             {/* Bottom Strip Visibility Toggles */}
             <div className="rounded-xl border p-4 space-y-3">
-              <label className="text-sm font-medium block">Barre inférieure (Tour Viewer)</label>
-              <p className="text-xs text-muted-foreground">Choisir les sections visibles dans la barre en bas du tour</p>
+              <label className="text-sm font-medium block">Bottom Bar (Tour Viewer)</label>
+              <p className="text-xs text-muted-foreground">Choose which sections appear in the bottom bar of the tour</p>
               <div className="flex flex-wrap gap-3">
                 {(["products", "services", "chambers"] as const).map((key) => {
-                  const labels = { products: "Produits", services: "Services", chambers: editTour.category === "Immobilier" ? "Pièces" : "Chambres" };
+                  const labels = { products: "Products", services: "Services", chambers: editTour.category === "Immobilier" ? "Rooms" : "Rooms" };
                   const active = bottomStrip[key];
                   return (
                     <button
@@ -1457,52 +1457,52 @@ const Admin = () => {
               </div>
               {((editTour.category === "Hôtellerie" && menuSections.filter(s => (s.title || "").trim()).length === 0) ||
                 (editTour.category === "Gym & Fitness" && (gymSections || []).filter((s: { title?: string }) => (s.title || "").trim()).length === 0)) && (
-                <p className="text-xs text-muted-foreground italic">💡 Ajoutez des sections personnalisées ci-dessous pour les afficher dans la barre inférieure.</p>
+                <p className="text-xs text-muted-foreground italic">💡 Add custom sections below to display them in the bottom bar.</p>
               )}
             </div>
 
             {/* Matterport Viewer Features */}
             <div className="rounded-xl border p-4 space-y-4">
-              <label className="text-sm font-medium block">Fonctionnalités Matterport</label>
-              <p className="text-xs text-muted-foreground">Choisir les contrôles et fonctionnalités affichés dans le viewer Matterport</p>
+              <label className="text-sm font-medium block">Matterport Features</label>
+              <p className="text-xs text-muted-foreground">Choose which controls and features are displayed in the Matterport viewer</p>
               {(() => {
                 const groups: { title: string; items: { key: keyof typeof matterportFeatures; label: string }[] }[] = [
                   {
-                    title: "Modes de vue",
+                    title: "View Modes",
                     items: [
                       { key: "dollhouse", label: "Dollhouse" },
-                      { key: "floorplan", label: "Plan d'étage" },
-                      { key: "floorSelector", label: "Sélecteur d'étage" },
-                      { key: "vr", label: "Mode VR" },
+                      { key: "floorplan", label: "Floor Plan" },
+                      { key: "floorSelector", label: "Floor Selector" },
+                      { key: "vr", label: "VR Mode" },
                     ],
                   },
                   {
                     title: "Highlights & Tour",
                     items: [
                       { key: "highlights", label: "Highlights" },
-                      { key: "highlightReel", label: "Bande de highlights" },
-                      { key: "guidedTour", label: "Visite guidée" },
+                      { key: "highlightReel", label: "Highlight Reel" },
+                      { key: "guidedTour", label: "Guided Tour" },
                       { key: "autoTour", label: "Auto Tour" },
-                      { key: "views", label: "Vues" },
+                      { key: "views", label: "Views" },
                     ],
                   },
                   {
-                    title: "Outils",
+                    title: "Tools",
                     items: [
-                      { key: "measurements", label: "Mesures" },
-                      { key: "search", label: "Recherche" },
+                      { key: "measurements", label: "Measurements" },
+                      { key: "search", label: "Search" },
                       { key: "pin", label: "Pin" },
-                      { key: "portal", label: "Portail" },
+                      { key: "portal", label: "Portal" },
                     ],
                   },
                   {
-                    title: "Branding & Infos",
+                    title: "Branding & Info",
                     items: [
-                      { key: "title", label: "Titre" },
+                      { key: "title", label: "Title" },
                       { key: "nameplate", label: "Nameplate" },
-                      { key: "brand", label: "Branding Matterport" },
+                      { key: "brand", label: "Matterport Branding" },
                       { key: "mls", label: "MLS" },
-                      { key: "help", label: "Aide" },
+                      { key: "help", label: "Help" },
                     ],
                   },
                 ];
