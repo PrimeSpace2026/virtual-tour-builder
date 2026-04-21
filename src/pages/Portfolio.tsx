@@ -7,6 +7,7 @@ import { Layout } from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { SectionHeading } from "@/components/SectionHeading";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
+import { tourPath } from "@/lib/slug";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -99,7 +100,9 @@ const Portfolio = () => {
     fetch("/api/tours")
       .then((res) => res.json())
       .then(async (tours) => {
-        const mapped = await Promise.all(tours.map(async (t: any) => {
+        // Filter out disabled tours on public pages
+        const enabledTours = tours.filter((t: any) => t.enabled !== false);
+        const mapped = await Promise.all(enabledTours.map(async (t: any) => {
           let chambersCount = 0;
           try {
             const chRes = await fetch(`/api/tours/${t.id}/chambers`);
@@ -146,7 +149,7 @@ const Portfolio = () => {
       window.open(url, "_blank", "noopener,noreferrer");
       return;
     }
-    navigate(`/view/${project.id}`);
+    navigate(tourPath({ id: project.id, name: project.title }));
   };
 
   return (

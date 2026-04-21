@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate, Link, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import { slugify, tourPath } from "@/lib/slug";
 import {
   ArrowLeft,
   Share2,
@@ -290,12 +291,19 @@ interface GymCoachData {
   tagSid: string;
 }
 
+interface TagAttachment {
+  id: string;
+  type: string; // MIME type or Matterport type (e.g. 'video/mp4', 'image/jpeg', 'application/pdf', 'text/html')
+  src: string;
+}
+
 interface TagItem {
   sid: string;
   label: string;
   description: string;
   mediaUrl?: string;
   mediaSrc?: string;
+  attachments?: TagAttachment[];
   anchorPosition?: { x: number; y: number; z: number };
 }
 
@@ -443,7 +451,11 @@ const normalizeCategory = (v?: string): string => {
 };
 
 const TourViewer = () => {
-  const { id } = useParams<{ id: string }>();
+  const { projectName: rawId } = useParams<{ projectName: string }>();
+  const [resolvedId, setResolvedId] = useState<string | undefined>(
+    rawId && /^\d+$/.test(rawId) ? rawId : undefined
+  );
+  const id = resolvedId;
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const isClean = searchParams.get("clean") === "true";
@@ -453,6 +465,7 @@ const TourViewer = () => {
   const tagsMapRef = useRef<Map<string, string>>(new Map()); // tagName (lowercase) → SID
   const savedTagsMapRef = useRef<Map<string, string>>(new Map()); // saved tags from DB: name (lowercase) → SID
   const sweepsRef = useRef<any[]>([]); // cached sweep objects from SDK
+  const mattertagsRef = useRef<any[]>([]); // cached legacy Mattertag data (incl. media)
   const chamberSweepRef = useRef<string>(""); // tracks active chamber for auto-dismiss
   const visitIdRef = useRef<number | null>(null);
   const visitStartRef = useRef<number>(Date.now());
@@ -592,6 +605,36 @@ const TourViewer = () => {
       setSearchParams(searchParams, { replace: true });
     }
   }, [tourItems, searchParams, matchProduct, tour?.id, trackEvent]);
+
+  // Resolve slug → numeric id (allows /view/the-samuel as well as /view/31)
+  useEffect(() => {
+    if (!rawId) return;
+    if (/^\d+$/.test(rawId)) {
+      setResolvedId(rawId);
+      return;
+    }
+    let cancelled = false;
+    setLoading(true);
+    fetch("/api/tours")
+      .then((r) => r.json())
+      .then((tours) => {
+        if (cancelled) return;
+        const target = rawId.toLowerCase();
+        const list = Array.isArray(tours) ? tours : [];
+        const match = list.find(
+          (t: { id?: number; name?: string }) =>
+            slugify(t?.name || "") === target
+        );
+        if (match?.id != null) setResolvedId(String(match.id));
+        else { setError(true); setLoading(false); }
+      })
+      .catch(() => {
+        if (!cancelled) { setError(true); setLoading(false); }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [rawId]);
 
   // Fetch tour data
   useEffect(() => {
@@ -746,17 +789,85 @@ const TourViewer = () => {
         let tagLabel = "";
         let tagData: TagItem | null = null;
 
+        // Merge: try Tag data first, then legacy Mattertag data (has media for old tours)
+        const mt = mattertagsRef.current.find((m: any) => m.sid === tagSid);
+        if (mt) {
+          console.log("📌 Matched Mattertag:", mt);
+          tagLabel = mt.label || "";
+        }
+
         if (sdk.Tag?.getData) {
           const tags = await sdk.Tag.getData();
           const found = tags.find((t: any) => t.sid === tagSid);
           if (found) {
+            console.log("🏷️ Tag raw data:", found);
+            console.log("🏷️ Tag media:", found.media, "mediaSrc:", found.mediaSrc);
             tagLabel = found.label || "";
+            // Resolve attachments (videos, images, PDFs, iframes). Matterport bundle SDK
+            // returns attachment IDs on the tag; full data is on sdk.Tag.attachments.
+            let resolvedAttachments: TagAttachment[] = [];
+            try {
+              const attachmentIds: string[] = Array.isArray(found.attachments) ? found.attachments : [];
+              console.log("🏷️ Attachment IDs:", attachmentIds);
+              if (attachmentIds.length) {
+                // Try new API: sdk.Tag.attachments.getData()
+                let all: any[] = [];
+                try {
+                  if (sdk.Tag?.attachments?.getData) {
+                    all = await sdk.Tag.attachments.getData();
+                  }
+                } catch (e1) { console.log("Tag.attachments.getData failed", e1); }
+                // Fallback: some SDK versions expose data via subscribe (state object)
+                if (!all.length && sdk.Tag?.attachments?.data) {
+                  try {
+                    all = await new Promise<any[]>((resolve) => {
+                      const sub = sdk.Tag.attachments.data.subscribe({
+                        onCollectionUpdated(collection: any) {
+                          const arr: any[] = [];
+                          for (const k of Object.keys(collection || {})) arr.push({ ...collection[k], id: k });
+                          sub?.cancel?.();
+                          resolve(arr);
+                        },
+                      });
+                      setTimeout(() => { sub?.cancel?.(); resolve([]); }, 3000);
+                    });
+                  } catch (e2) { console.log("attachments subscribe failed", e2); }
+                }
+                console.log("🏷️ All attachments:", all);
+                resolvedAttachments = all
+                  .filter((a: any) => attachmentIds.includes(a.id))
+                  .map((a: any) => ({ id: a.id, type: String(a.type || ""), src: a.src || "" }))
+                  .filter((a: TagAttachment) => !!a.src);
+              }
+            } catch (e) { console.log("attachments fetch failed", e); }
+            console.log("🏷️ Resolved attachments:", resolvedAttachments);
             tagData = {
               sid: found.sid, label: found.label || "", description: found.description || "",
               mediaUrl: found.media?.src || "", mediaSrc: found.mediaSrc || found.media?.src || "",
+              attachments: resolvedAttachments,
               anchorPosition: found.anchorPosition,
             };
           }
+        }
+
+        // Fallback / merge: if no Tag data or no media found, use legacy Mattertag data
+        if (mt) {
+          const mtMediaSrc = mt.media?.src || "";
+          if (!tagData) {
+            tagData = {
+              sid: mt.sid,
+              label: mt.label || "",
+              description: mt.description || "",
+              mediaUrl: mtMediaSrc,
+              mediaSrc: mtMediaSrc,
+              attachments: [],
+              anchorPosition: mt.anchorPosition,
+            };
+          } else if (!tagData.mediaSrc && mtMediaSrc) {
+            tagData.mediaSrc = mtMediaSrc;
+            tagData.mediaUrl = mtMediaSrc;
+          }
+          if (mt.description && !tagData.description) tagData.description = mt.description;
         }
 
         const matchedItem = tourItemsRef.current.find((i) => {
@@ -779,19 +890,7 @@ const TourViewer = () => {
         }
         if (tagData) {
           if (tour?.id) trackEvent(tour.id, "tag_click", tagData.label || tagSid, tagSid);
-          // Fly directly to the tag
-          try {
-            const flyType = sdk.Mattertag?.Transition?.FLY_IN ?? sdk.Mattertag?.Transition?.FLYOVER ?? 2;
-            await sdk.Mattertag.navigateToTag(tagSid, flyType);
-          } catch {
-            try { await sdk.Sweep?.moveTo?.(tagSid); } catch {}
-          }
-          // Close native popup after fly
-          setTimeout(() => {
-            try { sdk.Mattertag?.close?.(tagSid); } catch {}
-            try { sdk.Tag?.close?.(tagSid); } catch {}
-          }, 500);
-          setSelectedTag(tagData);
+          // Let native popup handle media
         }
       } catch (err) {
         console.log("Tag data error:", err);
@@ -851,6 +950,14 @@ const TourViewer = () => {
           }
         } catch {}
 
+        // Also read legacy Mattertag data
+        try {
+          if (sdk.Mattertag?.getData) {
+            const mts = await sdk.Mattertag.getData();
+            mattertagsRef.current = mts;
+          }
+        } catch (e) { console.log("Mattertag.getData failed", e); }
+
         // Cache sweep data via subscription
         try {
           sdk.Sweep.data.subscribe({
@@ -906,8 +1013,9 @@ const TourViewer = () => {
         if (cancelled) return;
         // Hide remaining UI elements via SDK Settings
         try {
-          const settingsUpdates = [
-            sdk.Settings.update('labels', false),
+          const settingsUpdates: Promise<any>[] = [
+            // Explicitly enable tag labels/billboards so native popup content (video, images) shows
+            sdk.Settings.update('labels', true),
           ];
           if (!matterportFeaturesRef.current.help) {
             settingsUpdates.push(sdk.Settings.update('help', false));
@@ -963,7 +1071,25 @@ const TourViewer = () => {
         } catch (e) { console.log("Mode listener error:", e); }
 
         if (sdk.Tag?.Event?.CLICK) {
-          sdk.on(sdk.Tag.Event.CLICK, (tagSid: string) => handleTagClick(sdk, tagSid));
+          console.log("📌 Subscribing to Tag.Event.CLICK");
+          sdk.on(sdk.Tag.Event.CLICK, (tagSid: string) => {
+            console.log("🖱️ Tag.Event.CLICK fired:", tagSid);
+            handleTagClick(sdk, tagSid);
+          });
+        } else {
+          console.log("⚠️ sdk.Tag.Event.CLICK not available");
+        }
+        if (sdk.Mattertag?.Event?.CLICK) {
+          console.log("📌 Subscribing to Mattertag.Event.CLICK");
+          sdk.on(sdk.Mattertag.Event.CLICK, (tagSid: string) => {
+            console.log("🖱️ Mattertag.Event.CLICK fired:", tagSid);
+            handleTagClick(sdk, tagSid);
+          });
+        }
+        if (sdk.Mattertag?.Event?.HOVER) {
+          sdk.on(sdk.Mattertag.Event.HOVER, (hovering: boolean, tagSid: string) => {
+            if (hovering) console.log("👆 Mattertag hover:", tagSid);
+          });
         }
 
         // Prevent native Matterport popup from appearing on product tags
@@ -1366,9 +1492,9 @@ const TourViewer = () => {
         else setShowCard(false);
       }
       if ((e.key === "f" || e.key === "F") && !(e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement)) toggleFullscreen();
-      if (!isClean && e.key === "ArrowLeft" && prevTour) navigate(`/view/${prevTour.id}`);
+      if (!isClean && e.key === "ArrowLeft" && prevTour) navigate(tourPath(prevTour));
       if (!isClean && e.key === "ArrowRight" && nextTour)
-        navigate(`/view/${nextTour.id}`);
+        navigate(tourPath(nextTour));
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
@@ -1521,9 +1647,9 @@ const TourViewer = () => {
         </motion.div>
       )}
 
-      {/* ===== FLOOR SELECTOR (left side, vertically centered) ===== */}
+      {/* ===== FLOOR SELECTOR (left side, vertically centered) — hidden ===== */}
       <AnimatePresence>
-        {floors.length > 1 && sdkConnected && (
+        {false && floors.length > 1 && sdkConnected && (
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
@@ -1821,7 +1947,7 @@ const TourViewer = () => {
                 {normalizeCategory(tour.category) === "Hôtellerie" && tour.metadataJson && (() => {
                   try {
                     const meta = JSON.parse(tour.metadataJson);
-                    const customSections: { title: string; icon: string; items: { name: string; icon: string; tagSid?: string }[] }[] = (meta.sections || []);
+                    const customSections: { title: string; icon: string; items: { name: string; icon: string; tagSid?: string; imageUrl?: string }[] }[] = (meta.sections || []);
                     const rooms: HotelRoom[] = meta.rooms || [];
                     const allAmenities = Array.from(new Set(rooms.flatMap(r => r.amenities || [])));
 
@@ -1845,7 +1971,7 @@ const TourViewer = () => {
                         title: s.title,
                         iconKey: s.icon,
                         amenities: [] as string[],
-                        items: s.items.map(it => ({ name: it.name, iconKey: it.icon, sub: "", tagSid: it.tagSid || undefined })),
+                        items: s.items.map(it => ({ name: it.name, iconKey: it.icon, sub: "", tagSid: it.tagSid || undefined, imageUrl: it.imageUrl || undefined })),
                       })),
                     ];
 
@@ -2050,7 +2176,7 @@ const TourViewer = () => {
                     <div className="space-y-2">
                       {prevTour && (
                         <Link
-                          to={`/view/${prevTour.id}`}
+                          to={tourPath(prevTour)}
                           className="flex items-center gap-3 p-2.5 rounded-xl bg-white/[0.03] border border-white/[0.05] hover:bg-white/[0.07] transition-all group"
                         >
                           {prevTour.imageUrl && (
@@ -2073,7 +2199,7 @@ const TourViewer = () => {
                       )}
                       {nextTour && (
                         <Link
-                          to={`/view/${nextTour.id}`}
+                          to={tourPath(nextTour)}
                           className="flex items-center gap-3 p-2.5 rounded-xl bg-white/[0.03] border border-white/[0.05] hover:bg-white/[0.07] transition-all group"
                         >
                           {nextTour.imageUrl && (
@@ -2210,7 +2336,7 @@ const TourViewer = () => {
               {normalizeCategory(tour.category) === "Hôtellerie" && tour.metadataJson && (() => {
                 try {
                   const meta = JSON.parse(tour.metadataJson);
-                  const customSections: { title: string; icon: string; items: { name: string; icon: string; tagSid?: string }[] }[] = (meta.sections || []);
+                  const customSections: { title: string; icon: string; items: { name: string; icon: string; tagSid?: string; imageUrl?: string }[] }[] = (meta.sections || []);
                   const rooms: HotelRoom[] = meta.rooms || [];
                   const allAmenities = Array.from(new Set(rooms.flatMap(r => r.amenities || [])));
 
@@ -2227,7 +2353,7 @@ const TourViewer = () => {
                       title: s.title,
                       iconKey: s.icon,
                       amenities: [] as string[],
-                      items: s.items.map(it => ({ name: it.name, iconKey: it.icon, tagSid: it.tagSid || undefined })),
+                      items: s.items.map(it => ({ name: it.name, iconKey: it.icon, tagSid: it.tagSid || undefined, imageUrl: it.imageUrl || undefined })),
                     })),
                   ];
 
@@ -2391,7 +2517,7 @@ const TourViewer = () => {
                 <div className="flex border-t border-white/[0.06]">
                   {prevTour ? (
                     <Link
-                      to={`/view/${prevTour.id}`}
+                      to={tourPath(prevTour)}
                       className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-white/40 hover:text-white/70 text-xs transition-colors border-r border-white/[0.06]"
                     >
                       <ChevronLeft className="w-3.5 h-3.5" /> Previous
@@ -2401,7 +2527,7 @@ const TourViewer = () => {
                   )}
                   {nextTour ? (
                     <Link
-                      to={`/view/${nextTour.id}`}
+                      to={tourPath(nextTour)}
                       className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-white/40 hover:text-white/70 text-xs transition-colors"
                     >
                       Next <ChevronRight className="w-3.5 h-3.5" />
@@ -2416,15 +2542,113 @@ const TourViewer = () => {
         )}
       </AnimatePresence>
 
-      {/* ===== ITEM/TAG POPUP — Modern Glass Card ===== */}
+      {/* ===== NATIVE-STYLE TAG POPUP (Matterport look) ===== */}
       <AnimatePresence>
-        {(selectedTag || selectedItem) && (
+        {selectedTag && !selectedItem && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ duration: 0.15 }}
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 pointer-events-auto"
+            style={{ width: 340 }}
+          >
+            <div className="rounded-lg overflow-hidden bg-[#2d2d2d] shadow-[0_4px_24px_rgba(0,0,0,0.6)]">
+              {/* Top bar: share + copy */}
+              <div className="flex justify-end gap-1 px-2 pt-2">
+                <button
+                  onClick={() => { navigator.clipboard?.writeText(window.location.href); }}
+                  className="w-7 h-7 rounded flex items-center justify-center text-white/50 hover:text-white hover:bg-white/10 transition-colors"
+                  title="Share"
+                >
+                  <Share2 className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => { setSelectedTag(null); }}
+                  className="w-7 h-7 rounded flex items-center justify-center text-white/50 hover:text-white hover:bg-white/10 transition-colors"
+                  title="Close"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              {/* Media: video / image */}
+              {(() => {
+                const mediaSrc = selectedTag.mediaSrc || selectedTag.mediaUrl || "";
+                const ytMatch = mediaSrc.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{6,})/);
+                const vimeoMatch = mediaSrc.match(/vimeo\.com\/(?:video\/)?(\d+)/);
+                const isDirectVideo = /\.(mp4|webm|ogg|mov)(\?|$)/i.test(mediaSrc);
+                const isImage = /\.(png|jpe?g|gif|webp|avif)(\?|$)/i.test(mediaSrc);
+
+                if (ytMatch) {
+                  return (
+                    <div className="aspect-video mx-2 mb-2 rounded overflow-hidden bg-black">
+                      <iframe
+                        src={`https://www.youtube.com/embed/${ytMatch[1]}?autoplay=1&rel=0`}
+                        className="w-full h-full border-0"
+                        allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+                        allowFullScreen
+                      />
+                    </div>
+                  );
+                }
+                if (vimeoMatch) {
+                  return (
+                    <div className="aspect-video mx-2 mb-2 rounded overflow-hidden bg-black">
+                      <iframe
+                        src={`https://player.vimeo.com/video/${vimeoMatch[1]}?autoplay=1`}
+                        className="w-full h-full border-0"
+                        allow="autoplay; encrypted-media; fullscreen"
+                        allowFullScreen
+                      />
+                    </div>
+                  );
+                }
+                if (isDirectVideo) {
+                  return (
+                    <div className="aspect-video mx-2 mb-2 rounded overflow-hidden bg-black">
+                      <video src={mediaSrc} className="w-full h-full object-contain" controls autoPlay playsInline />
+                    </div>
+                  );
+                }
+                if (isImage && mediaSrc) {
+                  return (
+                    <div className="mx-2 mb-2 rounded overflow-hidden">
+                      <img src={mediaSrc} alt={selectedTag.label} className="w-full object-cover" />
+                    </div>
+                  );
+                }
+                if (mediaSrc && /^https?:\/\//i.test(mediaSrc)) {
+                  return (
+                    <div className="aspect-video mx-2 mb-2 rounded overflow-hidden bg-black">
+                      <iframe src={mediaSrc} className="w-full h-full border-0" allow="autoplay; fullscreen" allowFullScreen />
+                    </div>
+                  );
+                }
+                return null;
+              })()}
+
+              {/* Title */}
+              <div className="px-3 pb-3">
+                <h4 className="text-white text-sm font-semibold leading-snug">{selectedTag.label}</h4>
+                {selectedTag.description && (
+                  <p className="text-white/50 text-xs mt-1 leading-relaxed">{selectedTag.description}</p>
+                )}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ===== PRODUCT ITEM POPUP — Modern Glass Card ===== */}
+      <AnimatePresence>
+        {selectedItem && (
           <>
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={() => { setSelectedTag(null); setSelectedItem(null); }}
+              onClick={() => { setSelectedItem(null); }}
               className="absolute inset-0 bg-black/70 backdrop-blur-xl z-40"
             />
             <motion.div
@@ -2438,36 +2662,32 @@ const TourViewer = () => {
                 <div className="relative overflow-hidden rounded-t-[28px] sm:rounded-[28px] bg-gradient-to-b from-[#1a1a2e] to-[#0f0f1a] border border-white/[0.08] shadow-[0_0_80px_rgba(124,58,237,0.12)]">
                   {/* Close */}
                   <button
-                    onClick={() => { setSelectedTag(null); setSelectedItem(null); }}
+                    onClick={() => { setSelectedItem(null); }}
                     className="absolute top-3 right-3 z-30 w-8 h-8 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-md flex items-center justify-center text-white/60 hover:text-white transition-all"
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
 
                   {/* Image Hero */}
-                  <div className="relative w-full aspect-[4/3] overflow-hidden">
-                    {(selectedItem?.imageUrl || selectedTag?.mediaSrc || selectedTag?.mediaUrl) ? (
-                      <img
-                        src={selectedItem?.imageUrl || selectedTag?.mediaSrc || selectedTag?.mediaUrl}
-                        alt={selectedItem?.name || selectedTag?.label}
-                        className="w-full h-full object-cover"
-                      />
+                  <div className="relative w-full aspect-[4/3] overflow-hidden bg-black">
+                    {selectedItem.imageUrl ? (
+                      <img src={selectedItem.imageUrl} alt={selectedItem.name} className="w-full h-full object-cover" />
                     ) : (
                       <div className="w-full h-full bg-gradient-to-br from-purple-900/20 to-transparent flex items-center justify-center">
                         <ShoppingBag className="w-14 h-14 text-white/8" />
                       </div>
                     )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#1a1a2e] via-transparent to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#1a1a2e] via-transparent to-transparent pointer-events-none" />
                     {/* Brand pill */}
-                    {selectedItem?.brand && (
+                    {selectedItem.brand && (
                       <div className="absolute top-3 left-3 z-10">
                         <span className="px-2.5 py-1 rounded-full bg-white/95 text-[9px] font-black uppercase tracking-[0.15em] text-gray-600 shadow-lg">
                           {selectedItem.brand}
                         </span>
                       </div>
                     )}
-                    {/* Price overlay (bottom-right of image) */}
-                    {selectedItem?.price != null && (
+                    {/* Price overlay */}
+                    {selectedItem.price != null && (
                       <div className="absolute bottom-3 right-4 z-10 flex items-baseline gap-1.5">
                         <span className="text-[32px] font-black text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.6)] leading-none">{selectedItem.price}</span>
                         <span className="text-sm font-bold text-white/50">{CURRENCY_SYMBOLS[selectedItem.currency] || selectedItem.currency}</span>
@@ -2477,40 +2697,27 @@ const TourViewer = () => {
 
                   {/* Content */}
                   <div className="px-5 pt-4 pb-5">
-                    {/* Category chip */}
-                    {!selectedItem?.brand && tour.category && (
-                      <div className="mb-2.5">
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-purple-500/15 text-purple-300 text-[10px] font-semibold uppercase tracking-wider">
-                          <Tag className="w-3 h-3" />
-                          {displayCategory(tour.category)}
-                        </span>
-                      </div>
-                    )}
-
                     {/* Name */}
                     <h3 className="text-white font-bold text-[22px] leading-[1.2] tracking-tight">
-                      {selectedItem?.name || selectedTag?.label}
+                      {selectedItem.name}
                     </h3>
-
-                    {/* Description */}
-                    {(selectedItem?.description || selectedTag?.description) && (
+                    {selectedItem.description && (
                       <p className="text-white/35 text-[13px] leading-relaxed mt-2.5 line-clamp-2">
-                        {selectedItem?.description || selectedTag?.description}
+                        {selectedItem.description}
                       </p>
                     )}
-
                     {/* Actions */}
                     <div className="flex gap-2.5 mt-5">
-                      {selectedItem && selectedItem.showAddToCart !== false && (
+                      {selectedItem.showAddToCart !== false && (
                         <button
-                          onClick={() => { addToCart(selectedItem); setSelectedItem(null); setSelectedTag(null); }}
+                          onClick={() => { addToCart(selectedItem); setSelectedItem(null); }}
                           className="flex-1 h-[52px] bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 text-white font-bold rounded-2xl transition-all hover:shadow-[0_4px_24px_rgba(124,58,237,0.4)] flex items-center justify-center gap-2.5 text-[13px]"
                         >
                           <ShoppingCart className="w-4 h-4" />
                           Add to cart
                         </button>
                       )}
-                      {selectedItem?.externalUrl && (
+                      {selectedItem.externalUrl && (
                         <a
                           href={selectedItem.externalUrl}
                           target="_blank"
@@ -2520,14 +2727,6 @@ const TourViewer = () => {
                           Buy
                           <ExternalLink className="w-3.5 h-3.5" />
                         </a>
-                      )}
-                      {!selectedItem && (
-                        <button
-                          onClick={() => { setSelectedTag(null); }}
-                          className="flex-1 h-[52px] bg-white/[0.07] hover:bg-white/[0.12] text-white/70 hover:text-white font-semibold rounded-2xl transition-all flex items-center justify-center gap-2 text-[13px] border border-white/[0.08]"
-                        >
-                          Close
-                        </button>
                       )}
                     </div>
                   </div>
@@ -3169,12 +3368,12 @@ const TourViewer = () => {
       {/* ===== BOTTOM: PRODUCT & SERVICE STRIP ===== */}
       {(() => {
         // Compute custom strip sections (hotel + gym) once for all use
-        let stripCustoms: { key: string; title: string; iconKey: string; items: { name: string; icon: string; tagSid?: string }[] }[] = [];
+        let stripCustoms: { key: string; title: string; iconKey: string; items: { name: string; icon: string; tagSid?: string; imageUrl?: string }[] }[] = [];
         if (tour?.metadataJson) {
           try {
             const meta = JSON.parse(tour.metadataJson);
-            const fromHotel = (meta.sections || []) as { title: string; icon: string; items: { name: string; icon: string; tagSid?: string }[] }[];
-            const fromGym = (meta.gymSections || []) as { title: string; icon: string; items: { name: string; icon: string; tagSid?: string }[] }[];
+            const fromHotel = (meta.sections || []) as { title: string; icon: string; items: { name: string; icon: string; tagSid?: string; imageUrl?: string }[] }[];
+            const fromGym = (meta.gymSections || []) as { title: string; icon: string; items: { name: string; icon: string; tagSid?: string; imageUrl?: string }[] }[];
             stripCustoms = [...fromHotel, ...fromGym]
               .filter(s => (s.title || "").trim() && (s.items || []).length > 0)
               .filter(s => bottomStripConfig.customSections?.[s.title] !== false)
@@ -3486,8 +3685,12 @@ const TourViewer = () => {
                       }}
                       className="flex-shrink-0 flex items-center gap-2.5 bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.08] rounded-xl p-2 pr-4 transition-all group"
                     >
-                      <div className="w-12 h-12 rounded-lg bg-purple-500/20 flex items-center justify-center shrink-0 border border-purple-400/30">
-                        <Icn className="w-5 h-5 text-purple-300" />
+                      <div className="w-12 h-12 rounded-lg bg-purple-500/20 flex items-center justify-center shrink-0 border border-purple-400/30 overflow-hidden">
+                        {item.imageUrl ? (
+                          <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <Icn className="w-5 h-5 text-purple-300" />
+                        )}
                       </div>
                       <div className="min-w-0">
                         <p className="text-white/80 text-xs font-semibold truncate max-w-[120px] group-hover:text-white transition-colors">{item.name}</p>

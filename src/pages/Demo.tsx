@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { getTours, getTourById, getTourItems, getTourServices, getTourChambers } from "@/lib/api";
 import { useNavigate } from "react-router-dom";
+import { tourPath } from "@/lib/slug";
 
 /* ─── Tunisie Booking exact color palette ─── */
 const C = {
@@ -336,7 +337,7 @@ export default function Demo() {
                 </div>
                 <div className="relative aspect-video">
                   <iframe
-                    src={`/view/${tour.id}`}
+                    src={tourPath(tour)}
                     title="Visite 3D PrimeSpace"
                     className="w-full h-full"
                     allowFullScreen
@@ -346,7 +347,7 @@ export default function Demo() {
                 <div className="p-3 flex items-center justify-between" style={{ backgroundColor: C.lightGray }}>
                   <p className="text-xs" style={{ color: C.gray }}>Naviguez librement dans l'espace 3D • Cliquez et déplacez-vous</p>
                   <a
-                    href={`/view/${tour.id}`}
+                    href={tourPath(tour)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-xs font-semibold px-4 py-1.5 rounded text-white transition hover:opacity-90 inline-block"
@@ -572,7 +573,7 @@ export default function Demo() {
               {tour && (
                 <div className="p-3 border-t" style={{ borderColor: C.border }}>
                   <button
-                    onClick={() => navigate(`/view/${tour.id}`)}
+                    onClick={() => navigate(tourPath(tour))}
                     className="w-full py-3 rounded-lg text-white font-bold text-sm transition hover:opacity-90 flex items-center justify-center gap-2"
                     style={{ backgroundColor: C.green }}
                   >

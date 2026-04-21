@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import { tourPath } from "@/lib/slug";
 import { Layout } from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,7 +20,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Plus, Pencil, Trash2, Upload, X, Image as ImageIcon, LogOut, Search, MapPin, Loader2, ShoppingBag, ExternalLink, BarChart3, Briefcase, Phone, MessageCircle, Tag, Scan, Wifi, Snowflake, Tv, Wine, Bath, DoorOpen, Lock, BedDouble, ChevronDown, ChevronUp, GripVertical, Sparkles, UtensilsCrossed, Dumbbell, CalendarDays, Heart, Home, Users, Star, Coffee, Music, Palmtree, ShieldCheck, PlayCircle, Layers, Clock, Banknote, Trophy, Droplets, Award, Mail, User, Link2, Check } from "lucide-react";
+import { Plus, Pencil, Trash2, Upload, X, Image as ImageIcon, LogOut, Search, MapPin, Loader2, ShoppingBag, ExternalLink, BarChart3, Briefcase, Phone, MessageCircle, Tag, Scan, Wifi, Snowflake, Tv, Wine, Bath, DoorOpen, Lock, BedDouble, ChevronDown, ChevronUp, GripVertical, Sparkles, UtensilsCrossed, Power, PowerOff, Dumbbell, CalendarDays, Heart, Home, Users, Star, Coffee, Music, Palmtree, ShieldCheck, PlayCircle, Layers, Clock, Banknote, Trophy, Droplets, Award, Mail, User, Link2, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from "react-leaflet";
 import L from "leaflet";
@@ -74,6 +75,7 @@ interface Tour {
   longitude: number | null;
   location: string;
   metadataJson?: string;
+  enabled?: boolean;
 }
 
 interface HotelRoom {
@@ -92,6 +94,7 @@ interface MenuItemData {
   name: string;
   icon: string;
   tagSid: string;
+  imageUrl?: string;
 }
 
 interface MenuSectionData {
@@ -477,6 +480,82 @@ const Admin = () => {
     if (token) fetch("/api/auth/logout", { method: "POST", headers: { Authorization: `Bearer ${token}` } });
     sessionStorage.removeItem("admin_token");
     navigate("/login");
+  };
+
+  const handleExportBackup = async () => {
+    try {
+      const res = await fetch("/api/tours");
+      const list = await res.json();
+      // Pull rich per-tour data (items, services, chambers) so backup is complete
+      const enriched = await Promise.all(
+        (Array.isArray(list) ? list : []).map(async (t: { id: number }) => {
+          const [items, services, chambers, tags] = await Promise.all([
+            fetch(`/api/tours/${t.id}/items`).then((r) => r.ok ? r.json() : []).catch(() => []),
+            fetch(`/api/tours/${t.id}/services`).then((r) => r.ok ? r.json() : []).catch(() => []),
+            fetch(`/api/tours/${t.id}/chambers`).then((r) => r.ok ? r.json() : []).catch(() => []),
+            fetch(`/api/tours/${t.id}/tags`).then((r) => r.ok ? r.json() : []).catch(() => []),
+          ]);
+          return { tour: t, items, services, chambers, tags };
+        })
+      );
+      const backup = {
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        count: enriched.length,
+        tours: enriched,
+      };
+      const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      const stamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+      a.href = url;
+      a.download = `primespace-backup-${stamp}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast({ title: "Backup exporté", description: `${enriched.length} visite(s) sauvegardée(s)` });
+    } catch (err) {
+      toast({ title: "Erreur backup", description: String(err), variant: "destructive" });
+    }
+  };
+
+  const handleRestoreSingleTour = async (file: File) => {
+    if (!file) return;
+    if (!window.confirm("Restaurer va remplacer les sections + chambres + bottomStrip + matterportFeatures de la visite ciblée par celles du backup. Continuer ?")) return;
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
+      const tours = Array.isArray(data?.tours) ? data.tours : [];
+      if (tours.length === 0) {
+        toast({ title: "Backup vide", variant: "destructive" });
+        return;
+      }
+      // Ask which tour id to restore
+      const idStr = window.prompt(
+        `Backup contient ${tours.length} visite(s):\n${tours.map((x: { tour: { id: number; name: string } }) => `${x.tour.id} — ${x.tour.name}`).join("\n")}\n\nID à restaurer ?`
+      );
+      const id = Number(idStr);
+      if (!id) return;
+      const entry = tours.find((x: { tour: { id: number } }) => x.tour.id === id);
+      if (!entry) {
+        toast({ title: "ID introuvable dans le backup", variant: "destructive" });
+        return;
+      }
+      const res = await fetch(`/api/tours/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(entry.tour),
+      });
+      if (res.ok) {
+        toast({ title: "Visite restaurée", description: `ID ${id}` });
+        fetchTours();
+      } else {
+        toast({ title: "Échec restauration", description: `HTTP ${res.status}`, variant: "destructive" });
+      }
+    } catch (err) {
+      toast({ title: "Backup invalide", description: String(err), variant: "destructive" });
+    }
   };
 
   const fetchTours = () => {
@@ -875,19 +954,19 @@ const Admin = () => {
     }
     const method = isEditing ? "PUT" : "POST";
     const url = isEditing ? `/api/tours/${editTour.id}` : "/api/tours";
-    let res = await fetch(url, {
+    const res = await fetch(url, {
       method,
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
-    // Fallback: if 500 and we sent metadataJson, retry without it (column may not exist yet)
-    if (!res.ok && payload.metadataJson) {
-      const { metadataJson: _, ...fallback } = payload;
-      res = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(fallback),
+    if (!res.ok) {
+      const errBody = await res.text().catch(() => "");
+      toast({
+        title: `Échec sauvegarde (HTTP ${res.status})`,
+        description: errBody.slice(0, 300) || "Vérifiez la console serveur. Aucune donnée n'a été modifiée.",
+        variant: "destructive",
       });
+      return;
     }
     if (res.ok) {
       const savedTour = await res.json().catch(() => null);
@@ -1274,11 +1353,16 @@ const Admin = () => {
                 key={tour.id}
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="rounded-2xl overflow-hidden bg-card shadow-soft"
+                className={`relative rounded-2xl overflow-hidden bg-card shadow-soft ${tour.enabled === false ? "opacity-60" : ""}`}
               >
+                {tour.enabled === false && (
+                  <div className="absolute top-3 left-3 z-10 px-2 py-1 rounded-md bg-red-500/90 text-white text-xs font-bold flex items-center gap-1 shadow">
+                    <PowerOff className="w-3 h-3" /> Disabled
+                  </div>
+                )}
                 <div className="aspect-[4/3] overflow-hidden bg-muted">
                   {tour.imageUrl ? (
-                    <img src={tour.imageUrl} alt={tour.name} className="w-full h-full object-cover" />
+                    <img src={tour.imageUrl} alt={tour.name} className={`w-full h-full object-cover ${tour.enabled === false ? "grayscale" : ""}`} />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
                       <ImageIcon className="w-12 h-12 text-muted-foreground" />
@@ -1292,8 +1376,33 @@ const Admin = () => {
                   <div className="flex justify-between items-center mt-4">
                     <span className="text-sm text-muted-foreground">{tour.surface ? `${tour.surface} m²` : ""}</span>
                     <div className="flex gap-2">
+                      <Button
+                        variant={tour.enabled === false ? "default" : "outline"}
+                        size="sm"
+                        onClick={async () => {
+                          const next = !(tour.enabled !== false);
+                          try {
+                            const res = await fetch(`/api/tours/${tour.id}/enabled`, {
+                              method: "PUT",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ enabled: next }),
+                            });
+                            if (res.ok) {
+                              toast({ title: next ? "Visite activée" : "Visite désactivée" });
+                              fetchTours();
+                            } else {
+                              toast({ title: "Erreur", description: `HTTP ${res.status}`, variant: "destructive" });
+                            }
+                          } catch (e) {
+                            toast({ title: "Erreur", description: String(e), variant: "destructive" });
+                          }
+                        }}
+                        title={tour.enabled === false ? "Activer la visite" : "Désactiver la visite"}
+                      >
+                        {tour.enabled === false ? <Power className="w-4 h-4" /> : <PowerOff className="w-4 h-4" />}
+                      </Button>
                       <Button variant="outline" size="sm" onClick={() => {
-                        const url = `${window.location.origin}/share/${tour.id}?clean=true`;
+                        const url = `${window.location.origin}${tourPath(tour)}?clean=true`;
                         navigator.clipboard.writeText(url).then(() => {
                           toast({ title: "Lien copié", description: url });
                         });
@@ -1674,6 +1783,62 @@ const Admin = () => {
                                   placeholder="https://my.matterport.com/show/?m=...&ss=48&sr=..."
                                   className="h-8 text-xs w-[280px]"
                                 />
+                              )}
+                              {item.imageUrl ? (
+                                <div className="relative h-8 w-8 shrink-0 rounded overflow-hidden border border-border group">
+                                  <img src={item.imageUrl} alt="" className="h-full w-full object-cover" />
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const updated = [...menuSections];
+                                      const items = [...sec.items];
+                                      items[iIdx] = { ...item, imageUrl: "" };
+                                      updated[sIdx] = { ...sec, items };
+                                      setMenuSections(updated);
+                                    }}
+                                    className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition"
+                                    title="Remove image"
+                                  >
+                                    <X className="w-3.5 h-3.5 text-white" />
+                                  </button>
+                                </div>
+                              ) : (
+                                <label className="h-8 w-8 shrink-0 rounded border border-dashed border-border flex items-center justify-center cursor-pointer hover:bg-muted text-muted-foreground" title="Upload image">
+                                  <ImageIcon className="w-3.5 h-3.5" />
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    className="hidden"
+                                    onChange={async (e) => {
+                                      const file = e.target.files?.[0];
+                                      if (!file) return;
+                                      if (!file.type.startsWith("image/")) {
+                                        toast({ title: "Erreur", description: "Le fichier doit être une image", variant: "destructive" });
+                                        return;
+                                      }
+                                      try {
+                                        const fd = new FormData();
+                                        fd.append("file", file);
+                                        const res = await fetch("/api/upload", { method: "POST", body: fd });
+                                        const data = await res.json();
+                                        if (data.url) {
+                                          const updated = [...menuSections];
+                                          const items = [...sec.items];
+                                          items[iIdx] = { ...item, imageUrl: data.url };
+                                          updated[sIdx] = { ...sec, items };
+                                          setMenuSections(updated);
+                                          toast({ title: "Image uploadée" });
+                                        } else {
+                                          toast({ title: "Erreur upload", description: data.error || "Erreur inconnue", variant: "destructive" });
+                                        }
+                                      } catch {
+                                        toast({ title: "Erreur", description: "Échec de l'upload", variant: "destructive" });
+                                      } finally {
+                                        e.target.value = "";
+                                      }
+                                    }}
+                                  />
+                                </label>
                               )}
                               <Button
                                 type="button"

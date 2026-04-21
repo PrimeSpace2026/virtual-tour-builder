@@ -12,6 +12,7 @@ import { TestimonialCard } from "@/components/TestimonialCard";
 import { StatsSection } from "@/components/StatsSection";
 import { FAQSection } from "@/components/FAQSection";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
+import { tourPath } from "@/lib/slug";
 
 
 interface HomeTour {
@@ -57,8 +58,9 @@ const Index = () => {
     fetch(`${API_BASE}/api/tours`)
       .then((res) => res.json())
       .then((tours: any[]) => {
+        const enabled = tours.filter((t) => t.enabled !== false);
         setProjects(
-          tours.slice(0, 4).map((t) => ({
+          enabled.slice(0, 4).map((t) => ({
             id: t.id,
             image: t.imageUrl || "/placeholder.svg",
             title: t.name,
@@ -175,7 +177,7 @@ const Index = () => {
 
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 justify-items-center">
             {projects.map((project, index) => (
-              <Link key={project.id} to={`/view/${project.id}`} className="cursor-pointer">
+              <Link key={project.id} to={tourPath({ id: project.id, name: project.title })} className="cursor-pointer">
                 <ProjectCard
                   image={project.image}
                   title={project.title}

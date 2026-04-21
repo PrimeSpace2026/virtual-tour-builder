@@ -72,7 +72,7 @@ const App = () => (
               <Route path="/industries/government" element={<Government />} />
               <Route path="/industries/energy-utilities" element={<EnergyUtilities />} />
               <Route path="/industries/oil-gas" element={<OilGas />} />
-              <Route path="/view/:id" element={<TourViewer />} />
+              <Route path="/view/:projectName" element={<TourViewer />} />
               <Route path="/share/:id" element={<ShareRedirect />} />
               <Route path="/admin/stats/:id" element={<TourStats />} />
               <Route path="/admin/analytics" element={<AnalyticsDashboard />} />
