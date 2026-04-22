@@ -208,10 +208,10 @@ export default function Demo() {
       {lightboxImg && (
         <div className="fixed inset-0 z-[999] bg-black/90 flex items-center justify-center" onClick={() => setLightboxImg(null)}>
           <button onClick={(e) => { e.stopPropagation(); setLightboxImg(null); }} className="absolute top-4 right-4 text-white p-2 rounded-full hover:bg-white/20 z-10"><X className="w-7 h-7" /></button>
-          <button onClick={(e) => { e.stopPropagation(); prevImg(); }} className="absolute left-4 top-1/2 -translate-y-1/2 text-white p-2 rounded-full hover:bg-white/20"><ChevronLeft className="w-8 h-8" /></button>
-          <button onClick={(e) => { e.stopPropagation(); nextImg(); }} className="absolute right-4 top-1/2 -translate-y-1/2 text-white p-2 rounded-full hover:bg-white/20"><ChevronRight className="w-8 h-8" /></button>
+          <button onClick={(e) => { e.stopPropagation(); prevImg(); }} className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 text-white p-2 sm:p-3 rounded-full hover:bg-white/20"><ChevronLeft className="w-6 h-6 sm:w-8 sm:h-8" /></button>
+          <button onClick={(e) => { e.stopPropagation(); nextImg(); }} className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 text-white p-2 sm:p-3 rounded-full hover:bg-white/20"><ChevronRight className="w-6 h-6 sm:w-8 sm:h-8" /></button>
           <img src={lightboxImg} alt="" className="max-w-[90vw] max-h-[85vh] object-contain" onClick={(e) => e.stopPropagation()} />
-          <div className="absolute bottom-4 text-white/70 text-sm">{lightboxIdx + 1} / {HOTEL_IMAGES.length}</div>
+          <div className="absolute bottom-4 text-white/70 text-xs sm:text-sm">{lightboxIdx + 1} / {HOTEL_IMAGES.length}</div>
         </div>
       )}
 
@@ -232,7 +232,7 @@ export default function Demo() {
           <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
             <div>
               <div className="flex items-center gap-2 mb-1">
-                <h1 className="text-2xl font-bold" style={{ color: C.dark }}>{HOTEL.name}</h1>
+                <h1 className="text-xl sm:text-2xl font-bold" style={{ color: C.dark }}>{HOTEL.name}</h1>
                 <StarIcons count={HOTEL.stars} />
               </div>
               <div className="flex items-center gap-3 text-sm flex-wrap">
@@ -299,14 +299,14 @@ export default function Demo() {
                 </div>
                 <button
                   onClick={() => setGalleryStart((galleryStart - 1 + HOTEL_IMAGES.length) % HOTEL_IMAGES.length)}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full flex items-center justify-center text-white"
+                  className="absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 w-10 h-10 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-white"
                   style={{ backgroundColor: "rgba(38,38,38,0.34)" }}
                 >
                   <ChevronLeft className="w-5 h-5" />
                 </button>
                 <button
                   onClick={() => setGalleryStart((galleryStart + 1) % HOTEL_IMAGES.length)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full flex items-center justify-center text-white"
+                  className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 w-10 h-10 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-white"
                   style={{ backgroundColor: "rgba(38,38,38,0.34)" }}
                 >
                   <ChevronRight className="w-5 h-5" />

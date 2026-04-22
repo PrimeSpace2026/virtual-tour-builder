@@ -1333,16 +1333,16 @@ const Admin = () => {
 
       <section className="py-12 bg-background">
         <div className="container mx-auto px-4 lg:px-8">
-          <div className="flex justify-between mb-8">
+          <div className="flex flex-col sm:flex-row justify-between gap-3 mb-8">
             <Button variant="outline" onClick={handleLogout} className="flex items-center gap-2">
               <LogOut className="w-4 h-4" /> Déconnexion
             </Button>
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => navigate("/admin/analytics")} className="flex items-center gap-2">
-                <BarChart3 className="w-4 h-4" /> Analytics Dashboard
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" onClick={() => navigate("/admin/analytics")} className="flex items-center gap-2 text-xs sm:text-sm">
+                <BarChart3 className="w-4 h-4" /> Analytics
               </Button>
-              <Button onClick={openCreate} className="flex items-center gap-2">
-                <Plus className="w-4 h-4" /> Ajouter une visite
+              <Button onClick={openCreate} className="flex items-center gap-2 text-xs sm:text-sm">
+                <Plus className="w-4 h-4" /> Ajouter
               </Button>
             </div>
           </div>
@@ -2166,7 +2166,7 @@ const Admin = () => {
             {editTour.category === "Immobilier" && (
               <div className="space-y-4">
                 {/* Type de bien & Transaction */}
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="text-sm font-medium mb-1 block flex items-center gap-2"><Home className="w-4 h-4" /> Type de bien</label>
                     <Select value={immobilierData.propertyType} onValueChange={(v) => setImmobilierData({ ...immobilierData, propertyType: v })}>
@@ -2192,7 +2192,7 @@ const Admin = () => {
                 </div>
 
                 {/* Prix */}
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div className="col-span-2">
                     <label className="text-sm font-medium mb-1 block">Prix</label>
                     <Input type="number" value={immobilierData.price ?? ""} onChange={(e) => setImmobilierData({ ...immobilierData, price: e.target.value ? Number(e.target.value) : null })} placeholder="350000" />
@@ -2209,7 +2209,7 @@ const Admin = () => {
                 </div>
 
                 {/* Pièces */}
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
                     <label className="text-sm font-medium mb-1 block flex items-center gap-2"><DoorOpen className="w-4 h-4" /> Pièces</label>
                     <Input type="number" min={0} value={immobilierData.rooms ?? ""} onChange={(e) => setImmobilierData({ ...immobilierData, rooms: e.target.value ? Number(e.target.value) : null })} />
@@ -2225,7 +2225,7 @@ const Admin = () => {
                 </div>
 
                 {/* Étage & Année */}
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
                     <label className="text-sm font-medium mb-1 block">Étage</label>
                     <Input type="number" min={0} value={immobilierData.floor ?? ""} onChange={(e) => setImmobilierData({ ...immobilierData, floor: e.target.value ? Number(e.target.value) : null })} />
@@ -2241,7 +2241,7 @@ const Admin = () => {
                 </div>
 
                 {/* État & Chauffage & Énergie */}
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
                     <label className="text-sm font-medium mb-1 block">État</label>
                     <Select value={immobilierData.condition} onValueChange={(v) => setImmobilierData({ ...immobilierData, condition: v })}>

@@ -102,7 +102,7 @@ const CalendlyWidget = ({ url }: { url: string }) => {
     return () => clearTimeout(t);
   }, [url]);
   return (
-    <div className="relative" style={{ minWidth: "320px", height: "700px" }}>
+    <div className="relative h-[500px] md:h-[700px]" style={{ minWidth: "280px" }}>
       {!loaded && (
         <div className="absolute inset-0 z-10 overflow-hidden rounded-xl bg-muted/40">
           <div className="absolute inset-0 animate-pulse bg-gradient-to-br from-muted/60 via-muted/30 to-muted/60" />
@@ -119,7 +119,7 @@ const CalendlyWidget = ({ url }: { url: string }) => {
       )}
       <InlineWidget
         url={url}
-        styles={{ height: "700px", minWidth: "320px" }}
+        styles={{ height: "100%", minWidth: "280px" }}
         pageSettings={{
           backgroundColor: "ffffff",
           primaryColor: "7c3aed",
@@ -520,7 +520,7 @@ const Contact = () => {
       {/* Contact Info Strip */}
       <section className="py-10 md:py-14 bg-muted/40 border-y border-border">
         <div className="container mx-auto px-4 lg:px-8">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
             {[
               { icon: Phone, title: lang === "fr" ? "Téléphone" : "Phone", value: "+216 52 664 495", link: "tel:+21652664495" },
               { icon: Mail, title: "Email", value: "info@primespace.studio", link: "mailto:info@primespace.studio" },

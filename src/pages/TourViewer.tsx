@@ -3473,7 +3473,7 @@ const TourViewer = () => {
 
             {/* Products strip */}
             {bottomTab === "products" && tourItems.length > 0 && (
-              <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide justify-center">
+              <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide pb-1">
                 {tourItems
                   .filter(i => !activeTagFilter || i.tagSid?.trim().toLowerCase() === activeTagFilter.trim().toLowerCase())
                   .map((item) => (
@@ -3512,7 +3512,7 @@ const TourViewer = () => {
 
             {/* Services strip */}
             {bottomTab === "services" && tourServices.length > 0 && (
-              <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide justify-center">
+              <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide pb-1">
                 {tourServices.map((svc) => (
                   <button
                     key={svc.id}
@@ -3578,7 +3578,7 @@ const TourViewer = () => {
 
             {/* Chambers strip */}
             {bottomTab === "chambers" && tourChambers.length > 0 && (
-              <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide justify-center">
+              <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide pb-1">
                 {tourChambers.map((ch) => (
                   <button
                     key={ch.id}
@@ -3613,7 +3613,7 @@ const TourViewer = () => {
 
             {/* Immobilier rooms strip */}
             {bottomTab === "rooms" && immoRooms.length > 0 && (
-              <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide justify-center">
+              <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide pb-1">
                 {immoRooms.map((room, ri) => (
                   <button
                     key={ri}
@@ -3643,7 +3643,7 @@ const TourViewer = () => {
 
             {/* Coaches strip */}
             {bottomTab === "coaches" && gymCoaches.length > 0 && (
-              <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide justify-center">
+              <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide pb-1">
                 {gymCoaches.map((coach, ci) => (
                   <button
                     key={ci}
@@ -3669,7 +3669,7 @@ const TourViewer = () => {
 
             {/* Custom section strip */}
             {activeCustom && (
-              <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide justify-center">
+              <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide pb-1">
                 {activeCustom.items.map((item, idx) => {
                   const Icn = ICON_MAP[item.icon] || Layers;
                   return (
