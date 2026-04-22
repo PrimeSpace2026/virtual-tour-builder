@@ -382,6 +382,7 @@ interface TourServiceItem {
   whatsapp: string;
   instagram: string;
   facebook: string;
+  link: string;
   tagSid: string;
 }
 
@@ -394,6 +395,7 @@ const emptyService: TourServiceItem = {
   whatsapp: "",
   instagram: "",
   facebook: "",
+  link: "",
   tagSid: "",
 };
 
@@ -3235,6 +3237,10 @@ const Admin = () => {
                       <div>
                         <label className="text-sm font-medium mb-1 block">Facebook</label>
                         <Input value={editService.facebook} onChange={(e) => setEditService({ ...editService, facebook: e.target.value })} placeholder="https://facebook.com/..." />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium mb-1 block">Lien / Site web</label>
+                        <Input value={editService.link} onChange={(e) => setEditService({ ...editService, link: e.target.value })} placeholder="https://..." />
                       </div>
                     </div>
                   </div>
