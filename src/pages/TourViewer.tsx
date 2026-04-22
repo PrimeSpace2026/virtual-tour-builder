@@ -3071,6 +3071,17 @@ const TourViewer = () => {
                         Facebook
                       </a>
                     )}
+                    {selectedService.link && (
+                      <a
+                        href={selectedService.link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-3 w-full px-4 py-3 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 font-medium text-sm transition-colors"
+                      >
+                        <ExternalLink className="w-5 h-5" />
+                        Site web
+                      </a>
+                    )}
                   </div>
                 </div>
               </div>
@@ -3514,7 +3525,7 @@ const TourViewer = () => {
 
             {/* Services strip */}
             {bottomTab === "services" && tourServices.length > 0 && (
-              <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide pb-1">
+              <div className="flex items-center justify-center gap-3 overflow-x-auto scrollbar-hide pb-1">
                 {tourServices.map((svc) => (
                   <button
                     key={svc.id}

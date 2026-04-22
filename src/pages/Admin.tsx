@@ -399,6 +399,8 @@ const emptyService: TourServiceItem = {
   tagSid: "",
 };
 
+const UPLOAD_URL = "https://back-end-tp6x.onrender.com/api/upload";
+
 const Admin = () => {
   const [tours, setTours] = useState<Tour[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -676,11 +678,9 @@ const Admin = () => {
 
       const sweepOptions = sdkData.sweeps.map((s: any, idx: number) => {
         const sid = s.id || s.sid || s.uuid;
-        const panoId = s.uuid || s.id || sid;
         return {
           name: `360° Vue ${idx + 1} — Étage ${s.floorInfo?.sequence ?? s.floor ?? '?'}`,
           sid,
-          thumbnail: `https://my.matterport.com/api/player/models/${modelId}/panos/${panoId}/thumbnail`,
         };
       }).filter((t: any) => t.sid);
 
@@ -751,7 +751,7 @@ const Admin = () => {
     try {
       const formData = new FormData();
       formData.append("file", file);
-      const res = await fetch("/api/upload", { method: "POST", body: formData });
+      const res = await fetch(UPLOAD_URL, { method: "POST", body: formData });
       const data = await res.json();
       if (data.url) {
         setEditTour((prev) => ({ ...prev, imageUrl: data.url }));
@@ -794,7 +794,7 @@ const Admin = () => {
     try {
       const formData = new FormData();
       formData.append("file", file);
-      const res = await fetch("/api/upload", { method: "POST", body: formData });
+      const res = await fetch(UPLOAD_URL, { method: "POST", body: formData });
       const data = await res.json();
       if (data.url) {
         setEditService((prev) => ({ ...prev, imageUrl: data.url }));
@@ -840,7 +840,7 @@ const Admin = () => {
     try {
       const formData = new FormData();
       formData.append("file", file);
-      const res = await fetch("/api/upload", { method: "POST", body: formData });
+      const res = await fetch(UPLOAD_URL, { method: "POST", body: formData });
       const data = await res.json();
       if (data.url) {
         setEditItem((prev) => ({ ...prev, imageUrl: data.url }));
@@ -1103,11 +1103,9 @@ const Admin = () => {
             })).filter((t: { name: string; sid: string }) => t.sid);
             const sweepOptions = sdkData.sweeps.map((s: any, idx: number) => {
               const sid = s.id || s.sid || s.uuid;
-              const panoId = s.uuid || s.id || sid;
               return {
                 name: `360° Vue ${idx + 1} — Étage ${s.floorInfo?.sequence ?? s.floor ?? '?'}`,
                 sid,
-                thumbnail: `https://my.matterport.com/api/player/models/${modelId}/panos/${panoId}/thumbnail`,
               };
             }).filter((t: any) => t.sid);
 
@@ -1278,7 +1276,7 @@ const Admin = () => {
   };
 
   const openEditService = (svc: TourServiceItem) => {
-    setEditService({ ...svc });
+    setEditService({ ...emptyService, ...svc });
     setIsEditingService(true);
     setServiceFormOpen(true);
   };
@@ -1821,7 +1819,7 @@ const Admin = () => {
                                       try {
                                         const fd = new FormData();
                                         fd.append("file", file);
-                                        const res = await fetch("/api/upload", { method: "POST", body: fd });
+                                        const res = await fetch(UPLOAD_URL, { method: "POST", body: fd });
                                         const data = await res.json();
                                         if (data.url) {
                                           const updated = [...menuSections];
@@ -1988,7 +1986,7 @@ const Admin = () => {
                                 const formData = new FormData();
                                 formData.append("file", file);
                                 try {
-                                  const res = await fetch("/api/upload", { method: "POST", body: formData });
+                                  const res = await fetch(UPLOAD_URL, { method: "POST", body: formData });
                                   const data = await res.json();
                                   if (data.url) {
                                     const updated = [...hotelRooms];
@@ -2438,7 +2436,7 @@ const Admin = () => {
                                   const formData = new FormData();
                                   formData.append("file", file);
                                   try {
-                                    const res = await fetch("/api/upload", { method: "POST", body: formData });
+                                    const res = await fetch(UPLOAD_URL, { method: "POST", body: formData });
                                     const data = await res.json();
                                     if (data.url) {
                                       const u = [...immobilierRooms]; u[idx] = { ...room, imageUrl: data.url }; setImmobilierRooms(u);
@@ -3175,7 +3173,7 @@ const Admin = () => {
                   </div>
                   <div>
                     <label className="text-sm font-medium mb-1 block">Description</label>
-                    <Textarea value={editService.description} onChange={(e) => setEditService({ ...editService, description: e.target.value })} rows={3} placeholder="Description du service..." />
+                    <Textarea value={editService.description ?? ""} onChange={(e) => setEditService({ ...editService, description: e.target.value })} rows={3} placeholder="Description du service..." />
                   </div>
                   <div>
                     <label className="text-sm font-medium mb-1 block">Image</label>
