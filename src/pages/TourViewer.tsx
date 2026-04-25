@@ -73,6 +73,8 @@ interface TourData {
   longitude: number | null;
   location: string;
   metadataJson?: string;
+  bookNowUrl?: string;
+  bookNowEnabled?: boolean;
 }
 
 interface HotelRoom {
@@ -84,6 +86,7 @@ interface HotelRoom {
   imageUrl?: string;
   price?: number | null;
   currency?: string;
+  bookingEnabled?: boolean;
 }
 
 const AMENITY_ICONS: Record<string, { icon: React.ComponentType<{ className?: string }>; label: string }> = {
@@ -146,12 +149,13 @@ const GYM_EQUIPMENT_ICONS: Record<string, { icon: React.ComponentType<{ classNam
 interface MenuSectionProps {
   title: string;
   iconKey: string;
-  items: { name: string; iconKey: string; sub?: string; tagSid?: string; imageUrl?: string }[];
+  items: { name: string; iconKey: string; sub?: string; tagSid?: string; imageUrl?: string; bookingUrl?: string; bookingEnabled?: boolean }[];
   amenities?: string[];
   onItemClick?: (tagSid: string) => void;
+  onBookClick?: (tagSid: string, name: string, bookingUrl?: string) => void;
 }
 
-const HotelMenuSection = ({ title, iconKey, items, amenities, onItemClick }: MenuSectionProps) => {
+const HotelMenuSection = ({ title, iconKey, items, amenities, onItemClick, onBookClick }: MenuSectionProps) => {
   const [open, setOpen] = useState(false);
   const [amenitiesOpen, setAmenitiesOpen] = useState(false);
   const Icon = ICON_MAP[iconKey] || Layers;
@@ -180,7 +184,7 @@ const HotelMenuSection = ({ title, iconKey, items, amenities, onItemClick }: Men
             return (
               <div
                 key={i}
-                onClick={() => hasTag && onItemClick?.(item.tagSid!)}
+                onClick={() => { if (hasTag && onBookClick && item.bookingEnabled !== false) onBookClick(item.tagSid!, item.name, item.bookingUrl); else if (hasTag) onItemClick?.(item.tagSid!); }}
                 className={`flex items-center gap-3 px-5 py-2.5 ml-4 mr-2 rounded-lg transition-all ${hasTag ? "cursor-pointer hover:bg-white/[0.06]" : "cursor-default"}`}
               >
                 {item.imageUrl ? (
@@ -274,6 +278,7 @@ interface ChamberData {
   currency: string;
   tagSid?: string;
   bookingUrl?: string;
+  bookingEnabled?: boolean;
 }
 
 interface GymCoachData {
@@ -1776,7 +1781,7 @@ const TourViewer = () => {
 
         {/* Book Now — appears when a chamber is selected */}
         <AnimatePresence>
-          {selectedChamber && (
+          {selectedChamber && selectedChamber.bookingEnabled !== false && (
             <motion.button
               initial={{ opacity: 0, scale: 0.8, x: 20 }}
               animate={{ opacity: 1, scale: 1, x: 0 }}
@@ -1790,7 +1795,7 @@ const TourViewer = () => {
                   return;
                 }
                 const msg = encodeURIComponent(`Hello, I would like to book the room "${selectedChamber.name}"${selectedChamber.price != null ? ` (${selectedChamber.price} ${selectedChamber.currency || "TND"}/night)` : ""}. Thank you.`);
-                window.open(`https://wa.me/21654757573?text=${msg}`, "_blank", "noopener,noreferrer");
+                window.open(`https://wa.me/21652664495?text=${msg}`, "_blank", "noopener,noreferrer");
               }}
               className="flex items-center gap-1.5 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-violet-500 hover:from-purple-700 hover:to-violet-600 border border-purple-400/30 text-white text-xs font-bold shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50 transition-all"
             >
@@ -1800,6 +1805,27 @@ const TourViewer = () => {
             </motion.button>
           )}
         </AnimatePresence>
+
+        {/* Book Now — always visible for Immobilier tours */}
+        {normalizeCategory(tour.category) === "Immobilier" && tour.bookNowEnabled !== false && (
+          <button
+            onClick={() => {
+              if (tour.bookNowUrl && tour.bookNowUrl.trim()) {
+                const url = tour.bookNowUrl.trim();
+                const normalized = /^https?:\/\//i.test(url) ? url : `https://${url}`;
+                window.open(normalized, "_blank", "noopener,noreferrer");
+                return;
+              }
+              const msg = encodeURIComponent(`Hello, I am interested in the property "${tour.name}". Thank you.`);
+              window.open(`https://wa.me/21652664495?text=${msg}`, "_blank", "noopener,noreferrer");
+            }}
+            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-violet-500 hover:from-purple-700 hover:to-violet-600 border border-purple-400/30 text-white text-xs font-bold shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50 transition-all"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+            <span className="hidden sm:inline">Book Now</span>
+            <span className="sm:hidden">Book</span>
+          </button>
+        )}
       </motion.div>
 
       {/* ===== RIGHT SIDE: INFO CARD ===== */}
@@ -1949,7 +1975,7 @@ const TourViewer = () => {
                 {normalizeCategory(tour.category) === "Hôtellerie" && tour.metadataJson && (() => {
                   try {
                     const meta = JSON.parse(tour.metadataJson);
-                    const customSections: { title: string; icon: string; items: { name: string; icon: string; tagSid?: string; imageUrl?: string }[] }[] = (meta.sections || []);
+                    const customSections: { title: string; icon: string; items: { name: string; icon: string; tagSid?: string; imageUrl?: string; bookingUrl?: string }[] }[] = (meta.sections || []);
                     const rooms: HotelRoom[] = meta.rooms || [];
                     const allAmenities = Array.from(new Set(rooms.flatMap(r => r.amenities || [])));
 
@@ -1963,6 +1989,7 @@ const TourViewer = () => {
                         sub: [r.bedType, r.capacity ? `${r.capacity} pers.` : "", r.price ? `${r.price} ${r.currency || "TND"}` : ""].filter(Boolean).join(" · "),
                         tagSid: r.tagSid || undefined,
                         imageUrl: r.imageUrl || undefined,
+                        bookingEnabled: r.bookingEnabled,
                       })),
                     }] : [];
 
@@ -1973,7 +2000,7 @@ const TourViewer = () => {
                         title: s.title,
                         iconKey: s.icon,
                         amenities: [] as string[],
-                        items: s.items.map(it => ({ name: it.name, iconKey: it.icon, sub: "", tagSid: it.tagSid || undefined, imageUrl: it.imageUrl || undefined })),
+                        items: s.items.map(it => ({ name: it.name, iconKey: it.icon, sub: "", tagSid: it.tagSid || undefined, imageUrl: it.imageUrl || undefined, bookingUrl: it.bookingUrl || undefined, bookingEnabled: it.bookingEnabled })),
                       })),
                     ];
 
@@ -1981,7 +2008,15 @@ const TourViewer = () => {
                     return (
                       <div className="rounded-xl overflow-hidden border border-white/[0.06]">
                         {allSections.map((sec, i) => (
-                          <HotelMenuSection key={i} title={sec.title} iconKey={sec.iconKey} items={sec.items} amenities={sec.amenities} onItemClick={flyToTag} />
+                          <HotelMenuSection key={i} title={sec.title} iconKey={sec.iconKey} items={sec.items} amenities={sec.amenities} onItemClick={flyToTag} onBookClick={(tagSid: string, name: string, bookingUrl?: string) => {
+                            const ch = tourChambers.find(c => c.tagSid === tagSid);
+                            if (ch) navigateToChamber(ch);
+                            else {
+                              const room = rooms.find(r => r.tagSid === tagSid);
+                              if (tagSid) flyToTag(tagSid);
+                              setSelectedChamber({ id: 0, tourId: tour?.id || 0, name, description: "", imageUrl: room?.imageUrl || "", price: room?.price ?? null, currency: room?.currency || "TND", tagSid, bookingUrl: bookingUrl || "", bookingEnabled: true });
+                            }
+                          }} />
                         ))}
                       </div>
                     );
@@ -2338,7 +2373,7 @@ const TourViewer = () => {
               {normalizeCategory(tour.category) === "Hôtellerie" && tour.metadataJson && (() => {
                 try {
                   const meta = JSON.parse(tour.metadataJson);
-                  const customSections: { title: string; icon: string; items: { name: string; icon: string; tagSid?: string; imageUrl?: string }[] }[] = (meta.sections || []);
+                  const customSections: { title: string; icon: string; items: { name: string; icon: string; tagSid?: string; imageUrl?: string; bookingUrl?: string }[] }[] = (meta.sections || []);
                   const rooms: HotelRoom[] = meta.rooms || [];
                   const allAmenities = Array.from(new Set(rooms.flatMap(r => r.amenities || [])));
 
@@ -2346,7 +2381,7 @@ const TourViewer = () => {
                     title: "Accommodations",
                     iconKey: "bed",
                     amenities: allAmenities,
-                    items: rooms.map(r => ({ name: r.name || "Room", iconKey: "bed", sub: [r.bedType, r.capacity ? `${r.capacity}p` : "", r.price ? `${r.price} ${r.currency || "TND"}` : ""].filter(Boolean).join(" · "), tagSid: r.tagSid || undefined, imageUrl: r.imageUrl || undefined })),
+                    items: rooms.map(r => ({ name: r.name || "Room", iconKey: "bed", sub: [r.bedType, r.capacity ? `${r.capacity}p` : "", r.price ? `${r.price} ${r.currency || "TND"}` : ""].filter(Boolean).join(" · "), tagSid: r.tagSid || undefined, imageUrl: r.imageUrl || undefined, bookingEnabled: r.bookingEnabled })),
                   }] : [];
 
                   const allSections = [
@@ -2355,7 +2390,7 @@ const TourViewer = () => {
                       title: s.title,
                       iconKey: s.icon,
                       amenities: [] as string[],
-                      items: s.items.map(it => ({ name: it.name, iconKey: it.icon, tagSid: it.tagSid || undefined, imageUrl: it.imageUrl || undefined })),
+                      items: s.items.map(it => ({ name: it.name, iconKey: it.icon, tagSid: it.tagSid || undefined, imageUrl: it.imageUrl || undefined, bookingUrl: it.bookingUrl || undefined, bookingEnabled: it.bookingEnabled })),
                     })),
                   ];
 
@@ -2363,7 +2398,15 @@ const TourViewer = () => {
                   return (
                     <div className="border-t border-white/[0.06] overflow-hidden">
                       {allSections.map((sec, i) => (
-                        <HotelMenuSection key={i} title={sec.title} iconKey={sec.iconKey} items={sec.items} amenities={sec.amenities} onItemClick={flyToTag} />
+                        <HotelMenuSection key={i} title={sec.title} iconKey={sec.iconKey} items={sec.items} amenities={sec.amenities} onItemClick={flyToTag} onBookClick={(tagSid: string, name: string, bookingUrl?: string) => {
+                          const ch = tourChambers.find(c => c.tagSid === tagSid);
+                          if (ch) navigateToChamber(ch);
+                          else {
+                            const room = rooms.find(r => r.tagSid === tagSid);
+                            if (tagSid) flyToTag(tagSid);
+                            setSelectedChamber({ id: 0, tourId: tour?.id || 0, name, description: "", imageUrl: room?.imageUrl || "", price: room?.price ?? null, currency: room?.currency || "TND", tagSid, bookingUrl: bookingUrl || "", bookingEnabled: true });
+                          }
+                        }} />
                       ))}
                     </div>
                   );
@@ -3381,11 +3424,11 @@ const TourViewer = () => {
       {/* ===== BOTTOM: PRODUCT & SERVICE STRIP ===== */}
       {(() => {
         // Compute custom strip sections (hotel + gym) once for all use
-        let stripCustoms: { key: string; title: string; iconKey: string; items: { name: string; icon: string; tagSid?: string; imageUrl?: string }[] }[] = [];
+        let stripCustoms: { key: string; title: string; iconKey: string; items: { name: string; icon: string; tagSid?: string; imageUrl?: string; bookingUrl?: string }[] }[] = [];
         if (tour?.metadataJson) {
           try {
             const meta = JSON.parse(tour.metadataJson);
-            const fromHotel = (meta.sections || []) as { title: string; icon: string; items: { name: string; icon: string; tagSid?: string; imageUrl?: string }[] }[];
+            const fromHotel = (meta.sections || []) as { title: string; icon: string; items: { name: string; icon: string; tagSid?: string; imageUrl?: string; bookingUrl?: string }[] }[];
             const fromGym = (meta.gymSections || []) as { title: string; icon: string; items: { name: string; icon: string; tagSid?: string; imageUrl?: string }[] }[];
             stripCustoms = [...fromHotel, ...fromGym]
               .filter(s => (s.title || "").trim() && (s.items || []).length > 0)
@@ -3486,7 +3529,7 @@ const TourViewer = () => {
 
             {/* Products strip */}
             {bottomTab === "products" && tourItems.length > 0 && (
-              <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide pb-1">
+              <div className="flex items-center md:justify-center gap-3 overflow-x-auto scrollbar-hide pb-1 [&>*:first-child]:ml-4 [&>*:last-child]:mr-4">
                 {tourItems
                   .filter(i => !activeTagFilter || i.tagSid?.trim().toLowerCase() === activeTagFilter.trim().toLowerCase())
                   .map((item) => (
@@ -3525,7 +3568,7 @@ const TourViewer = () => {
 
             {/* Services strip */}
             {bottomTab === "services" && tourServices.length > 0 && (
-              <div className="flex items-center justify-center gap-3 overflow-x-auto scrollbar-hide pb-1">
+              <div className="flex items-center md:justify-center gap-3 overflow-x-auto scrollbar-hide pb-1 [&>*:first-child]:ml-4 [&>*:last-child]:mr-4">
                 {tourServices.map((svc) => (
                   <button
                     key={svc.id}
@@ -3602,7 +3645,7 @@ const TourViewer = () => {
 
             {/* Chambers strip */}
             {bottomTab === "chambers" && tourChambers.length > 0 && (
-              <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide pb-1">
+              <div className="flex items-center md:justify-center gap-3 overflow-x-auto scrollbar-hide pb-1 [&>*:first-child]:ml-4 [&>*:last-child]:mr-4">
                 {tourChambers.map((ch) => (
                   <button
                     key={ch.id}
@@ -3637,7 +3680,7 @@ const TourViewer = () => {
 
             {/* Immobilier rooms strip */}
             {bottomTab === "rooms" && immoRooms.length > 0 && (
-              <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide pb-1">
+              <div className="flex items-center md:justify-center gap-3 overflow-x-auto scrollbar-hide pb-1 [&>*:first-child]:ml-4 [&>*:last-child]:mr-4">
                 {immoRooms.map((room, ri) => (
                   <button
                     key={ri}
@@ -3667,7 +3710,7 @@ const TourViewer = () => {
 
             {/* Coaches strip */}
             {bottomTab === "coaches" && gymCoaches.length > 0 && (
-              <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide pb-1">
+              <div className="flex items-center md:justify-center gap-3 overflow-x-auto scrollbar-hide pb-1 [&>*:first-child]:ml-4 [&>*:last-child]:mr-4">
                 {gymCoaches.map((coach, ci) => (
                   <button
                     key={ci}
@@ -3693,7 +3736,7 @@ const TourViewer = () => {
 
             {/* Custom section strip */}
             {activeCustom && (
-              <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide pb-1">
+              <div className="flex items-center md:justify-center gap-3 overflow-x-auto scrollbar-hide pb-1 [&>*:first-child]:ml-4 [&>*:last-child]:mr-4">
                 {activeCustom.items.map((item, idx) => {
                   const Icn = ICON_MAP[item.icon] || Layers;
                   return (
@@ -3705,6 +3748,7 @@ const TourViewer = () => {
                           window.open(item.tagSid, "_blank");
                         } else {
                           flyToTag(item.tagSid);
+                          setSelectedChamber({ id: 0, tourId: tour?.id || 0, name: item.name, description: "", imageUrl: item.imageUrl || "", price: null, currency: "TND", tagSid: item.tagSid, bookingUrl: item.bookingUrl || "", bookingEnabled: item.bookingEnabled });
                         }
                       }}
                       className="flex-shrink-0 flex items-center gap-2.5 bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.08] rounded-xl p-2 pr-4 transition-all group"

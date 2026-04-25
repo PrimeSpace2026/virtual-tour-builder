@@ -54,11 +54,11 @@ export const translations = {
     heroBadge: { fr: "Visites Virtuelles 3D", en: "3D Virtual Tours" },
     heroTitle: {
       fr: "Offrez la visite **avant la réservation**",
-      en: "Offer the tour **before the booking**",
+      en: "Build Booking Confidence With **Digital Twin Experiences**",
     },
     heroSubtitle: {
       fr: "Augmentez vos réservations et facilitez les visites grâce à nos visites virtuelles 3D.",
-      en: "Boost your bookings and streamline visits with our 3D virtual tours.",
+      en: "Unlock the full potential of your space with our 3D Virtual tour solutions.",
     },
     heroCta: { fr: "Demander un Devis", en: "Request a Quote" },
     portfolioBadge: { fr: "Portfolio", en: "Portfolio" },

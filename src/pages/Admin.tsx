@@ -76,6 +76,8 @@ interface Tour {
   location: string;
   metadataJson?: string;
   enabled?: boolean;
+  bookNowUrl?: string;
+  bookNowEnabled?: boolean;
 }
 
 interface HotelRoom {
@@ -88,6 +90,7 @@ interface HotelRoom {
   price: number | null;
   currency: string;
   bookingUrl: string;
+  bookingEnabled?: boolean;
 }
 
 interface MenuItemData {
@@ -95,6 +98,8 @@ interface MenuItemData {
   icon: string;
   tagSid: string;
   imageUrl?: string;
+  bookingUrl?: string;
+  bookingEnabled?: boolean;
 }
 
 interface MenuSectionData {
@@ -1713,7 +1718,8 @@ const Admin = () => {
                         {/* Section items */}
                         <div className="p-3 space-y-2">
                           {sec.items.map((item, iIdx) => (
-                            <div key={iIdx} className="flex items-center gap-2">
+                            <div key={iIdx} className="space-y-1">
+                            <div className="flex items-center gap-2">
                               <Select
                                 value={item.icon}
                                 onValueChange={(v) => {
@@ -1853,6 +1859,34 @@ const Admin = () => {
                               >
                                 <X className="w-3.5 h-3.5" />
                               </Button>
+                            </div>
+                            <div className="flex items-center gap-2 ml-[98px]">
+                              <Input
+                                value={item.bookingUrl || ""}
+                                onChange={(e) => {
+                                  const updated = [...menuSections];
+                                  const items = [...sec.items];
+                                  items[iIdx] = { ...item, bookingUrl: e.target.value };
+                                  updated[sIdx] = { ...sec, items };
+                                  setMenuSections(updated);
+                                }}
+                                placeholder="URL de réservation (ex: https://booking.com/...)"
+                                className="h-7 text-xs flex-1"
+                              />
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                <span className="text-[10px] text-muted-foreground">Book</span>
+                                <Switch
+                                  checked={item.bookingEnabled !== false}
+                                  onCheckedChange={(v) => {
+                                    const updated = [...menuSections];
+                                    const items = [...sec.items];
+                                    items[iIdx] = { ...item, bookingEnabled: v };
+                                    updated[sIdx] = { ...sec, items };
+                                    setMenuSections(updated);
+                                  }}
+                                />
+                              </div>
+                            </div>
                             </div>
                           ))}
                           <Button
@@ -2083,6 +2117,17 @@ const Admin = () => {
                           placeholder="https://booking.com/..."
                         />
                         <p className="text-[11px] text-muted-foreground mt-1">Si vide, le bouton "Réserver maintenant" ouvrira WhatsApp.</p>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs text-muted-foreground">Bouton "Book Now"</label>
+                        <Switch
+                          checked={room.bookingEnabled !== false}
+                          onCheckedChange={(v) => {
+                            const updated = [...hotelRooms];
+                            updated[idx] = { ...room, bookingEnabled: v };
+                            setHotelRooms(updated);
+                          }}
+                        />
                       </div>
                       <div>
                         <label className="text-xs text-muted-foreground mb-1 block">Équipements</label>
@@ -2457,6 +2502,23 @@ const Admin = () => {
                       <p className="text-xs text-muted-foreground text-center py-3">Aucune pièce ajoutée</p>
                     )}
                   </div>
+                </div>
+
+                {/* ── Book Now ── */}
+                <div className="space-y-3 border-t pt-4">
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium">Book Now</label>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground">{editTour.bookNowEnabled !== false ? "Activé" : "Désactivé"}</span>
+                      <Switch checked={editTour.bookNowEnabled !== false} onCheckedChange={(v) => setEditTour({ ...editTour, bookNowEnabled: v })} />
+                    </div>
+                  </div>
+                  <Input
+                    value={editTour.bookNowUrl || ""}
+                    onChange={(e) => setEditTour({ ...editTour, bookNowUrl: e.target.value })}
+                    placeholder="https://booking-link.com/..."
+                  />
+                  <p className="text-xs text-muted-foreground">URL de réservation affichée aux visiteurs (WhatsApp si vide)</p>
                 </div>
               </div>
             )}
