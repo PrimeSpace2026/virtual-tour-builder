@@ -457,6 +457,9 @@ const Admin = () => {
   // Immobilier
   const [immobilierData, setImmobilierData] = useState<ImmobilierData>({ ...DEFAULT_IMMOBILIER });
   const [immobilierRooms, setImmobilierRooms] = useState<ImmobilierRoom[]>([]);
+  // Video Screens
+  interface VideoScreenData { id?: number; name: string; youtubeUrl: string; posX: number; posY: number; posZ: number; rotX: number; rotY: number; rotZ: number; width: number; height: number; }
+  const [videoScreens, setVideoScreens] = useState<VideoScreenData[]>([]);
   // Bottom strip visibility toggles
   const [bottomStrip, setBottomStrip] = useState<{ products: boolean; services: boolean; chambers: boolean; customSections?: Record<string, boolean> }>({ products: true, services: true, chambers: true, customSections: {} });
   // Matterport viewer feature toggles (all URL params)
@@ -928,6 +931,12 @@ const Admin = () => {
       setBottomStrip({ products: true, services: true, chambers: true, customSections: {} });
       setMatterportFeatures({});
     }
+    // Load video screens
+    if (tour.id) {
+      fetch(`/api/tours/${tour.id}/video-screens`).then(r => r.ok ? r.json() : []).then(setVideoScreens).catch(() => setVideoScreens([]));
+    } else {
+      setVideoScreens([]);
+    }
     setDialogOpen(true);
   };
 
@@ -1003,6 +1012,23 @@ const Admin = () => {
                 tagSid: room.tagSid || "",
                 bookingUrl: room.bookingUrl || "",
               }),
+            }).catch(() => {});
+          }
+        } catch {}
+      }
+
+      // Sync video screens
+      if (tourId && videoScreens.length > 0) {
+        try {
+          const existing = await fetch(`/api/tours/${tourId}/video-screens`).then(r => r.ok ? r.json() : []).catch(() => []);
+          for (const s of existing) {
+            await fetch(`/api/tours/${tourId}/video-screens/${s.id}`, { method: "DELETE" }).catch(() => {});
+          }
+          for (const screen of videoScreens) {
+            await fetch(`/api/tours/${tourId}/video-screens`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ ...screen, tourId }),
             }).catch(() => {});
           }
         } catch {}
@@ -2929,6 +2955,77 @@ const Admin = () => {
                 </MapContainer>
               </div>
             </div>
+
+            {/* ══════ Video Screens ══════ */}
+            <div className="space-y-3 border-t pt-4">
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium flex items-center gap-2">
+                  <Tv className="w-4 h-4" /> Écrans Vidéo 3D
+                </label>
+                <Button type="button" size="sm" variant="outline" onClick={() => setVideoScreens([...videoScreens, { name: "", youtubeUrl: "", posX: 0, posY: 1.5, posZ: 0, rotX: 0, rotY: 0, rotZ: 0, width: 2, height: 1.2 }])}>
+                  <Plus className="w-4 h-4 mr-1" /> Écran
+                </Button>
+              </div>
+              {videoScreens.map((screen, idx) => (
+                <div key={idx} className="border border-border rounded-lg p-3 space-y-2 relative">
+                  <button type="button" className="absolute top-2 right-2 text-destructive hover:text-destructive/80" onClick={() => setVideoScreens(videoScreens.filter((_, i) => i !== idx))}>
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-xs text-muted-foreground">Nom</label>
+                      <Input value={screen.name} onChange={(e) => { const u = [...videoScreens]; u[idx] = { ...screen, name: e.target.value }; setVideoScreens(u); }} placeholder="Écran salon" />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground">URL YouTube</label>
+                      <Input value={screen.youtubeUrl} onChange={(e) => { const u = [...videoScreens]; u[idx] = { ...screen, youtubeUrl: e.target.value }; setVideoScreens(u); }} placeholder="https://youtube.com/watch?v=..." />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <label className="text-xs text-muted-foreground">Position X</label>
+                      <Input type="number" step="0.1" value={screen.posX} onChange={(e) => { const u = [...videoScreens]; u[idx] = { ...screen, posX: Number(e.target.value) }; setVideoScreens(u); }} />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground">Position Y</label>
+                      <Input type="number" step="0.1" value={screen.posY} onChange={(e) => { const u = [...videoScreens]; u[idx] = { ...screen, posY: Number(e.target.value) }; setVideoScreens(u); }} />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground">Position Z</label>
+                      <Input type="number" step="0.1" value={screen.posZ} onChange={(e) => { const u = [...videoScreens]; u[idx] = { ...screen, posZ: Number(e.target.value) }; setVideoScreens(u); }} />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <label className="text-xs text-muted-foreground">Rotation X°</label>
+                      <Input type="number" step="1" value={screen.rotX} onChange={(e) => { const u = [...videoScreens]; u[idx] = { ...screen, rotX: Number(e.target.value) }; setVideoScreens(u); }} />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground">Rotation Y°</label>
+                      <Input type="number" step="1" value={screen.rotY} onChange={(e) => { const u = [...videoScreens]; u[idx] = { ...screen, rotY: Number(e.target.value) }; setVideoScreens(u); }} />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground">Rotation Z°</label>
+                      <Input type="number" step="1" value={screen.rotZ} onChange={(e) => { const u = [...videoScreens]; u[idx] = { ...screen, rotZ: Number(e.target.value) }; setVideoScreens(u); }} />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-xs text-muted-foreground">Largeur (m)</label>
+                      <Input type="number" step="0.1" min="0.1" value={screen.width} onChange={(e) => { const u = [...videoScreens]; u[idx] = { ...screen, width: Number(e.target.value) }; setVideoScreens(u); }} />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground">Hauteur (m)</label>
+                      <Input type="number" step="0.1" min="0.1" value={screen.height} onChange={(e) => { const u = [...videoScreens]; u[idx] = { ...screen, height: Number(e.target.value) }; setVideoScreens(u); }} />
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {videoScreens.length === 0 && (
+                <p className="text-xs text-muted-foreground text-center py-2">Aucun écran vidéo — Cliquez + Écran pour placer une vidéo YouTube dans le tour 3D</p>
+              )}
+            </div>
+
             <div className="flex justify-end gap-3 pt-2">
               <Button variant="outline" onClick={() => setDialogOpen(false)}>Annuler</Button>
               <Button onClick={handleSave} disabled={uploading}>Enregistrer</Button>

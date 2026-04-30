@@ -456,6 +456,11 @@ const normalizeCategory = (v?: string): string => {
   return map[v] || v;
 };
 
+const extractYoutubeId = (url: string): string | null => {
+  const m = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([a-zA-Z0-9_-]{11})/);
+  return m ? m[1] : null;
+};
+
 const TourViewer = () => {
   const { projectName: rawId } = useParams<{ projectName: string }>();
   const [resolvedId, setResolvedId] = useState<string | undefined>(
@@ -1112,6 +1117,60 @@ const TourViewer = () => {
     connectSdk();
     return () => { cancelled = true; };
   }, [iframeLoaded, tour?.tourUrl]);
+
+  // Video Screens: inject YouTube iframes into the 3D scene via SDK
+  useEffect(() => {
+    const sdk = sdkRef.current;
+    if (!sdkConnected || !sdk || !tour?.id) return;
+
+    let nodes: any[] = [];
+
+    const loadVideoScreens = async () => {
+      try {
+        const screens = await fetch(`/api/tours/${tour.id}/video-screens`).then(r => r.ok ? r.json() : []);
+        if (!screens.length) return;
+
+        for (const screen of screens) {
+          if (!screen.youtubeUrl) continue;
+          // Extract YouTube video ID
+          const videoId = extractYoutubeId(screen.youtubeUrl);
+          if (!videoId) continue;
+
+          const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&loop=1&playlist=${videoId}`;
+
+          // Create a scene node with an HTML embed
+          const [sceneObject] = await sdk.Scene.createObjects(1);
+          const node = sceneObject.addNode();
+
+          // Position and rotation
+          node.position.set(screen.posX || 0, screen.posY || 1.5, screen.posZ || 0);
+          const toRad = (deg: number) => (deg * Math.PI) / 180;
+          node.rotation.setFromEuler({ x: toRad(screen.rotX || 0), y: toRad(screen.rotY || 0), z: toRad(screen.rotZ || 0) });
+
+          // Add an IFrame component
+          const iframeComp = node.addComponent("mp.iframe", {
+            url: embedUrl,
+            width: screen.width || 2,
+            height: screen.height || 1.2,
+          });
+
+          node.start();
+          nodes.push(sceneObject);
+          console.log(`📺 Video screen "${screen.name}" placed at (${screen.posX}, ${screen.posY}, ${screen.posZ})`);
+        }
+      } catch (err) {
+        console.log("Video screens load error:", err);
+      }
+    };
+
+    loadVideoScreens();
+
+    return () => {
+      // Cleanup: remove scene objects
+      nodes.forEach(obj => { try { obj.stop(); } catch {} });
+      nodes = [];
+    };
+  }, [sdkConnected, tour?.id]);
 
   // Navigation
   const currentIndex = allTours.findIndex((t) => t.id === tour?.id);
