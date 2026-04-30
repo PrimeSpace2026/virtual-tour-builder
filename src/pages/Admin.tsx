@@ -20,9 +20,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Plus, Pencil, Trash2, Upload, X, Image as ImageIcon, LogOut, Search, MapPin, Loader2, ShoppingBag, ExternalLink, BarChart3, Briefcase, Phone, MessageCircle, Tag, Scan, Wifi, Snowflake, Tv, Wine, Bath, DoorOpen, Lock, BedDouble, ChevronDown, ChevronUp, GripVertical, Sparkles, UtensilsCrossed, Power, PowerOff, Dumbbell, CalendarDays, Heart, Home, Users, Star, Coffee, Music, Palmtree, ShieldCheck, PlayCircle, Layers, Clock, Banknote, Trophy, Droplets, Award, Mail, User, Link2, Check } from "lucide-react";
+import { Plus, Pencil, Trash2, Upload, X, Image as ImageIcon, LogOut, Search, MapPin, Loader2, ShoppingBag, ExternalLink, BarChart3, Briefcase, Phone, MessageCircle, Tag, Scan, Wifi, Snowflake, Tv, Wine, Bath, DoorOpen, Lock, BedDouble, ChevronDown, ChevronUp, GripVertical, Sparkles, UtensilsCrossed, Power, PowerOff, Dumbbell, CalendarDays, Heart, Home, Users, Star, Coffee, Music, Palmtree, ShieldCheck, PlayCircle, Layers, Clock, Banknote, Trophy, Droplets, Award, Mail, User, Link2, Check, MousePointer2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from "react-leaflet";
+import VideoScreenPlacer from "@/components/VideoScreenPlacer";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
@@ -460,6 +461,7 @@ const Admin = () => {
   // Video Screens
   interface VideoScreenData { id?: number; name: string; youtubeUrl: string; posX: number; posY: number; posZ: number; rotX: number; rotY: number; rotZ: number; width: number; height: number; }
   const [videoScreens, setVideoScreens] = useState<VideoScreenData[]>([]);
+  const [showScreenPlacer, setShowScreenPlacer] = useState(false);
   // Bottom strip visibility toggles
   const [bottomStrip, setBottomStrip] = useState<{ products: boolean; services: boolean; chambers: boolean; customSections?: Record<string, boolean> }>({ products: true, services: true, chambers: true, customSections: {} });
   // Matterport viewer feature toggles (all URL params)
@@ -2962,9 +2964,16 @@ const Admin = () => {
                 <label className="text-sm font-medium flex items-center gap-2">
                   <Tv className="w-4 h-4" /> Écrans Vidéo 3D
                 </label>
-                <Button type="button" size="sm" variant="outline" onClick={() => setVideoScreens([...videoScreens, { name: "", youtubeUrl: "", posX: 0, posY: 1.5, posZ: 0, rotX: 0, rotY: 0, rotZ: 0, width: 2, height: 1.2 }])}>
-                  <Plus className="w-4 h-4 mr-1" /> Écran
-                </Button>
+                <div className="flex gap-2">
+                  {editTour.tourUrl && (
+                    <Button type="button" size="sm" variant="outline" onClick={() => setShowScreenPlacer(true)}>
+                      <MousePointer2 className="w-4 h-4 mr-1" /> Placer
+                    </Button>
+                  )}
+                  <Button type="button" size="sm" variant="outline" onClick={() => setVideoScreens([...videoScreens, { name: "", youtubeUrl: "", posX: 0, posY: 1.5, posZ: 0, rotX: 0, rotY: 0, rotZ: 0, width: 2, height: 1.2 }])}>
+                    <Plus className="w-4 h-4 mr-1" /> Manuel
+                  </Button>
+                </div>
               </div>
               {videoScreens.map((screen, idx) => (
                 <div key={idx} className="border border-border rounded-lg p-3 space-y-2 relative">
@@ -3541,6 +3550,17 @@ const Admin = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Video Screen Placer overlay */}
+      {showScreenPlacer && editTour.tourUrl && (
+        <VideoScreenPlacer
+          tourUrl={editTour.tourUrl}
+          onPlace={(screen) => {
+            setVideoScreens([...videoScreens, screen]);
+          }}
+          onClose={() => setShowScreenPlacer(false)}
+        />
+      )}
     </Layout>
   );
 };
