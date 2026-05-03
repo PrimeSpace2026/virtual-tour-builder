@@ -10,7 +10,7 @@ export default defineConfig(({ mode }) => {
     appType: "spa",
     server: {
       host: "::",
-      port: 8082,
+      port: 8083,
       hmr: { overlay: false },
       headers: { "Permissions-Policy": "xr-spatial-tracking=*, fullscreen=*" },
       proxy: {

@@ -459,7 +459,7 @@ const Admin = () => {
   const [immobilierData, setImmobilierData] = useState<ImmobilierData>({ ...DEFAULT_IMMOBILIER });
   const [immobilierRooms, setImmobilierRooms] = useState<ImmobilierRoom[]>([]);
   // Video Screens
-  interface VideoScreenData { id?: number; name: string; youtubeUrl: string; posX: number; posY: number; posZ: number; rotX: number; rotY: number; rotZ: number; width: number; height: number; }
+  interface VideoScreenData { id?: number; name: string; youtubeUrl: string; posX: number; posY: number; posZ: number; rotX: number; rotY: number; rotZ: number; width: number; height: number; iconType: string; visibilityRange: number; }
   const [videoScreens, setVideoScreens] = useState<VideoScreenData[]>([]);
   const [showScreenPlacer, setShowScreenPlacer] = useState(false);
   // Bottom strip visibility toggles
@@ -1467,7 +1467,7 @@ const Admin = () => {
       </section>
 
       {/* Create / Edit Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      <Dialog open={dialogOpen && !showScreenPlacer} onOpenChange={(open) => { if (!showScreenPlacer) setDialogOpen(open); }}>
         <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{isEditing ? "Modifier la visite" : "Nouvelle visite"}</DialogTitle>
@@ -2970,9 +2970,6 @@ const Admin = () => {
                       <MousePointer2 className="w-4 h-4 mr-1" /> Placer
                     </Button>
                   )}
-                  <Button type="button" size="sm" variant="outline" onClick={() => setVideoScreens([...videoScreens, { name: "", youtubeUrl: "", posX: 0, posY: 1.5, posZ: 0, rotX: 0, rotY: 0, rotZ: 0, width: 2, height: 1.2 }])}>
-                    <Plus className="w-4 h-4 mr-1" /> Manuel
-                  </Button>
                 </div>
               </div>
               {videoScreens.map((screen, idx) => (
@@ -2989,6 +2986,41 @@ const Admin = () => {
                       <label className="text-xs text-muted-foreground">URL YouTube</label>
                       <Input value={screen.youtubeUrl} onChange={(e) => { const u = [...videoScreens]; u[idx] = { ...screen, youtubeUrl: e.target.value }; setVideoScreens(u); }} placeholder="https://youtube.com/watch?v=..." />
                     </div>
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground">Icône du tag 3D</label>
+                    <div className="flex gap-2 mt-1">
+                      {[
+                        { value: "youtube", label: "YouTube", preview: "🔴▶" },
+                        { value: "play", label: "Play", preview: "▶️" },
+                        { value: "film", label: "Film", preview: "🎬" },
+                        { value: "tv", label: "TV", preview: "📺" },
+                        { value: "live", label: "Live", preview: "🔴" },
+                      ].map((opt) => (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          onClick={() => { const u = [...videoScreens]; u[idx] = { ...screen, iconType: opt.value }; setVideoScreens(u); }}
+                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition-all ${(screen.iconType || "youtube") === opt.value ? "border-purple-500 bg-purple-500/10 text-purple-400" : "border-border hover:border-muted-foreground/30 text-muted-foreground"}`}
+                        >
+                          <span>{opt.preview}</span>
+                          <span>{opt.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground">Visibility Range: <span className="font-semibold text-foreground">{screen.visibilityRange ?? 8}m</span></label>
+                    <input
+                      type="range"
+                      min="2"
+                      max="30"
+                      step="1"
+                      value={screen.visibilityRange ?? 8}
+                      onChange={(e) => { const u = [...videoScreens]; u[idx] = { ...screen, visibilityRange: Number(e.target.value) }; setVideoScreens(u); }}
+                      className="w-full h-2 mt-1 rounded-lg appearance-none cursor-pointer bg-muted accent-purple-500"
+                    />
+                    <div className="flex justify-between text-[10px] text-muted-foreground mt-0.5"><span>2m</span><span>30m</span></div>
                   </div>
                   <div className="grid grid-cols-3 gap-2">
                     <div>
@@ -3556,7 +3588,8 @@ const Admin = () => {
         <VideoScreenPlacer
           tourUrl={editTour.tourUrl}
           onPlace={(screen) => {
-            setVideoScreens([...videoScreens, screen]);
+            console.log("🎬 [Admin] Screen placed:", screen);
+            setVideoScreens((prev) => [...prev, screen]);
           }}
           onClose={() => setShowScreenPlacer(false)}
         />

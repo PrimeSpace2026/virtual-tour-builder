@@ -477,6 +477,7 @@ const TourViewer = () => {
   const savedTagsMapRef = useRef<Map<string, string>>(new Map()); // saved tags from DB: name (lowercase) → SID
   const sweepsRef = useRef<any[]>([]); // cached sweep objects from SDK
   const mattertagsRef = useRef<any[]>([]); // cached legacy Mattertag data (incl. media)
+  const tagDataCacheRef = useRef<Map<string, TagItem>>(new Map()); // pre-cached tag data for instant hover
   const chamberSweepRef = useRef<string>(""); // tracks active chamber for auto-dismiss
   const visitIdRef = useRef<number | null>(null);
   const visitStartRef = useRef<number>(Date.now());
@@ -798,6 +799,17 @@ const TourViewer = () => {
     const handleTagClick = async (sdk: any, tagSid: string) => {
       try {
         console.log("🏷️ Tag clicked — SID:", tagSid);
+
+        // Check if this is a video tag
+        const videoInfo = videoTagMapRef.current.get(tagSid);
+        if (videoInfo) {
+          console.log("🎬 Video tag clicked:", videoInfo);
+          try { if (sdk.Mattertag?.close) sdk.Mattertag.close(tagSid); } catch {}
+          try { if (sdk.Tag?.close) sdk.Tag.close(tagSid); } catch {}
+          // videoInfo from Mattertag is no longer used for popup
+          return;
+        }
+
         let tagLabel = "";
         let tagData: TagItem | null = null;
 
@@ -902,7 +914,10 @@ const TourViewer = () => {
         }
         if (tagData) {
           if (tour?.id) trackEvent(tour.id, "tag_click", tagData.label || tagSid, tagSid);
-          // Let native popup handle media
+          // Close native popup and show custom popup with media support
+          try { if (sdk.Mattertag?.close) sdk.Mattertag.close(tagSid); } catch {}
+          try { if (sdk.Tag?.close) sdk.Tag.close(tagSid); } catch {}
+          setSelectedTag(tagData);
         }
       } catch (err) {
         console.log("Tag data error:", err);
@@ -969,6 +984,74 @@ const TourViewer = () => {
             mattertagsRef.current = mts;
           }
         } catch (e) { console.log("Mattertag.getData failed", e); }
+
+        // Pre-cache all tag data (media, description) for instant hover popups
+        try {
+          tagDataCacheRef.current.clear();
+          if (sdk.Tag?.getData) {
+            const allTags = await sdk.Tag.getData();
+            // Resolve all attachments once
+            let allAttachments: any[] = [];
+            try {
+              if (sdk.Tag?.attachments?.getData) {
+                allAttachments = await sdk.Tag.attachments.getData();
+              }
+            } catch {}
+            if (!allAttachments.length && sdk.Tag?.attachments?.data) {
+              try {
+                allAttachments = await new Promise<any[]>((resolve) => {
+                  const sub = sdk.Tag.attachments.data.subscribe({
+                    onCollectionUpdated(collection: any) {
+                      const arr: any[] = [];
+                      for (const k of Object.keys(collection || {})) arr.push({ ...collection[k], id: k });
+                      sub?.cancel?.();
+                      resolve(arr);
+                    },
+                  });
+                  setTimeout(() => { sub?.cancel?.(); resolve([]); }, 3000);
+                });
+              } catch {}
+            }
+
+            for (const t of allTags) {
+              const attachmentIds: string[] = Array.isArray(t.attachments) ? t.attachments : [];
+              const resolved = allAttachments
+                .filter((a: any) => attachmentIds.includes(a.id))
+                .map((a: any) => ({ id: a.id, type: String(a.type || ""), src: a.src || "" }))
+                .filter((a: TagAttachment) => !!a.src);
+
+              // Also check legacy mattertag for media
+              const mt = mattertagsRef.current.find((m: any) => m.sid === t.sid);
+              const mtMediaSrc = mt?.media?.src || "";
+              const mediaSrc = t.mediaSrc || t.media?.src || mtMediaSrc || "";
+
+              tagDataCacheRef.current.set(t.sid, {
+                sid: t.sid,
+                label: t.label || mt?.label || "",
+                description: t.description || mt?.description || "",
+                mediaUrl: mediaSrc,
+                mediaSrc: mediaSrc,
+                attachments: resolved,
+                anchorPosition: t.anchorPosition,
+              });
+            }
+            // Also add legacy-only mattertags not in Tag API
+            for (const mt of mattertagsRef.current) {
+              if (!tagDataCacheRef.current.has(mt.sid)) {
+                tagDataCacheRef.current.set(mt.sid, {
+                  sid: mt.sid,
+                  label: mt.label || "",
+                  description: mt.description || "",
+                  mediaUrl: mt.media?.src || "",
+                  mediaSrc: mt.media?.src || "",
+                  attachments: [],
+                  anchorPosition: mt.anchorPosition,
+                });
+              }
+            }
+            console.log("🏷️ Pre-cached", tagDataCacheRef.current.size, "tags for hover");
+          }
+        } catch (e) { console.log("Tag cache error:", e); }
 
         // Cache sweep data via subscription
         try {
@@ -1100,7 +1183,30 @@ const TourViewer = () => {
         }
         if (sdk.Mattertag?.Event?.HOVER) {
           sdk.on(sdk.Mattertag.Event.HOVER, (hovering: boolean, tagSid: string) => {
-            if (hovering) console.log("👆 Mattertag hover:", tagSid);
+            if (hovering) {
+              const cached = tagDataCacheRef.current.get(tagSid);
+              if (cached) {
+                try { if (sdk.Mattertag?.close) sdk.Mattertag.close(tagSid); } catch {}
+                try { if (sdk.Tag?.close) sdk.Tag.close(tagSid); } catch {}
+                setSelectedTag(cached);
+              }
+            } else {
+              setTimeout(() => { if (!tagPopupHoveredRef.current) setSelectedTag(null); }, 150);
+            }
+          });
+        }
+        if (sdk.Tag?.Event?.HOVER) {
+          sdk.on(sdk.Tag.Event.HOVER, (tagSid: string, hovering: boolean) => {
+            if (hovering) {
+              const cached = tagDataCacheRef.current.get(tagSid);
+              if (cached) {
+                try { if (sdk.Mattertag?.close) sdk.Mattertag.close(tagSid); } catch {}
+                try { if (sdk.Tag?.close) sdk.Tag.close(tagSid); } catch {}
+                setSelectedTag(cached);
+              }
+            } else {
+              setTimeout(() => { if (!tagPopupHoveredRef.current) setSelectedTag(null); }, 150);
+            }
           });
         }
 
@@ -1118,59 +1224,135 @@ const TourViewer = () => {
     return () => { cancelled = true; };
   }, [iframeLoaded, tour?.tourUrl]);
 
-  // Video Screens: inject YouTube iframes into the 3D scene via SDK
+  // Video Screens: wall-embedded HTML overlays with worldToScreen tracking
+  const [activeVideoScreenId, setActiveVideoScreenId] = useState<number | null>(null);
+  const activeVideoScreenIdRef = useRef<number | null>(null);
+  useEffect(() => { activeVideoScreenIdRef.current = activeVideoScreenId; }, [activeVideoScreenId]);
+  const videoTagMapRef = useRef<Map<string, { embedUrl: string }>>(new Map());
+  const tagPopupHoveredRef = useRef(false);
+  const [videoScreensData, setVideoScreensData] = useState<{ id: number; name: string; youtubeUrl: string; embedUrl: string; youtubeId: string; posX: number; posY: number; posZ: number; width: number; height: number; iconType: string; visibilityRange: number }[]>([]);
+  const videoOverlayContainerRef = useRef<HTMLDivElement>(null);
+  const [videoScreensVisible, setVideoScreensVisible] = useState(true);
+
+  // Fetch video screens
+  useEffect(() => {
+    if (!sdkConnected || !tour?.id) return;
+    let cancelled = false;
+    fetch(`/api/tours/${tour.id}/video-screens`)
+      .then(r => r.ok ? r.json() : [])
+      .then((screens: any[]) => {
+        if (cancelled) return;
+        const data = screens
+          .filter((s: any) => s.youtubeUrl)
+          .map((s: any) => {
+            const ytId = extractYoutubeId(s.youtubeUrl);
+            return ytId ? {
+              id: s.id,
+              name: s.name || "Video",
+              youtubeUrl: s.youtubeUrl,
+              embedUrl: `https://www.youtube.com/embed/${ytId}?autoplay=1&rel=0`,
+              youtubeId: ytId,
+              posX: s.posX || 0,
+              posY: s.posY || 1.5,
+              posZ: s.posZ || 0,
+              width: s.width || 2,
+              height: s.height || 1.2,
+              iconType: s.iconType || "youtube",
+              visibilityRange: s.visibilityRange || 8,
+            } : null;
+          })
+          .filter(Boolean) as any[];
+        setVideoScreensData(data);
+        // Also populate videoTagMapRef for handleTagClick compatibility
+        videoTagMapRef.current.clear();
+        console.log("🎬 [VideoScreen] Loaded", data.length, "screens for wall overlay");
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [sdkConnected, tour?.id]);
+
+  // worldToScreen render loop: position HTML overlays on the wall
   useEffect(() => {
     const sdk = sdkRef.current;
-    if (!sdkConnected || !sdk || !tour?.id) return;
+    const container = videoOverlayContainerRef.current;
+    if (!sdk || !sdkConnected || !container || videoScreensData.length === 0) return;
 
-    let nodes: any[] = [];
+    let rafId: number;
+    let currentPose: any = null;
+    let poseChanged = true;
 
-    const loadVideoScreens = async () => {
-      try {
-        const screens = await fetch(`/api/tours/${tour.id}/video-screens`).then(r => r.ok ? r.json() : []);
-        if (!screens.length) return;
+    const poseSub = sdk.Camera?.pose?.subscribe?.((pose: any) => {
+      currentPose = pose;
+      poseChanged = true;
+    });
 
-        for (const screen of screens) {
-          if (!screen.youtubeUrl) continue;
-          // Extract YouTube video ID
-          const videoId = extractYoutubeId(screen.youtubeUrl);
-          if (!videoId) continue;
+    const BASE_PX_PER_METER = 160; // pixels per meter at distance=1
 
-          const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&loop=1&playlist=${videoId}`;
+    const renderLoop = () => {
+      rafId = requestAnimationFrame(renderLoop);
+      if (!poseChanged || !currentPose || !sdk.Conversion?.worldToScreen) return;
+      poseChanged = false;
 
-          // Create a scene node with an HTML embed
-          const [sceneObject] = await sdk.Scene.createObjects(1);
-          const node = sceneObject.addNode();
+      const containerRect = container.getBoundingClientRect();
+      const size = { w: containerRect.width, h: containerRect.height };
 
-          // Position and rotation
-          node.position.set(screen.posX || 0, screen.posY || 1.5, screen.posZ || 0);
-          const toRad = (deg: number) => (deg * Math.PI) / 180;
-          node.rotation.setFromEuler({ x: toRad(screen.rotX || 0), y: toRad(screen.rotY || 0), z: toRad(screen.rotZ || 0) });
+      // Camera position in 3D space
+      const camPos = currentPose.position || { x: 0, y: 0, z: 0 };
 
-          // Add an IFrame component
-          const iframeComp = node.addComponent("mp.iframe", {
-            url: embedUrl,
-            width: screen.width || 2,
-            height: screen.height || 1.2,
-          });
+      for (let i = 0; i < videoScreensData.length; i++) {
+        const screen = videoScreensData[i];
+        const el = container.children[i] as HTMLElement;
+        if (!el) continue;
 
-          node.start();
-          nodes.push(sceneObject);
-          console.log(`📺 Video screen "${screen.name}" placed at (${screen.posX}, ${screen.posY}, ${screen.posZ})`);
+        const worldPos = { x: screen.posX, y: screen.posY, z: screen.posZ };
+
+        // 3D distance between camera and screen — hides when in another room
+        const dx = camPos.x - worldPos.x;
+        const dy = camPos.y - worldPos.y;
+        const dz = camPos.z - worldPos.z;
+        const dist3D = Math.sqrt(dx * dx + dy * dy + dz * dz);
+
+        if (dist3D > screen.visibilityRange) {
+          el.style.display = "none";
+          // Stop inline video if moved out of range
+          if (activeVideoScreenIdRef.current === screen.id) {
+            setActiveVideoScreenId(null);
+          }
+          continue;
         }
-      } catch (err) {
-        console.log("Video screens load error:", err);
+
+        const sp = sdk.Conversion.worldToScreen(worldPos, currentPose, size);
+
+        if (sp && typeof sp.x === "number" && sp.z > 0) {
+          const dist = sp.z || 5;
+          const scale = BASE_PX_PER_METER / dist;
+
+          // Hide if too far away (< 2px wide) or too close (screen fills viewport)
+          if (scale < 1 || scale > 500) {
+            el.style.display = "none";
+            continue;
+          }
+
+          const pxW = screen.width * scale;
+          const pxH = screen.height * scale;
+
+          el.style.left = `${sp.x - pxW / 2}px`;
+          el.style.top = `${sp.y - pxH / 2}px`;
+          el.style.width = `${pxW}px`;
+          el.style.height = `${pxH}px`;
+          el.style.display = "block";
+        } else {
+          el.style.display = "none";
+        }
       }
     };
 
-    loadVideoScreens();
-
+    rafId = requestAnimationFrame(renderLoop);
     return () => {
-      // Cleanup: remove scene objects
-      nodes.forEach(obj => { try { obj.stop(); } catch {} });
-      nodes = [];
+      cancelAnimationFrame(rafId);
+      if (poseSub?.cancel) poseSub.cancel();
     };
-  }, [sdkConnected, tour?.id]);
+  }, [sdkConnected, videoScreensData]);
 
   // Navigation
   const currentIndex = allTours.findIndex((t) => t.id === tour?.id);
@@ -1634,7 +1816,7 @@ const TourViewer = () => {
       {/* ===== TOP: MATTERPORT 3D VIEWER ===== */}
       <div className="relative flex-1 min-h-0">
       {/* ===== MATTERPORT 3D IFRAME ===== */}
-      <div className="absolute inset-0 overflow-hidden">
+      <div className="absolute inset-0 overflow-hidden tour-viewer-container">
         <AnimatePresence>
           {!iframeLoaded && (
             <motion.div
@@ -1676,7 +1858,65 @@ const TourViewer = () => {
           referrerPolicy="no-referrer-when-downgrade"
           onLoad={() => setIframeLoaded(true)}
         />
+
+        {/* ===== WALL-EMBEDDED VIDEO SCREENS (worldToScreen positioned) ===== */}
+        <div ref={videoOverlayContainerRef} className="absolute inset-0 pointer-events-none z-[15]" style={{ overflow: "hidden", display: videoScreensVisible ? undefined : "none" }}>
+          {videoScreensData.map((screen) => (
+            <div
+              key={screen.id}
+              className="absolute pointer-events-auto cursor-pointer group"
+              style={{ display: "none" }}
+              onClick={() => { if (activeVideoScreenId !== screen.id) setActiveVideoScreenId(screen.id); }}
+            >
+              {/* Black screen body */}
+              <div className="w-full h-full rounded-sm overflow-hidden bg-black shadow-[0_0_30px_rgba(0,0,0,0.8)] border border-white/10 relative">
+                {activeVideoScreenId === screen.id ? (
+                  /* Inline YouTube player */
+                  <>
+                    <iframe
+                      src={screen.embedUrl}
+                      className="w-full h-full border-0"
+                      allow="autoplay; encrypted-media; fullscreen"
+                      allowFullScreen
+                    />
+                    {/* Stop button */}
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setActiveVideoScreenId(null); }}
+                      className="absolute top-1 right-1 bg-black/70 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center hover:bg-red-600 z-10"
+                    >
+                      ✕
+                    </button>
+                  </>
+                ) : (
+                  /* Thumbnail + play button */
+                  <>
+                    <img
+                      src={`https://img.youtube.com/vi/${screen.youtubeId}/hqdefault.jpg`}
+                      alt={screen.name}
+                      className="w-full h-full object-cover opacity-70 group-hover:opacity-90 transition-opacity duration-300"
+                      draggable={false}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30" />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="w-[28%] aspect-square max-w-[64px] rounded-full bg-red-600/90 group-hover:bg-red-600 group-hover:scale-110 transition-all duration-300 flex items-center justify-center shadow-lg shadow-red-600/40">
+                        <svg viewBox="0 0 24 24" fill="white" className="w-[45%] h-[45%] ml-[8%]">
+                          <polygon points="5,3 19,12 5,21" />
+                        </svg>
+                      </div>
+                    </div>
+                    <div className="absolute bottom-0 left-0 right-0 px-2 py-1 flex items-center gap-1">
+                      <span className="text-white text-[9px] font-medium truncate drop-shadow-lg">{screen.name}</span>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+
       </div>
+
+
 
       {/* ===== TOP-LEFT: Back Button + Logo ===== */}
       {!isClean && (
@@ -1764,6 +2004,25 @@ const TourViewer = () => {
         >
           <Menu className="w-4 h-4" />
         </button>
+
+        {/* Toggle Video Screens visibility */}
+        {videoScreensData.length > 0 && (
+          <button
+            onClick={() => setVideoScreensVisible(!videoScreensVisible)}
+            className={`flex items-center gap-1.5 px-2 sm:px-3 py-2 sm:py-2.5 rounded-xl backdrop-blur-xl border text-xs font-medium transition-all ${
+              videoScreensVisible
+                ? "bg-red-600/20 border-red-500/30 text-red-400 hover:bg-red-600/30"
+                : "bg-black/60 border-white/10 text-white/40 hover:text-white/70 hover:bg-black/80"
+            }`}
+            title={videoScreensVisible ? "Hide videos" : "Show videos"}
+          >
+            {videoScreensVisible ? (
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-4 h-4"><polygon points="5,3 19,12 5,21" /><rect x="1" y="1" width="22" height="22" rx="3" stroke="currentColor" strokeWidth={1.5} fill="none" /></svg>
+            ) : (
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-4 h-4"><polygon points="5,3 19,12 5,21" /><rect x="1" y="1" width="22" height="22" rx="3" stroke="currentColor" strokeWidth={1.5} fill="none" /><line x1="2" y1="2" x2="22" y2="22" stroke="currentColor" strokeWidth={2} /></svg>
+            )}
+          </button>
+        )}
 
         {/* Cart */}
         {cart.length > 0 && (
@@ -2656,6 +2915,8 @@ const TourViewer = () => {
             transition={{ duration: 0.15 }}
             className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 pointer-events-auto"
             style={{ width: 340 }}
+            onMouseEnter={() => { tagPopupHoveredRef.current = true; }}
+            onMouseLeave={() => { tagPopupHoveredRef.current = false; setSelectedTag(null); }}
           >
             <div className="rounded-lg overflow-hidden bg-[#2d2d2d] shadow-[0_4px_24px_rgba(0,0,0,0.6)]">
               {/* Top bar: share + copy */}
