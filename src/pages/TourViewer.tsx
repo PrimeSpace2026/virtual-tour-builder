@@ -185,7 +185,7 @@ const HotelMenuSection = ({ title, iconKey, items, amenities, onItemClick, onBoo
             return (
               <div
                 key={i}
-                onClick={() => { if (hasTag && onBookClick && item.bookingEnabled !== false) onBookClick(item.tagSid!, item.name, item.bookingUrl); else if (hasTag) onItemClick?.(item.tagSid!); }}
+                onClick={() => { if (hasTag && onBookClick && (item.bookingUrl || item.bookingEnabled)) onBookClick(item.tagSid!, item.name, item.bookingUrl); else if (hasTag) onItemClick?.(item.tagSid!); }}
                 className={`flex items-center gap-3 px-5 py-2.5 ml-4 mr-2 rounded-lg transition-all ${hasTag ? "cursor-pointer hover:bg-white/[0.06]" : "cursor-default"}`}
               >
                 {item.imageUrl ? (
@@ -2481,6 +2481,7 @@ const TourViewer = () => {
                         tagSid: r.tagSid || undefined,
                         imageUrl: r.imageUrl || undefined,
                         bookingEnabled: r.bookingEnabled,
+                        bookingUrl: r.bookingUrl || undefined,
                       })),
                     }] : [];
 
@@ -2872,7 +2873,7 @@ const TourViewer = () => {
                     title: "Accommodations",
                     iconKey: "bed",
                     amenities: allAmenities,
-                    items: rooms.map(r => ({ name: r.name || "Room", iconKey: "bed", sub: [r.bedType, r.capacity ? `${r.capacity}p` : "", r.price ? `${r.price} ${r.currency || "TND"}` : ""].filter(Boolean).join(" · "), tagSid: r.tagSid || undefined, imageUrl: r.imageUrl || undefined, bookingEnabled: r.bookingEnabled })),
+                    items: rooms.map(r => ({ name: r.name || "Room", iconKey: "bed", sub: [r.bedType, r.capacity ? `${r.capacity}p` : "", r.price ? `${r.price} ${r.currency || "TND"}` : ""].filter(Boolean).join(" · "), tagSid: r.tagSid || undefined, imageUrl: r.imageUrl || undefined, bookingEnabled: r.bookingEnabled, bookingUrl: r.bookingUrl || undefined })),
                   }] : [];
 
                   const allSections = [
@@ -3086,8 +3087,7 @@ const TourViewer = () => {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.15 }}
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 pointer-events-auto"
-            style={{ width: 340 }}
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 pointer-events-auto w-[calc(100vw-32px)] max-w-[340px]"
             onMouseEnter={() => { tagPopupHoveredRef.current = true; }}
             onMouseLeave={() => { tagPopupHoveredRef.current = false; setSelectedTag(null); }}
           >
