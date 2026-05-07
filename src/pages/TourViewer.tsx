@@ -58,6 +58,7 @@ import {
   User,
   Menu,
 } from "lucide-react";
+import { connectBundleSdk, registerVideoScreenComponents, createVideoScreenObjects, type VideoScreenData } from "@/utils/matterportBundle";
 
 const SDK_KEY = "b7uar4u57xdec0zw7dwygt7md";
 
@@ -380,7 +381,7 @@ function buildMatterportUrl(
   });
   for (const [k, v] of Object.entries(extraParams)) params.set(k, v);
   if (withSdkKey) params.set("applicationKey", SDK_KEY);
-  return `https://my.matterport.com/show/?${params.toString()}`;
+  return `/bundle/showcase.html?${params.toString()}`;
 }
 
 function buildEmbedUrl(tourUrl: string, _withSdkKey = false, features: MatterportFeatures = {}): string {
@@ -689,12 +690,27 @@ const TourViewer = () => {
             setGymCoaches(Array.isArray(meta.coaches) ? meta.coaches : []);
           } catch { setGymCoaches([]); }
         } else { setGymCoaches([]); }
-        // Parse immobilier rooms from metadataJson
-        if (normalizeCategory(tourData.category) === "Immobilier" && tourData.metadataJson) {
-          try {
-            const meta = JSON.parse(tourData.metadataJson);
-            setImmoRooms(Array.isArray(meta.immobilierRooms) ? meta.immobilierRooms : []);
-          } catch { setImmoRooms([]); }
+        // Parse immobilier rooms from metadataJson, enrich with chambers data
+        if (normalizeCategory(tourData.category) === "Immobilier") {
+          let rooms: { name: string; type: string; tagSid: string; imageUrl: string; description: string }[] = [];
+          if (tourData.metadataJson) {
+            try {
+              const meta = JSON.parse(tourData.metadataJson);
+              rooms = Array.isArray(meta.immobilierRooms) ? meta.immobilierRooms : [];
+            } catch {}
+          }
+          // If chambers exist, use them (they have richer data: tagSid, imageUrl, etc.)
+          const chambers = Array.isArray(chambersData) ? chambersData : [];
+          if (chambers.length > 0) {
+            rooms = chambers.map((ch: any) => ({
+              name: ch.name || "",
+              type: ch.description || "",
+              tagSid: ch.tagSid || "",
+              imageUrl: ch.imageUrl || "",
+              description: ch.description || "",
+            }));
+          }
+          setImmoRooms(rooms);
         } else { setImmoRooms([]); }
         // Parse bottom strip config from metadataJson
         if (tourData.metadataJson) {
@@ -929,16 +945,52 @@ const TourViewer = () => {
         const modelId = extractModelId(tour.tourUrl);
         if (!modelId) throw new Error("No model ID");
 
-        // Use @matterport/sdk setupSdk which handles cross-origin iframe communication
-        const { setupSdk } = await import("@matterport/sdk");
-        console.log("[SDK] Connecting via setupSdk...");
-        const sdk = await Promise.race([
-          setupSdk(SDK_KEY, { iframe: iframeRef.current!, space: modelId }),
-          new Promise<never>((_, reject) => setTimeout(() => reject(new Error("SDK timeout")), 30000)),
-        ]) as any;
+        let sdk: any = null;
+
+        // Try Bundle SDK first (gives Scene API for 3D objects)
+        try {
+          console.log("[SDK] Trying Bundle SDK (MP_SDK.connect)...");
+          sdk = await Promise.race([
+            connectBundleSdk(iframeRef.current!, SDK_KEY),
+            new Promise<never>((_, reject) => setTimeout(() => reject(new Error("Bundle SDK timeout")), 15000)),
+          ]);
+          console.log("✅ SDK connected (Bundle SDK)");
+        } catch (bundleErr) {
+          console.log("⚠️ Bundle SDK failed, falling back to setupSdk:", bundleErr);
+          const { setupSdk } = await import("@matterport/sdk");
+          sdk = await Promise.race([
+            setupSdk(SDK_KEY, { iframe: iframeRef.current!, space: modelId }),
+            new Promise<never>((_, reject) => setTimeout(() => reject(new Error("SDK timeout")), 30000)),
+          ]);
+          console.log("✅ SDK connected (Embed SDK fallback)");
+        }
 
         if (cancelled) return;
-        console.log("✅ SDK connected (setupSdk)");
+
+        // Log available SDK namespaces for debugging
+        const hasScene = !!(sdk.Scene?.register && sdk.Scene?.deserialize);
+        console.log("🔧 SDK capabilities:", {
+          Scene: hasScene,
+          SceneRegister: !!sdk.Scene?.register,
+          SceneDeserialize: !!sdk.Scene?.deserialize,
+          SceneCreateObjects: !!sdk.Scene?.createObjects,
+          Camera: !!sdk.Camera,
+          Tag: !!sdk.Tag,
+          Mattertag: !!sdk.Mattertag,
+          Conversion: !!sdk.Conversion,
+          Floor: !!sdk.Floor,
+          Sweep: !!sdk.Sweep,
+        });
+
+        // Register Scene components for 3D video screens (only if Scene API available)
+        if (hasScene) {
+          try {
+            await registerVideoScreenComponents(sdk);
+            console.log("✅ Scene components registered");
+          } catch (e) {
+            console.log("⚠️ Scene component registration failed:", e);
+          }
+        }
 
         // Wait for model to be fully loaded (PLAYING phase) before querying data
         await new Promise<void>((resolve) => {
@@ -995,6 +1047,7 @@ const TourViewer = () => {
             try {
               if (sdk.Tag?.attachments?.getData) {
                 allAttachments = await sdk.Tag.attachments.getData();
+                console.log("🏷️ All attachments from API:", allAttachments);
               }
             } catch {}
             if (!allAttachments.length && sdk.Tag?.attachments?.data) {
@@ -1014,16 +1067,18 @@ const TourViewer = () => {
             }
 
             for (const t of allTags) {
+              console.log("🏷️ Tag raw:", t.sid, "label:", t.label, "media:", t.media, "mediaSrc:", t.mediaSrc, "mediaType:", t.mediaType, "attachments:", t.attachments);
               const attachmentIds: string[] = Array.isArray(t.attachments) ? t.attachments : [];
               const resolved = allAttachments
                 .filter((a: any) => attachmentIds.includes(a.id))
-                .map((a: any) => ({ id: a.id, type: String(a.type || ""), src: a.src || "" }))
+                .map((a: any) => ({ id: a.id, type: String(a.type || ""), src: a.src || a.url || "" }))
                 .filter((a: TagAttachment) => !!a.src);
 
               // Also check legacy mattertag for media
               const mt = mattertagsRef.current.find((m: any) => m.sid === t.sid);
               const mtMediaSrc = mt?.media?.src || "";
-              const mediaSrc = t.mediaSrc || t.media?.src || mtMediaSrc || "";
+              const firstAttachmentSrc = resolved.length > 0 ? resolved[0].src : "";
+              const mediaSrc = t.mediaSrc || t.media?.src || mtMediaSrc || firstAttachmentSrc || "";
 
               tagDataCacheRef.current.set(t.sid, {
                 sid: t.sid,
@@ -1184,28 +1239,19 @@ const TourViewer = () => {
         if (sdk.Mattertag?.Event?.HOVER) {
           sdk.on(sdk.Mattertag.Event.HOVER, (hovering: boolean, tagSid: string) => {
             if (hovering) {
-              const cached = tagDataCacheRef.current.get(tagSid);
-              if (cached) {
-                try { if (sdk.Mattertag?.close) sdk.Mattertag.close(tagSid); } catch {}
-                try { if (sdk.Tag?.close) sdk.Tag.close(tagSid); } catch {}
-                setSelectedTag(cached);
-              }
+              // Open native Matterport popup (renders video/links/media natively)
+              try { if (sdk.Mattertag?.open) sdk.Mattertag.open(tagSid); } catch {}
             } else {
-              setTimeout(() => { if (!tagPopupHoveredRef.current) setSelectedTag(null); }, 150);
+              try { if (sdk.Mattertag?.close) sdk.Mattertag.close(tagSid); } catch {}
             }
           });
         }
         if (sdk.Tag?.Event?.HOVER) {
           sdk.on(sdk.Tag.Event.HOVER, (tagSid: string, hovering: boolean) => {
             if (hovering) {
-              const cached = tagDataCacheRef.current.get(tagSid);
-              if (cached) {
-                try { if (sdk.Mattertag?.close) sdk.Mattertag.close(tagSid); } catch {}
-                try { if (sdk.Tag?.close) sdk.Tag.close(tagSid); } catch {}
-                setSelectedTag(cached);
-              }
+              try { if (sdk.Tag?.open) sdk.Tag.open(tagSid); } catch {}
             } else {
-              setTimeout(() => { if (!tagPopupHoveredRef.current) setSelectedTag(null); }, 150);
+              try { if (sdk.Tag?.close) sdk.Tag.close(tagSid); } catch {}
             }
           });
         }
@@ -1224,13 +1270,13 @@ const TourViewer = () => {
     return () => { cancelled = true; };
   }, [iframeLoaded, tour?.tourUrl]);
 
-  // Video Screens: wall-embedded HTML overlays with worldToScreen tracking
+  // Video Screens: wall-embedded 3D-perspective overlays with 4-corner projection
   const [activeVideoScreenId, setActiveVideoScreenId] = useState<number | null>(null);
   const activeVideoScreenIdRef = useRef<number | null>(null);
   useEffect(() => { activeVideoScreenIdRef.current = activeVideoScreenId; }, [activeVideoScreenId]);
   const videoTagMapRef = useRef<Map<string, { embedUrl: string }>>(new Map());
   const tagPopupHoveredRef = useRef(false);
-  const [videoScreensData, setVideoScreensData] = useState<{ id: number; name: string; youtubeUrl: string; embedUrl: string; youtubeId: string; posX: number; posY: number; posZ: number; width: number; height: number; iconType: string; visibilityRange: number }[]>([]);
+  const [videoScreensData, setVideoScreensData] = useState<{ id: number; name: string; youtubeUrl: string; embedUrl: string; youtubeId: string; posX: number; posY: number; posZ: number; rotX: number; rotY: number; rotZ: number; width: number; height: number; iconType: string; visibilityRange: number }[]>([]);
   const videoOverlayContainerRef = useRef<HTMLDivElement>(null);
   const [videoScreensVisible, setVideoScreensVisible] = useState(true);
 
@@ -1255,6 +1301,9 @@ const TourViewer = () => {
               posX: s.posX || 0,
               posY: s.posY || 1.5,
               posZ: s.posZ || 0,
+              rotX: s.rotX || 0,
+              rotY: s.rotY || 0,
+              rotZ: s.rotZ || 0,
               width: s.width || 2,
               height: s.height || 1.2,
               iconType: s.iconType || "youtube",
@@ -1271,88 +1320,236 @@ const TourViewer = () => {
     return () => { cancelled = true; };
   }, [sdkConnected, tour?.id]);
 
-  // worldToScreen render loop: position HTML overlays on the wall
+  const videoSceneRef = useRef<any>(null);
+
+  // Toggle 3D video screen visibility
+  useEffect(() => {
+    const scene = videoSceneRef.current;
+    if (!scene?.sceneObject) return;
+    try {
+      for (const node of scene.sceneObject.nodeIterator()) {
+        for (const comp of node.componentIterator()) {
+          if (comp.inputs && 'visible' in comp.inputs) {
+            comp.inputs.visible = videoScreensVisible;
+          }
+        }
+      }
+    } catch (e) {
+      console.log("Toggle visibility error:", e);
+    }
+  }, [videoScreensVisible]);
+
+  // Create 3D video screen objects using SDK Scene API
   useEffect(() => {
     const sdk = sdkRef.current;
-    const container = videoOverlayContainerRef.current;
-    if (!sdk || !sdkConnected || !container || videoScreensData.length === 0) return;
+    if (!sdk || !sdkConnected || videoScreensData.length === 0) return;
+    if (!sdk.Scene?.deserialize) {
+      console.log("⚠️ SDK Scene.deserialize not available for 3D video screens");
+      return;
+    }
 
-    let rafId: number;
-    let currentPose: any = null;
-    let poseChanged = true;
+    let cancelled = false;
 
-    const poseSub = sdk.Camera?.pose?.subscribe?.((pose: any) => {
-      currentPose = pose;
-      poseChanged = true;
-    });
+    const setup = async () => {
+      try {
+        const screenData: VideoScreenData[] = videoScreensData.map(s => ({
+          id: s.id,
+          name: s.name,
+          youtubeId: s.youtubeId,
+          posX: s.posX,
+          posY: s.posY,
+          posZ: s.posZ,
+          rotX: s.rotX,
+          rotY: s.rotY,
+          rotZ: s.rotZ,
+          width: s.width,
+          height: s.height,
+          visibilityRange: s.visibilityRange,
+        }));
 
-    const BASE_PX_PER_METER = 160; // pixels per meter at distance=1
+        if (cancelled) return;
 
-    const renderLoop = () => {
-      rafId = requestAnimationFrame(renderLoop);
-      if (!poseChanged || !currentPose || !sdk.Conversion?.worldToScreen) return;
-      poseChanged = false;
+        const result = await createVideoScreenObjects(sdk, screenData, () => {});
 
-      const containerRect = container.getBoundingClientRect();
-      const size = { w: containerRect.width, h: containerRect.height };
-
-      // Camera position in 3D space
-      const camPos = currentPose.position || { x: 0, y: 0, z: 0 };
-
-      for (let i = 0; i < videoScreensData.length; i++) {
-        const screen = videoScreensData[i];
-        const el = container.children[i] as HTMLElement;
-        if (!el) continue;
-
-        const worldPos = { x: screen.posX, y: screen.posY, z: screen.posZ };
-
-        // 3D distance between camera and screen — hides when in another room
-        const dx = camPos.x - worldPos.x;
-        const dy = camPos.y - worldPos.y;
-        const dz = camPos.z - worldPos.z;
-        const dist3D = Math.sqrt(dx * dx + dy * dy + dz * dz);
-
-        if (dist3D > screen.visibilityRange) {
-          el.style.display = "none";
-          // Stop inline video if moved out of range
-          if (activeVideoScreenIdRef.current === screen.id) {
-            setActiveVideoScreenId(null);
-          }
-          continue;
+        if (cancelled) {
+          result.dispose();
+          return;
         }
 
-        const sp = sdk.Conversion.worldToScreen(worldPos, currentPose, size);
-
-        if (sp && typeof sp.x === "number" && sp.z > 0) {
-          const dist = sp.z || 5;
-          const scale = BASE_PX_PER_METER / dist;
-
-          // Hide if too far away (< 2px wide) or too close (screen fills viewport)
-          if (scale < 1 || scale > 500) {
-            el.style.display = "none";
-            continue;
-          }
-
-          const pxW = screen.width * scale;
-          const pxH = screen.height * scale;
-
-          el.style.left = `${sp.x - pxW / 2}px`;
-          el.style.top = `${sp.y - pxH / 2}px`;
-          el.style.width = `${pxW}px`;
-          el.style.height = `${pxH}px`;
-          el.style.display = "block";
-        } else {
-          el.style.display = "none";
-        }
+        videoSceneRef.current = result;
+      } catch (err) {
+        console.log("⚠️ 3D video screen setup failed:", err);
       }
     };
 
-    rafId = requestAnimationFrame(renderLoop);
+    setup();
+
     return () => {
-      cancelAnimationFrame(rafId);
-      if (poseSub?.cancel) poseSub.cancel();
+      cancelled = true;
+      if (videoSceneRef.current) {
+        videoSceneRef.current.dispose();
+        videoSceneRef.current = null;
+      }
     };
   }, [sdkConnected, videoScreensData]);
+
+  // Wall-embedded auto-play YouTube overlays with 4-corner perspective projection
+  useEffect(() => {
+    const sdk = sdkRef.current;
+    if (!sdk || !sdkConnected || videoScreensData.length === 0) return;
+    if (!sdk.Camera?.pose?.subscribe || !sdk.Conversion?.worldToScreen) {
+      console.log("\u26a0\ufe0f worldToScreen not available");
+      return;
+    }
+
+    const container = videoOverlayContainerRef.current;
+    const showcaseIframe = document.getElementById('showcase-iframe') as HTMLIFrameElement;
+    if (!container || !showcaseIframe) return;
+
+    // --- Helper: compute 4 corners of a screen in world space ---
+    const compute4Corners = (s: typeof videoScreensData[0]) => {
+      const hw = s.width / 2, hh = s.height / 2;
+      // Local corners: TL, TR, BR, BL (plane faces along local +Z)
+      const local = [
+        { x: -hw, y: hh, z: 0 },
+        { x: hw, y: hh, z: 0 },
+        { x: hw, y: -hh, z: 0 },
+        { x: -hw, y: -hh, z: 0 },
+      ];
+      const ry = s.rotY * Math.PI / 180;
+      const rx = s.rotX * Math.PI / 180;
+      const rz = s.rotZ * Math.PI / 180;
+      const cX = Math.cos(rx), sX = Math.sin(rx);
+      const cY = Math.cos(ry), sY = Math.sin(ry);
+      const cZ = Math.cos(rz), sZ = Math.sin(rz);
+      return local.map(p => {
+        // YXZ Euler rotation (Three.js default)
+        let x = cY * p.x + sY * p.z;
+        let y = p.y;
+        let z = -sY * p.x + cY * p.z;
+        const y2 = cX * y - sX * z;
+        z = sX * y + cX * z; y = y2;
+        const x2 = cZ * x - sZ * y;
+        y = sZ * x + cZ * y; x = x2;
+        return { x: x + s.posX, y: y + s.posY, z: z + s.posZ };
+      });
+    };
+
+    // --- Helper: solve 8x8 homography → CSS matrix3d ---
+    const computeMatrix3d = (sw: number, sh: number, dst: { x: number; y: number }[]): string | null => {
+      const sx = [0, sw, sw, 0], sy = [0, 0, sh, sh];
+      const dx = dst.map(p => p.x), dy = dst.map(p => p.y);
+      const A: number[][] = [], b: number[] = [];
+      for (let i = 0; i < 4; i++) {
+        A.push([sx[i], sy[i], 1, 0, 0, 0, -dx[i] * sx[i], -dx[i] * sy[i]]);
+        A.push([0, 0, 0, sx[i], sy[i], 1, -dy[i] * sx[i], -dy[i] * sy[i]]);
+        b.push(dx[i]); b.push(dy[i]);
+      }
+      const n = 8;
+      const aug = A.map((row, i) => [...row, b[i]]);
+      for (let col = 0; col < n; col++) {
+        let mr = col;
+        for (let row = col + 1; row < n; row++)
+          if (Math.abs(aug[row][col]) > Math.abs(aug[mr][col])) mr = row;
+        [aug[col], aug[mr]] = [aug[mr], aug[col]];
+        if (Math.abs(aug[col][col]) < 1e-10) return null;
+        for (let row = col + 1; row < n; row++) {
+          const f = aug[row][col] / aug[col][col];
+          for (let j = col; j <= n; j++) aug[row][j] -= f * aug[col][j];
+        }
+      }
+      const h = new Array(n);
+      for (let row = n - 1; row >= 0; row--) {
+        h[row] = aug[row][n];
+        for (let col = row + 1; col < n; col++) h[row] -= aug[row][col] * h[col];
+        h[row] /= aug[row][row];
+      }
+      // Homography H = [[h0,h1,h2],[h3,h4,h5],[h6,h7,1]] → CSS matrix3d (column-major)
+      return `matrix3d(${h[0]},${h[3]},0,${h[6]}, ${h[1]},${h[4]},0,${h[7]}, 0,0,1,0, ${h[2]},${h[5]},0,1)`;
+    };
+
+    const IW = 640, IH = 360; // internal iframe render size
+    type Overlay = { el: HTMLDivElement; screen: typeof videoScreensData[0]; corners3D: ReturnType<typeof compute4Corners> };
+    const overlays: Overlay[] = [];
+
+    for (const screen of videoScreensData) {
+      const el = document.createElement('div');
+      Object.assign(el.style, {
+        position: 'absolute',
+        left: '0px',
+        top: '0px',
+        width: `${IW}px`,
+        height: `${IH}px`,
+        transformOrigin: '0 0',
+        overflow: 'hidden',
+        opacity: '0',
+        pointerEvents: 'none',
+        background: '#000',
+        zIndex: '10',
+      });
+      const yt = document.createElement('iframe');
+      yt.src = `https://www.youtube.com/embed/${screen.youtubeId}?autoplay=1&mute=1&loop=1&playlist=${screen.youtubeId}&controls=0&showinfo=0&rel=0&modestbranding=1&playsinline=1`;
+      Object.assign(yt.style, { width: '100%', height: '100%', border: 'none', display: 'block' });
+      yt.allow = 'autoplay; encrypted-media';
+      el.appendChild(yt);
+      container.appendChild(el);
+      overlays.push({ el, screen, corners3D: compute4Corners(screen) });
+    }
+
+    console.log(`\ud83d\udcfa Wall video: ${overlays.length} screens (matrix3d perspective)`);
+
+    const sub = sdk.Camera.pose.subscribe((pose: any) => {
+      const vW = showcaseIframe.clientWidth;
+      const vH = showcaseIframe.clientHeight;
+      if (!vW || !vH) return;
+
+      for (const { el, screen, corners3D } of overlays) {
+        if (!videoScreensVisible) {
+          el.style.opacity = '0'; el.style.pointerEvents = 'none'; continue;
+        }
+        const ddx = pose.position.x - screen.posX;
+        const ddy = pose.position.y - screen.posY;
+        const ddz = pose.position.z - screen.posZ;
+        const dist = Math.sqrt(ddx * ddx + ddy * ddy + ddz * ddz);
+        if (dist > screen.visibilityRange || dist < 0.3) {
+          el.style.opacity = '0'; el.style.pointerEvents = 'none'; continue;
+        }
+
+        try {
+          // Project all 4 corners to screen space
+          const c2d = corners3D.map(c =>
+            sdk.Conversion.worldToScreen(c, pose, { w: vW, h: vH })
+          );
+          // Skip if any corner behind camera
+          if (c2d.some((c: any) => !c || c.z < 0)) {
+            el.style.opacity = '0'; el.style.pointerEvents = 'none'; continue;
+          }
+          // Check projected size is reasonable
+          const xs = c2d.map((c: any) => c.x), ys = c2d.map((c: any) => c.y);
+          const pw = Math.max(...xs) - Math.min(...xs);
+          const ph = Math.max(...ys) - Math.min(...ys);
+          if (pw < 30 || ph < 20 || pw > vW * 0.95) {
+            el.style.opacity = '0'; el.style.pointerEvents = 'none'; continue;
+          }
+
+          const matrix = computeMatrix3d(IW, IH, c2d);
+          if (!matrix) { el.style.opacity = '0'; el.style.pointerEvents = 'none'; continue; }
+
+          el.style.transform = matrix;
+          el.style.opacity = '1';
+          el.style.pointerEvents = 'auto';
+        } catch {
+          el.style.opacity = '0';
+          el.style.pointerEvents = 'none';
+        }
+      }
+    });
+
+    return () => {
+      sub?.cancel?.();
+      overlays.forEach(({ el }) => el.remove());
+    };
+  }, [sdkConnected, videoScreensData, videoScreensVisible]);
 
   // Navigation
   const currentIndex = allTours.findIndex((t) => t.id === tour?.id);
@@ -1859,60 +2056,8 @@ const TourViewer = () => {
           onLoad={() => setIframeLoaded(true)}
         />
 
-        {/* ===== WALL-EMBEDDED VIDEO SCREENS (worldToScreen positioned) ===== */}
-        <div ref={videoOverlayContainerRef} className="absolute inset-0 pointer-events-none z-[15]" style={{ overflow: "hidden", display: videoScreensVisible ? undefined : "none" }}>
-          {videoScreensData.map((screen) => (
-            <div
-              key={screen.id}
-              className="absolute pointer-events-auto cursor-pointer group"
-              style={{ display: "none" }}
-              onClick={() => { if (activeVideoScreenId !== screen.id) setActiveVideoScreenId(screen.id); }}
-            >
-              {/* Black screen body */}
-              <div className="w-full h-full rounded-sm overflow-hidden bg-black shadow-[0_0_30px_rgba(0,0,0,0.8)] border border-white/10 relative">
-                {activeVideoScreenId === screen.id ? (
-                  /* Inline YouTube player */
-                  <>
-                    <iframe
-                      src={screen.embedUrl}
-                      className="w-full h-full border-0"
-                      allow="autoplay; encrypted-media; fullscreen"
-                      allowFullScreen
-                    />
-                    {/* Stop button */}
-                    <button
-                      onClick={(e) => { e.stopPropagation(); setActiveVideoScreenId(null); }}
-                      className="absolute top-1 right-1 bg-black/70 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center hover:bg-red-600 z-10"
-                    >
-                      ✕
-                    </button>
-                  </>
-                ) : (
-                  /* Thumbnail + play button */
-                  <>
-                    <img
-                      src={`https://img.youtube.com/vi/${screen.youtubeId}/hqdefault.jpg`}
-                      alt={screen.name}
-                      className="w-full h-full object-cover opacity-70 group-hover:opacity-90 transition-opacity duration-300"
-                      draggable={false}
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30" />
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="w-[28%] aspect-square max-w-[64px] rounded-full bg-red-600/90 group-hover:bg-red-600 group-hover:scale-110 transition-all duration-300 flex items-center justify-center shadow-lg shadow-red-600/40">
-                        <svg viewBox="0 0 24 24" fill="white" className="w-[45%] h-[45%] ml-[8%]">
-                          <polygon points="5,3 19,12 5,21" />
-                        </svg>
-                      </div>
-                    </div>
-                    <div className="absolute bottom-0 left-0 right-0 px-2 py-1 flex items-center gap-1">
-                      <span className="text-white text-[9px] font-medium truncate drop-shadow-lg">{screen.name}</span>
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
+        {/* ===== WALL-EMBEDDED VIDEO: YouTube iframes auto-play on wall ===== */}
+        <div ref={videoOverlayContainerRef} className="absolute inset-0 pointer-events-none z-[15]" style={{ overflow: "hidden" }} />
 
       </div>
 
@@ -2937,9 +3082,13 @@ const TourViewer = () => {
                 </button>
               </div>
 
-              {/* Media: video / image */}
+              {/* Media: video / image / attachments */}
               {(() => {
-                const mediaSrc = selectedTag.mediaSrc || selectedTag.mediaUrl || "";
+                // Try mediaSrc first, then fall back to first attachment src
+                let mediaSrc = selectedTag.mediaSrc || selectedTag.mediaUrl || "";
+                if (!mediaSrc && selectedTag.attachments && selectedTag.attachments.length > 0) {
+                  mediaSrc = selectedTag.attachments[0].src || "";
+                }
                 const ytMatch = mediaSrc.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{6,})/);
                 const vimeoMatch = mediaSrc.match(/vimeo\.com\/(?:video\/)?(\d+)/);
                 const isDirectVideo = /\.(mp4|webm|ogg|mov)(\?|$)/i.test(mediaSrc);
@@ -2996,9 +3145,18 @@ const TourViewer = () => {
               {/* Title */}
               <div className="px-3 pb-3">
                 <h4 className="text-white text-sm font-semibold leading-snug">{selectedTag.label}</h4>
-                {selectedTag.description && (
-                  <p className="text-white/50 text-xs mt-1 leading-relaxed">{selectedTag.description}</p>
-                )}
+                {selectedTag.description && (() => {
+                  // If description is a URL, render it as a clickable link
+                  const desc = selectedTag.description;
+                  if (/^https?:\/\//i.test(desc.trim())) {
+                    return (
+                      <a href={desc.trim()} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 text-xs mt-1 underline block truncate">
+                        {desc.trim()}
+                      </a>
+                    );
+                  }
+                  return <p className="text-white/50 text-xs mt-1 leading-relaxed">{desc}</p>;
+                })()}
               </div>
             </div>
           </motion.div>

@@ -1019,6 +1019,33 @@ const Admin = () => {
         } catch {}
       }
 
+      // Sync immobilier rooms to chambers API
+      if (editTour.category === "Immobilier" && tourId && immobilierRooms.length > 0) {
+        try {
+          const existing = await fetch(`/api/tours/${tourId}/chambers`).then(r => r.ok ? r.json() : []).catch(() => []);
+          for (const ch of existing) {
+            await fetch(`/api/tours/${tourId}/chambers/${ch.id}`, { method: "DELETE" }).catch(() => {});
+          }
+          for (const room of immobilierRooms) {
+            if (!room.name) continue;
+            await fetch(`/api/tours/${tourId}/chambers`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                tourId,
+                name: room.name,
+                description: room.description || "",
+                imageUrl: room.imageUrl || "",
+                price: null,
+                currency: "TND",
+                tagSid: room.tagSid || "",
+                bookingUrl: "",
+              }),
+            }).catch(() => {});
+          }
+        } catch {}
+      }
+
       // Sync video screens
       if (tourId && videoScreens.length > 0) {
         try {
