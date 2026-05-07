@@ -1468,8 +1468,27 @@ const TourViewer = () => {
       return `matrix3d(${h[0]},${h[3]},0,${h[6]}, ${h[1]},${h[4]},0,${h[7]}, 0,0,1,0, ${h[2]},${h[5]},0,1)`;
     };
 
+    // --- Helper: compute screen normal in world space ---
+    const computeNormal = (s: typeof videoScreensData[0]) => {
+      // Screen faces local +Z; rotate by Euler YXZ
+      const ry = s.rotY * Math.PI / 180;
+      const rx = s.rotX * Math.PI / 180;
+      const rz = s.rotZ * Math.PI / 180;
+      const cX = Math.cos(rx), sX = Math.sin(rx);
+      const cY = Math.cos(ry), sY = Math.sin(ry);
+      const cZ = Math.cos(rz), sZ = Math.sin(rz);
+      let x = sY; // local Z=(0,0,1) rotated by Y
+      let y = 0;
+      let z = cY;
+      const y2 = cX * y - sX * z;
+      z = sX * y + cX * z; y = y2;
+      const x2 = cZ * x - sZ * y;
+      y = sZ * x + cZ * y; x = x2;
+      return { x, y, z };
+    };
+
     const IW = 640, IH = 360; // internal iframe render size
-    type Overlay = { el: HTMLDivElement; screen: typeof videoScreensData[0]; corners3D: ReturnType<typeof compute4Corners> };
+    type Overlay = { el: HTMLDivElement; screen: typeof videoScreensData[0]; corners3D: ReturnType<typeof compute4Corners>; normal: { x: number; y: number; z: number } };
     const overlays: Overlay[] = [];
 
     for (const screen of videoScreensData) {
@@ -1493,7 +1512,7 @@ const TourViewer = () => {
       yt.allow = 'autoplay; encrypted-media';
       el.appendChild(yt);
       container.appendChild(el);
-      overlays.push({ el, screen, corners3D: compute4Corners(screen) });
+      overlays.push({ el, screen, corners3D: compute4Corners(screen), normal: computeNormal(screen) });
     }
 
     console.log(`\ud83d\udcfa Wall video: ${overlays.length} screens (matrix3d perspective)`);
@@ -1503,15 +1522,24 @@ const TourViewer = () => {
       const vH = showcaseIframe.clientHeight;
       if (!vW || !vH) return;
 
-      for (const { el, screen, corners3D } of overlays) {
+      for (const { el, screen, corners3D, normal } of overlays) {
         if (!videoScreensVisible) {
           el.style.opacity = '0'; el.style.pointerEvents = 'none'; continue;
         }
+        // Vector from screen center to camera
         const ddx = pose.position.x - screen.posX;
         const ddy = pose.position.y - screen.posY;
         const ddz = pose.position.z - screen.posZ;
         const dist = Math.sqrt(ddx * ddx + ddy * ddy + ddz * ddz);
         if (dist > screen.visibilityRange || dist < 0.3) {
+          el.style.opacity = '0'; el.style.pointerEvents = 'none'; continue;
+        }
+
+        // Facing check: dot product of screen normal and camera-to-screen direction
+        // If camera is behind the screen (dot < 0), hide it
+        const dot = (ddx * normal.x + ddy * normal.y + ddz * normal.z) / dist;
+        if (dot < 0.15) {
+          // Camera is behind or at extreme side angle (>~80°)
           el.style.opacity = '0'; el.style.pointerEvents = 'none'; continue;
         }
 
