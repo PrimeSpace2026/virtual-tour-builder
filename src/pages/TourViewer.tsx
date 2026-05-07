@@ -1488,7 +1488,7 @@ const TourViewer = () => {
         zIndex: '10',
       });
       const yt = document.createElement('iframe');
-      yt.src = `https://www.youtube.com/embed/${screen.youtubeId}?autoplay=1&mute=1&loop=1&playlist=${screen.youtubeId}&controls=0&showinfo=0&rel=0&modestbranding=1&playsinline=1`;
+      yt.src = `https://www.youtube.com/embed/${screen.youtubeId}?autoplay=1&mute=1&loop=1&playlist=${screen.youtubeId}&controls=1&showinfo=0&rel=0&modestbranding=1&playsinline=1`;
       Object.assign(yt.style, { width: '100%', height: '100%', border: 'none', display: 'block' });
       yt.allow = 'autoplay; encrypted-media';
       el.appendChild(yt);
