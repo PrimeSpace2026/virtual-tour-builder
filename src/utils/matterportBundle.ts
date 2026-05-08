@@ -307,3 +307,137 @@ export async function createVideoScreenObjects(
     },
   };
 }
+
+/**
+ * Data for placing a 3D avatar (GLB model) inside the Matterport scene.
+ */
+export interface AvatarSceneData {
+  glbUrl: string;
+  posX: number;
+  posY: number;
+  posZ: number;
+  rotY: number;
+  scale: number;
+}
+
+/**
+ * Create a 3D avatar object in the Matterport scene using a GLB file.
+ * Uses Scene.deserialize() with mp.gltfLoader component.
+ * The avatar will be placed at the specified position and rotation.
+ * Returns a handle to control visibility and cleanup.
+ */
+export async function createAvatarObject(
+  sdk: any,
+  avatar: AvatarSceneData,
+): Promise<{ sceneObject: any; avatarNode: any; dispose: () => void }> {
+  if (!sdk.Scene?.deserialize) {
+    throw new Error('SDK Scene.deserialize not available for avatar');
+  }
+
+  const sceneDefinition = {
+    version: '1.0',
+    payload: {
+      objects: [
+        {
+          name: 'tour-guide-avatar',
+          position: { x: avatar.posX, y: avatar.posY, z: avatar.posZ },
+          rotation: { x: 0, y: avatar.rotY, z: 0 },
+          scale: { x: avatar.scale, y: avatar.scale, z: avatar.scale },
+          components: [
+            {
+              type: 'mp.gltfLoader',
+              inputs: {
+                url: avatar.glbUrl,
+                localScale: { x: 1, y: 1, z: 1 },
+                localPosition: { x: 0, y: 0.9, z: 0 },
+                localRotation: { x: 0, y: 0, z: 0 },
+              },
+            },
+          ],
+        },
+        // Key light above and in front
+        {
+          name: 'avatar-light-key',
+          position: { x: avatar.posX, y: avatar.posY + 3, z: avatar.posZ + 2 },
+          rotation: { x: 0, y: 0, z: 0 },
+          scale: { x: 1, y: 1, z: 1 },
+          components: [
+            {
+              type: 'mp.pointLight',
+              inputs: {
+                enabled: true,
+                color: { r: 1, g: 0.95, b: 0.9 },
+                intensity: 1.5,
+                distance: 10,
+                decay: 1,
+              },
+            },
+          ],
+        },
+        // Fill light from below-side
+        {
+          name: 'avatar-light-fill',
+          position: { x: avatar.posX - 2, y: avatar.posY + 1, z: avatar.posZ - 1 },
+          rotation: { x: 0, y: 0, z: 0 },
+          scale: { x: 1, y: 1, z: 1 },
+          components: [
+            {
+              type: 'mp.pointLight',
+              inputs: {
+                enabled: true,
+                color: { r: 0.8, g: 0.85, b: 1.0 },
+                intensity: 0.8,
+                distance: 8,
+                decay: 1,
+              },
+            },
+          ],
+        },
+        // Ambient-like fill from other side
+        {
+          name: 'avatar-light-back',
+          position: { x: avatar.posX + 2, y: avatar.posY + 2, z: avatar.posZ - 2 },
+          rotation: { x: 0, y: 0, z: 0 },
+          scale: { x: 1, y: 1, z: 1 },
+          components: [
+            {
+              type: 'mp.pointLight',
+              inputs: {
+                enabled: true,
+                color: { r: 0.9, g: 0.9, b: 0.95 },
+                intensity: 0.6,
+                distance: 8,
+                decay: 1,
+              },
+            },
+          ],
+        },
+      ],
+    },
+  };
+
+  console.log('🧑 Avatar scene definition:', JSON.stringify(sceneDefinition, null, 2));
+
+  const sceneObject = await sdk.Scene.deserialize(JSON.stringify(sceneDefinition));
+  sceneObject.start();
+  console.log('🧑 3D Avatar loaded in scene');
+
+  // Get a reference to the avatar node for rotation
+  let avatarNode: any = null;
+  try {
+    for (const node of sceneObject.nodeIterator()) {
+      if (node.name === 'tour-guide-avatar') {
+        avatarNode = node;
+        break;
+      }
+    }
+  } catch {}
+
+  return {
+    sceneObject,
+    avatarNode,
+    dispose: () => {
+      try { sceneObject.stop(); } catch {}
+    },
+  };
+}

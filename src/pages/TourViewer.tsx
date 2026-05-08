@@ -58,7 +58,7 @@ import {
   User,
   Menu,
 } from "lucide-react";
-import { connectBundleSdk, registerVideoScreenComponents, createVideoScreenObjects, type VideoScreenData } from "@/utils/matterportBundle";
+import { connectBundleSdk, registerVideoScreenComponents, createVideoScreenObjects, createAvatarObject, type VideoScreenData, type AvatarSceneData } from "@/utils/matterportBundle";
 
 const SDK_KEY = "b7uar4u57xdec0zw7dwygt7md";
 
@@ -1280,6 +1280,130 @@ const TourViewer = () => {
   const videoOverlayContainerRef = useRef<HTMLDivElement>(null);
   const [videoScreensVisible, setVideoScreensVisible] = useState(true);
 
+  // Tour Guide (virtual avatar with TTS)
+  const [tourGuideData, setTourGuideData] = useState<{ id: number; name: string; message: string; language: string; enabled: boolean } | null>(null);
+  const [guideVisible, setGuideVisible] = useState(false);
+  const [guideSpeaking, setGuideSpeaking] = useState(false);
+  const guideSpeechRef = useRef<SpeechSynthesisUtterance | null>(null);
+  const guideOverlayRef = useRef<HTMLDivElement>(null);
+
+  // Track avatar screen position from 3D world coords
+  useEffect(() => {
+    const sdk = sdkRef.current;
+    const overlay = guideOverlayRef.current;
+    const container = videoOverlayContainerRef.current;
+    if (!sdk || !sdkConnected || !tourGuideData || !overlay || !container) return;
+    const gd = tourGuideData as any;
+    if (!gd.avatarUrl || /\.gl(b|tf)(\?|$)/i.test(gd.avatarUrl)) return;
+    // Only do 3D tracking if position was set (posX/posY/posZ not all zero)
+    if (gd.posX === 0 && gd.posY === 0 && gd.posZ === 0) return;
+
+    let rafId: number;
+    let currentPose: any = null;
+    let poseChanged = true;
+
+    const poseSub = sdk.Camera?.pose?.subscribe?.((pose: any) => {
+      currentPose = pose;
+      poseChanged = true;
+    });
+
+    const renderLoop = () => {
+      rafId = requestAnimationFrame(renderLoop);
+      if (!poseChanged || !currentPose || !sdk.Conversion?.worldToScreen) return;
+      poseChanged = false;
+
+      const worldPos = { x: gd.posX, y: gd.posY, z: gd.posZ };
+      const size = { w: container.clientWidth, h: container.clientHeight };
+      const sp = sdk.Conversion.worldToScreen(worldPos, currentPose, size);
+
+      if (sp && typeof sp.x === "number" && sp.z > 0) {
+        const dist = sp.z || 5;
+        const scale = Math.min(1, 3 / dist);
+        const pxH = 180 * scale;
+        const pxW = 90 * scale;
+        if (scale < 0.02) { overlay.style.display = "none"; return; }
+
+        overlay.style.left = `${sp.x - pxW / 2}px`;
+        overlay.style.top = `${sp.y - pxH}px`;
+        overlay.style.width = `${pxW}px`;
+        overlay.style.height = `${pxH}px`;
+        overlay.style.display = "flex";
+      } else {
+        overlay.style.display = "none";
+      }
+    };
+    rafId = requestAnimationFrame(renderLoop);
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      if (poseSub?.cancel) poseSub.cancel();
+    };
+  }, [sdkConnected, tourGuideData]);
+
+  const guideAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  const pickFemaleVoice = (lang: string): SpeechSynthesisVoice | null => {
+    const voices = window.speechSynthesis.getVoices();
+    const langLower = lang.toLowerCase();
+    const matching = voices.filter(v => v.lang.toLowerCase().startsWith(langLower));
+    // Prefer female voice names
+    const female = matching.find(v => /female|woman|zira|hazel|susan|jenny|aria|samantha|karen|fiona|moira|tessa/i.test(v.name));
+    return female || matching[0] || null;
+  };
+
+  const speakGuide = () => {
+    if (!tourGuideData?.message) return;
+    // Stop any previous audio
+    if (guideAudioRef.current) { guideAudioRef.current.pause(); guideAudioRef.current = null; }
+    window.speechSynthesis.cancel();
+    setGuideSpeaking(true);
+
+    const lang = tourGuideData.language || 'en';
+    const text = tourGuideData.message;
+
+    // Use Google Translate TTS (supports Arabic, French, etc.) via audio element
+    // Split text into chunks of max 200 chars for the API
+    const chunks: string[] = [];
+    let remaining = text;
+    while (remaining.length > 0) {
+      if (remaining.length <= 200) { chunks.push(remaining); break; }
+      let splitAt = remaining.lastIndexOf(' ', 200);
+      if (splitAt === -1) splitAt = 200;
+      chunks.push(remaining.substring(0, splitAt));
+      remaining = remaining.substring(splitAt).trim();
+    }
+
+    // Helper: speak full text with Web Speech API using a female voice
+    const speakWithWebSpeech = () => {
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.lang = lang;
+      const voice = pickFemaleVoice(lang);
+      if (voice) utter.voice = voice;
+      utter.pitch = 1.1;
+      utter.onend = () => setGuideSpeaking(false);
+      utter.onerror = () => setTimeout(() => setGuideSpeaking(false), 8000);
+      window.speechSynthesis.speak(utter);
+    };
+
+    let currentChunk = 0;
+    const playChunk = () => {
+      if (currentChunk >= chunks.length) { setGuideSpeaking(false); return; }
+      const url = `https://translate.google.com/translate_tts?ie=UTF-8&tl=${lang}&client=tw-ob&q=${encodeURIComponent(chunks[currentChunk])}`;
+      const audio = new Audio(url);
+      guideAudioRef.current = audio;
+      audio.onended = () => { currentChunk++; playChunk(); };
+      audio.onerror = () => speakWithWebSpeech();
+      audio.play().catch(() => speakWithWebSpeech());
+    };
+    playChunk();
+  };
+
+  const stopGuide = () => {
+    if (guideAudioRef.current) { guideAudioRef.current.pause(); guideAudioRef.current = null; }
+    window.speechSynthesis.cancel();
+    setGuideSpeaking(false);
+  };
+
   // Fetch video screens
   useEffect(() => {
     if (!sdkConnected || !tour?.id) return;
@@ -1320,7 +1444,145 @@ const TourViewer = () => {
     return () => { cancelled = true; };
   }, [sdkConnected, tour?.id]);
 
+  // Fetch tour guide data
+  useEffect(() => {
+    if (!tour?.id) return;
+    fetch(`/api/tours/${tour.id}/guides`)
+      .then(r => r.ok ? r.json() : [])
+      .then((guides: any[]) => {
+        if (guides.length > 0 && guides[0].enabled && (guides[0].message || guides[0].avatarUrl)) {
+          setTourGuideData(guides[0]);
+          setGuideVisible(true);
+        }
+      })
+      .catch(() => {});
+  }, [tour?.id]);
+
   const videoSceneRef = useRef<any>(null);
+  const avatarSceneRef = useRef<any>(null);
+  const avatarProximityTriggered = useRef(false);
+
+  // Create 3D avatar in Matterport scene when guide data is available
+  useEffect(() => {
+    const sdk = sdkRef.current;
+    if (!sdk || !sdkConnected || !tourGuideData) return;
+    if (!(tourGuideData as any).avatarUrl) return;
+    if (!sdk.Scene?.deserialize) {
+      console.log("⚠️ SDK Scene.deserialize not available for 3D avatar");
+      return;
+    }
+
+    let cancelled = false;
+
+    const setup = async () => {
+      try {
+        let glbUrl = (tourGuideData as any).avatarUrl;
+
+        // Only load GLB files in scene (not PNG/GIF images)
+        if (!/\.gl(b|tf)(\?|$)/i.test(glbUrl)) {
+          console.log("⚠️ Avatar URL is not a GLB file, skipping 3D scene injection");
+          return;
+        }
+
+        // Make relative URLs absolute (SDK iframe needs full URL)
+        if (glbUrl.startsWith('/')) {
+          glbUrl = `${window.location.origin}${glbUrl}`;
+        }
+
+        const avatarData: AvatarSceneData = {
+          glbUrl,
+          posX: (tourGuideData as any).posX ?? 0,
+          posY: (tourGuideData as any).posY ?? 0,
+          posZ: (tourGuideData as any).posZ ?? 0,
+          rotY: (tourGuideData as any).rotY ?? 0,
+          scale: 1.0,
+        };
+
+        if (cancelled) return;
+
+        console.log("🧑 Loading 3D avatar:", avatarData);
+        const result = await createAvatarObject(sdk, avatarData);
+
+        if (cancelled) {
+          result.dispose();
+          return;
+        }
+
+        avatarSceneRef.current = result;
+        avatarProximityTriggered.current = false;
+        console.log("✅ 3D Avatar placed in tour scene");
+      } catch (err) {
+        console.log("⚠️ 3D avatar setup failed:", err);
+      }
+    };
+
+    setup();
+
+    return () => {
+      cancelled = true;
+      if (avatarSceneRef.current) {
+        avatarSceneRef.current.dispose();
+        avatarSceneRef.current = null;
+      }
+    };
+  }, [sdkConnected, tourGuideData]);
+
+  // Avatar face-camera rotation + proximity auto-speak
+  useEffect(() => {
+    const sdk = sdkRef.current;
+    if (!sdk || !sdkConnected || !tourGuideData) return;
+    const gd = tourGuideData as any;
+    if (!gd.avatarUrl || !/\.gl(b|tf)(\?|$)/i.test(gd.avatarUrl)) return;
+
+    const avatarPos = { x: gd.posX ?? 0, y: gd.posY ?? 0, z: gd.posZ ?? 0 };
+    const SPEAK_DISTANCE = 5; // meters - trigger speech when within this range
+
+    const poseSub = sdk.Camera?.pose?.subscribe?.((pose: any) => {
+      if (!pose?.position) return;
+      const cam = pose.position;
+
+      // 1. Rotate avatar to face camera (Y-axis rotation)
+      const scene = avatarSceneRef.current;
+      if (scene?.avatarNode) {
+        const dx = cam.x - avatarPos.x;
+        const dz = cam.z - avatarPos.z;
+        const angleY = Math.atan2(dx, dz) * (180 / Math.PI);
+        try {
+          scene.avatarNode.obj3D.rotation.y = angleY * (Math.PI / 180);
+        } catch {
+          // Fallback: try position property
+          try {
+            scene.avatarNode.rotation = { x: 0, y: angleY, z: 0 };
+          } catch {}
+        }
+      }
+
+      // 2. Proximity auto-speak
+      const dist = Math.sqrt(
+        (cam.x - avatarPos.x) ** 2 +
+        (cam.y - avatarPos.y) ** 2 +
+        (cam.z - avatarPos.z) ** 2
+      );
+
+      if (dist < SPEAK_DISTANCE && !avatarProximityTriggered.current && !guideSpeaking) {
+        avatarProximityTriggered.current = true;
+        setGuideVisible(true);
+        console.log(`🗣️ Avatar proximity triggered (dist=${dist.toFixed(1)}m)`);
+        speakGuide();
+      } else if (dist > SPEAK_DISTANCE * 1.5) {
+        // Stop voice and hide text when user moves away
+        if (avatarProximityTriggered.current) {
+          stopGuide();
+          setGuideVisible(false);
+        }
+        avatarProximityTriggered.current = false;
+      }
+    });
+
+    return () => {
+      if (poseSub?.cancel) poseSub.cancel();
+    };
+  }, [sdkConnected, tourGuideData, guideSpeaking]);
 
   // Toggle 3D video screen visibility
   useEffect(() => {
@@ -2086,6 +2348,132 @@ const TourViewer = () => {
 
         {/* ===== WALL-EMBEDDED VIDEO: YouTube iframes auto-play on wall ===== */}
         <div ref={videoOverlayContainerRef} className="absolute inset-0 pointer-events-none z-[15]" style={{ overflow: "hidden" }} />
+
+        {/* ===== VIRTUAL GUIDE AVATAR ===== */}
+        {guideVisible && tourGuideData && !/\.gl(b|tf)(\?|$)/i.test((tourGuideData as any).avatarUrl || '') && (
+          <div
+            ref={guideOverlayRef}
+            className="absolute z-[60] flex flex-col items-end pointer-events-auto"
+            style={
+              ((tourGuideData as any).posX !== 0 || (tourGuideData as any).posY !== 0 || (tourGuideData as any).posZ !== 0)
+                ? { position: "absolute", display: "none" }
+                : { position: "absolute", bottom: 0, left: "50%", transform: "translateX(-50%)", display: "flex" }
+            }
+          >
+            {/* Avatar animations */}
+            <style>{`
+              @keyframes avatarTalk {
+                0%, 100% { transform: translateY(0) rotate(0deg); }
+                15% { transform: translateY(-3px) rotate(0.5deg); }
+                30% { transform: translateY(-1px) rotate(-0.3deg); }
+                50% { transform: translateY(-4px) rotate(0.3deg); }
+                70% { transform: translateY(-2px) rotate(-0.5deg); }
+                85% { transform: translateY(-3px) rotate(0.2deg); }
+              }
+              @keyframes avatarBreath {
+                0%, 100% { transform: scaleY(1) translateY(0); }
+                50% { transform: scaleY(1.003) translateY(-1px); }
+              }
+              @keyframes mouthOpen {
+                0%, 100% { transform: scaleY(0.3); }
+                20% { transform: scaleY(1); }
+                40% { transform: scaleY(0.5); }
+                60% { transform: scaleY(0.9); }
+                80% { transform: scaleY(0.4); }
+              }
+              @keyframes gestureHands {
+                0%, 100% { transform: rotate(0deg); }
+                25% { transform: rotate(-2deg) translateX(-3px); }
+                75% { transform: rotate(2deg) translateX(3px); }
+              }
+              .avatar-speaking { animation: avatarTalk 1.8s ease-in-out infinite, gestureHands 2.5s ease-in-out infinite; }
+              .avatar-idle { animation: avatarBreath 4s ease-in-out infinite; }
+              .avatar-mouth-anim { animation: mouthOpen 0.35s ease-in-out infinite; }
+            `}</style>
+
+            {/* Avatar body - fixed on ground, talks and gestures */}
+            <div className={`relative cursor-pointer group ${guideSpeaking ? 'avatar-speaking' : 'avatar-idle'}`} onClick={() => guideSpeaking ? stopGuide() : speakGuide()}>
+              {(tourGuideData as any).avatarUrl ? (
+                /\.(mp4|webm|mov)(\?|$)/i.test((tourGuideData as any).avatarUrl) ? (
+                  <video
+                    src={(tourGuideData as any).avatarUrl}
+                    className="w-full h-full object-contain select-none"
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                  />
+                ) : (
+                  <img
+                    src={(tourGuideData as any).avatarUrl}
+                    alt={tourGuideData.name || "Guide"}
+                    className="w-full h-full object-contain select-none"
+                    draggable={false}
+                  />
+                )
+              ) : (
+                <svg className="w-full h-full" viewBox="0 0 200 500" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <ellipse cx="100" cy="60" rx="35" ry="40" fill="#F5CBA7"/>
+                  <path d="M65 55c0-25 15-45 35-45s35 20 35 45c0 5-1 10-3 14-2-8-10-12-18-14-4 6-10 10-14 10s-10-4-14-10c-8 2-16 6-18 14-2-4-3-9-3-14z" fill="#5D4037"/>
+                  <path d="M70 100c-5 10-15 20-15 50 0 30 5 70 10 100h70c5-30 10-70 10-100 0-30-10-40-15-50-5-10-15-15-30-15s-25 5-30 15z" fill="#F5E6D3"/>
+                  <path d="M65 250h70l5 120c0 10-2 20-5 30H95l-5-10H80l-5 10H65c-3-10-5-20-5-30l5-120z" fill="#2C3E50"/>
+                  <ellipse cx="80" cy="405" rx="12" ry="6" fill="#1A1A1A"/>
+                  <ellipse cx="120" cy="405" rx="12" ry="6" fill="#1A1A1A"/>
+                  <path d="M55 105c-5 5-10 15-10 25l-5 80c0 5 3 8 8 8s8-3 9-8l8-75" fill="#F5CBA7"/>
+                  <path d="M145 105c5 5 10 15 10 25l5 80c0 5-3 8-8 8s-8-3-9-8l-8-75" fill="#F5CBA7"/>
+                </svg>
+              )}
+              {/* Mouth animation overlay when speaking */}
+              {guideSpeaking && (
+                <div className="absolute top-[11%] left-1/2 -translate-x-1/2 w-[12%] h-[3%] pointer-events-none">
+                  <div className="avatar-mouth-anim w-full h-full bg-red-800 rounded-full opacity-80" />
+                </div>
+              )}
+              {/* Speaking indicator */}
+              {guideSpeaking && (
+                <div className="absolute bottom-[2%] left-1/2 -translate-x-1/2 flex items-center gap-[2px]">
+                  <div className="w-[3px] h-[8px] bg-green-400 rounded-full animate-pulse" />
+                  <div className="w-[3px] h-[12px] bg-green-400 rounded-full animate-pulse" style={{ animationDelay: '0.1s' }} />
+                  <div className="w-[3px] h-[10px] bg-green-400 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }} />
+                  <div className="w-[3px] h-[8px] bg-green-400 rounded-full animate-pulse" style={{ animationDelay: '0.15s' }} />
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ===== GLB AVATAR: Speech bubble + Voice control ===== */}
+        {guideVisible && tourGuideData && /\.gl(b|tf)(\?|$)/i.test((tourGuideData as any).avatarUrl || '') && (
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-[60] flex flex-col items-center pointer-events-auto">
+
+            {/* Voice control button */}
+            <button
+              onClick={() => guideSpeaking ? stopGuide() : speakGuide()}
+              className={`flex items-center gap-2 px-4 py-2 rounded-full shadow-lg transition-all ${
+                guideSpeaking
+                  ? 'bg-red-500/90 text-white hover:bg-red-600'
+                  : 'bg-white/90 text-gray-800 hover:bg-white'
+              }`}
+            >
+              {guideSpeaking ? (
+                <>
+                  <div className="flex items-center gap-[2px]">
+                    <div className="w-[3px] h-[10px] bg-white rounded-full animate-pulse" />
+                    <div className="w-[3px] h-[14px] bg-white rounded-full animate-pulse" style={{ animationDelay: '0.1s' }} />
+                    <div className="w-[3px] h-[12px] bg-white rounded-full animate-pulse" style={{ animationDelay: '0.2s' }} />
+                    <div className="w-[3px] h-[10px] bg-white rounded-full animate-pulse" style={{ animationDelay: '0.15s' }} />
+                  </div>
+                  <span className="text-xs font-medium">Stop</span>
+                </>
+              ) : (
+                <>
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+                  <span className="text-xs font-medium">Listen to Guide</span>
+                </>
+              )}
+            </button>
+          </div>
+        )}
 
       </div>
 

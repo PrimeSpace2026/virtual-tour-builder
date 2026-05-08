@@ -24,6 +24,7 @@ import { Plus, Pencil, Trash2, Upload, X, Image as ImageIcon, LogOut, Search, Ma
 import { useToast } from "@/hooks/use-toast";
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from "react-leaflet";
 import VideoScreenPlacer from "@/components/VideoScreenPlacer";
+import AvatarPlacer from "@/components/AvatarPlacer";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
@@ -462,6 +463,10 @@ const Admin = () => {
   interface VideoScreenData { id?: number; name: string; youtubeUrl: string; posX: number; posY: number; posZ: number; rotX: number; rotY: number; rotZ: number; width: number; height: number; iconType: string; visibilityRange: number; }
   const [videoScreens, setVideoScreens] = useState<VideoScreenData[]>([]);
   const [showScreenPlacer, setShowScreenPlacer] = useState(false);
+  const [showAvatarPlacer, setShowAvatarPlacer] = useState(false);
+  // Tour Guide (virtual avatar with TTS)
+  interface TourGuideData { id?: number; name: string; message: string; language: string; enabled: boolean; avatarUrl: string; position: string; posX?: number; posY?: number; posZ?: number; rotY?: number; }
+  const [tourGuide, setTourGuide] = useState<TourGuideData>({ name: "Guide", message: "", language: "en", enabled: true, avatarUrl: "https://orpnrybtrnuqxfkrrnvx.supabase.co/storage/v1/object/public/tour-images/avatars/waitress-unlit.glb", position: "center", posX: 0, posY: 0, posZ: 0, rotY: 0 });
   // Bottom strip visibility toggles
   const [bottomStrip, setBottomStrip] = useState<{ products: boolean; services: boolean; chambers: boolean; customSections?: Record<string, boolean> }>({ products: true, services: true, chambers: true, customSections: {} });
   // Matterport viewer feature toggles (all URL params)
@@ -936,9 +941,13 @@ const Admin = () => {
     // Load video screens
     if (tour.id) {
       fetch(`/api/tours/${tour.id}/video-screens`).then(r => r.ok ? r.json() : []).then(setVideoScreens).catch(() => setVideoScreens([]));
+      fetch(`/api/tours/${tour.id}/guides`).then(r => r.ok ? r.json() : []).then((guides: any[]) => {
+        if (guides.length > 0) setTourGuide({ id: guides[0].id, name: guides[0].name || "Guide", message: guides[0].message || "", language: guides[0].language || "en", enabled: guides[0].enabled !== false, avatarUrl: guides[0].avatarUrl || "", position: guides[0].position || "center", posX: guides[0].posX ?? 0, posY: guides[0].posY ?? 0, posZ: guides[0].posZ ?? 0, rotY: guides[0].rotY ?? 0 });
+        else setTourGuide({ name: "Guide", message: "", language: "en", enabled: true, avatarUrl: "https://orpnrybtrnuqxfkrrnvx.supabase.co/storage/v1/object/public/tour-images/avatars/waitress-unlit.glb", position: "center", posX: 0, posY: 0, posZ: 0, rotY: 0 });
+      }).catch(() => setTourGuide({ name: "Guide", message: "", language: "en", enabled: true, avatarUrl: "https://orpnrybtrnuqxfkrrnvx.supabase.co/storage/v1/object/public/tour-images/avatars/waitress-unlit.glb", position: "center", posX: 0, posY: 0, posZ: 0, rotY: 0 }));
     } else {
       setVideoScreens([]);
-    }
+      setTourGuide({ name: "Guide", message: "", language: "en", enabled: true, avatarUrl: "https://orpnrybtrnuqxfkrrnvx.supabase.co/storage/v1/object/public/tour-images/avatars/waitress-unlit.glb", position: "center", posX: 0, posY: 0, posZ: 0, rotY: 0 });    }
     setDialogOpen(true);
   };
 
@@ -1058,6 +1067,26 @@ const Admin = () => {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ ...screen, tourId }),
+            }).catch(() => {});
+          }
+        } catch {}
+      }
+
+      // Sync tour guide
+      if (tourId && (tourGuide.message.trim() || tourGuide.avatarUrl.trim())) {
+        try {
+          const existingGuides = await fetch(`/api/tours/${tourId}/guides`).then(r => r.ok ? r.json() : []).catch(() => []);
+          if (existingGuides.length > 0) {
+            await fetch(`/api/tours/${tourId}/guides/${existingGuides[0].id}`, {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ name: tourGuide.name, message: tourGuide.message, language: tourGuide.language, enabled: tourGuide.enabled, avatarUrl: tourGuide.avatarUrl, position: tourGuide.position, posX: tourGuide.posX, posY: tourGuide.posY, posZ: tourGuide.posZ, rotY: tourGuide.rotY }),
+            }).catch(() => {});
+          } else {
+            await fetch(`/api/tours/${tourId}/guides`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ name: tourGuide.name, message: tourGuide.message, language: tourGuide.language, enabled: tourGuide.enabled, avatarUrl: tourGuide.avatarUrl, position: tourGuide.position, posX: tourGuide.posX, posY: tourGuide.posY, posZ: tourGuide.posZ, rotY: tourGuide.rotY, tourId }),
             }).catch(() => {});
           }
         } catch {}
@@ -1494,7 +1523,7 @@ const Admin = () => {
       </section>
 
       {/* Create / Edit Dialog */}
-      <Dialog open={dialogOpen && !showScreenPlacer} onOpenChange={(open) => { if (!showScreenPlacer) setDialogOpen(open); }}>
+      <Dialog open={dialogOpen && !showScreenPlacer && !showAvatarPlacer} onOpenChange={(open) => { if (!showScreenPlacer && !showAvatarPlacer) setDialogOpen(open); }}>
         <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{isEditing ? "Modifier la visite" : "Nouvelle visite"}</DialogTitle>
@@ -3094,6 +3123,100 @@ const Admin = () => {
               )}
             </div>
 
+            {/* Tour Guide — Virtual Avatar with TTS */}
+            <div className="space-y-3 border-t pt-4">
+              <div className="flex items-center justify-between">
+                <h4 className="font-medium text-sm flex items-center gap-2">🎙️ Virtual Guide (TTS)</h4>
+                <label className="flex items-center gap-2 text-xs">
+                  <input type="checkbox" checked={tourGuide.enabled} onChange={(e) => setTourGuide({ ...tourGuide, enabled: e.target.checked })} className="rounded" />
+                  Enabled
+                </label>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-muted-foreground">Guide Name</label>
+                  <Input value={tourGuide.name} onChange={(e) => setTourGuide({ ...tourGuide, name: e.target.value })} placeholder="Guide" />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground">Language</label>
+                  <select className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm" value={tourGuide.language} onChange={(e) => setTourGuide({ ...tourGuide, language: e.target.value })}>
+                    <option value="en">English</option>
+                    <option value="fr">Français</option>
+                    <option value="ar">العربية</option>
+                    <option value="es">Español</option>
+                    <option value="de">Deutsch</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground">Script / Message (the guide will speak this text)</label>
+                <textarea
+                  className="w-full min-h-[100px] rounded-md border border-input bg-background px-3 py-2 text-sm resize-y"
+                  value={tourGuide.message}
+                  onChange={(e) => setTourGuide({ ...tourGuide, message: e.target.value })}
+                  placeholder="Welcome to our space! Let me show you around..."
+                />
+              </div>
+              <div>
+                  <label className="text-xs text-muted-foreground">Avatar (PNG, GIF, GLB, or ZIP with 3D model)</label>
+                <div className="flex gap-2 mt-1">
+                  <Input value={tourGuide.avatarUrl} onChange={(e) => setTourGuide({ ...tourGuide, avatarUrl: e.target.value })} placeholder="URL or upload a file..." className="flex-1" />
+                  <label className="cursor-pointer">
+                    <input
+                      type="file"
+                      accept="image/*,.glb,.gltf,.zip,.rar,.7z"
+                      className="hidden"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        setUploading(true);
+                        try {
+                          const formData = new FormData();
+                          formData.append("file", file);
+                          const res = await fetch("/api/avatar-upload", { method: "POST", body: formData });
+                          const data = await res.json();
+                          if (data.url) {
+                            setTourGuide({ ...tourGuide, avatarUrl: data.url });
+                            toast({ title: "Avatar uploaded" });
+                          } else {
+                            toast({ title: "Upload failed", description: data.error || "Unknown error", variant: "destructive" });
+                          }
+                        } catch {
+                          toast({ title: "Upload failed", variant: "destructive" });
+                        } finally {
+                          setUploading(false);
+                          e.target.value = "";
+                        }
+                      }}
+                    />
+                    <Button type="button" size="sm" variant="outline" className="h-9" disabled={uploading} asChild>
+                      <span><Upload className="w-4 h-4 mr-1" />{uploading ? "..." : "Upload"}</span>
+                    </Button>
+                  </label>
+                </div>
+                {tourGuide.avatarUrl && (
+                  <img src={tourGuide.avatarUrl} alt="Avatar preview" className="mt-2 h-24 object-contain rounded border" />
+                )}
+              </div>
+              <div>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="mt-2 w-full"
+                  onClick={() => setShowAvatarPlacer(true)}
+                  disabled={!editTour.tourUrl}
+                >
+                  Embed Avatar in Tour (3D)
+                </Button>
+                {(tourGuide.posX !== 0 || tourGuide.posY !== 0 || tourGuide.posZ !== 0) && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    3D Position: ({tourGuide.posX?.toFixed(2)}, {tourGuide.posY?.toFixed(2)}, {tourGuide.posZ?.toFixed(2)}) rot: {tourGuide.rotY?.toFixed(0)}°
+                  </p>
+                )}
+              </div>
+            </div>
+
             <div className="flex justify-end gap-3 pt-2">
               <Button variant="outline" onClick={() => setDialogOpen(false)}>Annuler</Button>
               <Button onClick={handleSave} disabled={uploading}>Enregistrer</Button>
@@ -3619,6 +3742,18 @@ const Admin = () => {
             setVideoScreens((prev) => [...prev, screen]);
           }}
           onClose={() => setShowScreenPlacer(false)}
+        />
+      )}
+
+      {/* Avatar Placer overlay */}
+      {showAvatarPlacer && editTour.tourUrl && (
+        <AvatarPlacer
+          tourUrl={editTour.tourUrl}
+          avatarUrl={tourGuide.avatarUrl}
+          onPlace={(pos) => {
+            setTourGuide({ ...tourGuide, posX: pos.posX, posY: pos.posY, posZ: pos.posZ, rotY: pos.rotY });
+          }}
+          onClose={() => setShowAvatarPlacer(false)}
         />
       )}
     </Layout>

@@ -6,10 +6,12 @@ import {
   getTourItems,
   getTourServices,
   getTourChambers,
+  getTourGuides,
   type Tour,
   type TourItem,
   type TourServiceEntry,
   type Chamber,
+  type TourGuide,
 } from "@/lib/api";
 
 type TabType = "items" | "services" | "chambers";
@@ -20,6 +22,7 @@ const TourView = () => {
   const [items, setItems] = useState<TourItem[]>([]);
   const [services, setServices] = useState<TourServiceEntry[]>([]);
   const [chambers, setChambers] = useState<Chamber[]>([]);
+  const [guide, setGuide] = useState<TourGuide | null>(null);
   const [activeTab, setActiveTab] = useState<TabType | null>(null);
   const [showInfo, setShowInfo] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -34,12 +37,15 @@ const TourView = () => {
       getTourItems(tourId),
       getTourServices(tourId),
       getTourChambers(tourId),
+      getTourGuides(tourId),
     ])
-      .then(([t, it, sv, ch]) => {
+      .then(([t, it, sv, ch, guides]) => {
         setTour(t);
         setItems(it);
         setServices(sv);
         setChambers(ch);
+        const activeGuide = guides.find(g => g.enabled && g.avatarUrl);
+        if (activeGuide) setGuide(activeGuide);
       })
       .catch(() => setNotFound(true))
       .finally(() => setLoading(false));
@@ -139,6 +145,17 @@ const TourView = () => {
             {tour.category && <span className="bg-purple-500/20 text-purple-300 px-2 py-1 rounded-full">{tour.category}</span>}
             {tour.surface > 0 && <span>{tour.surface} m²</span>}
           </div>
+        </div>
+      )}
+
+      {/* Fixed avatar guide overlay */}
+      {guide && guide.avatarUrl && (
+        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 z-10 pointer-events-none">
+          <img
+            src={guide.avatarUrl}
+            alt={guide.name || "Tour Guide"}
+            className="h-[45vh] max-h-[400px] object-contain drop-shadow-2xl"
+          />
         </div>
       )}
 

@@ -100,3 +100,23 @@ export async function getTourChambers(tourId: number): Promise<Chamber[]> {
   if (!res.ok) return [];
   return res.json();
 }
+
+export interface TourGuide {
+  id: number;
+  tourId: number;
+  name: string;
+  message: string;
+  language: string;
+  avatarUrl: string;
+  posX: number | null;
+  posY: number | null;
+  posZ: number | null;
+  rotY: number | null;
+  enabled: boolean;
+}
+
+export async function getTourGuides(tourId: number): Promise<TourGuide[]> {
+  const res = await fetch(`${API_BASE}/tours/${tourId}/guides`);
+  if (!res.ok) return [];
+  return res.json();
+}
