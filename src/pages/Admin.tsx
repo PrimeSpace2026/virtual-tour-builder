@@ -25,6 +25,7 @@ import { useToast } from "@/hooks/use-toast";
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from "react-leaflet";
 import VideoScreenPlacer from "@/components/VideoScreenPlacer";
 import AvatarPlacer from "@/components/AvatarPlacer";
+import CustomTagPlacer, { type CustomTagData } from "@/components/CustomTagPlacer";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
@@ -433,7 +434,11 @@ const Admin = () => {
   const [isEditingService, setIsEditingService] = useState(false);
   const [serviceUploading, setServiceUploading] = useState(false);
   const [serviceDragOver, setServiceDragOver] = useState(false);
-  const [activeEntityTab, setActiveEntityTab] = useState<"products" | "services">("products");
+  const [activeEntityTab, setActiveEntityTab] = useState<"products" | "services" | "custom-tags">("products");
+  // Custom tags
+  const [customTags, setCustomTags] = useState<CustomTagData[]>([]);
+  const [showCustomTagPlacer, setShowCustomTagPlacer] = useState(false);
+  const [editCustomTag, setEditCustomTag] = useState<CustomTagData | null>(null);
   // Tags for dropdown
   const [tourTags, setTourTags] = useState<{ name: string; sid: string; thumbnail?: string }[]>([]);
   const [tourTagsLoading, setTourTagsLoading] = useState(false);
@@ -1123,6 +1128,7 @@ const Admin = () => {
     setItemsTourUrl(tour.tourUrl || "");
     fetchItems(tour.id);
     fetchServices(tour.id);
+    fetchCustomTags(tour.id);
     // Auto-fetch tags: try saved tags first, then fetch live from Matterport
     setTourTagsLoading(true);
     setTourTags([]);
@@ -1399,6 +1405,42 @@ const Admin = () => {
     if (res.ok) {
       toast({ title: "Service supprimé" });
       if (itemsTourId) fetchServices(itemsTourId);
+    }
+  };
+
+  // ===== CUSTOM TAGS MANAGEMENT =====
+  const fetchCustomTags = (tourId: number) => {
+    fetch(`/api/tours/${tourId}/custom-tags`)
+      .then((r) => r.ok ? r.json() : [])
+      .then((data) => setCustomTags(Array.isArray(data) ? data : []))
+      .catch(() => setCustomTags([]));
+  };
+
+  const handleSaveCustomTag = async (tag: CustomTagData) => {
+    if (!itemsTourId) return;
+    const method = tag.id ? "PUT" : "POST";
+    const url = tag.id
+      ? `/api/tours/${itemsTourId}/custom-tags/${tag.id}`
+      : `/api/tours/${itemsTourId}/custom-tags`;
+    const res = await fetch(url, {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(tag),
+    });
+    if (res.ok) {
+      toast({ title: tag.id ? "Tag modifié" : "Tag créé" });
+      fetchCustomTags(itemsTourId);
+      setShowCustomTagPlacer(false);
+      setEditCustomTag(null);
+    }
+  };
+
+  const handleDeleteCustomTag = async (tagId: number) => {
+    if (!confirm("Supprimer ce tag personnalisé ?")) return;
+    const res = await fetch(`/api/tours/${itemsTourId}/custom-tags/${tagId}`, { method: "DELETE" });
+    if (res.ok) {
+      toast({ title: "Tag supprimé" });
+      if (itemsTourId) fetchCustomTags(itemsTourId);
     }
   };
 
@@ -3230,8 +3272,8 @@ const Admin = () => {
         <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              {activeEntityTab === "products" ? <ShoppingBag className="w-5 h-5" /> : <Briefcase className="w-5 h-5" />}
-              {activeEntityTab === "products" ? "Produits" : "Services"} de la visite
+              {activeEntityTab === "products" ? <ShoppingBag className="w-5 h-5" /> : activeEntityTab === "services" ? <Briefcase className="w-5 h-5" /> : <MapPin className="w-5 h-5" />}
+              {activeEntityTab === "products" ? "Produits" : activeEntityTab === "services" ? "Services" : "Tags personnalisés"} de la visite
             </DialogTitle>
           </DialogHeader>
 
@@ -3259,6 +3301,17 @@ const Admin = () => {
                 }`}
               >
                 <Briefcase className="w-4 h-4" /> Services ({services.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveEntityTab("custom-tags")}
+                className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                  activeEntityTab === "custom-tags"
+                    ? "border-secondary text-secondary"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <MapPin className="w-4 h-4" /> Tags ({customTags.length})
               </button>
             </div>
           )}
@@ -3647,6 +3700,52 @@ const Admin = () => {
               )}
             </>
           )}
+
+          {/* ===== CUSTOM TAGS TAB ===== */}
+          {activeEntityTab === "custom-tags" && (
+            <div className="space-y-4 mt-2">
+              <Button onClick={() => { setEditCustomTag(null); setShowCustomTagPlacer(true); setItemsDialogOpen(false); }} className="flex items-center gap-2" size="sm">
+                <Plus className="w-4 h-4" /> Placer un tag
+              </Button>
+
+              {customTags.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <MapPin className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                  <p>Aucun tag personnalisé</p>
+                  <p className="text-sm mt-1">Placez des tags dans la scène 3D avec du contenu multimédia.</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {customTags.map((tag) => (
+                    <div key={tag.id} className="flex items-center gap-3 p-3 rounded-xl border border-border bg-card hover:shadow-md transition-shadow">
+                      {tag.iconUrl ? (
+                        <img src={tag.iconUrl} alt="" className="w-10 h-10 rounded-lg object-cover border border-border" />
+                      ) : (
+                        <div className="w-10 h-10 rounded-lg flex items-center justify-center border border-border" style={{ backgroundColor: tag.color || "#4A90D9" }}>
+                          <MapPin className="w-5 h-5 text-white" />
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{tag.label}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {tag.mediaType === "IMAGE" ? "Image" : tag.mediaType === "VIDEO" ? "Vidéo" : tag.mediaType === "YOUTUBE" ? "YouTube" : tag.mediaType === "INSTAGRAM" ? "Instagram" : tag.mediaType === "PDF" ? "PDF" : tag.mediaType === "LINK" ? "Lien" : "Texte"}
+                          {tag.description && ` — ${tag.description.slice(0, 40)}${tag.description.length > 40 ? "..." : ""}`}
+                        </p>
+                      </div>
+                      <div className="flex gap-1 shrink-0">
+                        <Button variant="ghost" size="sm" onClick={() => { setEditCustomTag(tag); setShowCustomTagPlacer(true); setItemsDialogOpen(false); }}>
+                          <Pencil className="w-4 h-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => tag.id && handleDeleteCustomTag(tag.id)}>
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 
@@ -3754,6 +3853,16 @@ const Admin = () => {
             setTourGuide({ ...tourGuide, posX: pos.posX, posY: pos.posY, posZ: pos.posZ, rotY: pos.rotY });
           }}
           onClose={() => setShowAvatarPlacer(false)}
+        />
+      )}
+
+      {/* Custom Tag Placer overlay */}
+      {showCustomTagPlacer && itemsTourUrl && (
+        <CustomTagPlacer
+          tourUrl={itemsTourUrl}
+          editTag={editCustomTag}
+          onSave={handleSaveCustomTag}
+          onClose={() => { setShowCustomTagPlacer(false); setEditCustomTag(null); setItemsDialogOpen(true); }}
         />
       )}
     </Layout>

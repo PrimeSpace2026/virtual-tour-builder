@@ -310,8 +310,25 @@ interface TagItem {
   description: string;
   mediaUrl?: string;
   mediaSrc?: string;
+  mediaType?: string; // Matterport media type: "photo", "video", "rich", etc.
   attachments?: TagAttachment[];
   anchorPosition?: { x: number; y: number; z: number };
+}
+
+interface CustomTagData {
+  id: number;
+  label: string;
+  description: string;
+  mediaType: string;
+  mediaUrl: string;
+  iconUrl: string;
+  color: string;
+  anchorX: number;
+  anchorY: number;
+  anchorZ: number;
+  stemHeight: number;
+  floorIndex: number;
+  enabled: boolean;
 }
 
 function extractModelId(tourUrl: string): string | null {
@@ -355,6 +372,8 @@ function buildMatterportUrl(
   withSdkKey = false
 ): string {
   const b = (v?: boolean) => (v ? "1" : "0");
+  // pin and mt default to ON (show tags by default)
+  const bOn = (v?: boolean) => (v === false ? "0" : "1");
   const params = new URLSearchParams({
     m: modelId,
     play: "1",
@@ -375,7 +394,8 @@ function buildMatterportUrl(
     measurements: b(features.measurements),
     tour: b(features.autoTour),
     views: b(features.views),
-    pin: b(features.pin),
+    pin: bOn(features.pin),
+    mt: "1",
     portal: b(features.portal),
     lang: "en",
   });
@@ -524,6 +544,8 @@ const TourViewer = () => {
   // Tour Items (products) & Cart
   const [tourItems, setTourItems] = useState<TourItemData[]>([]);
   const tourItemsRef = useRef<TourItemData[]>([]);
+  const customTagsRef = useRef<CustomTagData[]>([]);
+  const customTagSidsRef = useRef<Set<string>>(new Set());
   const [selectedItem, setSelectedItem] = useState<TourItemData | null>(null);
   const [hoveredItem, setHoveredItem] = useState<TourItemData | null>(null);
   const [activeTagFilter, setActiveTagFilter] = useState<string | null>(null); // tag SID or name that was clicked in 3D
@@ -679,8 +701,11 @@ const TourViewer = () => {
       fetch(`/api/tours/${id}/tags`)
         .then((r) => r.ok ? r.json() : [])
         .catch(() => []),
+      fetch(`/api/tours/${id}/custom-tags`)
+        .then((r) => r.ok ? r.json() : [])
+        .catch(() => []),
     ])
-      .then(([tourData, tours, itemsData, servicesData, chambersData, tagsData]) => {
+      .then(([tourData, tours, itemsData, servicesData, chambersData, tagsData, customTagsData]) => {
         setTour(tourData);
         setAllTours(tours);
         // Parse gym coaches from metadataJson
@@ -727,6 +752,9 @@ const TourViewer = () => {
         const items = Array.isArray(itemsData) ? itemsData : [];
         setTourItems(items);
         tourItemsRef.current = items;
+        // Store custom tags
+        const ctags = Array.isArray(customTagsData) ? customTagsData.filter((t: any) => t.enabled !== false) : [];
+        customTagsRef.current = ctags;
         const services = Array.isArray(servicesData) ? servicesData : [];
         const chambers = Array.isArray(chambersData) ? chambersData : [];
         setTourServices(services);
@@ -812,16 +840,29 @@ const TourViewer = () => {
 
     let cancelled = false;
 
+    // Aggressively close native Matterport popup (it renders async so single close isn't enough)
+    const forceCloseNative = (sdk: any, tagSid: string) => {
+      const doClose = () => {
+        try { if (sdk.Mattertag?.close) sdk.Mattertag.close(tagSid); } catch {}
+        try { if (sdk.Tag?.close) sdk.Tag.close(tagSid); } catch {}
+      };
+      doClose();
+      setTimeout(doClose, 50);
+      setTimeout(doClose, 150);
+      setTimeout(doClose, 300);
+    };
+
     const handleTagClick = async (sdk: any, tagSid: string) => {
       try {
         console.log("🏷️ Tag clicked — SID:", tagSid);
+
+        // Close native popup immediately and repeatedly
+        forceCloseNative(sdk, tagSid);
 
         // Check if this is a video tag
         const videoInfo = videoTagMapRef.current.get(tagSid);
         if (videoInfo) {
           console.log("🎬 Video tag clicked:", videoInfo);
-          try { if (sdk.Mattertag?.close) sdk.Mattertag.close(tagSid); } catch {}
-          try { if (sdk.Tag?.close) sdk.Tag.close(tagSid); } catch {}
           // videoInfo from Mattertag is no longer used for popup
           return;
         }
@@ -884,6 +925,7 @@ const TourViewer = () => {
             tagData = {
               sid: found.sid, label: found.label || "", description: found.description || "",
               mediaUrl: found.media?.src || "", mediaSrc: found.mediaSrc || found.media?.src || "",
+              mediaType: found.media?.type || found.mediaType || "",
               attachments: resolvedAttachments,
               anchorPosition: found.anchorPosition,
             };
@@ -893,6 +935,7 @@ const TourViewer = () => {
         // Fallback / merge: if no Tag data or no media found, use legacy Mattertag data
         if (mt) {
           const mtMediaSrc = mt.media?.src || "";
+          const mtMediaType = mt.media?.type || "";
           if (!tagData) {
             tagData = {
               sid: mt.sid,
@@ -900,6 +943,7 @@ const TourViewer = () => {
               description: mt.description || "",
               mediaUrl: mtMediaSrc,
               mediaSrc: mtMediaSrc,
+              mediaType: mtMediaType,
               attachments: [],
               anchorPosition: mt.anchorPosition,
             };
@@ -920,19 +964,33 @@ const TourViewer = () => {
         if (matchedItem) {
           // Track tag click
           if (tour?.id) trackEvent(tour.id, "tag_click", matchedItem.name, tagSid);
-          // Close native Matterport popup immediately
-          try { if (sdk.Mattertag?.close) sdk.Mattertag.close(tagSid); } catch {}
-          try { if (sdk.Tag?.close) sdk.Tag.close(tagSid); } catch {}
+          forceCloseNative(sdk, tagSid);
           // Show custom product popup instead
           setSelectedItem(matchedItem);
           setActiveTagFilter(matchedItem.tagSid);
           return;
         }
+        // For non-product tags: merge with cached data (enriched from Graph API) and show custom popup
+        // The SDK doesn't expose image media, but the Graph API cache has fileAttachment URLs
+        const cachedTag = tagDataCacheRef.current.get(tagSid);
+        if (cachedTag) {
+          // Merge cached data into tagData
+          if (tagData) {
+            if (!tagData.mediaSrc && cachedTag.mediaSrc) { tagData.mediaSrc = cachedTag.mediaSrc; tagData.mediaUrl = cachedTag.mediaUrl; }
+            if (!tagData.mediaType && cachedTag.mediaType) tagData.mediaType = cachedTag.mediaType;
+            if ((!tagData.attachments || tagData.attachments.length === 0) && cachedTag.attachments && cachedTag.attachments.length > 0) tagData.attachments = cachedTag.attachments;
+            if (!tagData.description && cachedTag.description) tagData.description = cachedTag.description;
+          } else {
+            tagData = { ...cachedTag };
+          }
+        }
+
         if (tagData) {
+          console.log("🖼️ NON-PRODUCT TAG DATA (enriched):", JSON.stringify(tagData));
           if (tour?.id) trackEvent(tour.id, "tag_click", tagData.label || tagSid, tagSid);
-          // Close native popup and show custom popup with media support
-          try { if (sdk.Mattertag?.close) sdk.Mattertag.close(tagSid); } catch {}
-          try { if (sdk.Tag?.close) sdk.Tag.close(tagSid); } catch {}
+
+          // Always close native popup and show our custom popup
+          forceCloseNative(sdk, tagSid);
           setSelectedTag(tagData);
         }
       } catch (err) {
@@ -1086,6 +1144,7 @@ const TourViewer = () => {
                 description: t.description || mt?.description || "",
                 mediaUrl: mediaSrc,
                 mediaSrc: mediaSrc,
+                mediaType: t.media?.type || t.mediaType || mt?.media?.type || "",
                 attachments: resolved,
                 anchorPosition: t.anchorPosition,
               });
@@ -1099,14 +1158,118 @@ const TourViewer = () => {
                   description: mt.description || "",
                   mediaUrl: mt.media?.src || "",
                   mediaSrc: mt.media?.src || "",
+                  mediaType: mt.media?.type || "",
                   attachments: [],
                   anchorPosition: mt.anchorPosition,
                 });
               }
             }
             console.log("🏷️ Pre-cached", tagDataCacheRef.current.size, "tags for hover");
+
+            // Enrich tag cache with fileAttachments from Matterport Graph API
+            // (Bundle SDK doesn't expose image media — Graph API does)
+            try {
+              const modelId = extractModelId(tour.tourUrl);
+              if (modelId) {
+                const graphBody = JSON.stringify({
+                  query: `query { model(id: "${modelId}") { mattertags { id label description media mediaType fileAttachments { id filename mimeType url } } } }`
+                });
+                const graphResp = await fetch("https://my.matterport.com/api/mp/models/graph", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: graphBody,
+                });
+                if (graphResp.ok) {
+                  const graphData = await graphResp.json();
+                  const apiTags: any[] = graphData?.data?.model?.mattertags || [];
+                  console.log("🌐 Graph API returned", apiTags.length, "mattertags");
+                  for (const apiTag of apiTags) {
+                    const cached = tagDataCacheRef.current.get(apiTag.id);
+                    // Merge fileAttachments as media source
+                    const fileUrl = apiTag.fileAttachments?.[0]?.url || "";
+                    const fileMime = apiTag.fileAttachments?.[0]?.mimeType || "";
+                    const apiMediaSrc = apiTag.media || fileUrl;
+                    const apiAttachments: TagAttachment[] = (apiTag.fileAttachments || []).map((fa: any) => ({
+                      id: fa.id, type: fa.mimeType || "", src: fa.url || "",
+                    }));
+                    if (cached) {
+                      // Enrich existing cache entry if it has no media
+                      if (!cached.mediaSrc && apiMediaSrc) {
+                        cached.mediaSrc = apiMediaSrc;
+                        cached.mediaUrl = apiMediaSrc;
+                      }
+                      if (!cached.mediaType && fileMime) {
+                        cached.mediaType = fileMime;
+                      }
+                      if ((!cached.attachments || cached.attachments.length === 0) && apiAttachments.length > 0) {
+                        cached.attachments = apiAttachments;
+                      }
+                      if (!cached.description && apiTag.description) {
+                        cached.description = apiTag.description;
+                      }
+                    } else {
+                      // Tag exists in API but not in SDK — add it
+                      tagDataCacheRef.current.set(apiTag.id, {
+                        sid: apiTag.id,
+                        label: apiTag.label || "",
+                        description: apiTag.description || "",
+                        mediaUrl: apiMediaSrc,
+                        mediaSrc: apiMediaSrc,
+                        mediaType: fileMime || apiTag.mediaType || "",
+                        attachments: apiAttachments,
+                      });
+                    }
+                  }
+                  console.log("🏷️ Enriched tag cache to", tagDataCacheRef.current.size, "tags");
+                }
+              }
+            } catch (e) { console.log("Graph API enrichment failed (non-critical):", e); }
           }
         } catch (e) { console.log("Tag cache error:", e); }
+
+        // ===== ADD CUSTOM TAGS TO 3D SCENE =====
+        try {
+          const ctags = customTagsRef.current;
+          if (ctags.length > 0) {
+            console.log("🏷️ Adding", ctags.length, "custom tags to scene");
+            const descriptors = ctags.map((ct) => {
+              const hex = (ct.color || "#4A90D9").replace("#", "");
+              const r = parseInt(hex.substring(0, 2), 16) / 255;
+              const g = parseInt(hex.substring(2, 4), 16) / 255;
+              const b = parseInt(hex.substring(4, 6), 16) / 255;
+              return {
+                label: ct.label || "",
+                description: ct.description || "",
+                anchorPosition: { x: ct.anchorX, y: ct.anchorY, z: ct.anchorZ },
+                stemVector: { x: 0, y: ct.stemHeight || 0.3, z: 0 },
+                color: { r, g, b },
+                floorIndex: ct.floorIndex || 0,
+              };
+            });
+            try {
+              const sids = await sdk.Mattertag.add(descriptors);
+              console.log("🏷️ Custom tags added with SIDs:", sids);
+              customTagSidsRef.current.clear();
+              sids.forEach((sid: string, idx: number) => {
+                customTagSidsRef.current.add(sid);
+                const ct = ctags[idx];
+                // Add to tag data cache so click handler can find media
+                tagDataCacheRef.current.set(sid, {
+                  sid,
+                  label: ct.label,
+                  description: ct.description,
+                  mediaSrc: ct.mediaUrl || "",
+                  mediaType: ct.mediaType || "",
+                  mediaUrl: ct.mediaUrl || "",
+                });
+                // Set custom icon if provided
+                if (ct.iconUrl) {
+                  try { sdk.Mattertag.editIcon(sid, ct.iconUrl); } catch (e) { console.log("Icon edit failed:", e); }
+                }
+              });
+            } catch (e) { console.log("Mattertag.add failed, trying Tag.add:", e); }
+          }
+        } catch (e) { console.log("Custom tag injection error:", e); }
 
         // Cache sweep data via subscription
         try {
@@ -1236,29 +1399,46 @@ const TourViewer = () => {
             handleTagClick(sdk, tagSid);
           });
         }
-        if (sdk.Mattertag?.Event?.HOVER) {
-          sdk.on(sdk.Mattertag.Event.HOVER, (hovering: boolean, tagSid: string) => {
-            if (hovering) {
-              // Open native Matterport popup (renders video/links/media natively)
-              try { if (sdk.Mattertag?.open) sdk.Mattertag.open(tagSid); } catch {}
-            } else {
-              try { if (sdk.Mattertag?.close) sdk.Mattertag.close(tagSid); } catch {}
-            }
-          });
-        }
-        if (sdk.Tag?.Event?.HOVER) {
-          sdk.on(sdk.Tag.Event.HOVER, (tagSid: string, hovering: boolean) => {
-            if (hovering) {
-              try { if (sdk.Tag?.open) sdk.Tag.open(tagSid); } catch {}
-            } else {
-              try { if (sdk.Tag?.close) sdk.Tag.close(tagSid); } catch {}
-            }
-          });
+        // Let Matterport handle hover natively (don't override open/close on hover)
+        // Our previous explicit close on hover-off was preventing the full media popup from showing
+
+        // Desktop hover: show our custom popup on hover, suppress native popup
+        const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+        if (!isTouchDevice) {
+          const handleTagHover = (tagSid: string) => {
+            // Close native popup aggressively so only our popup shows
+            forceCloseNative(sdk, tagSid);
+            handleTagClick(sdk, tagSid);
+          };
+          if (sdk.Tag?.Event?.HOVER) {
+            sdk.on(sdk.Tag.Event.HOVER, handleTagHover);
+          }
+          if (sdk.Mattertag?.Event?.HOVER) {
+            sdk.on(sdk.Mattertag.Event.HOVER, handleTagHover);
+          }
         }
 
-        // Prevent native Matterport popup from appearing on product tags
-        // Note: we handle popup close manually in handleTagClick
-        // Do NOT use allowAction(false) as it blocks navigateToTag fly transitions
+        // Prevent native Matterport popup from appearing — inject CSS to hide billboard
+        try {
+          const iframeDoc = iframeRef.current?.contentDocument || iframeRef.current?.contentWindow?.document;
+          if (iframeDoc) {
+            const style = iframeDoc.createElement('style');
+            style.textContent = '.tag-billboard, .billboard, .mattertag-billboard, [class*="billboard"], [class*="Billboard"] { display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important; }';
+            iframeDoc.head.appendChild(style);
+          }
+        } catch {} // cross-origin will throw, that's fine
+
+        // Also try preventAction on the SDK level
+        try {
+          if (sdk.Mattertag?.preventAction) {
+            sdk.Mattertag.preventAction(undefined, { opening: true });
+          }
+        } catch {}
+        try {
+          if (sdk.Tag?.preventAction) {
+            sdk.Tag.preventAction(undefined, { opening: true });
+          }
+        } catch {}
       } catch (err) {
         if (cancelled) return;
         console.log("⚠️ SDK failed on localhost:", err);
@@ -3470,15 +3650,96 @@ const TourViewer = () => {
       {/* ===== NATIVE-STYLE TAG POPUP (Matterport look) ===== */}
       <AnimatePresence>
         {selectedTag && !selectedItem && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            transition={{ duration: 0.15 }}
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 pointer-events-auto w-[calc(100vw-32px)] max-w-[340px]"
-            onMouseEnter={() => { tagPopupHoveredRef.current = true; }}
-            onMouseLeave={() => { tagPopupHoveredRef.current = false; setSelectedTag(null); }}
-          >
+          <>
+            {/* Backdrop on mobile */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSelectedTag(null)}
+              className="fixed inset-0 bg-black/50 z-[99] sm:hidden"
+            />
+            <motion.div
+              initial={{ opacity: 0, y: 100 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 100 }}
+              transition={{ duration: 0.25, ease: "easeOut" }}
+              className="fixed bottom-0 left-0 right-0 z-[100] pointer-events-auto sm:hidden"
+              onMouseEnter={() => { tagPopupHoveredRef.current = true; }}
+              onMouseLeave={() => { tagPopupHoveredRef.current = false; }}
+            >
+              <div className="rounded-t-2xl overflow-hidden bg-white shadow-[0_-4px_24px_rgba(0,0,0,0.3)] max-h-[75vh] overflow-y-auto">
+                {/* Handle bar */}
+                <div className="flex justify-center pt-2 pb-1">
+                  <div className="w-10 h-1 rounded-full bg-gray-300" />
+                </div>
+                {/* Close button */}
+                <div className="flex justify-end px-3">
+                  <button
+                    onClick={() => setSelectedTag(null)}
+                    className="w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* Media */}
+                {(() => {
+                  let mediaSrc = selectedTag.mediaSrc || selectedTag.mediaUrl || "";
+                  if (!mediaSrc && selectedTag.attachments && selectedTag.attachments.length > 0) {
+                    mediaSrc = selectedTag.attachments[0].src || "";
+                  }
+                  if (!mediaSrc && selectedTag.description && /^https?:\/\//i.test(selectedTag.description.trim())) {
+                    mediaSrc = selectedTag.description.trim();
+                  }
+                  const ytMatch = mediaSrc.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{6,})/);
+                  const vimeoMatch = mediaSrc.match(/vimeo\.com\/(?:video\/)?(\d+)/);
+                  const instaMatch = mediaSrc.match(/instagram\.com\/(?:p|reel)\/([A-Za-z0-9_-]+)/);
+                  const isDirectVideo = /\.(mp4|webm|ogg|mov)(\?|$)/i.test(mediaSrc);
+                  const mType = (selectedTag.mediaType || "").toLowerCase();
+                  const isPdf = /\.pdf(\?|$)/i.test(mediaSrc) || mType === "pdf";
+                  const isImage = /\.(png|jpe?g|gif|webp|avif|svg|bmp|tiff?)(\?|$)/i.test(mediaSrc)
+                    || mType.includes("photo") || mType === "image";
+
+                  if (ytMatch) return <div className="aspect-video mx-3 mb-3 rounded-xl overflow-hidden bg-black"><iframe src={`https://www.youtube.com/embed/${ytMatch[1]}?autoplay=1&rel=0`} className="w-full h-full border-0" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowFullScreen /></div>;
+                  if (vimeoMatch) return <div className="aspect-video mx-3 mb-3 rounded-xl overflow-hidden bg-black"><iframe src={`https://player.vimeo.com/video/${vimeoMatch[1]}?autoplay=1`} className="w-full h-full border-0" allow="autoplay; encrypted-media; fullscreen" allowFullScreen /></div>;
+                  if (isDirectVideo) return <div className="aspect-video mx-3 mb-3 rounded-xl overflow-hidden bg-black"><video src={mediaSrc} className="w-full h-full object-contain" controls autoPlay playsInline /></div>;
+                  if (instaMatch) return <div className="mx-3 mb-3 rounded-xl overflow-hidden bg-gray-50" style={{ minHeight: 350 }}><iframe src={`https://www.instagram.com/p/${instaMatch[1]}/embed/`} className="w-full border-0" style={{ height: 420 }} allow="encrypted-media" allowFullScreen /></div>;
+                  if (isPdf && mediaSrc) return <div className="mx-3 mb-3 rounded-xl overflow-hidden bg-white" style={{ height: 350 }}><iframe src={mediaSrc} className="w-full h-full border-0" title="PDF" /></div>;
+                  if (isImage && mediaSrc) return <div className="mx-3 mb-3 rounded-xl overflow-hidden"><img src={mediaSrc} alt={selectedTag.label} className="w-full object-cover" /></div>;
+                  if (mediaSrc && /^https?:\/\//i.test(mediaSrc)) return <div className="mx-3 mb-3 rounded-xl overflow-hidden"><img src={mediaSrc} alt={selectedTag.label} className="w-full object-cover" onError={(e) => { const parent = (e.target as HTMLElement).parentElement; if (parent) { parent.classList.add("aspect-video", "bg-black"); parent.innerHTML = `<iframe src="${mediaSrc}" class="w-full h-full border-0" allow="autoplay; fullscreen" allowFullscreen></iframe>`; } }} /></div>;
+                  return null;
+                })()}
+
+                {/* Title & description */}
+                <div className="px-4 pb-6">
+                  <h4 className="text-gray-900 text-base font-semibold leading-snug">{selectedTag.label}</h4>
+                  {selectedTag.description && (() => {
+                    const desc = selectedTag.description;
+                    if (/^https?:\/\//i.test(desc.trim())) {
+                      return <a href={desc.trim()} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:text-blue-600 text-sm mt-1 underline block truncate">{desc.trim()}</a>;
+                    }
+                    return <p className="text-gray-500 text-sm mt-1 leading-relaxed">{desc}</p>;
+                  })()}
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Desktop: centered popup (unchanged) */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.15 }}
+              className="hidden sm:block fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[100] pointer-events-auto max-w-[340px] w-[calc(100vw-32px)]"
+              onMouseEnter={() => { tagPopupHoveredRef.current = true; }}
+              onMouseLeave={() => {
+                tagPopupHoveredRef.current = false;
+                if (!selectedTag?.sid || !customTagSidsRef.current.has(selectedTag.sid)) {
+                  setSelectedTag(null);
+                }
+              }}
+            >
             <div className="rounded-lg overflow-hidden bg-[#2d2d2d] shadow-[0_4px_24px_rgba(0,0,0,0.6)]">
               {/* Top bar: share + copy */}
               <div className="flex justify-end gap-1 px-2 pt-2">
@@ -3500,15 +3761,23 @@ const TourViewer = () => {
 
               {/* Media: video / image / attachments */}
               {(() => {
-                // Try mediaSrc first, then fall back to first attachment src
+                // Try mediaSrc first, then fall back to first attachment src, then description if URL
                 let mediaSrc = selectedTag.mediaSrc || selectedTag.mediaUrl || "";
                 if (!mediaSrc && selectedTag.attachments && selectedTag.attachments.length > 0) {
                   mediaSrc = selectedTag.attachments[0].src || "";
                 }
+                // If still no media but description is a URL, use that as media
+                if (!mediaSrc && selectedTag.description && /^https?:\/\//i.test(selectedTag.description.trim())) {
+                  mediaSrc = selectedTag.description.trim();
+                }
                 const ytMatch = mediaSrc.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{6,})/);
                 const vimeoMatch = mediaSrc.match(/vimeo\.com\/(?:video\/)?(\d+)/);
+                const instaMatch = mediaSrc.match(/instagram\.com\/(?:p|reel)\/([A-Za-z0-9_-]+)/);
                 const isDirectVideo = /\.(mp4|webm|ogg|mov)(\?|$)/i.test(mediaSrc);
-                const isImage = /\.(png|jpe?g|gif|webp|avif)(\?|$)/i.test(mediaSrc);
+                const mType = (selectedTag.mediaType || "").toLowerCase();
+                const isPdf = /\.pdf(\?|$)/i.test(mediaSrc) || mType === "pdf";
+                const isImage = /\.(png|jpe?g|gif|webp|avif|svg|bmp|tiff?)(\?|$)/i.test(mediaSrc)
+                  || mType.includes("photo") || mType === "image";
 
                 if (ytMatch) {
                   return (
@@ -3541,6 +3810,26 @@ const TourViewer = () => {
                     </div>
                   );
                 }
+                if (instaMatch) {
+                  return (
+                    <div className="mx-2 mb-2 rounded overflow-hidden bg-black" style={{ minHeight: 400 }}>
+                      <iframe
+                        src={`https://www.instagram.com/p/${instaMatch[1]}/embed/`}
+                        className="w-full border-0"
+                        style={{ height: 480 }}
+                        allow="encrypted-media"
+                        allowFullScreen
+                      />
+                    </div>
+                  );
+                }
+                if (isPdf && mediaSrc) {
+                  return (
+                    <div className="mx-2 mb-2 rounded overflow-hidden bg-white" style={{ height: 400 }}>
+                      <iframe src={mediaSrc} className="w-full h-full border-0" title="PDF" />
+                    </div>
+                  );
+                }
                 if (isImage && mediaSrc) {
                   return (
                     <div className="mx-2 mb-2 rounded overflow-hidden">
@@ -3548,10 +3837,23 @@ const TourViewer = () => {
                     </div>
                   );
                 }
+                // Unknown URL: try as image first (Matterport CDN URLs often lack extensions), fallback to iframe
                 if (mediaSrc && /^https?:\/\//i.test(mediaSrc)) {
                   return (
-                    <div className="aspect-video mx-2 mb-2 rounded overflow-hidden bg-black">
-                      <iframe src={mediaSrc} className="w-full h-full border-0" allow="autoplay; fullscreen" allowFullScreen />
+                    <div className="mx-2 mb-2 rounded overflow-hidden">
+                      <img
+                        src={mediaSrc}
+                        alt={selectedTag.label}
+                        className="w-full object-cover"
+                        onError={(e) => {
+                          // Image failed to load — replace with iframe
+                          const parent = (e.target as HTMLElement).parentElement;
+                          if (parent) {
+                            parent.classList.add("aspect-video", "bg-black");
+                            parent.innerHTML = `<iframe src="${mediaSrc}" class="w-full h-full border-0" allow="autoplay; fullscreen" allowFullscreen></iframe>`;
+                          }
+                        }}
+                      />
                     </div>
                   );
                 }
@@ -3576,6 +3878,7 @@ const TourViewer = () => {
               </div>
             </div>
           </motion.div>
+          </>
         )}
       </AnimatePresence>
 
