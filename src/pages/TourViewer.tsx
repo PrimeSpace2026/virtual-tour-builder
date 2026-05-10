@@ -1961,7 +1961,7 @@ const TourViewer = () => {
       Object.assign(soundBtn.style, {
         position: 'absolute',
         top: '8px',
-        left: '8px',
+        right: '48px',
         width: '36px',
         height: '36px',
         borderRadius: '8px',
