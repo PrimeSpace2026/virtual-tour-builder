@@ -1,4 +1,15 @@
 {
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Permissions-Policy",
+          "value": "fullscreen=*, camera=*, microphone=*, gyroscope=*, accelerometer=*, xr-spatial-tracking=*"
+        }
+      ]
+    }
+  ],
   "rewrites": [
     { "source": "/share/:id", "destination": "https://back-end-tp6x.onrender.com/og/view/:id" },
     { "source": "/api/(.*)", "destination": "https://back-end-tp6x.onrender.com/api/$1" },
