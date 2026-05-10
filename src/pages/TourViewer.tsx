@@ -2365,17 +2365,26 @@ const TourViewer = () => {
 
   // Fullscreen
   const toggleFullscreen = useCallback(() => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().then(() => setIsFullscreen(true)).catch(() => {});
+    const el = document.documentElement as any;
+    if (!document.fullscreenElement && !(document as any).webkitFullscreenElement) {
+      const req = el.requestFullscreen?.() || el.webkitRequestFullscreen?.() || el.msRequestFullscreen?.();
+      if (req && req.then) req.then(() => setIsFullscreen(true)).catch(() => {});
+      else setIsFullscreen(true);
     } else {
-      document.exitFullscreen().then(() => setIsFullscreen(false)).catch(() => {});
+      const exit = document.exitFullscreen?.() || (document as any).webkitExitFullscreen?.() || (document as any).msExitFullscreen?.();
+      if (exit && exit.then) exit.then(() => setIsFullscreen(false)).catch(() => {});
+      else setIsFullscreen(false);
     }
   }, []);
 
   useEffect(() => {
-    const handler = () => setIsFullscreen(!!document.fullscreenElement);
+    const handler = () => setIsFullscreen(!!(document.fullscreenElement || (document as any).webkitFullscreenElement));
     document.addEventListener("fullscreenchange", handler);
-    return () => document.removeEventListener("fullscreenchange", handler);
+    document.addEventListener("webkitfullscreenchange", handler);
+    return () => {
+      document.removeEventListener("fullscreenchange", handler);
+      document.removeEventListener("webkitfullscreenchange", handler);
+    };
   }, []);
 
   // Copy link
