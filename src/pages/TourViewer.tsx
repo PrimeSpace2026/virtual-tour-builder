@@ -238,6 +238,58 @@ const HotelMenuSection = ({ title, iconKey, items, amenities, onItemClick, onBoo
   );
 };
 
+/* ── Wedding Category Section — Category → flat list of items (click → popup) ── */
+const WeddingCategorySection = ({ id, title, providers, onProviderClick }: {
+  id?: string;
+  title: string;
+  providers: WeddingProviderData[];
+  onProviderClick: (provider: WeddingProviderData) => void;
+}) => {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div id={id} className="border-b border-white/[0.06] last:border-b-0">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center gap-3 px-4 py-3.5 transition-all hover:bg-white/[0.05] group"
+      >
+        <div className="w-8 h-8 rounded-lg bg-white/[0.06] flex items-center justify-center shrink-0 group-hover:bg-white/[0.1] transition-colors">
+          <Layers className="w-4 h-4 text-white/60" />
+        </div>
+        <span className="text-white/85 text-[13px] font-medium flex-1 text-left">{title}</span>
+        <span className="text-white/30 text-[10px] mr-2">{providers.length}</span>
+        <ChevronDown className={`w-4 h-4 text-white/30 transition-transform duration-300 ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && (
+        <div className="pb-1">
+          {providers.map((provider, pi) => (
+            <div
+              key={pi}
+              onClick={() => onProviderClick(provider)}
+              className="flex items-center gap-3 px-5 py-2.5 ml-4 mr-2 rounded-lg cursor-pointer transition-all hover:bg-white/[0.06]"
+            >
+              {provider.imageUrl ? (
+                <img src={provider.imageUrl} alt={provider.name || provider.subsection} className="w-10 h-10 rounded-lg object-cover shrink-0 border border-white/10" />
+              ) : (
+                <div className="w-10 h-10 rounded-lg bg-white/[0.04] flex items-center justify-center shrink-0">
+                  <Layers className="w-3.5 h-3.5 text-white/30" />
+                </div>
+              )}
+              <div className="flex-1 min-w-0">
+                <p className="text-white/70 text-[12px] font-medium truncate">{provider.subsection || provider.name}</p>
+                {provider.name && provider.subsection && <p className="text-white/35 text-[10px] truncate">{provider.name}</p>}
+                {provider.price && <p className="text-white/30 text-[10px] truncate mt-0.5">{provider.price}</p>}
+              </div>
+              <ChevronRight className="w-3.5 h-3.5 text-white/20 shrink-0" />
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 interface TourItemData {
   id: number;
   tourId: number;
@@ -621,6 +673,7 @@ const TourViewer = () => {
   const [selectedImmoRoom, setSelectedImmoRoom] = useState<{ name: string; type: string; tagSid: string; imageUrl: string; description: string } | null>(null);
   const [gymCoaches, setGymCoaches] = useState<GymCoachData[]>([]);
   const [weddingData, setWeddingData] = useState<WeddingVenueData | null>(null);
+  const [weddingCatVisibility, setWeddingCatVisibility] = useState<Record<string, string>>({});
   const [activeWeddingCategory, setActiveWeddingCategory] = useState<string | null>(null);
   const [selectedProvider, setSelectedProvider] = useState<WeddingProviderData | null>(null);
   const [immoRooms, setImmoRooms] = useState<{ name: string; type: string; tagSid: string; imageUrl: string; description: string }[]>([]);
@@ -787,7 +840,8 @@ const TourViewer = () => {
                 address: w.address || '',
                 openingHours: w.openingHours || '',
               });
-            } catch { setWeddingData(null); }
+              setWeddingCatVisibility(meta.weddingCatVisibility || {});
+            } catch { setWeddingData(null); setWeddingCatVisibility({}); }
           }
         } else { setWeddingData(null); }
         // Parse immobilier rooms from metadataJson, enrich with chambers data
@@ -3436,7 +3490,7 @@ const TourViewer = () => {
                     { key: "Faire-part", icon: "💌" },
                     { key: "Bijoux", icon: "💍" },
                   ];
-                  const availableCategories = WEDDING_CATEGORIES.filter(c => weddingData.providers.some(p => p.category === c.key));
+                  const availableCategories = WEDDING_CATEGORIES.filter(c => weddingData.providers.some(p => p.category === c.key) && ['menu', 'both'].includes(weddingCatVisibility[c.key] || 'both'));
                   const filteredProviders = activeWeddingCategory
                     ? weddingData.providers.filter(p => p.category === activeWeddingCategory)
                     : weddingData.providers;
@@ -3537,59 +3591,25 @@ const TourViewer = () => {
                         </div>
                       )}
 
-                      {/* Provider Category Tabs */}
+                      {/* Provider Sections — collapsible by category */}
                       {availableCategories.length > 0 && (
-                        <div className="space-y-2">
-                          <p className="text-white/25 text-[10px] uppercase tracking-widest font-semibold">Service Providers</p>
-                          <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-                            <button
-                              onClick={() => setActiveWeddingCategory(null)}
-                              className={`shrink-0 px-2.5 py-1.5 rounded-lg text-[10px] font-medium transition-all ${
-                                !activeWeddingCategory
-                                  ? "bg-purple-600/30 border border-purple-400/30 text-purple-200"
-                                  : "bg-white/[0.04] border border-white/[0.06] text-white/40 hover:text-white/60"
-                              }`}
-                            >All</button>
-                            {availableCategories.map(c => (
-                              <button
-                                key={c.key}
-                                onClick={() => setActiveWeddingCategory(activeWeddingCategory === c.key ? null : c.key)}
-                                className={`shrink-0 px-2.5 py-1.5 rounded-lg text-[10px] font-medium transition-all whitespace-nowrap ${
-                                  activeWeddingCategory === c.key
-                                    ? "bg-purple-600/30 border border-purple-400/30 text-purple-200"
-                                    : "bg-white/[0.04] border border-white/[0.06] text-white/40 hover:text-white/60"
-                                }`}
-                              >{c.icon} {c.key}</button>
-                            ))}
-                          </div>
-
-                          {/* Provider Cards */}
-                          <div className="space-y-2">
-                            {filteredProviders.map((provider, pi) => (
-                              <button
-                                key={pi}
-                                onClick={() => {
-                                  setSelectedProvider(provider);
-                                  if (provider.tagSid) flyToTag(provider.tagSid);
+                        <div className="rounded-xl overflow-hidden border border-white/[0.06] bg-white/[0.02]">
+                          {availableCategories.map(cat => {
+                            const catProviders = weddingData.providers.filter(p => p.category === cat.key);
+                            if (catProviders.length === 0) return null;
+                            return (
+                              <WeddingCategorySection
+                                key={cat.key}
+                                id={`wedding-cat-${cat.key.replace(/\s+/g, '-')}`}
+                                title={`${cat.icon} ${cat.key}`}
+                                providers={catProviders}
+                                onProviderClick={(prov) => {
+                                  setSelectedProvider(prov);
+                                  if (prov.tagSid) flyToTag(prov.tagSid);
                                 }}
-                                className="w-full flex items-center gap-3 p-3 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.07] transition-all group text-left"
-                              >
-                                {provider.imageUrl ? (
-                                  <img src={provider.imageUrl} alt={provider.name} className="w-12 h-12 rounded-xl object-cover border border-white/10 shrink-0" />
-                                ) : (
-                                  <div className="w-12 h-12 rounded-xl bg-purple-500/10 flex items-center justify-center border border-purple-400/20 shrink-0">
-                                    <span className="text-lg">{WEDDING_CATEGORIES.find(c => c.key === provider.category)?.icon || "💒"}</span>
-                                  </div>
-                                )}
-                                <div className="min-w-0 flex-1">
-                                  <p className="text-white/80 text-sm font-medium truncate group-hover:text-white transition-colors">{provider.name}</p>
-                                  <p className="text-white/30 text-[10px]">{provider.category}{provider.subsection ? ` · ${provider.subsection}` : ''}</p>
-                                  {provider.price && <p className="text-purple-300 text-xs font-semibold mt-0.5">{provider.price}</p>}
-                                </div>
-                                <ChevronRight className="w-4 h-4 text-white/20 group-hover:text-white/50 transition-colors shrink-0" />
-                              </button>
-                            ))}
-                          </div>
+                              />
+                            );
+                          })}
                         </div>
                       )}
 
@@ -4004,7 +4024,7 @@ const TourViewer = () => {
                   { key: "Voitures de Mariage", icon: "🚗" }, { key: "Transports", icon: "🚐" }, { key: "Notaires", icon: "📋" },
                   { key: "Animation enfants", icon: "🎈" }, { key: "Faire-part", icon: "💌" }, { key: "Bijoux", icon: "💍" },
                 ];
-                const availableCategories = WEDDING_CATEGORIES.filter(c => weddingData.providers.some(p => p.category === c.key));
+                const availableCategories = WEDDING_CATEGORIES.filter(c => weddingData.providers.some(p => p.category === c.key) && ['menu', 'both'].includes(weddingCatVisibility[c.key] || 'both'));
                 const filteredProviders = activeWeddingCategory
                   ? weddingData.providers.filter(p => p.category === activeWeddingCategory)
                   : weddingData.providers;
@@ -4105,41 +4125,25 @@ const TourViewer = () => {
                       </div>
                     )}
 
-                    {/* Provider Category Tabs */}
+                    {/* Provider Sections — collapsible by category */}
                     {availableCategories.length > 0 && (
-                      <div className="p-3 border-t border-white/[0.06] space-y-2">
-                        <p className="text-white/25 text-[10px] uppercase tracking-widest font-semibold">Service Providers</p>
-                        <div className="flex gap-1 overflow-x-auto pb-1 scrollbar-none">
-                          <button onClick={() => setActiveWeddingCategory(null)}
-                            className={`shrink-0 px-2 py-1 rounded-lg text-[9px] font-medium transition-all ${!activeWeddingCategory ? "bg-purple-600/30 border border-purple-400/30 text-purple-200" : "bg-white/[0.04] border border-white/[0.06] text-white/40"}`}
-                          >All</button>
-                          {availableCategories.map(c => (
-                            <button key={c.key} onClick={() => setActiveWeddingCategory(activeWeddingCategory === c.key ? null : c.key)}
-                              className={`shrink-0 px-2 py-1 rounded-lg text-[9px] font-medium transition-all whitespace-nowrap ${activeWeddingCategory === c.key ? "bg-purple-600/30 border border-purple-400/30 text-purple-200" : "bg-white/[0.04] border border-white/[0.06] text-white/40"}`}
-                            >{c.icon} {c.key}</button>
-                          ))}
-                        </div>
-                        <div className="space-y-1.5">
-                          {filteredProviders.map((provider, pi) => (
-                            <button key={pi} onClick={() => { setSelectedProvider(provider); if (provider.tagSid) flyToTag(provider.tagSid); }}
-                              className="w-full flex items-center gap-2.5 p-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.07] transition-all group text-left"
-                            >
-                              {provider.imageUrl ? (
-                                <img src={provider.imageUrl} alt={provider.name} className="w-10 h-10 rounded-xl object-cover border border-white/10 shrink-0" />
-                              ) : (
-                                <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center border border-purple-400/20 shrink-0">
-                                  <span className="text-base">{WEDDING_CATEGORIES.find(c => c.key === provider.category)?.icon || "💒"}</span>
-                                </div>
-                              )}
-                              <div className="min-w-0 flex-1">
-                                <p className="text-white/80 text-[11px] font-medium truncate">{provider.name}</p>
-                                <p className="text-white/30 text-[9px]">{provider.category}{provider.subsection ? ` · ${provider.subsection}` : ''}</p>
-                                {provider.price && <p className="text-purple-300 text-[10px] font-semibold mt-0.5">{provider.price}</p>}
-                              </div>
-                              <ChevronRight className="w-3.5 h-3.5 text-white/20 shrink-0" />
-                            </button>
-                          ))}
-                        </div>
+                      <div className="border-t border-white/[0.06]">
+                        {availableCategories.map(cat => {
+                          const catProviders = weddingData.providers.filter(p => p.category === cat.key);
+                          if (catProviders.length === 0) return null;
+                          return (
+                            <WeddingCategorySection
+                              key={cat.key}
+                              id={`wedding-cat-m-${cat.key.replace(/\s+/g, '-')}`}
+                              title={`${cat.icon} ${cat.key}`}
+                              providers={catProviders}
+                              onProviderClick={(prov) => {
+                                setSelectedProvider(prov);
+                                if (prov.tagSid) flyToTag(prov.tagSid);
+                              }}
+                            />
+                          );
+                        })}
                       </div>
                     )}
 
@@ -5307,9 +5311,22 @@ const TourViewer = () => {
               .map(s => ({ key: `cs:${s.title}`, title: s.title, iconKey: s.icon || "layers", items: s.items }));
           } catch { /* ignore */ }
         }
+        // Wedding categories for strip
+        const STRIP_WEDDING_CATS = [
+          { key: "Salles des Fêtes", icon: "🏛" }, { key: "Voitures de Mariage", icon: "🚗" }, { key: "Notaires", icon: "📜" },
+          { key: "Photographes", icon: "📸" }, { key: "Transports", icon: "🚌" }, { key: "Coiffeurs Femme", icon: "💇‍♀" },
+          { key: "Robes de Mariage", icon: "👰" }, { key: "Costumes de Mariage", icon: "🤵" }, { key: "Coiffeurs Homme", icon: "💈" },
+          { key: "Onemanshow", icon: "🎭" }, { key: "Bands", icon: "🎵" }, { key: "Troupes", icon: "🎪" },
+          { key: "Show", icon: "✨" }, { key: "Artistes", icon: "🎨" }, { key: "DJ", icon: "🎧" },
+          { key: "Fleuriste", icon: "💐" }, { key: "Pâtisserie", icon: "🎂" }, { key: "Décoration", icon: "🎨" },
+          { key: "Vidéaste", icon: "🎬" }, { key: "Maquillage", icon: "💄" }, { key: "Traiteur", icon: "🍽" },
+          { key: "Animation enfants", icon: "🧒" }, { key: "Faire-part", icon: "💌" }, { key: "Bijoux", icon: "💍" },
+        ];
+        const weddingStripCats = weddingData ? STRIP_WEDDING_CATS.filter(c => weddingData.providers.some(p => p.category === c.key) && ['bar', 'both'].includes(weddingCatVisibility[c.key] || 'both')) : [];
+        const hasWeddingProviders = weddingStripCats.length > 0;
         const hasAnyStandard = (tourItems.length > 0 && bottomStripConfig.products) || (tourServices.length > 0 && bottomStripConfig.services) || (tourChambers.length > 0 && bottomStripConfig.chambers) || gymCoaches.length > 0 || (immoRooms.length > 0 && bottomStripConfig.chambers);
-        if (!hasAnyStandard && stripCustoms.length === 0) return null;
-        const tabCount = ((tourItems.length > 0 && bottomStripConfig.products) ? 1 : 0) + ((tourServices.length > 0 && bottomStripConfig.services) ? 1 : 0) + ((tourChambers.length > 0 && bottomStripConfig.chambers) ? 1 : 0) + (gymCoaches.length > 0 ? 1 : 0) + ((immoRooms.length > 0 && bottomStripConfig.chambers) ? 1 : 0) + stripCustoms.length;
+        if (!hasAnyStandard && stripCustoms.length === 0 && !hasWeddingProviders) return null;
+        const tabCount = ((tourItems.length > 0 && bottomStripConfig.products) ? 1 : 0) + ((tourServices.length > 0 && bottomStripConfig.services) ? 1 : 0) + ((tourChambers.length > 0 && bottomStripConfig.chambers) ? 1 : 0) + (gymCoaches.length > 0 ? 1 : 0) + ((immoRooms.length > 0 && bottomStripConfig.chambers) ? 1 : 0) + stripCustoms.length + weddingStripCats.length;
         const activeCustom = stripCustoms.find(c => c.key === bottomTab);
         return (
         <div className="shrink-0 bg-gradient-to-r from-black via-[#0a0520] to-[#110835] border-t border-white/10">
@@ -5379,6 +5396,18 @@ const TourViewer = () => {
                       className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold uppercase tracking-wider transition-all ${bottomTab === cs.key ? "bg-white/15 text-white" : "text-white/40 hover:text-white/70"}`}
                     >
                       <Icn className="w-3 h-3" /> {cs.title} ({cs.items.length})
+                    </button>
+                  );
+                })}
+                {weddingStripCats.map((wc) => {
+                  const catProviders = weddingData!.providers.filter(p => p.category === wc.key);
+                  return (
+                    <button
+                      key={`wc:${wc.key}`}
+                      onClick={() => setBottomTab(`wc:${wc.key}`)}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold uppercase tracking-wider transition-all ${bottomTab === `wc:${wc.key}` ? "bg-white/15 text-white" : "text-white/40 hover:text-white/70"}`}
+                    >
+                      <span className="text-xs">{wc.icon}</span> {wc.key} ({catProviders.length})
                     </button>
                   );
                 })}
@@ -5639,6 +5668,38 @@ const TourViewer = () => {
                 })}
               </div>
             )}
+
+            {/* Wedding category strips */}
+            {weddingStripCats.map(wc => {
+              if (bottomTab !== `wc:${wc.key}`) return null;
+              const catProviders = weddingData!.providers.filter(p => p.category === wc.key);
+              return (
+                <div key={wc.key} className="flex items-center md:justify-center gap-3 overflow-x-auto scrollbar-hide pb-1 [&>*:first-child]:ml-4 [&>*:last-child]:mr-4">
+                  {catProviders.map((prov, pi) => (
+                    <button
+                      key={pi}
+                      onClick={() => {
+                        setSelectedProvider(prov);
+                        if (prov.tagSid) flyToTag(prov.tagSid);
+                      }}
+                      className="flex-shrink-0 flex items-center gap-2.5 bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.08] rounded-xl p-2 pr-4 transition-all group"
+                    >
+                      <div className="w-12 h-12 rounded-lg bg-purple-500/20 flex items-center justify-center shrink-0 border border-purple-400/30 overflow-hidden">
+                        {prov.imageUrl ? (
+                          <img src={prov.imageUrl} alt={prov.subsection || prov.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="text-lg">{wc.icon}</span>
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-white/80 text-xs font-semibold truncate max-w-[140px] group-hover:text-white transition-colors">{prov.subsection || prov.name}</p>
+                        {prov.price && <p className="text-purple-300 text-[10px] font-bold mt-0.5">{prov.price}</p>}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              );
+            })}
           </div>
           </motion.div>
         </div>

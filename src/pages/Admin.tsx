@@ -544,6 +544,7 @@ const Admin = () => {
   const [weddingData, setWeddingData] = useState<WeddingVenueData>({ ...DEFAULT_WEDDING });
   const [weddingProviders, setWeddingProviders] = useState<WeddingProvider[]>([]);
   const [weddingPackages, setWeddingPackages] = useState<WeddingPackage[]>([]);
+  const [weddingCatVisibility, setWeddingCatVisibility] = useState<Record<string, string>>({});
   // Video Screens
   interface VideoScreenData { id?: number; name: string; youtubeUrl: string; posX: number; posY: number; posZ: number; rotX: number; rotY: number; rotZ: number; width: number; height: number; iconType: string; visibilityRange: number; }
   const [videoScreens, setVideoScreens] = useState<VideoScreenData[]>([]);
@@ -986,6 +987,7 @@ const Admin = () => {
     setWeddingData({ ...DEFAULT_WEDDING });
     setWeddingProviders([]);
     setWeddingPackages([]);
+    setWeddingCatVisibility({});
     setDialogOpen(true);
   };
 
@@ -1012,9 +1014,10 @@ const Admin = () => {
         setWeddingData({ ...DEFAULT_WEDDING, ...meta.wedding });
         setWeddingProviders(meta.weddingProviders || []);
         setWeddingPackages(meta.weddingPackages || []);
+        setWeddingCatVisibility(meta.weddingCatVisibility || {});
         setBottomStrip({ products: true, services: true, chambers: true, customSections: {}, ...(meta.bottomStrip || {}) });
         setMatterportFeatures({ ...(meta.matterportFeatures || {}) });
-      } catch { setHotelRooms([]); setMenuSections([]); setGymSpaces([]); setGymEquipment([]); setGymPlans([]); setGymClasses([]); setGymSections([]); setGymCoaches([]); setImmobilierData({ ...DEFAULT_IMMOBILIER }); setImmobilierRooms([]); setWeddingData({ ...DEFAULT_WEDDING }); setWeddingProviders([]); setWeddingPackages([]); setBottomStrip({ products: true, services: true, chambers: true, customSections: {} }); setMatterportFeatures({}); }
+      } catch { setHotelRooms([]); setMenuSections([]); setGymSpaces([]); setGymEquipment([]); setGymPlans([]); setGymClasses([]); setGymSections([]); setGymCoaches([]); setImmobilierData({ ...DEFAULT_IMMOBILIER }); setImmobilierRooms([]); setWeddingData({ ...DEFAULT_WEDDING }); setWeddingProviders([]); setWeddingPackages([]); setWeddingCatVisibility({}); setBottomStrip({ products: true, services: true, chambers: true, customSections: {} }); setMatterportFeatures({}); }
     } else {
       setHotelRooms([]);
       setMenuSections([]);
@@ -1029,6 +1032,7 @@ const Admin = () => {
       setWeddingData({ ...DEFAULT_WEDDING });
       setWeddingProviders([]);
       setWeddingPackages([]);
+      setWeddingCatVisibility({});
       setBottomStrip({ products: true, services: true, chambers: true, customSections: {} });
       setMatterportFeatures({});
     }
@@ -1062,7 +1066,7 @@ const Admin = () => {
       payload.metadataJson = JSON.stringify({ immobilier: immobilierData, immobilierRooms, bottomStrip, matterportFeatures });
     }
     if (editTour.category === "Wedding venue") {
-      payload.metadataJson = JSON.stringify({ wedding: weddingData, weddingProviders, weddingPackages, bottomStrip, matterportFeatures });
+      payload.metadataJson = JSON.stringify({ wedding: weddingData, weddingProviders, weddingPackages, weddingCatVisibility, bottomStrip, matterportFeatures });
     }
     // For other categories, save bottomStrip if any toggle is off
     if (!payload.metadataJson) {
@@ -2832,80 +2836,227 @@ const Admin = () => {
                 <div className="space-y-3 border-t pt-4">
                   <div className="flex items-center justify-between">
                     <label className="text-sm font-medium">Prestataires de mariage</label>
-                    <Button variant="outline" size="sm" onClick={() => setWeddingProviders([...weddingProviders, { category: "", subsection: "", name: "", imageUrl: "", price: "", description: "", phone: "", whatsapp: "", instagram: "", facebook: "", website: "", tagSid: "" }])}>
-                      <Plus className="w-3 h-3 mr-1" /> Ajouter
-                    </Button>
                   </div>
-                  <div className="space-y-3">
-                    {weddingProviders.map((prov, idx) => (
-                      <div key={idx} className="rounded-xl border bg-muted/30 p-3 space-y-2">
-                        <div className="flex justify-between items-center">
-                          <span className="text-xs font-semibold text-muted-foreground">Prestataire #{idx + 1}</span>
-                          <Button variant="ghost" size="sm" className="text-destructive h-6 px-2" onClick={() => setWeddingProviders(weddingProviders.filter((_, i) => i !== idx))}>
-                            <Trash2 className="w-3 h-3" />
-                          </Button>
+                  {/* Category buttons — add any not yet present, or add another to existing */}
+                  <div className="flex flex-wrap gap-1.5">
+                    {WEDDING_PROVIDER_CATEGORIES.map(cat => {
+                      const exists = weddingProviders.some(p => p.category === cat);
+                      return (
+                        <button
+                          key={cat}
+                          type="button"
+                          onClick={() => {
+                            setWeddingProviders([...weddingProviders, { category: cat, subsection: "", name: "", imageUrl: "", price: "", description: "", phone: "", whatsapp: "", instagram: "", facebook: "", website: "", tagSid: "" }]);
+                          }}
+                          className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-all ${
+                            exists
+                              ? "bg-primary/10 border-primary/30 text-primary hover:bg-primary/20"
+                              : "bg-muted/30 border-border/50 text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                          }`}
+                        >
+                          <Plus className="w-3 h-3" />
+                          {cat}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {/* Select All visibility controls */}
+                  {weddingProviders.length > 0 && (
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <span className="font-medium">Tout :</span>
+                      {(['both', 'menu', 'bar', 'none'] as const).map(mode => {
+                        const labels: Record<string, string> = { menu: 'Menu', bar: 'Bar', both: 'Both', none: 'Off' };
+                        return (
+                          <button
+                            key={mode}
+                            type="button"
+                            onClick={() => {
+                              const allCats = [...new Set(weddingProviders.map(p => p.category).filter(Boolean))];
+                              const updated: Record<string, string> = { ...weddingCatVisibility };
+                              allCats.forEach(c => { updated[c] = mode; });
+                              setWeddingCatVisibility(updated);
+                            }}
+                            className={`px-2.5 py-1 rounded border text-[11px] font-semibold transition-all ${
+                              mode === 'none' ? 'hover:bg-red-500/20 hover:border-red-500/40 hover:text-red-400' : 'hover:bg-primary/20 hover:border-primary/40 hover:text-primary'
+                            } bg-muted/30 border-border/50`}
+                          >
+                            {labels[mode]}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                  <div className="space-y-4">
+                    {(() => {
+                      // Group providers by category, then by subsection
+                      const cats = new Map<string, { subsections: Map<string, number[]> }>();
+                      weddingProviders.forEach((prov, idx) => {
+                        if (!prov.category) return;
+                        if (!cats.has(prov.category)) cats.set(prov.category, { subsections: new Map() });
+                        const sub = prov.subsection || "";
+                        const entry = cats.get(prov.category)!;
+                        if (!entry.subsections.has(sub)) entry.subsections.set(sub, []);
+                        entry.subsections.get(sub)!.push(idx);
+                      });
+                      return Array.from(cats.entries()).map(([catName, catData]) => (
+                        <div key={catName} className="rounded-xl border bg-muted/20 overflow-hidden">
+                          {/* Category Header */}
+                          <div className="flex items-center justify-between px-4 py-3 bg-muted/30 border-b">
+                            <span className={`text-sm font-semibold ${(weddingCatVisibility[catName] || 'both') === 'none' ? 'line-through text-muted-foreground/50' : ''}`}>{catName}</span>
+                            <div className="flex items-center gap-1.5">
+                              {(['menu', 'bar', 'both', 'none'] as const).map(mode => {
+                                const current = weddingCatVisibility[catName] || 'both';
+                                const labels: Record<string, string> = { menu: 'Menu', bar: 'Bar', both: 'Both', none: 'Off' };
+                                const active = current === mode;
+                                return (
+                                  <button
+                                    key={mode}
+                                    type="button"
+                                    onClick={() => setWeddingCatVisibility(prev => ({ ...prev, [catName]: mode }))}
+                                    className={`px-2 py-0.5 rounded text-[10px] font-semibold border transition-all ${
+                                      active
+                                        ? mode === 'none' ? 'bg-red-500/20 border-red-500/40 text-red-400' : 'bg-primary/20 border-primary/40 text-primary'
+                                        : 'bg-muted/30 border-border/50 text-muted-foreground/60 hover:text-foreground'
+                                    }`}
+                                  >
+                                    {labels[mode]}
+                                  </button>
+                                );
+                              })}
+                              <Button variant="ghost" size="sm" className="text-destructive h-7 px-2 ml-1" onClick={() => {
+                                if (confirm(`Supprimer toute la catégorie "${catName}" et ses prestataires ?`)) {
+                                  setWeddingProviders(weddingProviders.filter(p => p.category !== catName));
+                                }
+                              }}>
+                                <Trash2 className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          </div>
+                          {/* New subsection input */}
+                          <div className="px-3 py-2 border-b border-border/30 flex gap-2 items-center">
+                            <Input
+                              placeholder="Nom de la sous-section (ex: Jeep, Mercedes...)"
+                              className="h-8 text-xs flex-1"
+                              id={`new-sub-${catName}`}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                  const input = e.currentTarget;
+                                  const val = input.value.trim();
+                                  if (val) {
+                                    setWeddingProviders([...weddingProviders, { category: catName, subsection: val, name: "", imageUrl: "", price: "", description: "", phone: "", whatsapp: "", instagram: "", facebook: "", website: "", tagSid: "" }]);
+                                    input.value = "";
+                                  }
+                                }
+                              }}
+                            />
+                            <Button variant="outline" size="sm" className="h-8 text-xs shrink-0" onClick={() => {
+                              const input = document.getElementById(`new-sub-${catName}`) as HTMLInputElement;
+                              const val = input?.value.trim();
+                              if (val) {
+                                setWeddingProviders([...weddingProviders, { category: catName, subsection: val, name: "", imageUrl: "", price: "", description: "", phone: "", whatsapp: "", instagram: "", facebook: "", website: "", tagSid: "" }]);
+                                input.value = "";
+                              }
+                            }}>
+                              <Plus className="w-3 h-3 mr-1" /> Ajouter
+                            </Button>
+                          </div>
+                          {/* Subsections */}
+                          <div className="divide-y divide-border/50">
+                            {Array.from(catData.subsections.entries()).map(([subName, indices]) => (
+                              <div key={subName} className="px-3 py-2 space-y-2">
+                                {/* Subsection header */}
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-2">
+                                    {subName ? (
+                                      <span className="text-xs font-semibold text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-md">{subName}</span>
+                                    ) : (
+                                      <span className="text-xs italic text-muted-foreground/50">Sans sous-section</span>
+                                    )}
+                                    <span className="text-[10px] text-muted-foreground/40">{indices.length} prestataire{indices.length > 1 ? "s" : ""}</span>
+                                  </div>
+                                  <div className="flex gap-1">
+                                    <Button variant="ghost" size="sm" className="h-6 text-xs px-2" onClick={() => {
+                                      setWeddingProviders([...weddingProviders, { category: catName, subsection: subName, name: "", imageUrl: "", price: "", description: "", phone: "", whatsapp: "", instagram: "", facebook: "", website: "", tagSid: "" }]);
+                                    }}>
+                                      <Plus className="w-3 h-3 mr-1" /> Profil
+                                    </Button>
+                                    {subName && (
+                                      <Button variant="ghost" size="sm" className="text-destructive h-6 px-1" onClick={() => {
+                                        setWeddingProviders(weddingProviders.filter((p, i) => !indices.includes(i)));
+                                      }}>
+                                        <Trash2 className="w-3 h-3" />
+                                      </Button>
+                                    )}
+                                  </div>
+                                </div>
+                                {/* Provider cards in this subsection */}
+                                <div className="space-y-2 ml-2">
+                                  {indices.map(idx => {
+                                    const prov = weddingProviders[idx];
+                                    return (
+                                      <div key={idx} className="rounded-lg border bg-background/50 p-3 space-y-2">
+                                        <div className="flex justify-between items-center">
+                                          <span className="text-xs font-medium text-foreground/70">{prov.name || `Profil #${indices.indexOf(idx) + 1}`}</span>
+                                          <Button variant="ghost" size="sm" className="text-destructive h-6 px-2" onClick={() => setWeddingProviders(weddingProviders.filter((_, i) => i !== idx))}>
+                                            <Trash2 className="w-3 h-3" />
+                                          </Button>
+                                        </div>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                          <div>
+                                            <label className="text-xs text-muted-foreground mb-1 block">Nom</label>
+                                            <Input value={prov.name} onChange={(e) => { const u = [...weddingProviders]; u[idx] = { ...prov, name: e.target.value }; setWeddingProviders(u); }} placeholder="Nom du prestataire" />
+                                          </div>
+                                          <div>
+                                            <label className="text-xs text-muted-foreground mb-1 block">Image URL</label>
+                                            <Input value={prov.imageUrl} onChange={(e) => { const u = [...weddingProviders]; u[idx] = { ...prov, imageUrl: e.target.value }; setWeddingProviders(u); }} placeholder="https://..." />
+                                          </div>
+                                          <div>
+                                            <label className="text-xs text-muted-foreground mb-1 block">Prix</label>
+                                            <Input value={prov.price} onChange={(e) => { const u = [...weddingProviders]; u[idx] = { ...prov, price: e.target.value }; setWeddingProviders(u); }} placeholder="2000 TND" />
+                                          </div>
+                                          <div>
+                                            <label className="text-xs text-muted-foreground mb-1 block">Tag SID</label>
+                                            <Input value={prov.tagSid} onChange={(e) => { const u = [...weddingProviders]; u[idx] = { ...prov, tagSid: e.target.value }; setWeddingProviders(u); }} placeholder="tag-xxx" />
+                                          </div>
+                                        </div>
+                                        <div>
+                                          <label className="text-xs text-muted-foreground mb-1 block">Description</label>
+                                          <textarea className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-y min-h-[60px]" value={prov.description} onChange={(e) => { const u = [...weddingProviders]; u[idx] = { ...prov, description: e.target.value }; setWeddingProviders(u); }} placeholder="Décrivez ce prestataire..." />
+                                        </div>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                          <div>
+                                            <label className="text-xs text-muted-foreground mb-1 block">Téléphone</label>
+                                            <Input value={prov.phone} onChange={(e) => { const u = [...weddingProviders]; u[idx] = { ...prov, phone: e.target.value }; setWeddingProviders(u); }} placeholder="+216 ..." />
+                                          </div>
+                                          <div>
+                                            <label className="text-xs text-muted-foreground mb-1 block">WhatsApp</label>
+                                            <Input value={prov.whatsapp} onChange={(e) => { const u = [...weddingProviders]; u[idx] = { ...prov, whatsapp: e.target.value }; setWeddingProviders(u); }} placeholder="+216 ..." />
+                                          </div>
+                                          <div>
+                                            <label className="text-xs text-muted-foreground mb-1 block">Instagram</label>
+                                            <Input value={prov.instagram} onChange={(e) => { const u = [...weddingProviders]; u[idx] = { ...prov, instagram: e.target.value }; setWeddingProviders(u); }} placeholder="https://instagram.com/..." />
+                                          </div>
+                                          <div>
+                                            <label className="text-xs text-muted-foreground mb-1 block">Facebook</label>
+                                            <Input value={prov.facebook} onChange={(e) => { const u = [...weddingProviders]; u[idx] = { ...prov, facebook: e.target.value }; setWeddingProviders(u); }} placeholder="https://facebook.com/..." />
+                                          </div>
+                                          <div>
+                                            <label className="text-xs text-muted-foreground mb-1 block">Site web</label>
+                                            <Input value={prov.website} onChange={(e) => { const u = [...weddingProviders]; u[idx] = { ...prov, website: e.target.value }; setWeddingProviders(u); }} placeholder="https://..." />
+                                          </div>
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
                         </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                          <div>
-                            <label className="text-xs text-muted-foreground mb-1 block">Catégorie</label>
-                            <Select value={prov.category} onValueChange={(v) => { const u = [...weddingProviders]; u[idx] = { ...prov, category: v }; setWeddingProviders(u); }}>
-                              <SelectTrigger><SelectValue placeholder="Choisir" /></SelectTrigger>
-                              <SelectContent>
-                                {WEDDING_PROVIDER_CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div>
-                            <label className="text-xs text-muted-foreground mb-1 block">Sous-section</label>
-                            <Input value={prov.subsection} onChange={(e) => { const u = [...weddingProviders]; u[idx] = { ...prov, subsection: e.target.value }; setWeddingProviders(u); }} placeholder="Ex: Gâteaux, Traiteur, Candy bar..." />
-                          </div>
-                          <div>
-                            <label className="text-xs text-muted-foreground mb-1 block">Nom</label>
-                            <Input value={prov.name} onChange={(e) => { const u = [...weddingProviders]; u[idx] = { ...prov, name: e.target.value }; setWeddingProviders(u); }} placeholder="Studio Photo Luxe" />
-                          </div>
-                          <div>
-                            <label className="text-xs text-muted-foreground mb-1 block">Image URL</label>
-                            <Input value={prov.imageUrl} onChange={(e) => { const u = [...weddingProviders]; u[idx] = { ...prov, imageUrl: e.target.value }; setWeddingProviders(u); }} placeholder="https://..." />
-                          </div>
-                          <div>
-                            <label className="text-xs text-muted-foreground mb-1 block">Prix</label>
-                            <Input value={prov.price} onChange={(e) => { const u = [...weddingProviders]; u[idx] = { ...prov, price: e.target.value }; setWeddingProviders(u); }} placeholder="2000 TND" />
-                          </div>
-                        </div>
-                        <div>
-                          <label className="text-xs text-muted-foreground mb-1 block">Description</label>
-                          <textarea className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-y min-h-[60px]" value={prov.description} onChange={(e) => { const u = [...weddingProviders]; u[idx] = { ...prov, description: e.target.value }; setWeddingProviders(u); }} placeholder="Décrivez ce prestataire..." />
-                        </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                          <div>
-                            <label className="text-xs text-muted-foreground mb-1 block">Téléphone</label>
-                            <Input value={prov.phone} onChange={(e) => { const u = [...weddingProviders]; u[idx] = { ...prov, phone: e.target.value }; setWeddingProviders(u); }} placeholder="+216 ..." />
-                          </div>
-                          <div>
-                            <label className="text-xs text-muted-foreground mb-1 block">WhatsApp</label>
-                            <Input value={prov.whatsapp} onChange={(e) => { const u = [...weddingProviders]; u[idx] = { ...prov, whatsapp: e.target.value }; setWeddingProviders(u); }} placeholder="+216 ..." />
-                          </div>
-                          <div>
-                            <label className="text-xs text-muted-foreground mb-1 block">Instagram</label>
-                            <Input value={prov.instagram} onChange={(e) => { const u = [...weddingProviders]; u[idx] = { ...prov, instagram: e.target.value }; setWeddingProviders(u); }} placeholder="https://instagram.com/..." />
-                          </div>
-                          <div>
-                            <label className="text-xs text-muted-foreground mb-1 block">Facebook</label>
-                            <Input value={prov.facebook} onChange={(e) => { const u = [...weddingProviders]; u[idx] = { ...prov, facebook: e.target.value }; setWeddingProviders(u); }} placeholder="https://facebook.com/..." />
-                          </div>
-                          <div>
-                            <label className="text-xs text-muted-foreground mb-1 block">Site web</label>
-                            <Input value={prov.website} onChange={(e) => { const u = [...weddingProviders]; u[idx] = { ...prov, website: e.target.value }; setWeddingProviders(u); }} placeholder="https://..." />
-                          </div>
-                          <div>
-                            <label className="text-xs text-muted-foreground mb-1 block">Tag SID</label>
-                            <Input value={prov.tagSid} onChange={(e) => { const u = [...weddingProviders]; u[idx] = { ...prov, tagSid: e.target.value }; setWeddingProviders(u); }} placeholder="tag-xxx" />
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+                      ));
+                    })()}
                     {weddingProviders.length === 0 && (
-                      <p className="text-xs text-muted-foreground text-center py-3">Aucun prestataire ajouté</p>
+                      <p className="text-xs text-muted-foreground text-center py-3">Aucun prestataire ajouté — sélectionnez une catégorie ci-dessus</p>
                     )}
                   </div>
                 </div>
