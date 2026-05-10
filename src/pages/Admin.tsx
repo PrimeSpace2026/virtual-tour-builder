@@ -156,6 +156,82 @@ interface GymMetadata {
   coaches: GymCoach[];
 }
 
+// ── Wedding Venue types ──
+interface WeddingProvider {
+  category: string;
+  subsection: string;
+  name: string;
+  imageUrl: string;
+  price: string;
+  description: string;
+  phone: string;
+  whatsapp: string;
+  instagram: string;
+  facebook: string;
+  website: string;
+  tagSid: string;
+}
+
+interface WeddingPackage {
+  name: string;
+  price: string;
+  currency: string;
+  description: string;
+  features: string[];
+}
+
+interface WeddingVenueData {
+  capacity: number | null;
+  priceRange: string;
+  parkingSpaces: number | null;
+  bookingUrl: string;
+  amenities: string[];
+  providers: WeddingProvider[];
+  packages: WeddingPackage[];
+  phone: string;
+  whatsapp: string;
+  email: string;
+  website: string;
+  instagram: string;
+  facebook: string;
+  tiktok: string;
+  address: string;
+  openingHours: string;
+}
+
+const DEFAULT_WEDDING: WeddingVenueData = {
+  capacity: null,
+  priceRange: "",
+  parkingSpaces: null,
+  bookingUrl: "",
+  amenities: [],
+  providers: [],
+  packages: [],
+  phone: "",
+  whatsapp: "",
+  email: "",
+  website: "",
+  instagram: "",
+  facebook: "",
+  tiktok: "",
+  address: "",
+  openingHours: "",
+};
+
+const WEDDING_AMENITIES_OPTIONS = [
+  "Espace extérieur", "Traiteur inclus", "Climatisation", "Piste de danse",
+  "Scène", "Sonorisation", "Éclairage décoratif", "Parking privé",
+  "Suite nuptiale", "Vestiaire",
+];
+
+const WEDDING_PROVIDER_CATEGORIES = [
+  "Salles des Fêtes", "Voitures de Mariage", "Notaires", "Photographes",
+  "Transports", "Coiffeurs Femme", "Robes de Mariage", "Costumes de Mariage",
+  "Coiffeurs Homme", "Onemanshow", "Bands", "Troupes", "Show", "Artistes",
+  "DJ", "Fleuriste", "Pâtisserie", "Décoration", "Vidéaste", "Maquillage",
+  "Traiteur", "Animation enfants", "Faire-part", "Bijoux", "Autre",
+];
+
 // ── Immobilier types ──
 interface ImmobilierData {
   propertyType: string;
@@ -464,6 +540,10 @@ const Admin = () => {
   // Immobilier
   const [immobilierData, setImmobilierData] = useState<ImmobilierData>({ ...DEFAULT_IMMOBILIER });
   const [immobilierRooms, setImmobilierRooms] = useState<ImmobilierRoom[]>([]);
+  // Wedding Venue
+  const [weddingData, setWeddingData] = useState<WeddingVenueData>({ ...DEFAULT_WEDDING });
+  const [weddingProviders, setWeddingProviders] = useState<WeddingProvider[]>([]);
+  const [weddingPackages, setWeddingPackages] = useState<WeddingPackage[]>([]);
   // Video Screens
   interface VideoScreenData { id?: number; name: string; youtubeUrl: string; posX: number; posY: number; posZ: number; rotX: number; rotY: number; rotZ: number; width: number; height: number; iconType: string; visibilityRange: number; }
   const [videoScreens, setVideoScreens] = useState<VideoScreenData[]>([]);
@@ -903,6 +983,9 @@ const Admin = () => {
     setGymClasses([]);
     setGymSections([]);
     setGymCoaches([]);
+    setWeddingData({ ...DEFAULT_WEDDING });
+    setWeddingProviders([]);
+    setWeddingPackages([]);
     setDialogOpen(true);
   };
 
@@ -926,9 +1009,12 @@ const Admin = () => {
         setGymCoaches(meta.coaches || []);
         setImmobilierData({ ...DEFAULT_IMMOBILIER, ...meta.immobilier });
         setImmobilierRooms(meta.immobilierRooms || []);
+        setWeddingData({ ...DEFAULT_WEDDING, ...meta.wedding });
+        setWeddingProviders(meta.weddingProviders || []);
+        setWeddingPackages(meta.weddingPackages || []);
         setBottomStrip({ products: true, services: true, chambers: true, customSections: {}, ...(meta.bottomStrip || {}) });
         setMatterportFeatures({ ...(meta.matterportFeatures || {}) });
-      } catch { setHotelRooms([]); setMenuSections([]); setGymSpaces([]); setGymEquipment([]); setGymPlans([]); setGymClasses([]); setGymSections([]); setGymCoaches([]); setImmobilierData({ ...DEFAULT_IMMOBILIER }); setImmobilierRooms([]); setBottomStrip({ products: true, services: true, chambers: true, customSections: {} }); setMatterportFeatures({}); }
+      } catch { setHotelRooms([]); setMenuSections([]); setGymSpaces([]); setGymEquipment([]); setGymPlans([]); setGymClasses([]); setGymSections([]); setGymCoaches([]); setImmobilierData({ ...DEFAULT_IMMOBILIER }); setImmobilierRooms([]); setWeddingData({ ...DEFAULT_WEDDING }); setWeddingProviders([]); setWeddingPackages([]); setBottomStrip({ products: true, services: true, chambers: true, customSections: {} }); setMatterportFeatures({}); }
     } else {
       setHotelRooms([]);
       setMenuSections([]);
@@ -940,6 +1026,9 @@ const Admin = () => {
       setGymCoaches([]);
       setImmobilierData({ ...DEFAULT_IMMOBILIER });
       setImmobilierRooms([]);
+      setWeddingData({ ...DEFAULT_WEDDING });
+      setWeddingProviders([]);
+      setWeddingPackages([]);
       setBottomStrip({ products: true, services: true, chambers: true, customSections: {} });
       setMatterportFeatures({});
     }
@@ -971,6 +1060,9 @@ const Admin = () => {
     }
     if (editTour.category === "Immobilier") {
       payload.metadataJson = JSON.stringify({ immobilier: immobilierData, immobilierRooms, bottomStrip, matterportFeatures });
+    }
+    if (editTour.category === "Wedding venue") {
+      payload.metadataJson = JSON.stringify({ wedding: weddingData, weddingProviders, weddingPackages, bottomStrip, matterportFeatures });
     }
     // For other categories, save bottomStrip if any toggle is off
     if (!payload.metadataJson) {
@@ -2645,6 +2737,224 @@ const Admin = () => {
                     placeholder="https://booking-link.com/..."
                   />
                   <p className="text-xs text-muted-foreground">URL de réservation affichée aux visiteurs (WhatsApp si vide)</p>
+                </div>
+              </div>
+            )}
+
+            {/* ══════ Wedding Venue Form ══════ */}
+            {editTour.category === "Wedding venue" && (
+              <div className="space-y-4">
+
+                {/* ── Venue Details ── */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Capacité (invités)</label>
+                    <Input type="number" min={1} value={weddingData.capacity ?? ""} onChange={(e) => setWeddingData({ ...weddingData, capacity: e.target.value ? Number(e.target.value) : null })} placeholder="300" />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Fourchette de prix</label>
+                    <Input value={weddingData.priceRange} onChange={(e) => setWeddingData({ ...weddingData, priceRange: e.target.value })} placeholder="5000 - 15000 TND" />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Places de parking</label>
+                    <Input type="number" min={0} value={weddingData.parkingSpaces ?? ""} onChange={(e) => setWeddingData({ ...weddingData, parkingSpaces: e.target.value ? Number(e.target.value) : null })} placeholder="100" />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Lien de réservation</label>
+                    <Input value={weddingData.bookingUrl} onChange={(e) => setWeddingData({ ...weddingData, bookingUrl: e.target.value })} placeholder="https://..." />
+                  </div>
+                </div>
+
+                {/* ── Coordonnées & Réseaux sociaux ── */}
+                <div className="space-y-3 border-t pt-4">
+                  <label className="text-sm font-medium">Coordonnées & Réseaux sociaux</label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">Téléphone</label>
+                      <Input value={weddingData.phone} onChange={(e) => setWeddingData({ ...weddingData, phone: e.target.value })} placeholder="+216 71 000 000" />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">WhatsApp</label>
+                      <Input value={weddingData.whatsapp} onChange={(e) => setWeddingData({ ...weddingData, whatsapp: e.target.value })} placeholder="+216 50 000 000" />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">Email</label>
+                      <Input type="email" value={weddingData.email} onChange={(e) => setWeddingData({ ...weddingData, email: e.target.value })} placeholder="contact@venue.tn" />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">Site web</label>
+                      <Input value={weddingData.website} onChange={(e) => setWeddingData({ ...weddingData, website: e.target.value })} placeholder="https://..." />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">Instagram</label>
+                      <Input value={weddingData.instagram} onChange={(e) => setWeddingData({ ...weddingData, instagram: e.target.value })} placeholder="https://instagram.com/..." />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">Facebook</label>
+                      <Input value={weddingData.facebook} onChange={(e) => setWeddingData({ ...weddingData, facebook: e.target.value })} placeholder="https://facebook.com/..." />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">TikTok</label>
+                      <Input value={weddingData.tiktok} onChange={(e) => setWeddingData({ ...weddingData, tiktok: e.target.value })} placeholder="https://tiktok.com/@..." />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">Adresse</label>
+                      <Input value={weddingData.address} onChange={(e) => setWeddingData({ ...weddingData, address: e.target.value })} placeholder="Rue de la Fête, Tunis" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground mb-1 block">Horaires d'ouverture</label>
+                    <Input value={weddingData.openingHours} onChange={(e) => setWeddingData({ ...weddingData, openingHours: e.target.value })} placeholder="Lun-Sam: 9h-18h / Dim: sur RDV" />
+                  </div>
+                </div>
+
+                {/* ── Amenities ── */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Équipements de la salle</label>
+                  <div className="flex flex-wrap gap-2">
+                    {WEDDING_AMENITIES_OPTIONS.map((amenity) => {
+                      const active = weddingData.amenities.includes(amenity);
+                      return (
+                        <button
+                          key={amenity}
+                          type="button"
+                          onClick={() => setWeddingData({ ...weddingData, amenities: active ? weddingData.amenities.filter(a => a !== amenity) : [...weddingData.amenities, amenity] })}
+                          className={`rounded-full border px-3 py-1.5 text-xs transition ${active ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:border-primary/50"}`}
+                        >
+                          {amenity}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* ── Providers ── */}
+                <div className="space-y-3 border-t pt-4">
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium">Prestataires de mariage</label>
+                    <Button variant="outline" size="sm" onClick={() => setWeddingProviders([...weddingProviders, { category: "", subsection: "", name: "", imageUrl: "", price: "", description: "", phone: "", whatsapp: "", instagram: "", facebook: "", website: "", tagSid: "" }])}>
+                      <Plus className="w-3 h-3 mr-1" /> Ajouter
+                    </Button>
+                  </div>
+                  <div className="space-y-3">
+                    {weddingProviders.map((prov, idx) => (
+                      <div key={idx} className="rounded-xl border bg-muted/30 p-3 space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs font-semibold text-muted-foreground">Prestataire #{idx + 1}</span>
+                          <Button variant="ghost" size="sm" className="text-destructive h-6 px-2" onClick={() => setWeddingProviders(weddingProviders.filter((_, i) => i !== idx))}>
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          <div>
+                            <label className="text-xs text-muted-foreground mb-1 block">Catégorie</label>
+                            <Select value={prov.category} onValueChange={(v) => { const u = [...weddingProviders]; u[idx] = { ...prov, category: v }; setWeddingProviders(u); }}>
+                              <SelectTrigger><SelectValue placeholder="Choisir" /></SelectTrigger>
+                              <SelectContent>
+                                {WEDDING_PROVIDER_CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div>
+                            <label className="text-xs text-muted-foreground mb-1 block">Sous-section</label>
+                            <Input value={prov.subsection} onChange={(e) => { const u = [...weddingProviders]; u[idx] = { ...prov, subsection: e.target.value }; setWeddingProviders(u); }} placeholder="Ex: Gâteaux, Traiteur, Candy bar..." />
+                          </div>
+                          <div>
+                            <label className="text-xs text-muted-foreground mb-1 block">Nom</label>
+                            <Input value={prov.name} onChange={(e) => { const u = [...weddingProviders]; u[idx] = { ...prov, name: e.target.value }; setWeddingProviders(u); }} placeholder="Studio Photo Luxe" />
+                          </div>
+                          <div>
+                            <label className="text-xs text-muted-foreground mb-1 block">Image URL</label>
+                            <Input value={prov.imageUrl} onChange={(e) => { const u = [...weddingProviders]; u[idx] = { ...prov, imageUrl: e.target.value }; setWeddingProviders(u); }} placeholder="https://..." />
+                          </div>
+                          <div>
+                            <label className="text-xs text-muted-foreground mb-1 block">Prix</label>
+                            <Input value={prov.price} onChange={(e) => { const u = [...weddingProviders]; u[idx] = { ...prov, price: e.target.value }; setWeddingProviders(u); }} placeholder="2000 TND" />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="text-xs text-muted-foreground mb-1 block">Description</label>
+                          <textarea className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-y min-h-[60px]" value={prov.description} onChange={(e) => { const u = [...weddingProviders]; u[idx] = { ...prov, description: e.target.value }; setWeddingProviders(u); }} placeholder="Décrivez ce prestataire..." />
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          <div>
+                            <label className="text-xs text-muted-foreground mb-1 block">Téléphone</label>
+                            <Input value={prov.phone} onChange={(e) => { const u = [...weddingProviders]; u[idx] = { ...prov, phone: e.target.value }; setWeddingProviders(u); }} placeholder="+216 ..." />
+                          </div>
+                          <div>
+                            <label className="text-xs text-muted-foreground mb-1 block">WhatsApp</label>
+                            <Input value={prov.whatsapp} onChange={(e) => { const u = [...weddingProviders]; u[idx] = { ...prov, whatsapp: e.target.value }; setWeddingProviders(u); }} placeholder="+216 ..." />
+                          </div>
+                          <div>
+                            <label className="text-xs text-muted-foreground mb-1 block">Instagram</label>
+                            <Input value={prov.instagram} onChange={(e) => { const u = [...weddingProviders]; u[idx] = { ...prov, instagram: e.target.value }; setWeddingProviders(u); }} placeholder="https://instagram.com/..." />
+                          </div>
+                          <div>
+                            <label className="text-xs text-muted-foreground mb-1 block">Facebook</label>
+                            <Input value={prov.facebook} onChange={(e) => { const u = [...weddingProviders]; u[idx] = { ...prov, facebook: e.target.value }; setWeddingProviders(u); }} placeholder="https://facebook.com/..." />
+                          </div>
+                          <div>
+                            <label className="text-xs text-muted-foreground mb-1 block">Site web</label>
+                            <Input value={prov.website} onChange={(e) => { const u = [...weddingProviders]; u[idx] = { ...prov, website: e.target.value }; setWeddingProviders(u); }} placeholder="https://..." />
+                          </div>
+                          <div>
+                            <label className="text-xs text-muted-foreground mb-1 block">Tag SID</label>
+                            <Input value={prov.tagSid} onChange={(e) => { const u = [...weddingProviders]; u[idx] = { ...prov, tagSid: e.target.value }; setWeddingProviders(u); }} placeholder="tag-xxx" />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    {weddingProviders.length === 0 && (
+                      <p className="text-xs text-muted-foreground text-center py-3">Aucun prestataire ajouté</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* ── Packages ── */}
+                <div className="space-y-3 border-t pt-4">
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium">Formules / Packages</label>
+                    <Button variant="outline" size="sm" onClick={() => setWeddingPackages([...weddingPackages, { name: "", price: "", currency: "TND", description: "", features: [] }])}>
+                      <Plus className="w-3 h-3 mr-1" /> Ajouter
+                    </Button>
+                  </div>
+                  <div className="space-y-3">
+                    {weddingPackages.map((pkg, idx) => (
+                      <div key={idx} className="rounded-xl border bg-muted/30 p-3 space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs font-semibold text-muted-foreground">Package #{idx + 1}</span>
+                          <Button variant="ghost" size="sm" className="text-destructive h-6 px-2" onClick={() => setWeddingPackages(weddingPackages.filter((_, i) => i !== idx))}>
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                          <div>
+                            <label className="text-xs text-muted-foreground mb-1 block">Nom</label>
+                            <Input value={pkg.name} onChange={(e) => { const u = [...weddingPackages]; u[idx] = { ...pkg, name: e.target.value }; setWeddingPackages(u); }} placeholder="Formule Prestige" />
+                          </div>
+                          <div>
+                            <label className="text-xs text-muted-foreground mb-1 block">Prix</label>
+                            <Input value={pkg.price} onChange={(e) => { const u = [...weddingPackages]; u[idx] = { ...pkg, price: e.target.value }; setWeddingPackages(u); }} placeholder="15000" />
+                          </div>
+                          <div>
+                            <label className="text-xs text-muted-foreground mb-1 block">Devise</label>
+                            <Input value={pkg.currency} onChange={(e) => { const u = [...weddingPackages]; u[idx] = { ...pkg, currency: e.target.value }; setWeddingPackages(u); }} placeholder="TND" />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="text-xs text-muted-foreground mb-1 block">Description</label>
+                          <textarea className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-y min-h-[60px]" value={pkg.description} onChange={(e) => { const u = [...weddingPackages]; u[idx] = { ...pkg, description: e.target.value }; setWeddingPackages(u); }} placeholder="Décrivez cette formule..." />
+                        </div>
+                        <div>
+                          <label className="text-xs text-muted-foreground mb-1 block">Inclus (une ligne par élément)</label>
+                          <textarea className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-y min-h-[80px]" value={(pkg.features || []).join("\n")} onChange={(e) => { const u = [...weddingPackages]; u[idx] = { ...pkg, features: e.target.value.split("\n").map(f => f.trim()).filter(Boolean) }; setWeddingPackages(u); }} placeholder={"Salle pour 300 invités\nTraiteur 3 plats\nDJ + Sonorisation"} />
+                        </div>
+                      </div>
+                    ))}
+                    {weddingPackages.length === 0 && (
+                      <p className="text-xs text-muted-foreground text-center py-3">Aucun package ajouté</p>
+                    )}
+                  </div>
                 </div>
               </div>
             )}

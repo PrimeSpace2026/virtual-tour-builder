@@ -145,7 +145,7 @@ const Portfolio = () => {
 
   const openProjectTour = (project: Project) => {
     const url = project.tourUrl?.trim();
-    if (url && /^https?:\/\//i.test(url) && !url.includes("my.matterport.com/show/?m=")) {
+    if (url && /^https?:\/\//i.test(url) && !url.includes("my.matterport.com/show")) {
       window.open(url, "_blank", "noopener,noreferrer");
       return;
     }
@@ -382,7 +382,7 @@ const Portfolio = () => {
                     </div>
                     <span className="text-sm text-foreground hover:text-secondary transition-colors flex items-center gap-1">
                       {T(t.portfolio.viewTour)}
-                      {project.tourUrl?.startsWith("http") && !project.tourUrl.includes("my.matterport.com/show/?m=") ? (
+                      {project.tourUrl?.startsWith("http") && !project.tourUrl.includes("my.matterport.com/show") ? (
                         <ExternalLink className="w-4 h-4" />
                       ) : (
                         <Play className="w-4 h-4" />

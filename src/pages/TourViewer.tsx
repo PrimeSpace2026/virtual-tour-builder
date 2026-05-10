@@ -57,6 +57,7 @@ import {
   Mail,
   User,
   Menu,
+  Globe,
 } from "lucide-react";
 import { connectBundleSdk, registerVideoScreenComponents, createVideoScreenObjects, createAvatarObject, type VideoScreenData, type AvatarSceneData } from "@/utils/matterportBundle";
 
@@ -298,6 +299,48 @@ interface GymCoachData {
   tagSid: string;
 }
 
+interface WeddingProviderData {
+  category: string;
+  subsection: string;
+  name: string;
+  description: string;
+  imageUrl: string;
+  phone: string;
+  whatsapp: string;
+  instagram: string;
+  facebook: string;
+  website: string;
+  price: string;
+  tagSid: string;
+}
+
+interface WeddingPackageData {
+  name: string;
+  description: string;
+  price: string;
+  currency: string;
+  features: string[];
+}
+
+interface WeddingVenueData {
+  capacity: number | null;
+  priceRange: string;
+  parkingSpaces: number | null;
+  bookingUrl: string;
+  amenities: string[];
+  providers: WeddingProviderData[];
+  packages: WeddingPackageData[];
+  phone: string;
+  whatsapp: string;
+  email: string;
+  website: string;
+  instagram: string;
+  facebook: string;
+  tiktok: string;
+  address: string;
+  openingHours: string;
+}
+
 interface TagAttachment {
   id: string;
   type: string; // MIME type or Matterport type (e.g. 'video/mp4', 'image/jpeg', 'application/pdf', 'text/html')
@@ -473,6 +516,8 @@ const normalizeCategory = (v?: string): string => {
     "Immobilier": "Immobilier",
     "Real Estate": "Immobilier",
     "Gym & Fitness": "Gym & Fitness",
+    "Wedding venue": "Wedding venue",
+    "Wedding Venue": "Wedding venue",
   };
   return map[v] || v;
 };
@@ -575,6 +620,9 @@ const TourViewer = () => {
   const [selectedCoach, setSelectedCoach] = useState<GymCoachData | null>(null);
   const [selectedImmoRoom, setSelectedImmoRoom] = useState<{ name: string; type: string; tagSid: string; imageUrl: string; description: string } | null>(null);
   const [gymCoaches, setGymCoaches] = useState<GymCoachData[]>([]);
+  const [weddingData, setWeddingData] = useState<WeddingVenueData | null>(null);
+  const [activeWeddingCategory, setActiveWeddingCategory] = useState<string | null>(null);
+  const [selectedProvider, setSelectedProvider] = useState<WeddingProviderData | null>(null);
   const [immoRooms, setImmoRooms] = useState<{ name: string; type: string; tagSid: string; imageUrl: string; description: string }[]>([]);
   const [bottomTab, setBottomTab] = useState<string>("products");
   const [bottomStripOpen, setBottomStripOpen] = useState(true);
@@ -715,6 +763,33 @@ const TourViewer = () => {
             setGymCoaches(Array.isArray(meta.coaches) ? meta.coaches : []);
           } catch { setGymCoaches([]); }
         } else { setGymCoaches([]); }
+        // Parse wedding data from metadataJson
+        if (normalizeCategory(tourData.category) === "Wedding venue") {
+          if (tourData.metadataJson) {
+            try {
+              const meta = JSON.parse(tourData.metadataJson);
+              const w = meta.wedding || {};
+              setWeddingData({
+                capacity: w.capacity ?? meta.weddingCapacity ?? null,
+                priceRange: w.priceRange || meta.weddingPriceRange || '',
+                parkingSpaces: w.parkingSpaces ?? meta.weddingParkingSpaces ?? null,
+                bookingUrl: w.bookingUrl || meta.weddingBookingUrl || '',
+                amenities: Array.isArray(w.amenities) ? w.amenities : (Array.isArray(meta.weddingAmenities) ? meta.weddingAmenities : []),
+                providers: Array.isArray(meta.weddingProviders) ? meta.weddingProviders : (Array.isArray(w.providers) ? w.providers : []),
+                packages: Array.isArray(meta.weddingPackages) ? meta.weddingPackages : (Array.isArray(w.packages) ? w.packages : []),
+                phone: w.phone || '',
+                whatsapp: w.whatsapp || '',
+                email: w.email || '',
+                website: w.website || '',
+                instagram: w.instagram || '',
+                facebook: w.facebook || '',
+                tiktok: w.tiktok || '',
+                address: w.address || '',
+                openingHours: w.openingHours || '',
+              });
+            } catch { setWeddingData(null); }
+          }
+        } else { setWeddingData(null); }
         // Parse immobilier rooms from metadataJson, enrich with chambers data
         if (normalizeCategory(tourData.category) === "Immobilier") {
           let rooms: { name: string; type: string; tagSid: string; imageUrl: string; description: string }[] = [];
@@ -3333,6 +3408,236 @@ const TourViewer = () => {
                   } catch { return null; }
                 })()}
 
+                {/* Wedding Venue Info */}
+                {normalizeCategory(tour.category) === "Wedding venue" && weddingData && (() => {
+                  const WEDDING_CATEGORIES = [
+                    { key: "Salles des Fêtes", icon: "🏛️" },
+                    { key: "Photographes", icon: "📸" },
+                    { key: "Vidéaste", icon: "🎬" },
+                    { key: "DJ", icon: "🎧" },
+                    { key: "Bands", icon: "🎵" },
+                    { key: "Troupes", icon: "🎭" },
+                    { key: "Show", icon: "✨" },
+                    { key: "Onemanshow", icon: "🎤" },
+                    { key: "Artistes", icon: "🎨" },
+                    { key: "Fleuriste", icon: "💐" },
+                    { key: "Décoration", icon: "🎀" },
+                    { key: "Traiteur", icon: "🍽️" },
+                    { key: "Pâtisserie", icon: "🎂" },
+                    { key: "Robes de Mariage", icon: "👗" },
+                    { key: "Costumes de Mariage", icon: "🤵" },
+                    { key: "Coiffeurs Femme", icon: "💇‍♀️" },
+                    { key: "Coiffeurs Homme", icon: "💇‍♂️" },
+                    { key: "Maquillage", icon: "💄" },
+                    { key: "Voitures de Mariage", icon: "🚗" },
+                    { key: "Transports", icon: "🚐" },
+                    { key: "Notaires", icon: "📋" },
+                    { key: "Animation enfants", icon: "🎈" },
+                    { key: "Faire-part", icon: "💌" },
+                    { key: "Bijoux", icon: "💍" },
+                  ];
+                  const availableCategories = WEDDING_CATEGORIES.filter(c => weddingData.providers.some(p => p.category === c.key));
+                  const filteredProviders = activeWeddingCategory
+                    ? weddingData.providers.filter(p => p.category === activeWeddingCategory)
+                    : weddingData.providers;
+                  return (
+                    <>
+                      {/* Venue Details */}
+                      {(weddingData.capacity || weddingData.priceRange || weddingData.parkingSpaces) && (
+                        <div className="rounded-xl overflow-hidden border border-white/[0.06] bg-white/[0.02] p-3 space-y-1.5">
+                          <p className="text-white/25 text-[10px] uppercase tracking-widest font-semibold mb-2">Venue Details</p>
+                          <div className="grid grid-cols-2 gap-x-3 gap-y-1">
+                            {weddingData.capacity && (
+                              <div className="flex justify-between py-1 border-b border-white/[0.04]">
+                                <span className="text-white/40 text-xs">Capacity</span>
+                                <span className="text-white/80 text-xs font-medium">{weddingData.capacity} guests</span>
+                              </div>
+                            )}
+                            {weddingData.priceRange && (
+                              <div className="flex justify-between py-1 border-b border-white/[0.04]">
+                                <span className="text-white/40 text-xs">Price</span>
+                                <span className="text-white/80 text-xs font-medium">{weddingData.priceRange}</span>
+                              </div>
+                            )}
+                            {weddingData.parkingSpaces && (
+                              <div className="flex justify-between py-1 border-b border-white/[0.04]">
+                                <span className="text-white/40 text-xs">Parking</span>
+                                <span className="text-white/80 text-xs font-medium">{weddingData.parkingSpaces} places</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Contact & Social */}
+                      {(weddingData.phone || weddingData.whatsapp || weddingData.email || weddingData.website || weddingData.instagram || weddingData.facebook || weddingData.tiktok || weddingData.address || weddingData.openingHours) && (
+                        <div className="rounded-xl overflow-hidden border border-white/[0.06] bg-white/[0.02] p-3 space-y-2">
+                          <p className="text-white/25 text-[10px] uppercase tracking-widest font-semibold mb-2">Contact & Info</p>
+                          {weddingData.address && (
+                            <div className="flex items-start gap-2">
+                              <MapPin className="w-3.5 h-3.5 text-white/40 mt-0.5 shrink-0" />
+                              <span className="text-white/70 text-xs">{weddingData.address}</span>
+                            </div>
+                          )}
+                          {weddingData.openingHours && (
+                            <div className="flex items-start gap-2">
+                              <Clock className="w-3.5 h-3.5 text-white/40 mt-0.5 shrink-0" />
+                              <span className="text-white/70 text-xs">{weddingData.openingHours}</span>
+                            </div>
+                          )}
+                          <div className="flex flex-wrap gap-1.5 pt-1">
+                            {weddingData.phone && (
+                              <a href={`tel:${weddingData.phone}`} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/[0.05] border border-white/[0.08] hover:bg-white/[0.1] transition-all text-white/60 hover:text-white text-[10px]">
+                                <Phone className="w-3 h-3" /> Appeler
+                              </a>
+                            )}
+                            {weddingData.whatsapp && (
+                              <a href={`https://wa.me/${weddingData.whatsapp.replace(/[^0-9+]/g, "")}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-green-500/10 border border-green-400/20 hover:bg-green-500/20 transition-all text-green-300 text-[10px]">
+                                <MessageCircle className="w-3 h-3" /> WhatsApp
+                              </a>
+                            )}
+                            {weddingData.email && (
+                              <a href={`mailto:${weddingData.email}`} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/[0.05] border border-white/[0.08] hover:bg-white/[0.1] transition-all text-white/60 hover:text-white text-[10px]">
+                                <Mail className="w-3 h-3" /> Email
+                              </a>
+                            )}
+                            {weddingData.website && (
+                              <a href={weddingData.website.startsWith("http") ? weddingData.website : `https://${weddingData.website}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/[0.05] border border-white/[0.08] hover:bg-white/[0.1] transition-all text-white/60 hover:text-white text-[10px]">
+                                <Globe className="w-3 h-3" /> Site web
+                              </a>
+                            )}
+                            {weddingData.instagram && (
+                              <a href={weddingData.instagram.startsWith("http") ? weddingData.instagram : `https://instagram.com/${weddingData.instagram}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-pink-500/10 border border-pink-400/20 hover:bg-pink-500/20 transition-all text-pink-300 text-[10px]">
+                                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg> Instagram
+                              </a>
+                            )}
+                            {weddingData.facebook && (
+                              <a href={weddingData.facebook.startsWith("http") ? weddingData.facebook : `https://facebook.com/${weddingData.facebook}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-blue-500/10 border border-blue-400/20 hover:bg-blue-500/20 transition-all text-blue-300 text-[10px]">
+                                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg> Facebook
+                              </a>
+                            )}
+                            {weddingData.tiktok && (
+                              <a href={weddingData.tiktok.startsWith("http") ? weddingData.tiktok : `https://tiktok.com/@${weddingData.tiktok}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/[0.05] border border-white/[0.08] hover:bg-white/[0.1] transition-all text-white/60 hover:text-white text-[10px]">
+                                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/></svg> TikTok
+                              </a>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Amenities */}
+                      {weddingData.amenities.length > 0 && (
+                        <div className="rounded-xl overflow-hidden border border-white/[0.06] bg-white/[0.02] p-3">
+                          <p className="text-white/25 text-[10px] uppercase tracking-widest font-semibold mb-2">Amenities</p>
+                          <div className="flex flex-wrap gap-1.5">
+                            {weddingData.amenities.map((a, i) => (
+                              <span key={i} className="px-2 py-0.5 rounded-full bg-purple-500/10 border border-purple-400/20 text-purple-200 text-[10px]">{a}</span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Provider Category Tabs */}
+                      {availableCategories.length > 0 && (
+                        <div className="space-y-2">
+                          <p className="text-white/25 text-[10px] uppercase tracking-widest font-semibold">Service Providers</p>
+                          <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+                            <button
+                              onClick={() => setActiveWeddingCategory(null)}
+                              className={`shrink-0 px-2.5 py-1.5 rounded-lg text-[10px] font-medium transition-all ${
+                                !activeWeddingCategory
+                                  ? "bg-purple-600/30 border border-purple-400/30 text-purple-200"
+                                  : "bg-white/[0.04] border border-white/[0.06] text-white/40 hover:text-white/60"
+                              }`}
+                            >All</button>
+                            {availableCategories.map(c => (
+                              <button
+                                key={c.key}
+                                onClick={() => setActiveWeddingCategory(activeWeddingCategory === c.key ? null : c.key)}
+                                className={`shrink-0 px-2.5 py-1.5 rounded-lg text-[10px] font-medium transition-all whitespace-nowrap ${
+                                  activeWeddingCategory === c.key
+                                    ? "bg-purple-600/30 border border-purple-400/30 text-purple-200"
+                                    : "bg-white/[0.04] border border-white/[0.06] text-white/40 hover:text-white/60"
+                                }`}
+                              >{c.icon} {c.key}</button>
+                            ))}
+                          </div>
+
+                          {/* Provider Cards */}
+                          <div className="space-y-2">
+                            {filteredProviders.map((provider, pi) => (
+                              <button
+                                key={pi}
+                                onClick={() => {
+                                  setSelectedProvider(provider);
+                                  if (provider.tagSid) flyToTag(provider.tagSid);
+                                }}
+                                className="w-full flex items-center gap-3 p-3 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.07] transition-all group text-left"
+                              >
+                                {provider.imageUrl ? (
+                                  <img src={provider.imageUrl} alt={provider.name} className="w-12 h-12 rounded-xl object-cover border border-white/10 shrink-0" />
+                                ) : (
+                                  <div className="w-12 h-12 rounded-xl bg-purple-500/10 flex items-center justify-center border border-purple-400/20 shrink-0">
+                                    <span className="text-lg">{WEDDING_CATEGORIES.find(c => c.key === provider.category)?.icon || "💒"}</span>
+                                  </div>
+                                )}
+                                <div className="min-w-0 flex-1">
+                                  <p className="text-white/80 text-sm font-medium truncate group-hover:text-white transition-colors">{provider.name}</p>
+                                  <p className="text-white/30 text-[10px]">{provider.category}{provider.subsection ? ` · ${provider.subsection}` : ''}</p>
+                                  {provider.price && <p className="text-purple-300 text-xs font-semibold mt-0.5">{provider.price}</p>}
+                                </div>
+                                <ChevronRight className="w-4 h-4 text-white/20 group-hover:text-white/50 transition-colors shrink-0" />
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Packages */}
+                      {weddingData.packages.length > 0 && (
+                        <div className="space-y-2">
+                          <p className="text-white/25 text-[10px] uppercase tracking-widest font-semibold">Packages</p>
+                          {weddingData.packages.map((pkg, pi) => (
+                            <div key={pi} className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3 space-y-2">
+                              <div className="flex items-center justify-between">
+                                <p className="text-white/80 text-sm font-semibold">{pkg.name}</p>
+                                {pkg.price && (
+                                  <span className="px-2 py-0.5 rounded-full bg-purple-600/20 text-purple-300 text-xs font-bold">
+                                    {pkg.price} {pkg.currency || "TND"}
+                                  </span>
+                                )}
+                              </div>
+                              {pkg.description && <p className="text-white/40 text-xs">{pkg.description}</p>}
+                              {pkg.features.length > 0 && (
+                                <ul className="space-y-1">
+                                  {pkg.features.map((f, fi) => (
+                                    <li key={fi} className="flex items-center gap-2 text-white/50 text-xs">
+                                      <Check className="w-3 h-3 text-green-400 shrink-0" />
+                                      {f}
+                                    </li>
+                                  ))}
+                                </ul>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Booking CTA */}
+                      {weddingData.bookingUrl && (
+                        <a
+                          href={weddingData.bookingUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block w-full py-3 rounded-xl bg-gradient-to-r from-purple-600 to-pink-500 text-white text-sm font-semibold text-center hover:shadow-lg hover:shadow-purple-500/25 transition-all"
+                        >
+                          Book This Venue
+                        </a>
+                      )}
+                    </>
+                  );
+                })()}
+
                 {/* Navigation - Other tours */}
                 {!isClean && (prevTour || nextTour) && (
                   <div className="pt-2 border-t border-white/[0.06]">
@@ -3686,6 +3991,194 @@ const TourViewer = () => {
                     </>
                   );
                 } catch { return null; }
+              })()}
+              {/* Mobile: Wedding Venue Info */}
+              {normalizeCategory(tour.category) === "Wedding venue" && weddingData && (() => {
+                const WEDDING_CATEGORIES = [
+                  { key: "Salles des Fêtes", icon: "🏛️" }, { key: "Photographes", icon: "📸" }, { key: "Vidéaste", icon: "🎬" },
+                  { key: "DJ", icon: "🎧" }, { key: "Bands", icon: "🎵" }, { key: "Troupes", icon: "🎭" }, { key: "Show", icon: "✨" },
+                  { key: "Onemanshow", icon: "🎤" }, { key: "Artistes", icon: "🎨" }, { key: "Fleuriste", icon: "💐" },
+                  { key: "Décoration", icon: "🎀" }, { key: "Traiteur", icon: "🍽️" }, { key: "Pâtisserie", icon: "🎂" },
+                  { key: "Robes de Mariage", icon: "👗" }, { key: "Costumes de Mariage", icon: "🤵" },
+                  { key: "Coiffeurs Femme", icon: "💇‍♀️" }, { key: "Coiffeurs Homme", icon: "💇‍♂️" }, { key: "Maquillage", icon: "💄" },
+                  { key: "Voitures de Mariage", icon: "🚗" }, { key: "Transports", icon: "🚐" }, { key: "Notaires", icon: "📋" },
+                  { key: "Animation enfants", icon: "🎈" }, { key: "Faire-part", icon: "💌" }, { key: "Bijoux", icon: "💍" },
+                ];
+                const availableCategories = WEDDING_CATEGORIES.filter(c => weddingData.providers.some(p => p.category === c.key));
+                const filteredProviders = activeWeddingCategory
+                  ? weddingData.providers.filter(p => p.category === activeWeddingCategory)
+                  : weddingData.providers;
+                return (
+                  <div className="border-t border-white/[0.06]">
+                    {/* Venue Details */}
+                    {(weddingData.capacity || weddingData.priceRange || weddingData.parkingSpaces) && (
+                      <div className="p-3 space-y-1.5">
+                        <p className="text-white/25 text-[10px] uppercase tracking-widest font-semibold mb-1">Venue Details</p>
+                        <div className="grid grid-cols-2 gap-x-3 gap-y-1">
+                          {weddingData.capacity && (
+                            <div className="flex justify-between py-1 border-b border-white/[0.04]">
+                              <span className="text-white/40 text-[10px]">Capacity</span>
+                              <span className="text-white/80 text-[10px] font-medium">{weddingData.capacity} guests</span>
+                            </div>
+                          )}
+                          {weddingData.priceRange && (
+                            <div className="flex justify-between py-1 border-b border-white/[0.04]">
+                              <span className="text-white/40 text-[10px]">Price</span>
+                              <span className="text-white/80 text-[10px] font-medium">{weddingData.priceRange}</span>
+                            </div>
+                          )}
+                          {weddingData.parkingSpaces && (
+                            <div className="flex justify-between py-1 border-b border-white/[0.04]">
+                              <span className="text-white/40 text-[10px]">Parking</span>
+                              <span className="text-white/80 text-[10px] font-medium">{weddingData.parkingSpaces} places</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Contact & Social */}
+                    {(weddingData.phone || weddingData.whatsapp || weddingData.email || weddingData.website || weddingData.instagram || weddingData.facebook || weddingData.tiktok || weddingData.address || weddingData.openingHours) && (
+                      <div className="p-3 border-t border-white/[0.06] space-y-2">
+                        <p className="text-white/25 text-[10px] uppercase tracking-widest font-semibold mb-1">Contact & Info</p>
+                        {weddingData.address && (
+                          <div className="flex items-start gap-2">
+                            <MapPin className="w-3 h-3 text-white/40 mt-0.5 shrink-0" />
+                            <span className="text-white/70 text-[10px]">{weddingData.address}</span>
+                          </div>
+                        )}
+                        {weddingData.openingHours && (
+                          <div className="flex items-start gap-2">
+                            <Clock className="w-3 h-3 text-white/40 mt-0.5 shrink-0" />
+                            <span className="text-white/70 text-[10px]">{weddingData.openingHours}</span>
+                          </div>
+                        )}
+                        <div className="flex flex-wrap gap-1">
+                          {weddingData.phone && (
+                            <a href={`tel:${weddingData.phone}`} className="flex items-center gap-1 px-2 py-1 rounded-lg bg-white/[0.05] border border-white/[0.08] text-white/60 text-[9px]">
+                              <Phone className="w-2.5 h-2.5" /> Appeler
+                            </a>
+                          )}
+                          {weddingData.whatsapp && (
+                            <a href={`https://wa.me/${weddingData.whatsapp.replace(/[^0-9+]/g, "")}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 px-2 py-1 rounded-lg bg-green-500/10 border border-green-400/20 text-green-300 text-[9px]">
+                              <MessageCircle className="w-2.5 h-2.5" /> WhatsApp
+                            </a>
+                          )}
+                          {weddingData.email && (
+                            <a href={`mailto:${weddingData.email}`} className="flex items-center gap-1 px-2 py-1 rounded-lg bg-white/[0.05] border border-white/[0.08] text-white/60 text-[9px]">
+                              <Mail className="w-2.5 h-2.5" /> Email
+                            </a>
+                          )}
+                          {weddingData.website && (
+                            <a href={weddingData.website.startsWith("http") ? weddingData.website : `https://${weddingData.website}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 px-2 py-1 rounded-lg bg-white/[0.05] border border-white/[0.08] text-white/60 text-[9px]">
+                              <Globe className="w-2.5 h-2.5" /> Site
+                            </a>
+                          )}
+                          {weddingData.instagram && (
+                            <a href={weddingData.instagram.startsWith("http") ? weddingData.instagram : `https://instagram.com/${weddingData.instagram}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 px-2 py-1 rounded-lg bg-pink-500/10 border border-pink-400/20 text-pink-300 text-[9px]">
+                              Instagram
+                            </a>
+                          )}
+                          {weddingData.facebook && (
+                            <a href={weddingData.facebook.startsWith("http") ? weddingData.facebook : `https://facebook.com/${weddingData.facebook}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 px-2 py-1 rounded-lg bg-blue-500/10 border border-blue-400/20 text-blue-300 text-[9px]">
+                              Facebook
+                            </a>
+                          )}
+                          {weddingData.tiktok && (
+                            <a href={weddingData.tiktok.startsWith("http") ? weddingData.tiktok : `https://tiktok.com/@${weddingData.tiktok}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 px-2 py-1 rounded-lg bg-white/[0.05] border border-white/[0.08] text-white/60 text-[9px]">
+                              TikTok
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Amenities */}
+                    {weddingData.amenities.length > 0 && (
+                      <div className="p-3 border-t border-white/[0.06]">
+                        <p className="text-white/25 text-[10px] uppercase tracking-widest font-semibold mb-1">Amenities</p>
+                        <div className="flex flex-wrap gap-1">
+                          {weddingData.amenities.map((a, i) => (
+                            <span key={i} className="px-2 py-0.5 rounded-full bg-purple-500/10 border border-purple-400/20 text-purple-200 text-[9px]">{a}</span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Provider Category Tabs */}
+                    {availableCategories.length > 0 && (
+                      <div className="p-3 border-t border-white/[0.06] space-y-2">
+                        <p className="text-white/25 text-[10px] uppercase tracking-widest font-semibold">Service Providers</p>
+                        <div className="flex gap-1 overflow-x-auto pb-1 scrollbar-none">
+                          <button onClick={() => setActiveWeddingCategory(null)}
+                            className={`shrink-0 px-2 py-1 rounded-lg text-[9px] font-medium transition-all ${!activeWeddingCategory ? "bg-purple-600/30 border border-purple-400/30 text-purple-200" : "bg-white/[0.04] border border-white/[0.06] text-white/40"}`}
+                          >All</button>
+                          {availableCategories.map(c => (
+                            <button key={c.key} onClick={() => setActiveWeddingCategory(activeWeddingCategory === c.key ? null : c.key)}
+                              className={`shrink-0 px-2 py-1 rounded-lg text-[9px] font-medium transition-all whitespace-nowrap ${activeWeddingCategory === c.key ? "bg-purple-600/30 border border-purple-400/30 text-purple-200" : "bg-white/[0.04] border border-white/[0.06] text-white/40"}`}
+                            >{c.icon} {c.key}</button>
+                          ))}
+                        </div>
+                        <div className="space-y-1.5">
+                          {filteredProviders.map((provider, pi) => (
+                            <button key={pi} onClick={() => { setSelectedProvider(provider); if (provider.tagSid) flyToTag(provider.tagSid); }}
+                              className="w-full flex items-center gap-2.5 p-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.07] transition-all group text-left"
+                            >
+                              {provider.imageUrl ? (
+                                <img src={provider.imageUrl} alt={provider.name} className="w-10 h-10 rounded-xl object-cover border border-white/10 shrink-0" />
+                              ) : (
+                                <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center border border-purple-400/20 shrink-0">
+                                  <span className="text-base">{WEDDING_CATEGORIES.find(c => c.key === provider.category)?.icon || "💒"}</span>
+                                </div>
+                              )}
+                              <div className="min-w-0 flex-1">
+                                <p className="text-white/80 text-[11px] font-medium truncate">{provider.name}</p>
+                                <p className="text-white/30 text-[9px]">{provider.category}{provider.subsection ? ` · ${provider.subsection}` : ''}</p>
+                                {provider.price && <p className="text-purple-300 text-[10px] font-semibold mt-0.5">{provider.price}</p>}
+                              </div>
+                              <ChevronRight className="w-3.5 h-3.5 text-white/20 shrink-0" />
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Packages */}
+                    {weddingData.packages.length > 0 && (
+                      <div className="p-3 border-t border-white/[0.06] space-y-1.5">
+                        <p className="text-white/25 text-[10px] uppercase tracking-widest font-semibold">Packages</p>
+                        {weddingData.packages.map((pkg, pi) => (
+                          <div key={pi} className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-2.5 space-y-1.5">
+                            <div className="flex items-center justify-between">
+                              <p className="text-white/80 text-[11px] font-semibold">{pkg.name}</p>
+                              {pkg.price && <span className="px-1.5 py-0.5 rounded-full bg-purple-600/20 text-purple-300 text-[9px] font-bold">{pkg.price} {pkg.currency || "TND"}</span>}
+                            </div>
+                            {pkg.description && <p className="text-white/40 text-[10px]">{pkg.description}</p>}
+                            {pkg.features.length > 0 && (
+                              <ul className="space-y-0.5">
+                                {pkg.features.map((f, fi) => (
+                                  <li key={fi} className="flex items-center gap-1.5 text-white/50 text-[10px]">
+                                    <Check className="w-2.5 h-2.5 text-green-400 shrink-0" /> {f}
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Booking CTA */}
+                    {weddingData.bookingUrl && (
+                      <div className="p-3 border-t border-white/[0.06]">
+                        <a href={weddingData.bookingUrl} target="_blank" rel="noopener noreferrer"
+                          className="block w-full py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-pink-500 text-white text-[11px] font-semibold text-center">
+                          Book This Venue
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                );
               })()}
               {!isClean && (prevTour || nextTour) && (
                 <div className="flex border-t border-white/[0.06]">
@@ -4589,6 +5082,118 @@ const TourViewer = () => {
                       View in 3D
                     </button>
                   )}
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* ===== WEDDING PROVIDER POPUP ===== */}
+      <AnimatePresence>
+        {selectedProvider && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSelectedProvider(null)}
+              className="fixed inset-0 bg-black/50 z-[100]"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.92, y: 30 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.92, y: 30 }}
+              transition={{ type: "spring", damping: 25, stiffness: 280 }}
+              className="fixed inset-0 flex items-center justify-center z-[100] pointer-events-none p-4"
+            >
+              <div className="bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col w-full max-w-[440px] max-h-[90vh] pointer-events-auto relative">
+                <button
+                  onClick={() => setSelectedProvider(null)}
+                  className="absolute top-3 right-3 z-10 w-8 h-8 rounded-full bg-black/40 hover:bg-black/60 flex items-center justify-center text-white transition-all"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+
+                {/* Provider header */}
+                <div className="bg-gradient-to-br from-purple-600 to-pink-500 p-6 flex flex-col items-center text-center">
+                  {selectedProvider.imageUrl ? (
+                    <img src={selectedProvider.imageUrl} alt={selectedProvider.name} className="w-24 h-24 rounded-2xl object-cover border-4 border-white/30 shadow-lg" />
+                  ) : (
+                    <div className="w-24 h-24 rounded-2xl bg-white/20 flex items-center justify-center border-4 border-white/30">
+                      <span className="text-4xl">💒</span>
+                    </div>
+                  )}
+                  <h3 className="text-white font-bold text-xl mt-3">{selectedProvider.name}</h3>
+                  <p className="text-white/70 text-sm mt-0.5">{selectedProvider.category}{selectedProvider.subsection ? ` · ${selectedProvider.subsection}` : ''}</p>
+                  {selectedProvider.price && (
+                    <span className="mt-2 inline-flex items-center gap-1.5 bg-white/20 px-3 py-1 rounded-full text-white text-sm font-semibold">
+                      <Banknote className="w-4 h-4" /> {selectedProvider.price}
+                    </span>
+                  )}
+                </div>
+
+                <div className="p-5 overflow-y-auto flex-1 min-h-0 space-y-4">
+                  {selectedProvider.description && (
+                    <p className="text-sm text-gray-600 leading-relaxed">{selectedProvider.description}</p>
+                  )}
+
+                  {/* Contact buttons */}
+                  <div className="space-y-2">
+                    {selectedProvider.phone && (
+                      <a
+                        href={`tel:${selectedProvider.phone}`}
+                        className="flex items-center gap-3 w-full px-4 py-3 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium text-sm transition-colors"
+                      >
+                        <Phone className="w-5 h-5" />
+                        {selectedProvider.phone}
+                      </a>
+                    )}
+                    {selectedProvider.whatsapp && (
+                      <a
+                        href={`https://wa.me/${selectedProvider.whatsapp.replace(/[^0-9+]/g, "")}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-3 w-full px-4 py-3 rounded-xl bg-green-50 hover:bg-green-100 text-green-700 font-medium text-sm transition-colors"
+                      >
+                        <MessageCircle className="w-5 h-5" />
+                        WhatsApp
+                      </a>
+                    )}
+                    {selectedProvider.instagram && (
+                      <a
+                        href={selectedProvider.instagram.startsWith("http") ? selectedProvider.instagram : `https://instagram.com/${selectedProvider.instagram}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-3 w-full px-4 py-3 rounded-xl bg-pink-50 hover:bg-pink-100 text-pink-700 font-medium text-sm transition-colors"
+                      >
+                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
+                        Instagram
+                      </a>
+                    )}
+                    {selectedProvider.facebook && (
+                      <a
+                        href={selectedProvider.facebook.startsWith("http") ? selectedProvider.facebook : `https://facebook.com/${selectedProvider.facebook}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-3 w-full px-4 py-3 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium text-sm transition-colors"
+                      >
+                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+                        Facebook
+                      </a>
+                    )}
+                    {selectedProvider.website && (
+                      <a
+                        href={selectedProvider.website.startsWith("http") ? selectedProvider.website : `https://${selectedProvider.website}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-3 w-full px-4 py-3 rounded-xl bg-gray-50 hover:bg-gray-100 text-gray-700 font-medium text-sm transition-colors"
+                      >
+                        <Globe className="w-5 h-5" />
+                        Website
+                      </a>
+                    )}
+                  </div>
                 </div>
               </div>
             </motion.div>
