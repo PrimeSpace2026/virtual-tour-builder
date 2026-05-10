@@ -1950,10 +1950,43 @@ const TourViewer = () => {
         zIndex: '10',
       });
       const yt = document.createElement('iframe');
-      yt.src = `https://www.youtube.com/embed/${screen.youtubeId}?autoplay=1&mute=1&loop=1&playlist=${screen.youtubeId}&controls=0&showinfo=0&rel=0&modestbranding=1&playsinline=1`;
+      let isMuted = true;
+      const buildYtSrc = (muted: boolean) => `https://www.youtube.com/embed/${screen.youtubeId}?autoplay=1&mute=${muted ? 1 : 0}&loop=1&playlist=${screen.youtubeId}&controls=0&showinfo=0&rel=0&modestbranding=1&playsinline=1`;
+      yt.src = buildYtSrc(true);
       Object.assign(yt.style, { width: '100%', height: '100%', border: 'none', display: 'block' });
       yt.allow = 'autoplay; encrypted-media';
       el.appendChild(yt);
+      // Sound toggle button overlay
+      const soundBtn = document.createElement('button');
+      Object.assign(soundBtn.style, {
+        position: 'absolute',
+        top: '8px',
+        left: '8px',
+        width: '36px',
+        height: '36px',
+        borderRadius: '8px',
+        background: 'rgba(0,0,0,0.7)',
+        border: '1px solid rgba(255,255,255,0.2)',
+        color: 'white',
+        cursor: 'pointer',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: '20',
+        backdropFilter: 'blur(8px)',
+      });
+      const muteIcon = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>';
+      const volumeIcon = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>';
+      soundBtn.innerHTML = muteIcon;
+      soundBtn.title = 'Unmute';
+      soundBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        isMuted = !isMuted;
+        yt.src = buildYtSrc(isMuted);
+        soundBtn.innerHTML = isMuted ? muteIcon : volumeIcon;
+        soundBtn.title = isMuted ? 'Unmute' : 'Mute';
+      });
+      el.appendChild(soundBtn);
       // Expand button overlay
       const expandBtn = document.createElement('button');
       Object.assign(expandBtn.style, {
