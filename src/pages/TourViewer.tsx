@@ -1458,6 +1458,7 @@ const TourViewer = () => {
   const tagPopupHoveredRef = useRef(false);
   const [videoScreensData, setVideoScreensData] = useState<{ id: number; name: string; youtubeUrl: string; embedUrl: string; youtubeId: string; posX: number; posY: number; posZ: number; rotX: number; rotY: number; rotZ: number; width: number; height: number; iconType: string; visibilityRange: number }[]>([]);
   const videoOverlayContainerRef = useRef<HTMLDivElement>(null);
+  const [fullscreenVideo, setFullscreenVideo] = useState<{ youtubeId: string; name: string } | null>(null);
   const [videoScreensVisible, setVideoScreensVisible] = useState(true);
 
   // Tour Guide (virtual avatar with TTS)
@@ -1949,10 +1950,36 @@ const TourViewer = () => {
         zIndex: '10',
       });
       const yt = document.createElement('iframe');
-      yt.src = `https://www.youtube.com/embed/${screen.youtubeId}?autoplay=1&mute=1&loop=1&playlist=${screen.youtubeId}&controls=1&showinfo=0&rel=0&modestbranding=1&playsinline=1`;
+      yt.src = `https://www.youtube.com/embed/${screen.youtubeId}?autoplay=1&mute=1&loop=1&playlist=${screen.youtubeId}&controls=0&showinfo=0&rel=0&modestbranding=1&playsinline=1`;
       Object.assign(yt.style, { width: '100%', height: '100%', border: 'none', display: 'block' });
       yt.allow = 'autoplay; encrypted-media';
       el.appendChild(yt);
+      // Expand button overlay
+      const expandBtn = document.createElement('button');
+      Object.assign(expandBtn.style, {
+        position: 'absolute',
+        top: '8px',
+        right: '8px',
+        width: '36px',
+        height: '36px',
+        borderRadius: '8px',
+        background: 'rgba(0,0,0,0.7)',
+        border: '1px solid rgba(255,255,255,0.2)',
+        color: 'white',
+        cursor: 'pointer',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: '20',
+        backdropFilter: 'blur(8px)',
+      });
+      expandBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>';
+      expandBtn.title = 'Watch fullscreen';
+      expandBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        setFullscreenVideo({ youtubeId: screen.youtubeId, name: screen.name });
+      });
+      el.appendChild(expandBtn);
       container.appendChild(el);
       overlays.push({ el, screen, corners3D: compute4Corners(screen), normal: computeNormal(screen) });
     }
@@ -2399,7 +2426,8 @@ const TourViewer = () => {
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        if (selectedImmoRoom) setSelectedImmoRoom(null);
+        if (fullscreenVideo) setFullscreenVideo(null);
+        else if (selectedImmoRoom) setSelectedImmoRoom(null);
         else if (selectedChamber) { setSelectedChamber(null); chamberSweepRef.current = ""; }
         else if (selectedCoach) setSelectedCoach(null);
         else if (selectedService) setSelectedService(null);
@@ -2425,6 +2453,7 @@ const TourViewer = () => {
     selectedItem,
     selectedCoach,
     selectedImmoRoom,
+    fullscreenVideo,
     showShare,
     showCard,
     showCart,
@@ -4977,6 +5006,46 @@ const TourViewer = () => {
         </div>
         );
       })()}
+
+      {/* ===== FULLSCREEN VIDEO POPUP ===== */}
+      <AnimatePresence>
+        {fullscreenVideo && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[200] bg-black/95 backdrop-blur-xl flex items-center justify-center"
+            onClick={() => setFullscreenVideo(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              className="relative w-[95vw] max-w-6xl aspect-video"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <iframe
+                src={`https://www.youtube.com/embed/${fullscreenVideo.youtubeId}?autoplay=1&rel=0`}
+                className="w-full h-full rounded-2xl border border-white/10"
+                style={{ border: "none" }}
+                allow="autoplay; encrypted-media; picture-in-picture"
+                allowFullScreen
+              />
+              <button
+                onClick={() => setFullscreenVideo(null)}
+                className="absolute -top-12 right-0 flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/10 text-white/70 hover:text-white text-sm font-medium transition-all backdrop-blur-xl"
+              >
+                <X className="w-4 h-4" />
+                Close
+              </button>
+              {fullscreenVideo.name && (
+                <p className="absolute -bottom-10 left-0 text-white/40 text-sm font-medium">{fullscreenVideo.name}</p>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
