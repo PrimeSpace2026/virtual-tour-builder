@@ -24,6 +24,7 @@ interface VideoScreenPlacerProps {
   tourUrl: string;
   onPlace: (screen: PlacedScreen) => void;
   onClose: () => void;
+  initialScreen?: PlacedScreen;
 }
 
 function extractModelId(url: string): string | null {
@@ -42,18 +43,32 @@ function normalToEulerDeg(normal: { x: number; y: number; z: number }) {
   return { rotX, rotY, rotZ: 0 };
 }
 
-type Step = "navigate" | "placed" | "url";
+function eulerDegToNormal(rotX: number, rotY: number) {
+  const rx = -rotX * Math.PI / 180;
+  const ry = rotY * Math.PI / 180;
+  return { x: Math.sin(ry) * Math.cos(rx), y: -Math.sin(rx), z: Math.cos(ry) * Math.cos(rx) };
+}
 
-export default function VideoScreenPlacer({ tourUrl, onPlace, onClose }: VideoScreenPlacerProps) {
+type Step = "navigate" | "placed" | "url" | "edit";
+
+export default function VideoScreenPlacer({ tourUrl, onPlace, onClose, initialScreen }: VideoScreenPlacerProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const sdkRef = useRef<any>(null);
   const [sdkReady, setSdkReady] = useState(false);
-  const [step, setStep] = useState<Step>("navigate");
-  const [clickPos, setClickPos] = useState<{ x: number; y: number; z: number } | null>(null);
-  const [clickNormal, setClickNormal] = useState<{ x: number; y: number; z: number } | null>(null);
-  const [youtubeUrl, setYoutubeUrl] = useState("");
-  const [screenWidth, setScreenWidth] = useState(2);
-  const [screenHeight, setScreenHeight] = useState(1.2);
+  const isEdit = !!initialScreen;
+  const [step, setStep] = useState<Step>(isEdit ? "edit" : "navigate");
+  const [clickPos, setClickPos] = useState<{ x: number; y: number; z: number } | null>(
+    initialScreen ? { x: initialScreen.posX, y: initialScreen.posY, z: initialScreen.posZ } : null
+  );
+  const [clickNormal, setClickNormal] = useState<{ x: number; y: number; z: number } | null>(
+    initialScreen ? eulerDegToNormal(initialScreen.rotX, initialScreen.rotY) : null
+  );
+  const [youtubeUrl, setYoutubeUrl] = useState(initialScreen?.youtubeUrl || "");
+  const [screenWidth, setScreenWidth] = useState(initialScreen?.width || 2);
+  const [screenHeight, setScreenHeight] = useState(initialScreen?.height || 1.2);
+  const [screenName, setScreenName] = useState(initialScreen?.name || "Écran vidéo");
+  const [iconType, setIconType] = useState(initialScreen?.iconType || "youtube");
+  const [visibilityRange, setVisibilityRange] = useState(initialScreen?.visibilityRange || 8);
   const previewRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -83,10 +98,10 @@ export default function VideoScreenPlacer({ tourUrl, onPlace, onClose }: VideoSc
     }
   }, [modelId]);
 
-  // Listen for wall clicks — one click = place screen
+  // Listen for wall clicks — one click = place/move screen
   useEffect(() => {
     const sdk = sdkRef.current;
-    if (!sdk || !sdkReady || step !== "navigate") return;
+    if (!sdk || !sdkReady || (step !== "navigate" && step !== "edit")) return;
 
     let sub: any;
     const startListening = async () => {
@@ -179,7 +194,7 @@ export default function VideoScreenPlacer({ tourUrl, onPlace, onClose }: VideoSc
     if (!clickPos || !clickNormal || !youtubeUrl.trim()) return;
     const euler = normalToEulerDeg(clickNormal);
     onPlace({
-      name: "Écran vidéo",
+      name: screenName,
       youtubeUrl,
       posX: Math.round(clickPos.x * 100) / 100,
       posY: Math.round(clickPos.y * 100) / 100,
@@ -189,8 +204,28 @@ export default function VideoScreenPlacer({ tourUrl, onPlace, onClose }: VideoSc
       rotZ: 0,
       width: screenWidth,
       height: screenHeight,
-      iconType: "youtube",
-      visibilityRange: 8,
+      iconType,
+      visibilityRange,
+    });
+    setTimeout(() => onClose(), 500);
+  };
+
+  const handleEditSave = () => {
+    if (!clickPos || !clickNormal) return;
+    const euler = normalToEulerDeg(clickNormal);
+    onPlace({
+      name: screenName,
+      youtubeUrl,
+      posX: Math.round(clickPos.x * 100) / 100,
+      posY: Math.round(clickPos.y * 100) / 100,
+      posZ: Math.round(clickPos.z * 100) / 100,
+      rotX: Math.round(euler.rotX * 10) / 10,
+      rotY: Math.round(euler.rotY * 10) / 10,
+      rotZ: 0,
+      width: screenWidth,
+      height: screenHeight,
+      iconType,
+      visibilityRange,
     });
     setTimeout(() => onClose(), 500);
   };
@@ -206,12 +241,15 @@ export default function VideoScreenPlacer({ tourUrl, onPlace, onClose }: VideoSc
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "Enter") return;
+      // Don't trigger if typing in an input
+      if ((e.target as HTMLElement)?.tagName === "INPUT" || (e.target as HTMLElement)?.tagName === "TEXTAREA") return;
       if (step === "navigate" && clickPos) { e.preventDefault(); handleLockPosition(); }
       else if (step === "placed" && clickPos) { e.preventDefault(); handleConfirmPosition(); }
+      else if (step === "edit" && clickPos) { e.preventDefault(); handleEditSave(); }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [step, clickPos]);
+  }, [step, clickPos, screenName, youtubeUrl, screenWidth, screenHeight, iconType, visibilityRange]);
 
   return (
     <div className="fixed inset-0 z-[9999] bg-black flex flex-col">
@@ -222,6 +260,7 @@ export default function VideoScreenPlacer({ tourUrl, onPlace, onClose }: VideoSc
           <span className="text-white text-sm font-medium">
             {!sdkReady && "Chargement du tour..."}
             {sdkReady && step === "navigate" && "Cliquez sur un mur pour placer un écran"}
+            {sdkReady && step === "edit" && "Cliquez sur un mur pour déplacer l'écran — modifiez les réglages à droite"}
             {step === "placed" && "Écran positionné — validez ou repositionnez"}
             {step === "url" && "Ajoutez le lien YouTube"}
           </span>
@@ -238,7 +277,7 @@ export default function VideoScreenPlacer({ tourUrl, onPlace, onClose }: VideoSc
           src={iframeSrc}
           onLoad={onIframeLoad}
           className="flex-1 w-full h-full border-none"
-          style={{ pointerEvents: step === "navigate" ? "auto" : "none" }}
+          style={{ pointerEvents: (step === "navigate" || step === "edit") ? "auto" : "none" }}
           allow="xr-spatial-tracking; fullscreen"
         />
 
@@ -247,11 +286,16 @@ export default function VideoScreenPlacer({ tourUrl, onPlace, onClose }: VideoSc
           {/* Screen preview on wall */}
           <div
             ref={previewRef}
-            style={{ display: "none", position: "absolute", border: "3px solid #a855f7", borderRadius: "4px", background: "rgba(168,85,247,0.15)", boxShadow: "0 0 20px rgba(168,85,247,0.4)", pointerEvents: "none" }}
+            style={{ display: "none", position: "absolute", border: "3px solid #ef4444", borderRadius: "4px", background: "rgba(239,68,68,0.15)", boxShadow: "0 0 24px rgba(239,68,68,0.5), inset 0 0 12px rgba(239,68,68,0.1)", pointerEvents: "none" }}
           >
             <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <Monitor style={{ width: "30%", height: "30%", color: "rgba(168,85,247,0.7)" }} />
+              <Monitor style={{ width: "30%", height: "30%", color: "rgba(239,68,68,0.8)" }} />
             </div>
+            {/* Corner markers */}
+            <div style={{ position: "absolute", top: -4, left: -4, width: 8, height: 8, borderRadius: "50%", background: "#ef4444", boxShadow: "0 0 6px #ef4444" }} />
+            <div style={{ position: "absolute", top: -4, right: -4, width: 8, height: 8, borderRadius: "50%", background: "#ef4444", boxShadow: "0 0 6px #ef4444" }} />
+            <div style={{ position: "absolute", bottom: -4, left: -4, width: 8, height: 8, borderRadius: "50%", background: "#ef4444", boxShadow: "0 0 6px #ef4444" }} />
+            <div style={{ position: "absolute", bottom: -4, right: -4, width: 8, height: 8, borderRadius: "50%", background: "#ef4444", boxShadow: "0 0 6px #ef4444" }} />
           </div>
 
           {/* Step 1: Show coordinates while navigating */}
@@ -274,10 +318,10 @@ export default function VideoScreenPlacer({ tourUrl, onPlace, onClose }: VideoSc
           {/* Step 2: Position locked — confirm or adjust size */}
           {step === "placed" && clickPos && (
             <div className="absolute bottom-4 left-1/2 -translate-x-1/2 pointer-events-auto">
-              <div className="bg-black/90 backdrop-blur-xl rounded-2xl border border-purple-500/50 px-6 py-4 shadow-2xl space-y-3 w-96">
+              <div className="bg-black/90 backdrop-blur-xl rounded-2xl border border-purple-500/50 px-6 py-4 shadow-2xl space-y-3 w-[420px]">
                 <div className="flex items-center justify-between">
                   <span className="text-white text-sm font-bold flex items-center gap-2">
-                    <Monitor className="w-4 h-4 text-purple-400" /> Écran positionné
+                    <Monitor className="w-4 h-4 text-purple-400" /> {initialScreen ? "Modifier l'écran" : "Écran positionné"}
                   </span>
                   <button onClick={handleReset} className="text-white/50 hover:text-white text-xs underline">
                     Repositionner
@@ -288,6 +332,10 @@ export default function VideoScreenPlacer({ tourUrl, onPlace, onClose }: VideoSc
                   <div className="bg-white/5 rounded px-2 py-1 text-center">Y: {clickPos.y.toFixed(2)}</div>
                   <div className="bg-white/5 rounded px-2 py-1 text-center">Z: {clickPos.z.toFixed(2)}</div>
                 </div>
+                <div>
+                  <label className="text-[10px] text-white/40">Nom</label>
+                  <Input value={screenName} onChange={(e) => setScreenName(e.target.value)} placeholder="Écran vidéo" className="bg-white/10 border-white/20 text-white text-sm h-8" />
+                </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <label className="text-[10px] text-white/40">Largeur (m)</label>
@@ -296,6 +344,36 @@ export default function VideoScreenPlacer({ tourUrl, onPlace, onClose }: VideoSc
                   <div>
                     <label className="text-[10px] text-white/40">Hauteur (m)</label>
                     <Input type="number" step="0.1" min="0.1" value={screenHeight} onChange={(e) => setScreenHeight(Number(e.target.value))} className="bg-white/10 border-white/20 text-white text-sm h-8" />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-[10px] text-white/40">Visibility Range: {visibilityRange}m</label>
+                  <input
+                    type="range" min="2" max="30" step="1" value={visibilityRange}
+                    onChange={(e) => setVisibilityRange(Number(e.target.value))}
+                    className="w-full h-1.5 mt-1 rounded-lg appearance-none cursor-pointer bg-white/10 accent-purple-500"
+                  />
+                  <div className="flex justify-between text-[9px] text-white/30 mt-0.5"><span>2m</span><span>30m</span></div>
+                </div>
+                <div>
+                  <label className="text-[10px] text-white/40">Icône</label>
+                  <div className="flex gap-1.5 mt-1">
+                    {[
+                      { value: "youtube", label: "▶ YT" },
+                      { value: "play", label: "▶️" },
+                      { value: "film", label: "🎬" },
+                      { value: "tv", label: "📺" },
+                      { value: "live", label: "🔴" },
+                    ].map((opt) => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => setIconType(opt.value)}
+                        className={`px-2.5 py-1 rounded text-[11px] font-medium border transition-all ${iconType === opt.value ? "border-purple-500 bg-purple-500/20 text-purple-300" : "border-white/10 text-white/40 hover:text-white/70"}`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
                   </div>
                 </div>
                 <Button onClick={handleConfirmPosition} className="w-full bg-purple-600 hover:bg-purple-700 text-white">
@@ -329,6 +407,76 @@ export default function VideoScreenPlacer({ tourUrl, onPlace, onClose }: VideoSc
                     <Check className="w-4 h-4 mr-2" /> Valider
                   </Button>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* Edit mode — floating right panel, tour stays interactive */}
+          {step === "edit" && (
+            <div className="absolute top-4 right-4 pointer-events-auto">
+              <div className="bg-black/90 backdrop-blur-xl rounded-2xl border border-purple-500/50 px-5 py-4 shadow-2xl space-y-3 w-72">
+                <div className="flex items-center justify-between">
+                  <span className="text-white text-sm font-bold flex items-center gap-2">
+                    <Monitor className="w-4 h-4 text-purple-400" /> Modifier l'écran
+                  </span>
+                </div>
+                {clickPos && (
+                  <div className="grid grid-cols-3 gap-1.5 text-[10px] text-white/50 font-mono">
+                    <div className="bg-white/5 rounded px-1.5 py-0.5 text-center">X: {clickPos.x.toFixed(2)}</div>
+                    <div className="bg-white/5 rounded px-1.5 py-0.5 text-center">Y: {clickPos.y.toFixed(2)}</div>
+                    <div className="bg-white/5 rounded px-1.5 py-0.5 text-center">Z: {clickPos.z.toFixed(2)}</div>
+                  </div>
+                )}
+                <div>
+                  <label className="text-[10px] text-white/40">Nom</label>
+                  <Input value={screenName} onChange={(e) => setScreenName(e.target.value)} placeholder="Écran vidéo" className="bg-white/10 border-white/20 text-white text-sm h-8" />
+                </div>
+                <div>
+                  <label className="text-[10px] text-white/40">URL YouTube</label>
+                  <Input value={youtubeUrl} onChange={(e) => setYoutubeUrl(e.target.value)} placeholder="https://youtube.com/watch?v=..." className="bg-white/10 border-white/20 text-white text-sm h-8" />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-[10px] text-white/40">Largeur (m)</label>
+                    <Input type="number" step="0.1" min="0.1" value={screenWidth} onChange={(e) => setScreenWidth(Number(e.target.value))} className="bg-white/10 border-white/20 text-white text-sm h-8" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-white/40">Hauteur (m)</label>
+                    <Input type="number" step="0.1" min="0.1" value={screenHeight} onChange={(e) => setScreenHeight(Number(e.target.value))} className="bg-white/10 border-white/20 text-white text-sm h-8" />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-[10px] text-white/40">Visibility: {visibilityRange}m</label>
+                  <input
+                    type="range" min="2" max="30" step="1" value={visibilityRange}
+                    onChange={(e) => setVisibilityRange(Number(e.target.value))}
+                    className="w-full h-1.5 mt-1 rounded-lg appearance-none cursor-pointer bg-white/10 accent-purple-500"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] text-white/40">Icône</label>
+                  <div className="flex gap-1 mt-1">
+                    {[
+                      { value: "youtube", label: "▶ YT" },
+                      { value: "play", label: "▶️" },
+                      { value: "film", label: "🎬" },
+                      { value: "tv", label: "📺" },
+                      { value: "live", label: "🔴" },
+                    ].map((opt) => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => setIconType(opt.value)}
+                        className={`px-2 py-0.5 rounded text-[10px] font-medium border transition-all ${iconType === opt.value ? "border-purple-500 bg-purple-500/20 text-purple-300" : "border-white/10 text-white/40 hover:text-white/70"}`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <Button onClick={handleEditSave} disabled={!clickPos} className="w-full bg-purple-600 hover:bg-purple-700 text-white">
+                  <Check className="w-4 h-4 mr-2" /> Sauvegarder
+                </Button>
               </div>
             </div>
           )}

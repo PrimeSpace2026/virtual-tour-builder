@@ -549,6 +549,7 @@ const Admin = () => {
   interface VideoScreenData { id?: number; name: string; youtubeUrl: string; posX: number; posY: number; posZ: number; rotX: number; rotY: number; rotZ: number; width: number; height: number; iconType: string; visibilityRange: number; }
   const [videoScreens, setVideoScreens] = useState<VideoScreenData[]>([]);
   const [showScreenPlacer, setShowScreenPlacer] = useState(false);
+  const [editScreenIndex, setEditScreenIndex] = useState<number | null>(null);
   const [showAvatarPlacer, setShowAvatarPlacer] = useState(false);
   // Tour Guide (virtual avatar with TTS)
   interface TourGuideData { id?: number; name: string; message: string; language: string; enabled: boolean; avatarUrl: string; position: string; posX?: number; posY?: number; posZ?: number; rotY?: number; }
@@ -3525,7 +3526,7 @@ const Admin = () => {
                 </label>
                 <div className="flex gap-2">
                   {editTour.tourUrl && (
-                    <Button type="button" size="sm" variant="outline" onClick={() => setShowScreenPlacer(true)}>
+                    <Button type="button" size="sm" variant="outline" onClick={() => { setEditScreenIndex(null); setShowScreenPlacer(true); }}>
                       <MousePointer2 className="w-4 h-4 mr-1" /> Placer
                     </Button>
                   )}
@@ -3533,9 +3534,16 @@ const Admin = () => {
               </div>
               {videoScreens.map((screen, idx) => (
                 <div key={idx} className="border border-border rounded-lg p-3 space-y-2 relative">
-                  <button type="button" className="absolute top-2 right-2 text-destructive hover:text-destructive/80" onClick={() => setVideoScreens(videoScreens.filter((_, i) => i !== idx))}>
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  <div className="absolute top-2 right-2 flex gap-1">
+                    {editTour.tourUrl && (
+                      <button type="button" className="text-purple-500 hover:text-purple-400" title="Modifier dans le tour" onClick={() => { setEditScreenIndex(idx); setShowScreenPlacer(true); }}>
+                        <MousePointer2 className="w-4 h-4" />
+                      </button>
+                    )}
+                    <button type="button" className="text-destructive hover:text-destructive/80" onClick={() => setVideoScreens(videoScreens.filter((_, i) => i !== idx))}>
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
                       <label className="text-xs text-muted-foreground">Nom</label>
@@ -4297,11 +4305,16 @@ const Admin = () => {
       {showScreenPlacer && editTour.tourUrl && (
         <VideoScreenPlacer
           tourUrl={editTour.tourUrl}
+          initialScreen={editScreenIndex !== null ? videoScreens[editScreenIndex] : undefined}
           onPlace={(screen) => {
             console.log("🎬 [Admin] Screen placed:", screen);
-            setVideoScreens((prev) => [...prev, screen]);
+            if (editScreenIndex !== null) {
+              setVideoScreens((prev) => { const u = [...prev]; u[editScreenIndex] = { ...u[editScreenIndex], ...screen }; return u; });
+            } else {
+              setVideoScreens((prev) => [...prev, screen]);
+            }
           }}
-          onClose={() => setShowScreenPlacer(false)}
+          onClose={() => { setShowScreenPlacer(false); setEditScreenIndex(null); }}
         />
       )}
 
