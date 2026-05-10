@@ -2378,13 +2378,6 @@ const TourViewer = () => {
     return () => document.removeEventListener("fullscreenchange", handler);
   }, []);
 
-  // Auto-fullscreen on mount
-  useEffect(() => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().then(() => setIsFullscreen(true)).catch(() => {});
-    }
-  }, []);
-
   // Copy link
   const copyLink = useCallback(() => {
     navigator.clipboard.writeText(window.location.href).then(() => {
