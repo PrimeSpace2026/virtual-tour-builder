@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { X, Check, MapPin, Upload, Image, Video, Link, FileText, Type } from "lucide-react";
+import TagIconPicker, { iconToDataUri, findIconByName } from "@/components/TagIconPicker";
 
 const SDK_KEY = "b7uar4u57xdec0zw7dwygt7md";
 
@@ -24,11 +25,15 @@ export interface CustomTagData {
   mediaType: string;
   mediaUrl: string;
   iconUrl: string;
+  iconName?: string;
   color: string;
   anchorX: number;
   anchorY: number;
   anchorZ: number;
   stemHeight: number;
+  stemDirX?: number;
+  stemDirY?: number;
+  stemDirZ?: number;
   floorIndex: number;
   enabled: boolean;
 }
@@ -56,6 +61,9 @@ export default function CustomTagPlacer({ tourUrl, onSave, onClose, editTag }: C
   const [clickPos, setClickPos] = useState<{ x: number; y: number; z: number } | null>(
     editTag ? { x: editTag.anchorX, y: editTag.anchorY, z: editTag.anchorZ } : null
   );
+  const [clickNormal, setClickNormal] = useState<{ x: number; y: number; z: number } | null>(
+    editTag?.stemDirX != null ? { x: editTag.stemDirX!, y: editTag.stemDirY ?? 1, z: editTag.stemDirZ ?? 0 } : null
+  );
   const [step, setStep] = useState<"place" | "form">(editTag ? "form" : "place");
   const previewRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -67,6 +75,10 @@ export default function CustomTagPlacer({ tourUrl, onSave, onClose, editTag }: C
   const [mediaType, setMediaType] = useState(editTag?.mediaType || "IMAGE");
   const [mediaUrl, setMediaUrl] = useState(editTag?.mediaUrl || "");
   const [iconUrl, setIconUrl] = useState(editTag?.iconUrl || "");
+  const [tagIconName, setTagIconName] = useState(() => {
+    // Try to detect if editTag has a picker icon name stored in iconUrl
+    return editTag?.iconName || "";
+  });
   const [color, setColor] = useState(editTag?.color || "#4A90D9");
   const [stemHeight, setStemHeight] = useState(editTag?.stemHeight ?? 0.5);
 
@@ -105,8 +117,9 @@ export default function CustomTagPlacer({ tourUrl, onSave, onClose, editTag }: C
       try {
         sub = sdk.Pointer.intersection.subscribe((intersection: any) => {
           if (!intersection || !intersection.position) return;
-          const { position } = intersection;
+          const { position, normal } = intersection;
           setClickPos({ x: position.x, y: position.y, z: position.z });
+          setClickNormal(normal || { x: 0, y: 1, z: 0 });
           if (document.activeElement?.tagName === "IFRAME") window.focus();
         });
       } catch (e) {
@@ -189,7 +202,9 @@ export default function CustomTagPlacer({ tourUrl, onSave, onClose, editTag }: C
           label: label || "Nouveau tag",
           description: "",
           anchorPosition: { x: clickPos.x, y: clickPos.y, z: clickPos.z },
-          stemVector: { x: 0, y: stemHeight, z: 0 },
+          stemVector: clickNormal
+            ? { x: clickNormal.x * stemHeight, y: clickNormal.y * stemHeight, z: clickNormal.z * stemHeight }
+            : { x: 0, y: stemHeight, z: 0 },
           color: { r, g, b },
         }]);
         previewTagRef.current = sid;
@@ -209,7 +224,7 @@ export default function CustomTagPlacer({ tourUrl, onSave, onClose, editTag }: C
         previewTagRef.current = null;
       }
     };
-  }, [step, clickPos, color, stemHeight, label]);
+  }, [step, clickPos, clickNormal, color, stemHeight, label]);
 
   const handleConfirmPosition = () => {
     if (!clickPos) return;
@@ -263,11 +278,15 @@ export default function CustomTagPlacer({ tourUrl, onSave, onClose, editTag }: C
       mediaType,
       mediaUrl: mediaUrl.trim(),
       iconUrl: iconUrl.trim(),
+      iconName: tagIconName || undefined,
       color,
       anchorX: Math.round(clickPos.x * 100) / 100,
       anchorY: Math.round(clickPos.y * 100) / 100,
       anchorZ: Math.round(clickPos.z * 100) / 100,
       stemHeight,
+      stemDirX: clickNormal ? Math.round(clickNormal.x * 1000) / 1000 : 0,
+      stemDirY: clickNormal ? Math.round(clickNormal.y * 1000) / 1000 : 1,
+      stemDirZ: clickNormal ? Math.round(clickNormal.z * 1000) / 1000 : 0,
       floorIndex: 0,
       enabled: true,
     });
@@ -334,13 +353,14 @@ export default function CustomTagPlacer({ tourUrl, onSave, onClose, editTag }: C
 
         {/* Form panel */}
         {step === "form" && (
-          <div className="w-full h-[65%] sm:h-full sm:w-[40%] bg-[#1a1a2e] border-t sm:border-t-0 sm:border-l border-white/10 overflow-y-auto p-4 sm:p-6">
-            <h2 className="text-white text-base sm:text-lg font-semibold mb-4 sm:mb-6 flex items-center gap-2">
-              <MapPin className="w-5 h-5 text-blue-400" />
+          <div className="w-full h-[65%] sm:h-full sm:w-[40%] bg-[#1a1a2e] border-t sm:border-t-0 sm:border-l border-white/10 flex flex-col">
+            <div className="flex-1 overflow-y-auto p-3 sm:p-5">
+            <h2 className="text-white text-sm sm:text-lg font-semibold mb-3 sm:mb-5 flex items-center gap-2">
+              <MapPin className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400" />
               {editTag ? "Modifier le tag" : "Nouveau tag personnalisé"}
             </h2>
 
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               {/* Label */}
               <div>
                 <Label className="text-gray-300 text-sm">Titre *</Label>
@@ -359,7 +379,7 @@ export default function CustomTagPlacer({ tourUrl, onSave, onClose, editTag }: C
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Description du tag..."
-                  className="mt-1 bg-white/10 border-white/20 text-white placeholder:text-gray-500 min-h-[80px]"
+                  className="mt-1 bg-white/10 border-white/20 text-white placeholder:text-gray-500 min-h-[60px] sm:min-h-[80px]"
                 />
               </div>
 
@@ -420,21 +440,39 @@ export default function CustomTagPlacer({ tourUrl, onSave, onClose, editTag }: C
 
               {/* Custom Icon */}
               <div>
-                <Label className="text-gray-300 text-sm">Icône personnalisée</Label>
+                <Label className="text-gray-300 text-sm">Icône du tag</Label>
+                <TagIconPicker
+                  value={tagIconName}
+                  color={color}
+                  onChange={(name, dataUri) => {
+                    setTagIconName(name);
+                    if (name) {
+                      setIconUrl(dataUri);
+                    } else {
+                      setIconUrl("");
+                    }
+                  }}
+                />
+              </div>
+
+              {/* Or custom icon URL */}
+              <div>
+                <Label className="text-gray-300 text-xs text-gray-500">Ou icône personnalisée (URL)</Label>
                 <div className="flex gap-2 mt-1 items-center">
                   <Input
-                    value={iconUrl}
-                    onChange={(e) => setIconUrl(e.target.value)}
+                    value={tagIconName ? "" : iconUrl}
+                    onChange={(e) => { setIconUrl(e.target.value); setTagIconName(""); }}
                     placeholder="URL de l'icône (optionnel)"
-                    className="bg-white/10 border-white/20 text-white placeholder:text-gray-500"
+                    disabled={!!tagIconName}
+                    className="bg-white/10 border-white/20 text-white placeholder:text-gray-500 text-xs"
                   />
                   <label className="cursor-pointer">
-                    <input type="file" className="hidden" accept="image/*" onChange={handleUploadIcon} />
+                    <input type="file" className="hidden" accept="image/*" onChange={(e) => { handleUploadIcon(e); setTagIconName(""); }} />
                     <div className="flex items-center justify-center h-10 px-3 bg-purple-600 hover:bg-purple-700 rounded-md text-white text-sm">
                       <Upload className="w-4 h-4" />
                     </div>
                   </label>
-                  {iconUrl && (
+                  {!tagIconName && iconUrl && (
                     <img src={iconUrl} alt="icon" className="w-10 h-10 rounded-md object-cover border border-white/20" />
                   )}
                 </div>
@@ -491,9 +529,11 @@ export default function CustomTagPlacer({ tourUrl, onSave, onClose, editTag }: C
                   </Button>
                 </div>
               )}
+            </div>
+            </div>
 
-              {/* Save / Cancel */}
-              <div className="flex gap-3 pt-4 border-t border-white/10">
+              {/* Save / Cancel — sticky bottom */}
+              <div className="flex gap-3 p-3 sm:p-5 pt-3 border-t border-white/10 shrink-0 bg-[#1a1a2e]">
                 <Button className="flex-1 bg-blue-600 hover:bg-blue-700 text-white" onClick={handleSave} disabled={!label.trim()}>
                   <Check className="w-4 h-4 mr-2" />
                   {editTag ? "Enregistrer" : "Créer le tag"}
@@ -502,7 +542,6 @@ export default function CustomTagPlacer({ tourUrl, onSave, onClose, editTag }: C
                   Annuler
                 </Button>
               </div>
-            </div>
           </div>
         )}
       </div>

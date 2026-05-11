@@ -60,6 +60,7 @@ import {
   Globe,
 } from "lucide-react";
 import { connectBundleSdk, registerVideoScreenComponents, createVideoScreenObjects, createAvatarObject, type VideoScreenData, type AvatarSceneData } from "@/utils/matterportBundle";
+import { iconToPngDataUri, findIconByName } from "@/components/TagIconPicker";
 
 const SDK_KEY = "b7uar4u57xdec0zw7dwygt7md";
 
@@ -417,11 +418,15 @@ interface CustomTagData {
   mediaType: string;
   mediaUrl: string;
   iconUrl: string;
+  iconName?: string;
   color: string;
   anchorX: number;
   anchorY: number;
   anchorZ: number;
   stemHeight: number;
+  stemDirX?: number;
+  stemDirY?: number;
+  stemDirZ?: number;
   floorIndex: number;
   enabled: boolean;
 }
@@ -633,6 +638,7 @@ const TourViewer = () => {
 
   // Tag/Item popup state
   const [selectedTag, setSelectedTag] = useState<TagItem | null>(null);
+  const [tagPopupPos, setTagPopupPos] = useState<{ x: number; y: number } | null>(null);
 
   // Floor selector state
   const [floors, setFloors] = useState<{index: number; name: string}[]>([]);
@@ -1109,6 +1115,7 @@ const TourViewer = () => {
             if (!tagData.mediaType && cachedTag.mediaType) tagData.mediaType = cachedTag.mediaType;
             if ((!tagData.attachments || tagData.attachments.length === 0) && cachedTag.attachments && cachedTag.attachments.length > 0) tagData.attachments = cachedTag.attachments;
             if (!tagData.description && cachedTag.description) tagData.description = cachedTag.description;
+            if (!tagData.anchorPosition && cachedTag.anchorPosition) tagData.anchorPosition = cachedTag.anchorPosition;
           } else {
             tagData = { ...cachedTag };
           }
@@ -1361,25 +1368,43 @@ const TourViewer = () => {
           const ctags = customTagsRef.current;
           if (ctags.length > 0) {
             console.log("🏷️ Adding", ctags.length, "custom tags to scene");
-            const descriptors = ctags.map((ct) => {
+            // Pre-generate icon URLs for tags that have iconName
+            const iconUris: (string | null)[] = await Promise.all(
+              ctags.map(async (ct) => {
+                if (ct.iconName) {
+                  const iconDef = findIconByName(ct.iconName);
+                  if (iconDef) {
+                    return await iconToPngDataUri(iconDef.paths, "#ffffff", ct.color || "#4A90D9");
+                  }
+                }
+                return ct.iconUrl || null;
+              })
+            );
+
+            const descriptors = ctags.map((ct, idx) => {
               const hex = (ct.color || "#4A90D9").replace("#", "");
               const r = parseInt(hex.substring(0, 2), 16) / 255;
               const g = parseInt(hex.substring(2, 4), 16) / 255;
               const b = parseInt(hex.substring(4, 6), 16) / 255;
-              return {
+              const desc: any = {
                 label: ct.label || "",
                 description: ct.description || "",
                 anchorPosition: { x: ct.anchorX, y: ct.anchorY, z: ct.anchorZ },
-                stemVector: { x: 0, y: ct.stemHeight || 0.3, z: 0 },
+                stemVector: ct.stemDirX != null
+                  ? { x: ct.stemDirX * (ct.stemHeight || 0.3), y: ct.stemDirY * (ct.stemHeight || 0.3), z: ct.stemDirZ * (ct.stemHeight || 0.3) }
+                  : { x: 0, y: ct.stemHeight || 0.3, z: 0 },
                 color: { r, g, b },
                 floorIndex: ct.floorIndex || 0,
               };
+              if (iconUris[idx]) desc.iconSrc = iconUris[idx];
+              return desc;
             });
             try {
               const sids = await sdk.Mattertag.add(descriptors);
               console.log("🏷️ Custom tags added with SIDs:", sids);
               customTagSidsRef.current.clear();
-              sids.forEach((sid: string, idx: number) => {
+              for (let idx = 0; idx < sids.length; idx++) {
+                const sid = sids[idx];
                 customTagSidsRef.current.add(sid);
                 const ct = ctags[idx];
                 // Add to tag data cache so click handler can find media
@@ -1390,12 +1415,29 @@ const TourViewer = () => {
                   mediaSrc: ct.mediaUrl || "",
                   mediaType: ct.mediaType || "",
                   mediaUrl: ct.mediaUrl || "",
+                  anchorPosition: { x: ct.anchorX, y: ct.anchorY, z: ct.anchorZ },
                 });
                 // Set custom icon if provided
-                if (ct.iconUrl) {
-                  try { sdk.Mattertag.editIcon(sid, ct.iconUrl); } catch (e) { console.log("Icon edit failed:", e); }
+                const iconUri = iconUris[idx];
+                if (iconUri) {
+                  try {
+                    const iconId = `custom-icon-${ct.id || idx}`;
+                    await sdk.Mattertag.registerIcon(iconId, iconUri);
+                    await sdk.Mattertag.editIcon(sid, iconId); 
+                    console.log("🏷️ Icon set for", ct.label);
+                  } catch (e) { console.log("🏷️ Icon edit failed:", e); }
                 }
-              });
+                // Set custom color if provided
+                if (ct.color) {
+                  try {
+                    const hex = ct.color.replace("#", "");
+                    const r = parseInt(hex.substring(0, 2), 16) / 255;
+                    const g = parseInt(hex.substring(2, 4), 16) / 255;
+                    const b = parseInt(hex.substring(4, 6), 16) / 255;
+                    await sdk.Mattertag.editColor(sid, { r, g, b });
+                  } catch (e) { console.log("🏷️ Color edit failed:", e); }
+                }
+              }
             } catch (e) { console.log("Mattertag.add failed, trying Tag.add:", e); }
           }
         } catch (e) { console.log("Custom tag injection error:", e); }
@@ -1585,6 +1627,53 @@ const TourViewer = () => {
   useEffect(() => { activeVideoScreenIdRef.current = activeVideoScreenId; }, [activeVideoScreenId]);
   const videoTagMapRef = useRef<Map<string, { embedUrl: string }>>(new Map());
   const tagPopupHoveredRef = useRef(false);
+
+  // Track selected tag position on screen for popup placement
+  useEffect(() => {
+    const sdk = sdkRef.current;
+    if (!selectedTag?.anchorPosition || !sdk?.Camera?.pose || !sdk?.Conversion?.worldToScreen) {
+      setTagPopupPos(null);
+      return;
+    }
+    const anchor = selectedTag.anchorPosition;
+    let rafId: number;
+    let poseSub: any;
+    let latestPose: any = null;
+
+    poseSub = sdk.Camera.pose.subscribe((pose: any) => { latestPose = pose; });
+
+    const update = () => {
+      rafId = requestAnimationFrame(update);
+      if (!latestPose) return;
+      const iframe = iframeRef.current;
+      if (!iframe) return;
+      const rect = iframe.getBoundingClientRect();
+      const size = { w: rect.width, h: rect.height };
+      const sp = sdk.Conversion.worldToScreen(anchor, latestPose, size);
+      if (sp && typeof sp.x === "number" && sp.z > 0) {
+        setTagPopupPos({ x: rect.left + sp.x, y: rect.top + sp.y });
+      } else {
+        setTagPopupPos(null);
+      }
+    };
+    rafId = requestAnimationFrame(update);
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      if (poseSub?.cancel) poseSub.cancel();
+    };
+  }, [selectedTag]);
+
+  // Auto-dismiss tag popup if not hovered within 4s
+  useEffect(() => {
+    if (!selectedTag) return;
+    tagPopupHoveredRef.current = false;
+    const timer = setTimeout(() => {
+      if (!tagPopupHoveredRef.current) setSelectedTag(null);
+    }, 4000);
+    return () => clearTimeout(timer);
+  }, [selectedTag]);
+
   const [videoScreensData, setVideoScreensData] = useState<{ id: number; name: string; youtubeUrl: string; embedUrl: string; youtubeId: string; posX: number; posY: number; posZ: number; rotX: number; rotY: number; rotZ: number; width: number; height: number; iconType: string; visibilityRange: number }[]>([]);
   const videoOverlayContainerRef = useRef<HTMLDivElement>(null);
   const [fullscreenVideo, setFullscreenVideo] = useState<{ youtubeId: string; name: string } | null>(null);
@@ -4291,19 +4380,25 @@ const TourViewer = () => {
               </div>
             </motion.div>
 
-            {/* Desktop: centered popup (unchanged) */}
+            {/* Desktop: popup near the tag */}
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
               transition={{ duration: 0.15 }}
-              className="hidden sm:block fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[100] pointer-events-auto max-w-[340px] w-[calc(100vw-32px)]"
+              className="hidden sm:block fixed z-[100] pointer-events-auto max-w-[340px] w-[calc(100vw-32px)]"
+              style={tagPopupPos ? {
+                left: `${Math.min(Math.max(tagPopupPos.x + 20, 16), window.innerWidth - 356)}px`,
+                top: `${Math.min(Math.max(tagPopupPos.y - 60, 16), window.innerHeight - 400)}px`,
+              } : {
+                left: '50%',
+                top: '50%',
+                transform: 'translate(-50%, -50%)',
+              }}
               onMouseEnter={() => { tagPopupHoveredRef.current = true; }}
               onMouseLeave={() => {
                 tagPopupHoveredRef.current = false;
-                if (!selectedTag?.sid || !customTagSidsRef.current.has(selectedTag.sid)) {
-                  setSelectedTag(null);
-                }
+                setTimeout(() => { if (!tagPopupHoveredRef.current) setSelectedTag(null); }, 200);
               }}
             >
             <div className="rounded-lg overflow-hidden bg-[#2d2d2d] shadow-[0_4px_24px_rgba(0,0,0,0.6)]">
