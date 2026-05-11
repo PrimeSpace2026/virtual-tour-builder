@@ -1369,11 +1369,31 @@ const TourViewer = () => {
           if (ctags.length > 0) {
             console.log("🏷️ Adding", ctags.length, "custom tags to scene");
             // Pre-generate icon URLs for tags that have iconName
+            // Upload PNGs to server to get real HTTPS URLs (Matterport iframe blocks data URIs)
             const iconUris: (string | null)[] = await Promise.all(
               ctags.map(async (ct) => {
                 if (ct.iconName) {
                   const iconDef = findIconByName(ct.iconName);
                   if (iconDef) {
+                    try {
+                      const pngDataUri = await iconToPngDataUri(iconDef.paths, "#ffffff", ct.color || "#4A90D9");
+                      // Convert data URI to blob and upload for a real URL
+                      const resp = await fetch(pngDataUri);
+                      const blob = await resp.blob();
+                      const formData = new FormData();
+                      formData.append("file", blob, `tag-icon-${ct.id || ct.iconName}.png`);
+                      const uploadRes = await fetch("/api/upload", { method: "POST", body: formData });
+                      const uploadData = await uploadRes.json();
+                      if (uploadData.url) {
+                        // Make URL absolute for Matterport iframe (it runs on different origin)
+                        const absoluteUrl = uploadData.url.startsWith("http")
+                          ? uploadData.url
+                          : window.location.origin + uploadData.url;
+                        console.log("🏷️ Icon uploaded:", absoluteUrl);
+                        return absoluteUrl;
+                      }
+                    } catch (e) { console.log("🏷️ Icon upload failed, using data URI:", e); }
+                    // Fallback to data URI
                     return await iconToPngDataUri(iconDef.paths, "#ffffff", ct.color || "#4A90D9");
                   }
                 }
