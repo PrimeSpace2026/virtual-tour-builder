@@ -4407,10 +4407,20 @@ const TourViewer = () => {
               exit={{ opacity: 0, scale: 0.95 }}
               transition={{ duration: 0.15 }}
               className="hidden sm:block fixed z-[100] pointer-events-auto max-w-[340px] w-[calc(100vw-32px)]"
-              style={tagPopupPos ? {
-                left: `${Math.min(Math.max(tagPopupPos.x + 20, 16), window.innerWidth - 356)}px`,
-                top: `${Math.min(Math.max(tagPopupPos.y - 60, 16), window.innerHeight - 400)}px`,
-              } : {
+              style={tagPopupPos ? (() => {
+                const popupW = 340;
+                const popupH = 300;
+                const spaceRight = window.innerWidth - tagPopupPos.x;
+                // Place to the right if enough space, otherwise to the left
+                const left = spaceRight > popupW + 40
+                  ? tagPopupPos.x + 40
+                  : tagPopupPos.x - popupW - 20;
+                const top = Math.min(Math.max(tagPopupPos.y - popupH / 2, 16), window.innerHeight - popupH - 16);
+                return {
+                  left: `${Math.max(left, 16)}px`,
+                  top: `${top}px`,
+                };
+              })() : {
                 left: '50%',
                 top: '50%',
                 transform: 'translate(-50%, -50%)',
