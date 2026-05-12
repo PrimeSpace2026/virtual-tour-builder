@@ -1,13 +1,11 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Layout } from "@/components/Layout";
 import {
   Star, MapPin, ChevronDown, ChevronLeft, ChevronRight, Eye,
   X, Check, Wifi, UtensilsCrossed, Snowflake, Home, Users, BedDouble, Bath,
   Clock, CalendarDays, ShieldCheck, Heart
 } from "lucide-react";
-import { getTours, getTourById } from "@/lib/api";
 import { useNavigate } from "react-router-dom";
-import { tourPath } from "@/lib/slug";
 
 /* ─── Kabylis exact color palette ─── */
 const C = {
@@ -23,18 +21,43 @@ const C = {
   gold: "#FFB400",
 };
 
-/* ─── L'Hacienda de Tamzrat property images ─── */
+/* ─── L'Hacienda de Tamzrat property images (from kabylis.tn) ─── */
 const PROPERTY_IMAGES = [
-  "https://ucarecdn.com/b357f96d-01cd-4463-9351-8ba46546d4bd/phpOyTOwO",
-  "https://ucarecdn.com/967e7247-a2bc-4a9e-94eb-cd3133441818/phpRudAbJ",
-  "https://ucarecdn.com/64d90183-7fcb-4341-8a03-bffc7a9047da/phpwKIm8n",
-  "https://ucarecdn.com/3604acc2-228c-491c-ad0c-c43a750b1c5a/phpjL6isP",
+  "https://ucarecdn.com/cc32818a-9140-469a-ba82-12fbfd319f01/-/format/auto/-/scale_crop/1440x960/smart/",
+  "https://ucarecdn.com/1a9e647b-e407-4f78-ba46-5f6b5ee1c346/-/format/auto/-/scale_crop/1440x960/smart/",
+  "https://ucarecdn.com/baba97e6-ad8f-49ea-867a-47e5b0be5b9d/-/format/auto/-/scale_crop/1440x960/smart/",
+  "https://ucarecdn.com/ef39b135-5314-4ad3-a318-43f3eef85fd9/-/format/auto/-/scale_crop/1440x960/smart/",
+  "https://ucarecdn.com/29b4dd19-190e-431d-9c6e-24b5174d4fd7/-/format/auto/-/scale_crop/1440x960/smart/",
+  "https://ucarecdn.com/9a04ae11-8d25-4861-8659-757a9a4860ba/-/format/auto/-/scale_crop/1440x960/smart/",
+  "https://ucarecdn.com/5674fc9b-3a32-4665-9b8b-68efeb9ceb8a/-/format/auto/-/scale_crop/1440x960/smart/",
+  "https://ucarecdn.com/0587b537-02e5-48ec-8302-5bb65896539e/-/format/auto/-/scale_crop/1440x960/smart/",
+  "https://ucarecdn.com/c270f17e-bac5-44b9-9687-e930701eb972/-/format/auto/-/scale_crop/1440x960/smart/",
+  "https://ucarecdn.com/b4eb7b66-e25f-4ae9-b4ed-ccccdc78e35c/-/format/auto/-/scale_crop/1440x960/smart/",
+  "https://ucarecdn.com/10cf45fe-5cea-4ca4-991c-a9d343d1e91d/-/format/auto/-/scale_crop/1440x960/smart/",
+  "https://ucarecdn.com/3896af77-58cb-4f12-94eb-5efb26f263dc/-/format/auto/-/scale_crop/1440x960/smart/",
+  "https://ucarecdn.com/c95e9333-8317-45c1-b73c-5e0e4b90d48f/-/format/auto/-/scale_crop/1440x960/smart/",
+  "https://ucarecdn.com/74f7b381-411c-4f8b-bdd3-b3f0dcfc00cc/-/format/auto/-/scale_crop/1440x960/smart/",
+  "https://ucarecdn.com/9cc40086-5627-42a7-8ab5-6cfa62d099e4/-/format/auto/-/scale_crop/1440x960/smart/",
+  "https://ucarecdn.com/3a59bd53-80f6-4773-a85b-76dcdd9a236d/-/format/auto/-/scale_crop/1440x960/smart/",
+  "https://ucarecdn.com/55daa31a-aa5a-4ee4-a6d2-21eb8f0e9931/-/format/auto/-/scale_crop/1440x960/smart/",
+  "https://ucarecdn.com/f21a4e14-3611-4735-a2f8-fe4f7bea318f/-/format/auto/-/scale_crop/1440x960/smart/",
+  "https://ucarecdn.com/87aab6cb-75e7-4df0-8aa5-4ad01c111ef6/-/format/auto/-/scale_crop/1440x960/smart/",
+  "https://ucarecdn.com/26912cc4-d903-448e-92f6-b139955b93a3/-/format/auto/-/scale_crop/1440x960/smart/",
+  "https://ucarecdn.com/cc99de31-f572-42d8-9beb-9b7eadd3a23b/-/format/auto/-/scale_crop/1440x960/smart/",
+  "https://ucarecdn.com/d332f3d9-a4d8-4580-ac05-4fe074d10980/-/format/auto/-/scale_crop/1440x960/smart/",
+  "https://ucarecdn.com/7c212e54-37a7-4dcd-9855-f130c22eb01f/-/format/auto/-/scale_crop/1440x960/smart/",
+  "https://ucarecdn.com/261f3a18-eb10-41d2-9b6c-69bf294cb0db/-/format/auto/-/scale_crop/1440x960/smart/",
+  "https://ucarecdn.com/aa42bdd1-dd28-45a3-83f4-9bf54d377f10/-/format/auto/-/scale_crop/1440x960/smart/",
+  "https://ucarecdn.com/3820db91-4ef2-4256-8e6b-d3313fa9861c/-/format/auto/-/scale_crop/1440x960/smart/",
+  "https://ucarecdn.com/df0064c1-7a5e-4497-b289-bad6753a4350/-/format/auto/-/scale_crop/1440x960/smart/",
+  "https://ucarecdn.com/c96ae125-4a50-4384-b258-0b822e14ab48/-/format/auto/-/scale_crop/1440x960/smart/",
+  "https://ucarecdn.com/f624d19a-278c-4f07-90e7-514842048140/-/format/auto/-/scale_crop/1440x960/smart/",
 ];
 
 const SIMILAR_LISTINGS = [
   {
     name: "Bungalow Capri : s+2 en bord de mer",
-    image: "https://ucarecdn.com/b357f96d-01cd-4463-9351-8ba46546d4bd/phpOyTOwO",
+    image: "https://ucarecdn.com/9a04ae11-8d25-4861-8659-757a9a4860ba/-/format/auto/-/scale_crop/720x480/smart/",
     location: "Kélibia",
     price: "350 TND",
     type: "House",
@@ -42,7 +65,7 @@ const SIMILAR_LISTINGS = [
   },
   {
     name: "Dar Tamzrat",
-    image: "https://ucarecdn.com/967e7247-a2bc-4a9e-94eb-cd3133441818/phpRudAbJ",
+    image: "https://ucarecdn.com/c270f17e-bac5-44b9-9687-e930701eb972/-/format/auto/-/scale_crop/720x480/smart/",
     location: "Tamzrat",
     price: "900 TND",
     type: "House",
@@ -50,7 +73,7 @@ const SIMILAR_LISTINGS = [
   },
   {
     name: "Villa de Luxe - 200m plage ezzahra",
-    image: "https://ucarecdn.com/64d90183-7fcb-4341-8a03-bffc7a9047da/phpwKIm8n",
+    image: "https://ucarecdn.com/b4eb7b66-e25f-4ae9-b4ed-ccccdc78e35c/-/format/auto/-/scale_crop/720x480/smart/",
     location: "Kélibia",
     price: "1 200 TND",
     type: "House",
@@ -58,7 +81,7 @@ const SIMILAR_LISTINGS = [
   },
 ];
 
-interface Tour { id: number; name: string; description: string; category: string; imageUrl: string; surface: number; tourUrl: string; latitude?: number; longitude?: number; location?: string; metadataJson?: string; }
+const TOUR_PATH = "/view/westpoint-way-residence-donegal-ie";
 
 const PROPERTY = {
   name: "L'Hacienda de Tamzrat",
@@ -113,46 +136,15 @@ const StarIcons = ({ count, size = "w-3.5 h-3.5" }: { count: number; size?: stri
 
 export default function KabylisDemo() {
   const navigate = useNavigate();
-  const [tour, setTour] = useState<Tour | null>(null);
-  const [loading, setLoading] = useState(true);
   const [lightboxImg, setLightboxImg] = useState<string | null>(null);
   const [lightboxIdx, setLightboxIdx] = useState(0);
   const [showAllDesc, setShowAllDesc] = useState(false);
   const [galleryStart, setGalleryStart] = useState(0);
   const [saved, setSaved] = useState(false);
 
-  useEffect(() => {
-    async function load() {
-      try {
-        const tours = await getTours();
-        // Pick tour ID 31 (The Samuel Hotel) as demo, fallback to first tour
-        const target = tours.find((t: Tour) => t.id === 31) || tours[0];
-        if (target) {
-          const full = await getTourById(target.id);
-          setTour(full);
-        }
-      } catch (e) {
-        console.error("Failed to load", e);
-      } finally {
-        setLoading(false);
-      }
-    }
-    load();
-  }, []);
-
   const openLightbox = (idx: number) => { setLightboxIdx(idx); setLightboxImg(PROPERTY_IMAGES[idx]); };
   const prevImg = () => { const i = (lightboxIdx - 1 + PROPERTY_IMAGES.length) % PROPERTY_IMAGES.length; setLightboxIdx(i); setLightboxImg(PROPERTY_IMAGES[i]); };
   const nextImg = () => { const i = (lightboxIdx + 1) % PROPERTY_IMAGES.length; setLightboxIdx(i); setLightboxImg(PROPERTY_IMAGES[i]); };
-
-  if (loading) {
-    return (
-      <Layout>
-        <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: C.lightGray }}>
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2" style={{ borderColor: C.primary }} />
-        </div>
-      </Layout>
-    );
-  }
 
   return (
     <Layout>
@@ -284,39 +276,37 @@ export default function KabylisDemo() {
           </div>
 
           {/* 3D Virtual Tour — PrimeSpace */}
-          {tour && (
-            <div className="pb-6 border-b" style={{ borderColor: C.border }}>
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-bold" style={{ color: C.dark }}>
-                  🏠 Visite Virtuelle 3D — <span style={{ color: C.primary }}>PrimeSpace</span>
-                </h2>
-                <span className="text-xs px-3 py-1 rounded-full font-semibold text-white" style={{ backgroundColor: C.accent }}>NOUVEAU</span>
+          <div className="pb-6 border-b" style={{ borderColor: C.border }}>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold" style={{ color: C.dark }}>
+                🏠 Visite Virtuelle 3D — <span style={{ color: C.primary }}>PrimeSpace</span>
+              </h2>
+              <span className="text-xs px-3 py-1 rounded-full font-semibold text-white" style={{ backgroundColor: C.accent }}>NOUVEAU</span>
+            </div>
+            <div className="rounded-xl overflow-hidden border" style={{ borderColor: C.border }}>
+              <div className="relative aspect-video">
+                <iframe
+                  src={TOUR_PATH}
+                  title="Visite 3D PrimeSpace — L'Hacienda de Tamzrat"
+                  className="w-full h-full"
+                  allowFullScreen
+                  allow="xr-spatial-tracking"
+                />
               </div>
-              <div className="rounded-xl overflow-hidden border" style={{ borderColor: C.border }}>
-                <div className="relative aspect-video">
-                  <iframe
-                    src={tourPath(tour)}
-                    title="Visite 3D PrimeSpace — L'Hacienda de Tamzrat"
-                    className="w-full h-full"
-                    allowFullScreen
-                    allow="xr-spatial-tracking"
-                  />
-                </div>
-                <div className="p-3 flex items-center justify-between" style={{ backgroundColor: C.lightGray }}>
-                  <p className="text-xs" style={{ color: C.text }}>Naviguez librement dans l'espace 3D • Cliquez et déplacez-vous</p>
-                  <a
-                    href={tourPath(tour)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs font-semibold px-4 py-1.5 rounded-lg text-white transition hover:opacity-90 inline-block"
-                    style={{ backgroundColor: C.primary }}
-                  >
-                    Plein écran
-                  </a>
-                </div>
+              <div className="p-3 flex items-center justify-between" style={{ backgroundColor: C.lightGray }}>
+                <p className="text-xs" style={{ color: C.text }}>Naviguez librement dans l'espace 3D • Cliquez et déplacez-vous</p>
+                <a
+                  href={TOUR_PATH}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs font-semibold px-4 py-1.5 rounded-lg text-white transition hover:opacity-90 inline-block"
+                  style={{ backgroundColor: C.primary }}
+                >
+                  Plein écran
+                </a>
               </div>
             </div>
-          )}
+          </div>
 
           {/* L'espace */}
           <div className="pb-6 border-b" style={{ borderColor: C.border }}>
@@ -436,21 +426,19 @@ export default function KabylisDemo() {
             </a>
 
             {/* 3D CTA */}
-            {tour && (
-              <div className="mt-4 pt-4 border-t" style={{ borderColor: C.border }}>
-                <button
-                  onClick={() => navigate(tourPath(tour))}
-                  className="w-full py-3 rounded-lg text-white font-bold text-sm transition hover:opacity-90 flex items-center justify-center gap-2"
-                  style={{ backgroundColor: C.accent }}
-                >
-                  <Eye className="w-4 h-4" />
-                  Visite Virtuelle 3D
-                </button>
-                <p className="text-center text-xs mt-2" style={{ color: C.text }}>
-                  Propulsé par <span className="font-bold" style={{ color: C.primary }}>PrimeSpace</span>
-                </p>
-              </div>
-            )}
+            <div className="mt-4 pt-4 border-t" style={{ borderColor: C.border }}>
+              <button
+                onClick={() => navigate(TOUR_PATH)}
+                className="w-full py-3 rounded-lg text-white font-bold text-sm transition hover:opacity-90 flex items-center justify-center gap-2"
+                style={{ backgroundColor: C.accent }}
+              >
+                <Eye className="w-4 h-4" />
+                Visite Virtuelle 3D
+              </button>
+              <p className="text-center text-xs mt-2" style={{ color: C.text }}>
+                Propulsé par <span className="font-bold" style={{ color: C.primary }}>PrimeSpace</span>
+              </p>
+            </div>
 
             <p className="text-center text-xs mt-3" style={{ color: C.text }}>
               Durée min: 1 nuit · Durée max: 60 nuits
