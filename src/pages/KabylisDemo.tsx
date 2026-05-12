@@ -138,9 +138,9 @@ export default function KabylisDemo() {
       </nav>
 
       {/* ═══ Title Bar ═══ */}
-      <div className="max-w-6xl mx-auto px-4 pt-6 pb-3">
-        <h1 className="text-2xl font-bold" style={{ color: C.dark }}>L'Hacienda de Tamzrat</h1>
-        <div className="flex items-center gap-3 mt-1 flex-wrap">
+      <div className="max-w-6xl mx-auto px-3 sm:px-4 pt-4 sm:pt-6 pb-2 sm:pb-3">
+        <h1 className="text-lg sm:text-2xl font-bold" style={{ color: C.dark }}>L'Hacienda de Tamzrat</h1>
+        <div className="flex items-center gap-2 sm:gap-3 mt-1 flex-wrap">
           <div className="flex items-center gap-1">
             <Star className="w-4 h-4 fill-current" style={{ color: C.red }} />
             <span className="font-semibold text-sm" style={{ color: C.dark }}>5</span>
@@ -151,7 +151,7 @@ export default function KabylisDemo() {
           <span className="flex items-center gap-1 text-sm" style={{ color: C.dark }}>
             <MapPin className="w-3.5 h-3.5" />Kelibia, TN
           </span>
-          <div className="ml-auto flex items-center gap-4">
+          <div className="ml-auto hidden sm:flex items-center gap-4">
             <button className="flex items-center gap-1.5 text-sm underline" style={{ color: C.dark }}>
               <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8" /><polyline points="16 6 12 2 8 6" /><line x1="12" y1="2" x2="12" y2="15" /></svg>
               Partager
@@ -164,9 +164,21 @@ export default function KabylisDemo() {
         </div>
       </div>
 
-      {/* ═══ Photo Grid (5-image Kabylis layout) ═══ */}
-      <div className="max-w-6xl mx-auto px-4 pb-6 relative">
-        <div className="grid grid-cols-4 grid-rows-2 gap-2 rounded-2xl overflow-hidden" style={{ height: 420 }}>
+      {/* ═══ Photo Grid ═══ */}
+      <div className="max-w-6xl mx-auto px-3 sm:px-4 pb-4 sm:pb-6 relative">
+        {/* Mobile: single hero image */}
+        <div className="sm:hidden rounded-xl overflow-hidden relative" style={{ height: 250 }}>
+          <img src={IMAGES[0]} alt="" className="w-full h-full object-cover" onClick={() => setLightbox(0)} />
+          <button
+            onClick={() => setShowAllPhotos(true)}
+            className="absolute right-3 bottom-3 bg-white/90 backdrop-blur-sm border border-gray-300 rounded-lg px-3 py-1.5 text-xs font-medium"
+            style={{ color: C.dark }}
+          >
+            {IMAGES.length} photos
+          </button>
+        </div>
+        {/* Desktop: 5-image grid */}
+        <div className="hidden sm:grid grid-cols-4 grid-rows-2 gap-2 rounded-2xl overflow-hidden" style={{ height: 420 }}>
           <div className="col-span-2 row-span-2 cursor-pointer overflow-hidden group" onClick={() => setLightbox(0)}>
             <img src={IMAGES[0]} alt="" className="w-full h-full object-cover group-hover:brightness-90 transition" />
           </div>
@@ -178,7 +190,7 @@ export default function KabylisDemo() {
         </div>
         <button
           onClick={() => setShowAllPhotos(true)}
-          className="absolute right-8 bottom-10 bg-white border border-gray-800 rounded-lg px-4 py-2 text-sm font-medium flex items-center gap-2 hover:bg-gray-100 transition"
+          className="hidden sm:flex absolute right-8 bottom-10 bg-white border border-gray-800 rounded-lg px-4 py-2 text-sm font-medium items-center gap-2 hover:bg-gray-100 transition"
           style={{ color: C.dark }}
         >
           Afficher toutes les photos
@@ -186,19 +198,19 @@ export default function KabylisDemo() {
       </div>
 
       {/* ═══ Main Content ═══ */}
-      <div className="max-w-6xl mx-auto px-4 pb-12">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+      <div className="max-w-6xl mx-auto px-3 sm:px-4 pb-20 lg:pb-12">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-12">
 
           {/* ── Left Column ── */}
           <div className="lg:col-span-2">
 
             {/* Host info bar */}
-            <div className="flex items-center justify-between py-6 border-b" style={{ borderColor: C.border }}>
+            <div className="flex items-center justify-between py-4 sm:py-6 border-b" style={{ borderColor: C.border }}>
               <div>
-                <h2 className="text-xl font-semibold" style={{ color: C.dark }}>Villa hébergé par Samar</h2>
-                <p className="text-sm mt-1" style={{ color: C.gray }}>8 voyageurs · 4 chambres · 5 lits · 4 salles de bains</p>
+                <h2 className="text-base sm:text-xl font-semibold" style={{ color: C.dark }}>Villa hébergé par Samar</h2>
+                <p className="text-xs sm:text-sm mt-1" style={{ color: C.gray }}>8 voyageurs · 4 chambres · 5 lits · 4 salles de bains</p>
               </div>
-              <img src={HOST_AVATAR} alt="Samar" className="w-14 h-14 rounded-full object-cover" />
+              <img src={HOST_AVATAR} alt="Samar" className="w-11 h-11 sm:w-14 sm:h-14 rounded-full object-cover" />
             </div>
 
             {/* L'espace */}
@@ -258,7 +270,8 @@ export default function KabylisDemo() {
                 <span className="text-xs px-3 py-1 rounded-full font-semibold text-white" style={{ backgroundColor: C.teal }}>NOUVEAU</span>
               </div>
               <div className="rounded-xl overflow-hidden border" style={{ borderColor: C.border }}>
-                <div className="relative" style={{ paddingBottom: "56.25%" }}>
+                <div className="tour-container relative">
+                  <style>{`.tour-container{padding-bottom:130vw}@media(min-width:640px){.tour-container{padding-bottom:75%}}@media(min-width:1024px){.tour-container{padding-bottom:56.25%}}`}</style>
                   <iframe
                     src={TOUR_PATH}
                     title="Visite 3D PrimeSpace — L'Hacienda de Tamzrat"
@@ -359,8 +372,8 @@ export default function KabylisDemo() {
             </div>
           </div>
 
-          {/* ── Right Sidebar — Booking Card ── */}
-          <div>
+          {/* ── Right Sidebar — Booking Card (hidden on mobile, shown via bottom bar) ── */}
+          <div className="hidden lg:block">
             <div className="rounded-xl border shadow-xl p-6 sticky top-24" style={{ borderColor: C.border, backgroundColor: C.white }}>
               <div className="flex items-baseline gap-1 mb-5">
                 <span className="text-xl font-bold" style={{ color: C.dark }}>900 TND</span>
