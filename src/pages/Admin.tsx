@@ -1010,12 +1010,17 @@ const Admin = () => {
         setGymSections(meta.gymSections || []);
         setGymCoaches(meta.coaches || []);
         setImmobilierData({ ...DEFAULT_IMMOBILIER, ...meta.immobilier });
-        setImmobilierRooms(meta.immobilierRooms || []);
+        // Deduplicate rooms by name+tagSid
+        const dedup = (arr: any[]) => {
+          const seen = new Set<string>();
+          return arr.filter((r: any) => { const k = `${r.name}|${r.tagSid}`; if (seen.has(k)) return false; seen.add(k); return true; });
+        };
+        setImmobilierRooms(dedup(meta.immobilierRooms || []));
         // Enrich immobilier rooms with imageUrl from chambers API (don't overwrite type)
         if (tour.id && tour.category === "Immobilier") {
           fetch(`/api/tours/${tour.id}/chambers`).then(r => r.ok ? r.json() : []).then((chambers: any[]) => {
             if (chambers.length > 0) {
-              const metaRooms = meta.immobilierRooms || [];
+              const metaRooms = dedup(meta.immobilierRooms || []);
               if (metaRooms.length > 0) {
                 // Merge imageUrl from chambers into existing metadata rooms
                 const updated = metaRooms.map((room: any) => {
@@ -1025,13 +1030,13 @@ const Admin = () => {
                 setImmobilierRooms(updated);
               } else {
                 // No metadata rooms, use chambers as fallback
-                setImmobilierRooms(chambers.map((ch: any) => ({
+                setImmobilierRooms(dedup(chambers.map((ch: any) => ({
                   name: ch.name || "",
                   type: "",
                   tagSid: ch.tagSid || "",
                   imageUrl: ch.imageUrl || "",
                   description: ch.description || "",
-                })));
+                }))));
               }
             }
           }).catch(() => {});

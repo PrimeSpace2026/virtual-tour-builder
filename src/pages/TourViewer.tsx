@@ -892,6 +892,14 @@ const TourViewer = () => {
               }));
             }
           }
+          // Deduplicate by name+tagSid
+          const seen = new Set<string>();
+          rooms = rooms.filter(r => {
+            const key = `${r.name}|${r.tagSid}`;
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+          });
           setImmoRooms(rooms);
         } else { setImmoRooms([]); }
         // Parse bottom strip config from metadataJson
