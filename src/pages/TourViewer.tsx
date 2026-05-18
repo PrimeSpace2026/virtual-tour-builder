@@ -3414,23 +3414,43 @@ const TourViewer = () => {
                     const chambers: { name: string; description?: string; tagSid?: string; price?: number; currency?: string }[] = meta.chambers || [];
                     const immobilierAmenities: string[] = meta.immobilierAmenities || [];
 
-                    // Each chamber becomes its own section
-                    const chamberSections = chambers.map(c => ({
-                      title: c.name || "Room",
-                      iconKey: "bed",
-                      amenities: [] as string[],
-                      items: [{ name: c.description || c.name || "Room", iconKey: "bed", sub: c.price ? `${c.price} ${c.currency || "TND"}` : "", tagSid: c.tagSid || undefined }],
-                    }));
+                    // Group chambers by type
+                    const typeGroups: Record<string, typeof chambers> = {};
+                    chambers.forEach(c => {
+                      const n = (c.name || "").toLowerCase();
+                      let group = "Other";
+                      if (n.includes("pool") || n.includes("piscine")) group = "Pool";
+                      else if (n.includes("kitchen") || n.includes("cuisine")) group = "Kitchen";
+                      else if (n.includes("terrace") || n.includes("terrasse")) group = "Terrace";
+                      else if (n.includes("living") || n.includes("salon")) group = "Living";
+                      else if (n.includes("bathroom") || n.includes("toilette") || n.includes("wc") || n.includes("salle de bain")) group = "Bathroom";
+                      else if (n.includes("parking") || n.includes("garage")) group = "Parking";
+                      else if (n.includes("room") || n.includes("chambre") || n.includes("bedroom")) group = "Rooms";
+                      else group = c.name || "Other";
+                      if (!typeGroups[group]) typeGroups[group] = [];
+                      typeGroups[group].push(c);
+                    });
 
-                    // Pool section if amenity is checked
-                    const poolSection = immobilierAmenities.includes("Pool") ? [{
+                    const groupSections = Object.entries(typeGroups).map(([groupName, items]) => {
+                      const iconKey = groupName === "Pool" ? "palmtree" : groupName === "Kitchen" ? "utensils" : groupName === "Terrace" ? "palmtree" : groupName === "Parking" ? "briefcase" : groupName === "Bathroom" ? "bath" : "bed";
+                      return {
+                        title: groupName,
+                        iconKey,
+                        amenities: [] as string[],
+                        items: items.map(c => ({ name: c.name || "Room", iconKey: "bed", sub: c.price ? `${c.price} ${c.currency || "TND"}` : "", tagSid: c.tagSid || undefined })),
+                      };
+                    });
+
+                    // Pool from amenities if not already in chambers
+                    const hasPoolGroup = !!typeGroups["Pool"];
+                    const poolSection = !hasPoolGroup && immobilierAmenities.includes("Pool") ? [{
                       title: "Pool",
                       iconKey: "palmtree",
                       amenities: [] as string[],
                       items: [] as { name: string; iconKey: string; sub?: string; tagSid?: string }[],
                     }] : [];
 
-                    // Other amenities (excluding Pool) shown as items in an Amenities section
+                    // Other amenities
                     const otherAmenities = immobilierAmenities.filter(a => a !== "Pool");
                     const amenitiesSection = otherAmenities.length > 0 ? [{
                       title: "Amenities",
@@ -3439,7 +3459,7 @@ const TourViewer = () => {
                       items: [] as { name: string; iconKey: string; sub?: string; tagSid?: string }[],
                     }] : [];
 
-                    const allSections = [...chamberSections, ...poolSection, ...amenitiesSection];
+                    const allSections = [...groupSections, ...poolSection, ...amenitiesSection];
                     if (allSections.length === 0) return null;
                     return (
                       <div className="rounded-xl overflow-hidden border border-white/[0.06]">
@@ -4044,23 +4064,41 @@ const TourViewer = () => {
                   const chambers: { name: string; description?: string; tagSid?: string; price?: number; currency?: string }[] = meta.chambers || [];
                   const immobilierAmenities: string[] = meta.immobilierAmenities || [];
 
-                  // Each chamber becomes its own section
-                  const chamberSections = chambers.map(c => ({
-                    title: c.name || "Room",
-                    iconKey: "bed",
-                    amenities: [] as string[],
-                    items: [{ name: c.description || c.name || "Room", iconKey: "bed", sub: c.price ? `${c.price} ${c.currency || "TND"}` : "", tagSid: c.tagSid || undefined }],
-                  }));
+                  // Group chambers by type
+                  const typeGroups: Record<string, typeof chambers> = {};
+                  chambers.forEach(c => {
+                    const n = (c.name || "").toLowerCase();
+                    let group = "Other";
+                    if (n.includes("pool") || n.includes("piscine")) group = "Pool";
+                    else if (n.includes("kitchen") || n.includes("cuisine")) group = "Kitchen";
+                    else if (n.includes("terrace") || n.includes("terrasse")) group = "Terrace";
+                    else if (n.includes("living") || n.includes("salon")) group = "Living";
+                    else if (n.includes("bathroom") || n.includes("toilette") || n.includes("wc") || n.includes("salle de bain")) group = "Bathroom";
+                    else if (n.includes("parking") || n.includes("garage")) group = "Parking";
+                    else if (n.includes("room") || n.includes("chambre") || n.includes("bedroom")) group = "Rooms";
+                    else group = c.name || "Other";
+                    if (!typeGroups[group]) typeGroups[group] = [];
+                    typeGroups[group].push(c);
+                  });
 
-                  // Pool section if amenity is checked
-                  const poolSection = immobilierAmenities.includes("Pool") ? [{
+                  const groupSections = Object.entries(typeGroups).map(([groupName, items]) => {
+                    const iconKey = groupName === "Pool" ? "palmtree" : groupName === "Kitchen" ? "utensils" : groupName === "Terrace" ? "palmtree" : groupName === "Parking" ? "briefcase" : groupName === "Bathroom" ? "bath" : "bed";
+                    return {
+                      title: groupName,
+                      iconKey,
+                      amenities: [] as string[],
+                      items: items.map(c => ({ name: c.name || "Room", iconKey: "bed", sub: c.price ? `${c.price} ${c.currency || "TND"}` : "", tagSid: c.tagSid || undefined })),
+                    };
+                  });
+
+                  const hasPoolGroup = !!typeGroups["Pool"];
+                  const poolSection = !hasPoolGroup && immobilierAmenities.includes("Pool") ? [{
                     title: "Pool",
                     iconKey: "palmtree",
                     amenities: [] as string[],
                     items: [] as { name: string; iconKey: string; sub?: string; tagSid?: string }[],
                   }] : [];
 
-                  // Other amenities (excluding Pool) shown as items in an Amenities section
                   const otherAmenities = immobilierAmenities.filter(a => a !== "Pool");
                   const amenitiesSection = otherAmenities.length > 0 ? [{
                     title: "Amenities",
@@ -4069,7 +4107,7 @@ const TourViewer = () => {
                     items: [] as { name: string; iconKey: string; sub?: string; tagSid?: string }[],
                   }] : [];
 
-                  const allSections = [...chamberSections, ...poolSection, ...amenitiesSection];
+                  const allSections = [...groupSections, ...poolSection, ...amenitiesSection];
                   if (allSections.length === 0) return null;
                   return (
                     <div className="border-t border-white/[0.06] overflow-hidden">
