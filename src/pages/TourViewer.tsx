@@ -5613,7 +5613,7 @@ const TourViewer = () => {
                     onClick={() => setBottomTab("immo_all")}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold uppercase tracking-wider transition-all ${bottomTab === "immo_all" ? "bg-white/15 text-white" : "text-white/40 hover:text-white/70"}`}
                   >
-                    <DoorOpen className="w-3 h-3" /> Amenities ({immoRooms.length})
+                    <DoorOpen className="w-3 h-3" /> Rooms with amenities ({immoRooms.length})
                   </button>
                 )}
                 {gymCoaches.length > 0 && (
