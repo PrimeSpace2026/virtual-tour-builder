@@ -900,24 +900,7 @@ const TourViewer = () => {
         let tabSet = false;
         if (chambers.length > 0 && bsc.chambers) { setBottomTab("chambers"); tabSet = true; }
         if (!tabSet && normalizeCategory(tourData.category) === "Immobilier") {
-          try {
-            const m = JSON.parse(tourData.metadataJson || "{}");
-            const ir = Array.isArray(m.immobilierRooms) ? m.immobilierRooms : [];
-            const chs = Array.isArray(chambersData) ? chambersData : [];
-            const allRooms = chs.length > 0 ? chs.map((ch: any) => ({ name: ch.name || "", type: ch.description || "" })) : ir;
-            if (allRooms.length > 0) {
-              // Find first group
-              const firstName = (allRooms[0].name || allRooms[0].type || "").toLowerCase();
-              let firstGroup = "Other";
-              if (firstName.includes("pool") || firstName.includes("piscine")) firstGroup = "Pool";
-              else if (firstName.includes("kitchen") || firstName.includes("cuisine")) firstGroup = "Kitchen";
-              else if (firstName.includes("terrace") || firstName.includes("terrasse")) firstGroup = "Terrace";
-              else if (firstName.includes("living") || firstName.includes("salon")) firstGroup = "Living";
-              else if (firstName.includes("room") || firstName.includes("chambre") || firstName.includes("bedroom")) firstGroup = "Rooms";
-              else firstGroup = allRooms[0].name || allRooms[0].type || "Other";
-              setBottomTab(`immo_${firstGroup}`); tabSet = true;
-            }
-          } catch {}
+          try { const m = JSON.parse(tourData.metadataJson || "{}"); if (Array.isArray(m.immobilierRooms) && m.immobilierRooms.length > 0) { setBottomTab("rooms"); tabSet = true; } } catch {}
         }
         if (!tabSet && items.length > 0 && bsc.products) { setBottomTab("products"); tabSet = true; }
         if (!tabSet && services.length > 0 && bsc.services) { setBottomTab("services"); tabSet = true; }
@@ -5592,26 +5575,9 @@ const TourViewer = () => {
         ];
         const weddingStripCats = weddingData ? STRIP_WEDDING_CATS.filter(c => weddingData.providers.some(p => p.category === c.key) && ['bar', 'both'].includes(weddingCatVisibility[c.key] || 'both')) : [];
         const hasWeddingProviders = weddingStripCats.length > 0;
-        // Count immo room type groups
-        const immoGroupCount = (() => {
-          if (immoRooms.length === 0 || !bottomStripConfig.chambers) return 0;
-          const groups = new Set<string>();
-          immoRooms.forEach(room => {
-            const n = (room.name || room.type || "").toLowerCase();
-            if (n.includes("pool") || n.includes("piscine")) groups.add("Pool");
-            else if (n.includes("kitchen") || n.includes("cuisine")) groups.add("Kitchen");
-            else if (n.includes("terrace") || n.includes("terrasse")) groups.add("Terrace");
-            else if (n.includes("living") || n.includes("salon")) groups.add("Living");
-            else if (n.includes("bathroom") || n.includes("toilette") || n.includes("wc") || n.includes("salle de bain")) groups.add("Bathroom");
-            else if (n.includes("parking") || n.includes("garage")) groups.add("Parking");
-            else if (n.includes("room") || n.includes("chambre") || n.includes("bedroom")) groups.add("Rooms");
-            else groups.add(room.name || room.type || "Other");
-          });
-          return groups.size;
-        })();
-        const hasAnyStandard = (tourItems.length > 0 && bottomStripConfig.products) || (tourServices.length > 0 && bottomStripConfig.services) || (tourChambers.length > 0 && bottomStripConfig.chambers) || gymCoaches.length > 0 || immoGroupCount > 0;
+        const hasAnyStandard = (tourItems.length > 0 && bottomStripConfig.products) || (tourServices.length > 0 && bottomStripConfig.services) || (tourChambers.length > 0 && bottomStripConfig.chambers) || gymCoaches.length > 0 || (immoRooms.length > 0 && bottomStripConfig.chambers);
         if (!hasAnyStandard && stripCustoms.length === 0 && !hasWeddingProviders) return null;
-        const tabCount = ((tourItems.length > 0 && bottomStripConfig.products) ? 1 : 0) + ((tourServices.length > 0 && bottomStripConfig.services) ? 1 : 0) + ((tourChambers.length > 0 && bottomStripConfig.chambers) ? 1 : 0) + (gymCoaches.length > 0 ? 1 : 0) + immoGroupCount + stripCustoms.length + weddingStripCats.length;
+        const tabCount = ((tourItems.length > 0 && bottomStripConfig.products) ? 1 : 0) + ((tourServices.length > 0 && bottomStripConfig.services) ? 1 : 0) + ((tourChambers.length > 0 && bottomStripConfig.chambers) ? 1 : 0) + (gymCoaches.length > 0 ? 1 : 0) + ((immoRooms.length > 0 && bottomStripConfig.chambers) ? 1 : 0) + stripCustoms.length + weddingStripCats.length;
         const activeCustom = stripCustoms.find(c => c.key === bottomTab);
         return (
         <div className="shrink-0 bg-gradient-to-r from-black via-[#0a0520] to-[#110835] border-t border-white/10">
@@ -5656,34 +5622,14 @@ const TourViewer = () => {
                     <DoorOpen className="w-3 h-3" /> Rooms ({tourChambers.length})
                   </button>
                 )}
-                {immoRooms.length > 0 && bottomStripConfig.chambers && (() => {
-                  // Group immo rooms by type keyword
-                  const typeGroups: Record<string, typeof immoRooms> = {};
-                  immoRooms.forEach(room => {
-                    const n = (room.name || room.type || "").toLowerCase();
-                    let group = "Other";
-                    if (n.includes("pool") || n.includes("piscine")) group = "Pool";
-                    else if (n.includes("kitchen") || n.includes("cuisine")) group = "Kitchen";
-                    else if (n.includes("terrace") || n.includes("terrasse")) group = "Terrace";
-                    else if (n.includes("living") || n.includes("salon")) group = "Living";
-                    else if (n.includes("bathroom") || n.includes("toilette") || n.includes("wc") || n.includes("salle de bain")) group = "Bathroom";
-                    else if (n.includes("parking") || n.includes("garage")) group = "Parking";
-                    else if (n.includes("room") || n.includes("chambre") || n.includes("bedroom")) group = "Rooms";
-                    else group = room.name || room.type || "Other";
-                    if (!typeGroups[group]) typeGroups[group] = [];
-                    typeGroups[group].push(room);
-                  });
-                  const groupKeys = Object.keys(typeGroups);
-                  return groupKeys.map(gk => (
-                    <button
-                      key={gk}
-                      onClick={() => setBottomTab(`immo_${gk}`)}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold uppercase tracking-wider transition-all ${bottomTab === `immo_${gk}` ? "bg-white/15 text-white" : "text-white/40 hover:text-white/70"}`}
-                    >
-                      <DoorOpen className="w-3 h-3" /> {gk} ({typeGroups[gk].length})
-                    </button>
-                  ));
-                })()}
+                {immoRooms.length > 0 && bottomStripConfig.chambers && (
+                  <button
+                    onClick={() => setBottomTab("rooms")}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold uppercase tracking-wider transition-all ${bottomTab === "rooms" ? "bg-white/15 text-white" : "text-white/40 hover:text-white/70"}`}
+                  >
+                    <DoorOpen className="w-3 h-3" /> Rooms ({immoRooms.length})
+                  </button>
+                )}
                 {gymCoaches.length > 0 && (
                   <button
                     onClick={() => setBottomTab("coaches")}
@@ -5884,22 +5830,9 @@ const TourViewer = () => {
             )}
 
             {/* Immobilier rooms strip */}
-            {bottomTab.startsWith("immo_") && immoRooms.length > 0 && (() => {
-              const groupName = bottomTab.replace("immo_", "");
-              const filteredRooms = immoRooms.filter(room => {
-                const n = (room.name || room.type || "").toLowerCase();
-                if (groupName === "Pool") return n.includes("pool") || n.includes("piscine");
-                if (groupName === "Kitchen") return n.includes("kitchen") || n.includes("cuisine");
-                if (groupName === "Terrace") return n.includes("terrace") || n.includes("terrasse");
-                if (groupName === "Living") return n.includes("living") || n.includes("salon");
-                if (groupName === "Bathroom") return n.includes("bathroom") || n.includes("toilette") || n.includes("wc") || n.includes("salle de bain");
-                if (groupName === "Parking") return n.includes("parking") || n.includes("garage");
-                if (groupName === "Rooms") return n.includes("room") || n.includes("chambre") || n.includes("bedroom");
-                return n.includes(groupName.toLowerCase()) || room.name === groupName || room.type === groupName;
-              });
-              return (
+            {bottomTab === "rooms" && immoRooms.length > 0 && (
               <div className="flex items-center md:justify-center gap-3 overflow-x-auto scrollbar-hide pb-1 [&>*:first-child]:ml-4 [&>*:last-child]:mr-4">
-                {filteredRooms.map((room, ri) => (
+                {immoRooms.map((room, ri) => (
                   <button
                     key={ri}
                     onClick={() => {
@@ -5924,8 +5857,7 @@ const TourViewer = () => {
                   </button>
                 ))}
               </div>
-              );
-            })()}
+            )}
 
             {/* Coaches strip */}
             {bottomTab === "coaches" && gymCoaches.length > 0 && (
