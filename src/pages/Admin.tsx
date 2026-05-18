@@ -555,8 +555,6 @@ const Admin = () => {
   const [tourGuide, setTourGuide] = useState<TourGuideData>({ name: "Guide", message: "", language: "en", enabled: true, avatarUrl: "https://orpnrybtrnuqxfkrrnvx.supabase.co/storage/v1/object/public/tour-images/avatars/waitress-unlit.glb", position: "center", posX: 0, posY: 0, posZ: 0, rotY: 0 });
   // Bottom strip visibility toggles
   const [bottomStrip, setBottomStrip] = useState<{ products: boolean; services: boolean; chambers: boolean; customSections?: Record<string, boolean> }>({ products: true, services: true, chambers: true, customSections: {} });
-  // Side menu (nav bar) visibility toggles
-  const [sideMenuConfig, setSideMenuConfig] = useState<{ rooms: boolean; roomTypes?: Record<string, boolean>; features: boolean; featureItems?: Record<string, boolean>; amenities: boolean; amenityItems?: Record<string, boolean>; location: boolean; otherTours: boolean }>({ rooms: true, features: true, amenities: true, location: true, otherTours: true });
   // Matterport viewer feature toggles (all URL params)
   type MatterportFeatures = {
     dollhouse?: boolean; floorplan?: boolean;
@@ -1032,9 +1030,8 @@ const Admin = () => {
         setWeddingPackages(meta.weddingPackages || []);
         setWeddingCatVisibility(meta.weddingCatVisibility || {});
         setBottomStrip({ products: true, services: true, chambers: true, customSections: {}, ...(meta.bottomStrip || {}) });
-        setSideMenuConfig({ rooms: true, features: true, amenities: true, location: true, otherTours: true, ...(meta.sideMenuConfig || {}) });
         setMatterportFeatures({ ...(meta.matterportFeatures || {}) });
-      } catch { setHotelRooms([]); setMenuSections([]); setGymSpaces([]); setGymEquipment([]); setGymPlans([]); setGymClasses([]); setGymSections([]); setGymCoaches([]); setImmobilierData({ ...DEFAULT_IMMOBILIER }); setImmobilierRooms([]); setWeddingData({ ...DEFAULT_WEDDING }); setWeddingProviders([]); setWeddingPackages([]); setWeddingCatVisibility({}); setBottomStrip({ products: true, services: true, chambers: true, customSections: {} }); setSideMenuConfig({ rooms: true, features: true, amenities: true, location: true, otherTours: true }); setMatterportFeatures({}); }
+      } catch { setHotelRooms([]); setMenuSections([]); setGymSpaces([]); setGymEquipment([]); setGymPlans([]); setGymClasses([]); setGymSections([]); setGymCoaches([]); setImmobilierData({ ...DEFAULT_IMMOBILIER }); setImmobilierRooms([]); setWeddingData({ ...DEFAULT_WEDDING }); setWeddingProviders([]); setWeddingPackages([]); setWeddingCatVisibility({}); setBottomStrip({ products: true, services: true, chambers: true, customSections: {} }); setMatterportFeatures({}); }
     } else {
       setHotelRooms([]);
       setMenuSections([]);
@@ -1051,7 +1048,6 @@ const Admin = () => {
       setWeddingPackages([]);
       setWeddingCatVisibility({});
       setBottomStrip({ products: true, services: true, chambers: true, customSections: {} });
-      setSideMenuConfig({ rooms: true, features: true, amenities: true, location: true, otherTours: true });
       setMatterportFeatures({});
     }
     // Load video screens
@@ -1088,13 +1084,12 @@ const Admin = () => {
     }
     // For other categories, save bottomStrip if any toggle is off
     if (!payload.metadataJson) {
-      payload.metadataJson = JSON.stringify({ bottomStrip, sideMenuConfig, matterportFeatures });
+      payload.metadataJson = JSON.stringify({ bottomStrip, matterportFeatures });
     } else {
       // Ensure bottomStrip is in existing metadataJson
       try {
         const existing = JSON.parse(payload.metadataJson as string);
         existing.bottomStrip = bottomStrip;
-        existing.sideMenuConfig = sideMenuConfig;
         existing.matterportFeatures = matterportFeatures;
         payload.metadataJson = JSON.stringify(existing);
       } catch {}
@@ -1804,7 +1799,7 @@ const Admin = () => {
               <p className="text-xs text-muted-foreground">Choose which sections appear in the bottom bar of the tour</p>
               <div className="flex flex-wrap gap-3">
                 {(["products", "services", "chambers"] as const).map((key) => {
-                  const labels = { products: "Products", services: "Services", chambers: editTour.category === "Immobilier" ? "Rooms with amenities" : "Rooms" };
+                  const labels = { products: "Products", services: "Services", chambers: editTour.category === "Immobilier" ? "Rooms" : "Rooms" };
                   const active = bottomStrip[key];
                   return (
                     <button
@@ -1873,71 +1868,6 @@ const Admin = () => {
                 (editTour.category === "Gym & Fitness" && (gymSections || []).filter((s: { title?: string }) => (s.title || "").trim()).length === 0)) && (
                 <p className="text-xs text-muted-foreground italic">💡 Add custom sections below to display them in the bottom bar.</p>
               )}
-            </div>
-
-            {/* Side Menu (Nav Bar) Visibility Toggles */}
-            <div className="rounded-xl border p-4 space-y-3">
-              <label className="text-sm font-medium block">Side Menu (Nav Bar)</label>
-              <p className="text-xs text-muted-foreground">Choose which sections and items appear in the side navigation menu</p>
-              <div className="space-y-4">
-                {([
-                  { key: "rooms", label: "Rooms", subKey: "roomTypes" as const, subItems: IMMO_ROOM_TYPES },
-                  { key: "features", label: "Features", subKey: "featureItems" as const, subItems: ["Type", "Transaction", "Price", "Rooms", "Bedrooms", "Bathrooms", "Floor", "Year", "Condition", "Heating", "Energy"] },
-                  { key: "amenities", label: "Amenities", subKey: "amenityItems" as const, subItems: ["Furnished", "Parking", "Elevator", "Balcony", "Terrace", "Garden", "Pool", "Air Conditioning", "Basement"] },
-                  { key: "location", label: "Location", subKey: null, subItems: null },
-                  { key: "otherTours", label: "Other Tours", subKey: null, subItems: null },
-                ] as const).map(({ key, label, subKey, subItems }) => {
-                  const active = sideMenuConfig[key as keyof typeof sideMenuConfig] as boolean;
-                  const subMap = subKey ? (sideMenuConfig as any)[subKey] as Record<string, boolean> | undefined : undefined;
-                  return (
-                    <div key={key} className="space-y-2">
-                      <button
-                        type="button"
-                        onClick={() => setSideMenuConfig({ ...sideMenuConfig, [key]: !active })}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-medium transition-all ${
-                          active
-                            ? "bg-primary text-primary-foreground border-primary"
-                            : "bg-muted/50 text-muted-foreground border-muted-foreground/20"
-                        }`}
-                      >
-                        <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
-                          active ? "border-primary-foreground" : "border-muted-foreground/40"
-                        }`}>
-                          {active && <div className="w-2 h-2 rounded-full bg-primary-foreground" />}
-                        </div>
-                        {label}
-                      </button>
-                      {active && subItems && (
-                        <div className="ml-6 flex flex-wrap gap-2">
-                          {subItems.map((item) => {
-                            const itemActive = subMap ? (subMap[item] !== false) : true;
-                            return (
-                              <button
-                                key={item}
-                                type="button"
-                                onClick={() => {
-                                  const current = (sideMenuConfig as any)[subKey!] || {};
-                                  setSideMenuConfig({ ...sideMenuConfig, [subKey!]: { ...current, [item]: !itemActive } });
-                                }}
-                                className={`flex items-center gap-1.5 px-3 py-1 rounded-md border text-xs font-medium transition-all ${
-                                  itemActive
-                                    ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                                    : "bg-gray-50 text-gray-400 border-gray-200 line-through"
-                                }`}
-                              >
-                                <span className={`w-3 h-3 rounded-sm border flex items-center justify-center ${itemActive ? "bg-emerald-500 border-emerald-500" : "border-gray-300"}`}>
-                                  {itemActive && <span className="text-white text-[8px]">✓</span>}
-                                </span>
-                                {item}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
             </div>
             </div>
             )}

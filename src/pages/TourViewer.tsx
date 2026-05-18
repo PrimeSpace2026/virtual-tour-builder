@@ -706,7 +706,6 @@ const TourViewer = () => {
   const [bottomTab, setBottomTab] = useState<string>("products");
   const [bottomStripOpen, setBottomStripOpen] = useState(true);
   const [bottomStripConfig, setBottomStripConfig] = useState<{ products: boolean; services: boolean; chambers: boolean; customSections?: Record<string, boolean> }>({ products: true, services: true, chambers: true, customSections: {} });
-  const [sideMenuConfig, setSideMenuConfig] = useState<{ rooms: boolean; roomTypes?: Record<string, boolean>; features: boolean; featureItems?: Record<string, boolean>; amenities: boolean; amenityItems?: Record<string, boolean>; location: boolean; otherTours: boolean }>({ rooms: true, features: true, amenities: true, location: true, otherTours: true });
   const [matterportFeatures, setMatterportFeatures] = useState<MatterportFeatures>({});
   const matterportFeaturesRef = useRef<MatterportFeatures>({});
   const userOpenedStripRef = useRef(false);
@@ -900,7 +899,6 @@ const TourViewer = () => {
           try {
             const meta = JSON.parse(tourData.metadataJson);
             if (meta.bottomStrip) setBottomStripConfig(meta.bottomStrip);
-            if (meta.sideMenuConfig) setSideMenuConfig({ rooms: true, features: true, amenities: true, location: true, otherTours: true, ...meta.sideMenuConfig });
             if (meta.matterportFeatures && typeof meta.matterportFeatures === "object") {
               const mf: MatterportFeatures = { ...meta.matterportFeatures };
               setMatterportFeatures(mf);
@@ -924,7 +922,20 @@ const TourViewer = () => {
         let tabSet = false;
         if (normalizeCategory(tourData.category) === "Immobilier") {
           try { const m = JSON.parse(tourData.metadataJson || "{}"); if (Array.isArray(m.immobilierRooms) && m.immobilierRooms.length > 0) {
-            setBottomTab("immo_all"); tabSet = true;
+            const firstRoom = m.immobilierRooms[0];
+            let firstType = displayRoomType(firstRoom.type) || "";
+            if (!firstType) {
+              const n = (firstRoom.name || "").toLowerCase();
+              if (n.includes("pool") || n.includes("piscine")) firstType = "Pool";
+              else if (n.includes("kitchen") || n.includes("cuisine")) firstType = "Kitchen";
+              else if (n.includes("terrace") || n.includes("terrasse")) firstType = "Terrace";
+              else if (n.includes("living") || n.includes("salon")) firstType = "Living";
+              else if (n.includes("bathroom") || n.includes("toilette") || n.includes("wc")) firstType = "Bathroom";
+              else if (n.includes("parking") || n.includes("garage")) firstType = "Parking";
+              else if (n.includes("room") || n.includes("chambre") || n.includes("bedroom")) firstType = "Rooms";
+              else firstType = firstRoom.name || "Other";
+            }
+            setBottomTab(`immo_${firstType}`); tabSet = true;
           } } catch {}
         }
         if (!tabSet && chambers.length > 0 && bsc.chambers) { setBottomTab("chambers"); tabSet = true; }
@@ -3316,7 +3327,7 @@ const TourViewer = () => {
                       </p>
                     </div>
                   </div>
-                  {sideMenuConfig.location && tour.location && (
+                  {tour.location && (
                     <div className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.03] border border-white/[0.05]">
                       <div className="w-8 h-8 rounded-lg bg-white/[0.06] flex items-center justify-center shrink-0">
                         <MapPin className="w-4 h-4 text-white/50" />
@@ -3417,7 +3428,7 @@ const TourViewer = () => {
                 })()}
 
                 {/* Immobilier Menu */}
-                {tour.category === "Immobilier" && bottomStripConfig.chambers && sideMenuConfig.rooms && immoRooms.length > 0 && (() => {
+                {tour.category === "Immobilier" && bottomStripConfig.chambers && immoRooms.length > 0 && (() => {
                   const meta = tour.metadataJson ? JSON.parse(tour.metadataJson) : {};
                   const immobilierAmenities: string[] = meta.immobilierAmenities || [];
 
@@ -3440,9 +3451,7 @@ const TourViewer = () => {
                     typeGroups[group].push(c);
                   });
 
-                  const groupSections = Object.entries(typeGroups)
-                    .filter(([groupName]) => !sideMenuConfig.roomTypes || sideMenuConfig.roomTypes[groupName] !== false)
-                    .map(([groupName, items]) => {
+                  const groupSections = Object.entries(typeGroups).map(([groupName, items]) => {
                     const iconKey = groupName === "Pool" ? "palmtree" : groupName === "Kitchen" ? "utensils" : groupName === "Terrace" ? "palmtree" : groupName === "Parking" ? "briefcase" : groupName === "Bathroom" ? "bath" : "bed";
                     return {
                       title: groupName,
@@ -3454,7 +3463,7 @@ const TourViewer = () => {
 
                   // Pool from amenities if not already in chambers
                   const hasPoolGroup = !!typeGroups["Pool"];
-                  const poolSection = !hasPoolGroup && immobilierAmenities.includes("Pool") && (!sideMenuConfig.roomTypes || sideMenuConfig.roomTypes["Pool"] !== false) ? [{
+                  const poolSection = !hasPoolGroup && immobilierAmenities.includes("Pool") ? [{
                     title: "Pool",
                     iconKey: "palmtree",
                     amenities: [] as string[],
@@ -3612,11 +3621,11 @@ const TourViewer = () => {
                     return (
                       <>
                       <div className="rounded-xl overflow-hidden border border-white/[0.06] bg-white/[0.02]">
-                        {sideMenuConfig.features && details.filter(d => !sideMenuConfig.featureItems || sideMenuConfig.featureItems[d.label] !== false).length > 0 && (
+                        {details.length > 0 && (
                           <div className="p-3 space-y-1.5">
                             <p className="text-white/25 text-[10px] uppercase tracking-widest font-semibold mb-2">Features</p>
                             <div className="grid grid-cols-2 gap-x-3 gap-y-1">
-                              {details.filter(d => !sideMenuConfig.featureItems || sideMenuConfig.featureItems[d.label] !== false).map((d, i) => (
+                              {details.map((d, i) => (
                                 <div key={i} className="flex justify-between py-1 border-b border-white/[0.04]">
                                   <span className="text-white/40 text-xs">{d.label}</span>
                                   <span className="text-white/80 text-xs font-medium">{d.value}</span>
@@ -3625,11 +3634,11 @@ const TourViewer = () => {
                             </div>
                           </div>
                         )}
-                        {sideMenuConfig.amenities && amenities.filter(a => !sideMenuConfig.amenityItems || sideMenuConfig.amenityItems[a.split(' ')[0]] !== false).length > 0 && (
+                        {amenities.length > 0 && (
                           <div className="p-3 border-t border-white/[0.06]">
                             <p className="text-white/25 text-[10px] uppercase tracking-widest font-semibold mb-2">Amenities</p>
                             <div className="flex flex-wrap gap-1.5">
-                              {amenities.filter(a => !sideMenuConfig.amenityItems || sideMenuConfig.amenityItems[a.split(' ')[0]] !== false).map((a, i) => (
+                              {amenities.map((a, i) => (
                                 <span key={i} className="px-2 py-0.5 rounded-full bg-white/[0.06] text-white/60 text-[10px]">{a}</span>
                               ))}
                             </div>
@@ -3838,7 +3847,7 @@ const TourViewer = () => {
                 })()}
 
                 {/* Navigation - Other tours */}
-                {!isClean && sideMenuConfig.otherTours && (prevTour || nextTour) && (
+                {!isClean && (prevTour || nextTour) && (
                   <div className="pt-2 border-t border-white/[0.06]">
                     <p className="text-white/25 text-[10px] uppercase tracking-widest font-semibold mb-2">
                       Other tours
@@ -4047,7 +4056,7 @@ const TourViewer = () => {
               })()}
 
               {/* Mobile: Immobilier Menu */}
-              {tour.category === "Immobilier" && bottomStripConfig.chambers && sideMenuConfig.rooms && immoRooms.length > 0 && (() => {
+              {tour.category === "Immobilier" && bottomStripConfig.chambers && immoRooms.length > 0 && (() => {
                   const meta = tour.metadataJson ? JSON.parse(tour.metadataJson) : {};
                   const immobilierAmenities: string[] = meta.immobilierAmenities || [];
 
@@ -4070,9 +4079,7 @@ const TourViewer = () => {
                     typeGroups[group].push(c);
                   });
 
-                  const groupSections = Object.entries(typeGroups)
-                    .filter(([groupName]) => !sideMenuConfig.roomTypes || sideMenuConfig.roomTypes[groupName] !== false)
-                    .map(([groupName, items]) => {
+                  const groupSections = Object.entries(typeGroups).map(([groupName, items]) => {
                     const iconKey = groupName === "Pool" ? "palmtree" : groupName === "Kitchen" ? "utensils" : groupName === "Terrace" ? "palmtree" : groupName === "Parking" ? "briefcase" : groupName === "Bathroom" ? "bath" : "bed";
                     return {
                       title: groupName,
@@ -4083,7 +4090,7 @@ const TourViewer = () => {
                   });
 
                   const hasPoolGroup = !!typeGroups["Pool"];
-                  const poolSection = !hasPoolGroup && immobilierAmenities.includes("Pool") && (!sideMenuConfig.roomTypes || sideMenuConfig.roomTypes["Pool"] !== false) ? [{
+                  const poolSection = !hasPoolGroup && immobilierAmenities.includes("Pool") ? [{
                     title: "Pool",
                     iconKey: "palmtree",
                     amenities: [] as string[],
@@ -4205,11 +4212,11 @@ const TourViewer = () => {
                   return (
                     <>
                     <div className="border-t border-white/[0.06] bg-white/[0.02]">
-                      {sideMenuConfig.features && details.filter(d => !sideMenuConfig.featureItems || sideMenuConfig.featureItems[d.label] !== false).length > 0 && (
+                      {details.length > 0 && (
                         <div className="p-3 space-y-1.5">
                           <p className="text-white/25 text-[10px] uppercase tracking-widest font-semibold mb-2">Features</p>
                           <div className="grid grid-cols-2 gap-x-3 gap-y-1">
-                            {details.filter(d => !sideMenuConfig.featureItems || sideMenuConfig.featureItems[d.label] !== false).map((d, i) => (
+                            {details.map((d, i) => (
                               <div key={i} className="flex justify-between py-1 border-b border-white/[0.04]">
                                 <span className="text-white/40 text-xs">{d.label}</span>
                                 <span className="text-white/80 text-xs font-medium">{d.value}</span>
@@ -4218,11 +4225,11 @@ const TourViewer = () => {
                           </div>
                         </div>
                       )}
-                      {sideMenuConfig.amenities && amenities.filter(a => !sideMenuConfig.amenityItems || sideMenuConfig.amenityItems[a.split(' ')[0]] !== false).length > 0 && (
+                      {amenities.length > 0 && (
                         <div className="p-3 border-t border-white/[0.06]">
                           <p className="text-white/25 text-[10px] uppercase tracking-widest font-semibold mb-2">Amenities</p>
                           <div className="flex flex-wrap gap-1.5">
-                            {amenities.filter(a => !sideMenuConfig.amenityItems || sideMenuConfig.amenityItems[a.split(' ')[0]] !== false).map((a, i) => (
+                            {amenities.map((a, i) => (
                               <span key={i} className="px-2 py-0.5 rounded-full bg-white/[0.06] text-white/60 text-[10px]">{a}</span>
                             ))}
                           </div>
@@ -5608,14 +5615,33 @@ const TourViewer = () => {
                     <DoorOpen className="w-3 h-3" /> Rooms ({tourChambers.length})
                   </button>
                 )}
-                {immoRooms.length > 0 && bottomStripConfig.chambers && (
-                  <button
-                    onClick={() => setBottomTab("immo_all")}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold uppercase tracking-wider transition-all ${bottomTab === "immo_all" ? "bg-white/15 text-white" : "text-white/40 hover:text-white/70"}`}
-                  >
-                    <DoorOpen className="w-3 h-3" /> Rooms with amenities ({immoRooms.length})
-                  </button>
-                )}
+                {immoRooms.length > 0 && bottomStripConfig.chambers && (() => {
+                  const typeGroups: Record<string, number> = {};
+                  immoRooms.forEach(r => {
+                    let group = displayRoomType(r.type) || "";
+                    if (!group) {
+                      const n = (r.name || "").toLowerCase();
+                      if (n.includes("pool") || n.includes("piscine")) group = "Pool";
+                      else if (n.includes("kitchen") || n.includes("cuisine")) group = "Kitchen";
+                      else if (n.includes("terrace") || n.includes("terrasse")) group = "Terrace";
+                      else if (n.includes("living") || n.includes("salon")) group = "Living";
+                      else if (n.includes("bathroom") || n.includes("toilette") || n.includes("wc")) group = "Bathroom";
+                      else if (n.includes("parking") || n.includes("garage")) group = "Parking";
+                      else if (n.includes("room") || n.includes("chambre") || n.includes("bedroom")) group = "Rooms";
+                      else group = r.name || "Other";
+                    }
+                    typeGroups[group] = (typeGroups[group] || 0) + 1;
+                  });
+                  return Object.entries(typeGroups).map(([type, count]) => (
+                    <button
+                      key={`immo_${type}`}
+                      onClick={() => setBottomTab(`immo_${type}`)}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold uppercase tracking-wider transition-all ${bottomTab === `immo_${type}` ? "bg-white/15 text-white" : "text-white/40 hover:text-white/70"}`}
+                    >
+                      <DoorOpen className="w-3 h-3" /> {type} ({count})
+                    </button>
+                  ));
+                })()}
                 {gymCoaches.length > 0 && (
                   <button
                     onClick={() => setBottomTab("coaches")}
@@ -5816,10 +5842,26 @@ const TourViewer = () => {
             )}
 
             {/* Immobilier rooms strip */}
-            {bottomTab === "immo_all" && immoRooms.length > 0 && (() => {
+            {bottomTab.startsWith("immo_") && immoRooms.length > 0 && (() => {
+              const selectedType = bottomTab.replace("immo_", "");
+              const filtered = immoRooms.filter(r => {
+                let group = displayRoomType(r.type) || "";
+                if (!group) {
+                  const n = (r.name || "").toLowerCase();
+                  if (n.includes("pool") || n.includes("piscine")) group = "Pool";
+                  else if (n.includes("kitchen") || n.includes("cuisine")) group = "Kitchen";
+                  else if (n.includes("terrace") || n.includes("terrasse")) group = "Terrace";
+                  else if (n.includes("living") || n.includes("salon")) group = "Living";
+                  else if (n.includes("bathroom") || n.includes("toilette") || n.includes("wc")) group = "Bathroom";
+                  else if (n.includes("parking") || n.includes("garage")) group = "Parking";
+                  else if (n.includes("room") || n.includes("chambre") || n.includes("bedroom")) group = "Rooms";
+                  else group = r.name || "Other";
+                }
+                return group === selectedType;
+              });
               return (
                 <div className="flex items-center md:justify-center gap-3 overflow-x-auto scrollbar-hide pb-1 [&>*:first-child]:ml-4 [&>*:last-child]:mr-4">
-                  {immoRooms.map((room, ri) => (
+                  {filtered.map((room, ri) => (
                     <button
                       key={ri}
                       onClick={() => {
@@ -5837,7 +5879,7 @@ const TourViewer = () => {
                       </div>
                       <div className="min-w-0">
                         <p className="text-white/80 text-xs font-semibold truncate max-w-[110px] group-hover:text-white transition-colors">{room.name || displayRoomType(room.type) || room.type}</p>
-                        {room.type && (
+                        {room.type && room.name !== room.type && displayRoomType(room.type) !== selectedType && (
                           <p className="text-white/30 text-[10px] truncate mt-0.5">{displayRoomType(room.type)}</p>
                         )}
                       </div>
