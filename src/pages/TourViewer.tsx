@@ -706,7 +706,7 @@ const TourViewer = () => {
   const [bottomTab, setBottomTab] = useState<string>("products");
   const [bottomStripOpen, setBottomStripOpen] = useState(true);
   const [bottomStripConfig, setBottomStripConfig] = useState<{ products: boolean; services: boolean; chambers: boolean; customSections?: Record<string, boolean> }>({ products: true, services: true, chambers: true, customSections: {} });
-  const [sideMenuConfig, setSideMenuConfig] = useState<{ rooms: boolean; features: boolean; amenities: boolean; location: boolean; otherTours: boolean }>({ rooms: true, features: true, amenities: true, location: true, otherTours: true });
+  const [sideMenuConfig, setSideMenuConfig] = useState<{ rooms: boolean; roomTypes?: Record<string, boolean>; features: boolean; featureItems?: Record<string, boolean>; amenities: boolean; amenityItems?: Record<string, boolean>; location: boolean; otherTours: boolean }>({ rooms: true, features: true, amenities: true, location: true, otherTours: true });
   const [matterportFeatures, setMatterportFeatures] = useState<MatterportFeatures>({});
   const matterportFeaturesRef = useRef<MatterportFeatures>({});
   const userOpenedStripRef = useRef(false);
@@ -3453,7 +3453,9 @@ const TourViewer = () => {
                     typeGroups[group].push(c);
                   });
 
-                  const groupSections = Object.entries(typeGroups).map(([groupName, items]) => {
+                  const groupSections = Object.entries(typeGroups)
+                    .filter(([groupName]) => !sideMenuConfig.roomTypes || sideMenuConfig.roomTypes[groupName] !== false)
+                    .map(([groupName, items]) => {
                     const iconKey = groupName === "Pool" ? "palmtree" : groupName === "Kitchen" ? "utensils" : groupName === "Terrace" ? "palmtree" : groupName === "Parking" ? "briefcase" : groupName === "Bathroom" ? "bath" : "bed";
                     return {
                       title: groupName,
@@ -3465,7 +3467,7 @@ const TourViewer = () => {
 
                   // Pool from amenities if not already in chambers
                   const hasPoolGroup = !!typeGroups["Pool"];
-                  const poolSection = !hasPoolGroup && immobilierAmenities.includes("Pool") ? [{
+                  const poolSection = !hasPoolGroup && immobilierAmenities.includes("Pool") && (!sideMenuConfig.roomTypes || sideMenuConfig.roomTypes["Pool"] !== false) ? [{
                     title: "Pool",
                     iconKey: "palmtree",
                     amenities: [] as string[],
@@ -3623,11 +3625,11 @@ const TourViewer = () => {
                     return (
                       <>
                       <div className="rounded-xl overflow-hidden border border-white/[0.06] bg-white/[0.02]">
-                        {sideMenuConfig.features && details.length > 0 && (
+                        {sideMenuConfig.features && details.filter(d => !sideMenuConfig.featureItems || sideMenuConfig.featureItems[d.label] !== false).length > 0 && (
                           <div className="p-3 space-y-1.5">
                             <p className="text-white/25 text-[10px] uppercase tracking-widest font-semibold mb-2">Features</p>
                             <div className="grid grid-cols-2 gap-x-3 gap-y-1">
-                              {details.map((d, i) => (
+                              {details.filter(d => !sideMenuConfig.featureItems || sideMenuConfig.featureItems[d.label] !== false).map((d, i) => (
                                 <div key={i} className="flex justify-between py-1 border-b border-white/[0.04]">
                                   <span className="text-white/40 text-xs">{d.label}</span>
                                   <span className="text-white/80 text-xs font-medium">{d.value}</span>
@@ -3636,11 +3638,11 @@ const TourViewer = () => {
                             </div>
                           </div>
                         )}
-                        {sideMenuConfig.amenities && amenities.length > 0 && (
+                        {sideMenuConfig.amenities && amenities.filter(a => !sideMenuConfig.amenityItems || sideMenuConfig.amenityItems[a.split(' ')[0]] !== false).length > 0 && (
                           <div className="p-3 border-t border-white/[0.06]">
                             <p className="text-white/25 text-[10px] uppercase tracking-widest font-semibold mb-2">Amenities</p>
                             <div className="flex flex-wrap gap-1.5">
-                              {amenities.map((a, i) => (
+                              {amenities.filter(a => !sideMenuConfig.amenityItems || sideMenuConfig.amenityItems[a.split(' ')[0]] !== false).map((a, i) => (
                                 <span key={i} className="px-2 py-0.5 rounded-full bg-white/[0.06] text-white/60 text-[10px]">{a}</span>
                               ))}
                             </div>
@@ -4081,7 +4083,9 @@ const TourViewer = () => {
                     typeGroups[group].push(c);
                   });
 
-                  const groupSections = Object.entries(typeGroups).map(([groupName, items]) => {
+                  const groupSections = Object.entries(typeGroups)
+                    .filter(([groupName]) => !sideMenuConfig.roomTypes || sideMenuConfig.roomTypes[groupName] !== false)
+                    .map(([groupName, items]) => {
                     const iconKey = groupName === "Pool" ? "palmtree" : groupName === "Kitchen" ? "utensils" : groupName === "Terrace" ? "palmtree" : groupName === "Parking" ? "briefcase" : groupName === "Bathroom" ? "bath" : "bed";
                     return {
                       title: groupName,
@@ -4092,7 +4096,7 @@ const TourViewer = () => {
                   });
 
                   const hasPoolGroup = !!typeGroups["Pool"];
-                  const poolSection = !hasPoolGroup && immobilierAmenities.includes("Pool") ? [{
+                  const poolSection = !hasPoolGroup && immobilierAmenities.includes("Pool") && (!sideMenuConfig.roomTypes || sideMenuConfig.roomTypes["Pool"] !== false) ? [{
                     title: "Pool",
                     iconKey: "palmtree",
                     amenities: [] as string[],
@@ -4214,11 +4218,11 @@ const TourViewer = () => {
                   return (
                     <>
                     <div className="border-t border-white/[0.06] bg-white/[0.02]">
-                      {sideMenuConfig.features && details.length > 0 && (
+                      {sideMenuConfig.features && details.filter(d => !sideMenuConfig.featureItems || sideMenuConfig.featureItems[d.label] !== false).length > 0 && (
                         <div className="p-3 space-y-1.5">
                           <p className="text-white/25 text-[10px] uppercase tracking-widest font-semibold mb-2">Features</p>
                           <div className="grid grid-cols-2 gap-x-3 gap-y-1">
-                            {details.map((d, i) => (
+                            {details.filter(d => !sideMenuConfig.featureItems || sideMenuConfig.featureItems[d.label] !== false).map((d, i) => (
                               <div key={i} className="flex justify-between py-1 border-b border-white/[0.04]">
                                 <span className="text-white/40 text-xs">{d.label}</span>
                                 <span className="text-white/80 text-xs font-medium">{d.value}</span>
@@ -4227,11 +4231,11 @@ const TourViewer = () => {
                           </div>
                         </div>
                       )}
-                      {sideMenuConfig.amenities && amenities.length > 0 && (
+                      {sideMenuConfig.amenities && amenities.filter(a => !sideMenuConfig.amenityItems || sideMenuConfig.amenityItems[a.split(' ')[0]] !== false).length > 0 && (
                         <div className="p-3 border-t border-white/[0.06]">
                           <p className="text-white/25 text-[10px] uppercase tracking-widest font-semibold mb-2">Amenities</p>
                           <div className="flex flex-wrap gap-1.5">
-                            {amenities.map((a, i) => (
+                            {amenities.filter(a => !sideMenuConfig.amenityItems || sideMenuConfig.amenityItems[a.split(' ')[0]] !== false).map((a, i) => (
                               <span key={i} className="px-2 py-0.5 rounded-full bg-white/[0.06] text-white/60 text-[10px]">{a}</span>
                             ))}
                           </div>
@@ -5634,7 +5638,9 @@ const TourViewer = () => {
                     }
                     typeGroups[group] = (typeGroups[group] || 0) + 1;
                   });
-                  return Object.entries(typeGroups).map(([type, count]) => (
+                  return Object.entries(typeGroups)
+                    .filter(([type]) => !sideMenuConfig.roomTypes || sideMenuConfig.roomTypes[type] !== false)
+                    .map(([type, count]) => (
                     <button
                       key={`immo_${type}`}
                       onClick={() => setBottomTab(`immo_${type}`)}

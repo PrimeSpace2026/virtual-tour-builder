@@ -556,7 +556,7 @@ const Admin = () => {
   // Bottom strip visibility toggles
   const [bottomStrip, setBottomStrip] = useState<{ products: boolean; services: boolean; chambers: boolean; customSections?: Record<string, boolean> }>({ products: true, services: true, chambers: true, customSections: {} });
   // Side menu (nav bar) visibility toggles
-  const [sideMenuConfig, setSideMenuConfig] = useState<{ rooms: boolean; features: boolean; amenities: boolean; location: boolean; otherTours: boolean }>({ rooms: true, features: true, amenities: true, location: true, otherTours: true });
+  const [sideMenuConfig, setSideMenuConfig] = useState<{ rooms: boolean; roomTypes?: Record<string, boolean>; features: boolean; featureItems?: Record<string, boolean>; amenities: boolean; amenityItems?: Record<string, boolean>; location: boolean; otherTours: boolean }>({ rooms: true, features: true, amenities: true, location: true, otherTours: true });
   // Matterport viewer feature toggles (all URL params)
   type MatterportFeatures = {
     dollhouse?: boolean; floorplan?: boolean;
@@ -1878,34 +1878,63 @@ const Admin = () => {
             {/* Side Menu (Nav Bar) Visibility Toggles */}
             <div className="rounded-xl border p-4 space-y-3">
               <label className="text-sm font-medium block">Side Menu (Nav Bar)</label>
-              <p className="text-xs text-muted-foreground">Choose which sections appear in the side navigation menu</p>
-              <div className="flex flex-wrap gap-3">
+              <p className="text-xs text-muted-foreground">Choose which sections and items appear in the side navigation menu</p>
+              <div className="space-y-4">
                 {([
-                  { key: "rooms", label: "Rooms" },
-                  { key: "features", label: "Features" },
-                  { key: "amenities", label: "Amenities" },
-                  { key: "location", label: "Location" },
-                  { key: "otherTours", label: "Other Tours" },
-                ] as const).map(({ key, label }) => {
-                  const active = sideMenuConfig[key];
+                  { key: "rooms", label: "Rooms", subKey: "roomTypes" as const, subItems: IMMO_ROOM_TYPES },
+                  { key: "features", label: "Features", subKey: "featureItems" as const, subItems: ["Type", "Transaction", "Price", "Rooms", "Bedrooms", "Bathrooms", "Floor", "Year", "Condition", "Heating", "Energy"] },
+                  { key: "amenities", label: "Amenities", subKey: "amenityItems" as const, subItems: ["Furnished", "Parking", "Elevator", "Balcony", "Terrace", "Garden", "Pool", "Air Conditioning", "Basement"] },
+                  { key: "location", label: "Location", subKey: null, subItems: null },
+                  { key: "otherTours", label: "Other Tours", subKey: null, subItems: null },
+                ] as const).map(({ key, label, subKey, subItems }) => {
+                  const active = sideMenuConfig[key as keyof typeof sideMenuConfig] as boolean;
+                  const subMap = subKey ? (sideMenuConfig as any)[subKey] as Record<string, boolean> | undefined : undefined;
                   return (
-                    <button
-                      key={key}
-                      type="button"
-                      onClick={() => setSideMenuConfig({ ...sideMenuConfig, [key]: !active })}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-medium transition-all ${
-                        active
-                          ? "bg-primary text-primary-foreground border-primary"
-                          : "bg-muted/50 text-muted-foreground border-muted-foreground/20"
-                      }`}
-                    >
-                      <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
-                        active ? "border-primary-foreground" : "border-muted-foreground/40"
-                      }`}>
-                        {active && <div className="w-2 h-2 rounded-full bg-primary-foreground" />}
-                      </div>
-                      {label}
-                    </button>
+                    <div key={key} className="space-y-2">
+                      <button
+                        type="button"
+                        onClick={() => setSideMenuConfig({ ...sideMenuConfig, [key]: !active })}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-medium transition-all ${
+                          active
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "bg-muted/50 text-muted-foreground border-muted-foreground/20"
+                        }`}
+                      >
+                        <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                          active ? "border-primary-foreground" : "border-muted-foreground/40"
+                        }`}>
+                          {active && <div className="w-2 h-2 rounded-full bg-primary-foreground" />}
+                        </div>
+                        {label}
+                      </button>
+                      {active && subItems && (
+                        <div className="ml-6 flex flex-wrap gap-2">
+                          {subItems.map((item) => {
+                            const itemActive = subMap ? (subMap[item] !== false) : true;
+                            return (
+                              <button
+                                key={item}
+                                type="button"
+                                onClick={() => {
+                                  const current = (sideMenuConfig as any)[subKey!] || {};
+                                  setSideMenuConfig({ ...sideMenuConfig, [subKey!]: { ...current, [item]: !itemActive } });
+                                }}
+                                className={`flex items-center gap-1.5 px-3 py-1 rounded-md border text-xs font-medium transition-all ${
+                                  itemActive
+                                    ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                    : "bg-gray-50 text-gray-400 border-gray-200 line-through"
+                                }`}
+                              >
+                                <span className={`w-3 h-3 rounded-sm border flex items-center justify-center ${itemActive ? "bg-emerald-500 border-emerald-500" : "border-gray-300"}`}>
+                                  {itemActive && <span className="text-white text-[8px]">✓</span>}
+                                </span>
+                                {item}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
                   );
                 })}
               </div>
