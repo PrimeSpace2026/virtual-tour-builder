@@ -3408,7 +3408,7 @@ const TourViewer = () => {
                 })()}
 
                 {/* Immobilier Menu */}
-                {tour.category === "Immobilier" && tour.metadataJson && (() => {
+                {tour.category === "Immobilier" && tour.metadataJson && bottomStripConfig.chambers && (() => {
                   try {
                     const meta = JSON.parse(tour.metadataJson);
                     const chambers: { name: string; description?: string; tagSid?: string; price?: number; currency?: string }[] = meta.chambers || [];
@@ -3598,10 +3598,10 @@ const TourViewer = () => {
                     if (immo.pool) amenities.push("Pool");
                     if (immo.airConditioning) amenities.push("Air Conditioning");
                     if (immo.basement) amenities.push("Basement");
-                    if (details.length === 0 && amenities.length === 0 && immoRooms.length === 0) return null;
+                    if (details.length === 0 && amenities.length === 0 && (!bottomStripConfig.chambers || immoRooms.length === 0)) return null;
                     return (
                       <>
-                      {immoRooms.length > 0 && (
+                      {immoRooms.length > 0 && bottomStripConfig.chambers && (
                         <div className="rounded-xl overflow-hidden border border-white/[0.06]">
                           <HotelMenuSection
                             title="Rooms"
@@ -4058,7 +4058,7 @@ const TourViewer = () => {
               })()}
 
               {/* Mobile: Immobilier Menu */}
-              {tour.category === "Immobilier" && tour.metadataJson && (() => {
+              {tour.category === "Immobilier" && tour.metadataJson && bottomStripConfig.chambers && (() => {
                 try {
                   const meta = JSON.parse(tour.metadataJson);
                   const chambers: { name: string; description?: string; tagSid?: string; price?: number; currency?: string }[] = meta.chambers || [];
@@ -4211,10 +4211,10 @@ const TourViewer = () => {
                   if (immo.pool) amenities.push("Pool");
                   if (immo.airConditioning) amenities.push("Air Conditioning");
                   if (immo.basement) amenities.push("Basement");
-                  if (details.length === 0 && amenities.length === 0 && immoRooms.length === 0) return null;
+                  if (details.length === 0 && amenities.length === 0 && (!bottomStripConfig.chambers || immoRooms.length === 0)) return null;
                   return (
                     <>
-                    {immoRooms.length > 0 && (
+                    {immoRooms.length > 0 && bottomStripConfig.chambers && (
                       <div className="border-t border-white/[0.06] overflow-hidden">
                         <HotelMenuSection
                           title="Rooms"
