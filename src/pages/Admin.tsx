@@ -1804,7 +1804,7 @@ const Admin = () => {
               <p className="text-xs text-muted-foreground">Choose which sections appear in the bottom bar of the tour</p>
               <div className="flex flex-wrap gap-3">
                 {(["products", "services", "chambers"] as const).map((key) => {
-                  const labels = { products: "Products", services: "Services", chambers: editTour.category === "Immobilier" ? "Rooms" : "Rooms" };
+                  const labels = { products: "Products", services: "Services", chambers: editTour.category === "Immobilier" ? "Rooms with amenities" : "Rooms" };
                   const active = bottomStrip[key];
                   return (
                     <button
