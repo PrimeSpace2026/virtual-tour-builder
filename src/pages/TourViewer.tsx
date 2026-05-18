@@ -3603,27 +3603,6 @@ const TourViewer = () => {
                     if (details.length === 0 && amenities.length === 0 && (!bottomStripConfig.chambers || immoRooms.length === 0)) return null;
                     return (
                       <>
-                      {immoRooms.length > 0 && bottomStripConfig.chambers && (
-                        <div className="rounded-xl overflow-hidden border border-white/[0.06]">
-                          <HotelMenuSection
-                            title="Rooms"
-                            iconKey="door"
-                            items={immoRooms.map(r => ({
-                              name: r.name || r.type || "Room",
-                              iconKey: "door",
-                              sub: r.description ? r.description.slice(0, 60) + (r.description.length > 60 ? "…" : "") : r.type || "",
-                              tagSid: r.tagSid || undefined,
-                              imageUrl: r.imageUrl || undefined,
-                            }))}
-                            amenities={[]}
-                            onItemClick={(tagSid) => {
-                              const room = immoRooms.find(r => r.tagSid === tagSid);
-                              if (room && (room.imageUrl || room.description)) setSelectedImmoRoom(room);
-                              flyToTag(tagSid);
-                            }}
-                          />
-                        </div>
-                      )}
                       <div className="rounded-xl overflow-hidden border border-white/[0.06] bg-white/[0.02]">
                         {details.length > 0 && (
                           <div className="p-3 space-y-1.5">
@@ -4218,27 +4197,6 @@ const TourViewer = () => {
                   if (details.length === 0 && amenities.length === 0 && (!bottomStripConfig.chambers || immoRooms.length === 0)) return null;
                   return (
                     <>
-                    {immoRooms.length > 0 && bottomStripConfig.chambers && (
-                      <div className="border-t border-white/[0.06] overflow-hidden">
-                        <HotelMenuSection
-                          title="Rooms"
-                          iconKey="door"
-                          items={immoRooms.map(r => ({
-                            name: r.name || r.type || "Room",
-                            iconKey: "door",
-                            sub: r.description ? r.description.slice(0, 60) + (r.description.length > 60 ? "…" : "") : r.type || "",
-                            tagSid: r.tagSid || undefined,
-                            imageUrl: r.imageUrl || undefined,
-                          }))}
-                          amenities={[]}
-                          onItemClick={(tagSid) => {
-                            const room = immoRooms.find(r => r.tagSid === tagSid);
-                            if (room && (room.imageUrl || room.description)) setSelectedImmoRoom(room);
-                            flyToTag(tagSid);
-                          }}
-                        />
-                      </div>
-                    )}
                     <div className="border-t border-white/[0.06] bg-white/[0.02]">
                       {details.length > 0 && (
                         <div className="p-3 space-y-1.5">
