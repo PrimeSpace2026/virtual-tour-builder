@@ -559,6 +559,24 @@ const HEATING_DISPLAY: Record<string, string> = {
   "Pompe à chaleur": "Heat pump",
   "Aucun": "None",
 };
+const ROOM_TYPE_DISPLAY: Record<string, string> = {
+  "Chambre": "Rooms",
+  "Cuisine": "Kitchen",
+  "Terrasse": "Terrace",
+  "Salon": "Living",
+  "Salle de bain": "Bathroom",
+  "Bureau": "Office",
+  "Jardin": "Garden",
+  "Garage": "Parking",
+  "Entrée": "Entrance",
+  "Couloir": "Hallway",
+  "Balcon": "Balcony",
+  "Buanderie": "Laundry",
+  "Cave": "Basement",
+  "Grenier": "Attic",
+  "Dressing": "Dressing",
+};
+const displayRoomType = (v?: string) => (v ? (ROOM_TYPE_DISPLAY[v] || v) : "");
 const displayCategory = (v?: string) => (v ? (CATEGORY_DISPLAY[v] || v) : "");
 const displayPropertyType = (v?: string) => (v ? (PROPERTY_TYPE_DISPLAY[v] || v) : "");
 const displayTransactionType = (v?: string) => (v ? (TRANSACTION_TYPE_DISPLAY[v] || v) : "");
@@ -906,7 +924,7 @@ const TourViewer = () => {
         if (!tabSet && normalizeCategory(tourData.category) === "Immobilier") {
           try { const m = JSON.parse(tourData.metadataJson || "{}"); if (Array.isArray(m.immobilierRooms) && m.immobilierRooms.length > 0) {
             const firstRoom = m.immobilierRooms[0];
-            let firstType = firstRoom.type || "";
+            let firstType = displayRoomType(firstRoom.type) || "";
             if (!firstType) {
               const n = (firstRoom.name || "").toLowerCase();
               if (n.includes("pool") || n.includes("piscine")) firstType = "Pool";
@@ -3419,7 +3437,7 @@ const TourViewer = () => {
                     // Group rooms by type field (fallback to keyword matching)
                     const typeGroups: Record<string, typeof rooms> = {};
                     rooms.forEach(c => {
-                      let group = c.type || "";
+                      let group = displayRoomType(c.type) || "";
                       if (!group) {
                         const n = (c.name || "").toLowerCase();
                         if (n.includes("pool") || n.includes("piscine")) group = "Pool";
@@ -4050,7 +4068,7 @@ const TourViewer = () => {
                   // Group rooms by type field (fallback to keyword matching)
                   const typeGroups: Record<string, typeof rooms> = {};
                   rooms.forEach(c => {
-                    let group = c.type || "";
+                    let group = displayRoomType(c.type) || "";
                     if (!group) {
                       const n = (c.name || "").toLowerCase();
                       if (n.includes("pool") || n.includes("piscine")) group = "Pool";
@@ -5606,7 +5624,7 @@ const TourViewer = () => {
                 {immoRooms.length > 0 && bottomStripConfig.chambers && (() => {
                   const typeGroups: Record<string, number> = {};
                   immoRooms.forEach(r => {
-                    let group = r.type || "";
+                    let group = displayRoomType(r.type) || "";
                     if (!group) {
                       const n = (r.name || "").toLowerCase();
                       if (n.includes("pool") || n.includes("piscine")) group = "Pool";
@@ -5833,7 +5851,7 @@ const TourViewer = () => {
             {bottomTab.startsWith("immo_") && immoRooms.length > 0 && (() => {
               const selectedType = bottomTab.replace("immo_", "");
               const filtered = immoRooms.filter(r => {
-                let group = r.type || "";
+                let group = displayRoomType(r.type) || "";
                 if (!group) {
                   const n = (r.name || "").toLowerCase();
                   if (n.includes("pool") || n.includes("piscine")) group = "Pool";
