@@ -924,20 +924,7 @@ const TourViewer = () => {
         let tabSet = false;
         if (normalizeCategory(tourData.category) === "Immobilier") {
           try { const m = JSON.parse(tourData.metadataJson || "{}"); if (Array.isArray(m.immobilierRooms) && m.immobilierRooms.length > 0) {
-            const firstRoom = m.immobilierRooms[0];
-            let firstType = displayRoomType(firstRoom.type) || "";
-            if (!firstType) {
-              const n = (firstRoom.name || "").toLowerCase();
-              if (n.includes("pool") || n.includes("piscine")) firstType = "Pool";
-              else if (n.includes("kitchen") || n.includes("cuisine")) firstType = "Kitchen";
-              else if (n.includes("terrace") || n.includes("terrasse")) firstType = "Terrace";
-              else if (n.includes("living") || n.includes("salon")) firstType = "Living";
-              else if (n.includes("bathroom") || n.includes("toilette") || n.includes("wc")) firstType = "Bathroom";
-              else if (n.includes("parking") || n.includes("garage")) firstType = "Parking";
-              else if (n.includes("room") || n.includes("chambre") || n.includes("bedroom")) firstType = "Rooms";
-              else firstType = firstRoom.name || "Other";
-            }
-            setBottomTab(`immo_${firstType}`); tabSet = true;
+            setBottomTab("immo_all"); tabSet = true;
           } } catch {}
         }
         if (!tabSet && chambers.length > 0 && bsc.chambers) { setBottomTab("chambers"); tabSet = true; }
@@ -5621,35 +5608,14 @@ const TourViewer = () => {
                     <DoorOpen className="w-3 h-3" /> Rooms ({tourChambers.length})
                   </button>
                 )}
-                {immoRooms.length > 0 && bottomStripConfig.chambers && (() => {
-                  const typeGroups: Record<string, number> = {};
-                  immoRooms.forEach(r => {
-                    let group = displayRoomType(r.type) || "";
-                    if (!group) {
-                      const n = (r.name || "").toLowerCase();
-                      if (n.includes("pool") || n.includes("piscine")) group = "Pool";
-                      else if (n.includes("kitchen") || n.includes("cuisine")) group = "Kitchen";
-                      else if (n.includes("terrace") || n.includes("terrasse")) group = "Terrace";
-                      else if (n.includes("living") || n.includes("salon")) group = "Living";
-                      else if (n.includes("bathroom") || n.includes("toilette") || n.includes("wc")) group = "Bathroom";
-                      else if (n.includes("parking") || n.includes("garage")) group = "Parking";
-                      else if (n.includes("room") || n.includes("chambre") || n.includes("bedroom")) group = "Rooms";
-                      else group = r.name || "Other";
-                    }
-                    typeGroups[group] = (typeGroups[group] || 0) + 1;
-                  });
-                  return Object.entries(typeGroups)
-                    .filter(([type]) => !sideMenuConfig.roomTypes || sideMenuConfig.roomTypes[type] !== false)
-                    .map(([type, count]) => (
-                    <button
-                      key={`immo_${type}`}
-                      onClick={() => setBottomTab(`immo_${type}`)}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold uppercase tracking-wider transition-all ${bottomTab === `immo_${type}` ? "bg-white/15 text-white" : "text-white/40 hover:text-white/70"}`}
-                    >
-                      <DoorOpen className="w-3 h-3" /> {type} ({count})
-                    </button>
-                  ));
-                })()}
+                {immoRooms.length > 0 && bottomStripConfig.chambers && (
+                  <button
+                    onClick={() => setBottomTab("immo_all")}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold uppercase tracking-wider transition-all ${bottomTab === "immo_all" ? "bg-white/15 text-white" : "text-white/40 hover:text-white/70"}`}
+                  >
+                    <DoorOpen className="w-3 h-3" /> Rooms ({immoRooms.length})
+                  </button>
+                )}
                 {gymCoaches.length > 0 && (
                   <button
                     onClick={() => setBottomTab("coaches")}
@@ -5850,26 +5816,10 @@ const TourViewer = () => {
             )}
 
             {/* Immobilier rooms strip */}
-            {bottomTab.startsWith("immo_") && immoRooms.length > 0 && (() => {
-              const selectedType = bottomTab.replace("immo_", "");
-              const filtered = immoRooms.filter(r => {
-                let group = displayRoomType(r.type) || "";
-                if (!group) {
-                  const n = (r.name || "").toLowerCase();
-                  if (n.includes("pool") || n.includes("piscine")) group = "Pool";
-                  else if (n.includes("kitchen") || n.includes("cuisine")) group = "Kitchen";
-                  else if (n.includes("terrace") || n.includes("terrasse")) group = "Terrace";
-                  else if (n.includes("living") || n.includes("salon")) group = "Living";
-                  else if (n.includes("bathroom") || n.includes("toilette") || n.includes("wc")) group = "Bathroom";
-                  else if (n.includes("parking") || n.includes("garage")) group = "Parking";
-                  else if (n.includes("room") || n.includes("chambre") || n.includes("bedroom")) group = "Rooms";
-                  else group = r.name || "Other";
-                }
-                return group === selectedType;
-              });
+            {bottomTab === "immo_all" && immoRooms.length > 0 && (() => {
               return (
                 <div className="flex items-center md:justify-center gap-3 overflow-x-auto scrollbar-hide pb-1 [&>*:first-child]:ml-4 [&>*:last-child]:mr-4">
-                  {filtered.map((room, ri) => (
+                  {immoRooms.map((room, ri) => (
                     <button
                       key={ri}
                       onClick={() => {
@@ -5887,7 +5837,7 @@ const TourViewer = () => {
                       </div>
                       <div className="min-w-0">
                         <p className="text-white/80 text-xs font-semibold truncate max-w-[110px] group-hover:text-white transition-colors">{room.name || displayRoomType(room.type) || room.type}</p>
-                        {room.type && room.name !== room.type && displayRoomType(room.type) !== selectedType && (
+                        {room.type && (
                           <p className="text-white/30 text-[10px] truncate mt-0.5">{displayRoomType(room.type)}</p>
                         )}
                       </div>
