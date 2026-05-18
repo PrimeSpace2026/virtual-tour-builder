@@ -3428,69 +3428,66 @@ const TourViewer = () => {
                 })()}
 
                 {/* Immobilier Menu */}
-                {tour.category === "Immobilier" && tour.metadataJson && bottomStripConfig.chambers && (() => {
-                  try {
-                    const meta = JSON.parse(tour.metadataJson);
-                    const rooms: { name: string; type?: string; description?: string; tagSid?: string; imageUrl?: string; price?: number; currency?: string }[] = meta.immobilierRooms || [];
-                    const immobilierAmenities: string[] = meta.immobilierAmenities || [];
+                {tour.category === "Immobilier" && bottomStripConfig.chambers && immoRooms.length > 0 && (() => {
+                  const meta = tour.metadataJson ? JSON.parse(tour.metadataJson) : {};
+                  const immobilierAmenities: string[] = meta.immobilierAmenities || [];
 
-                    // Group rooms by type field (fallback to keyword matching)
-                    const typeGroups: Record<string, typeof rooms> = {};
-                    rooms.forEach(c => {
-                      let group = displayRoomType(c.type) || "";
-                      if (!group) {
-                        const n = (c.name || "").toLowerCase();
-                        if (n.includes("pool") || n.includes("piscine")) group = "Pool";
-                        else if (n.includes("kitchen") || n.includes("cuisine")) group = "Kitchen";
-                        else if (n.includes("terrace") || n.includes("terrasse")) group = "Terrace";
-                        else if (n.includes("living") || n.includes("salon")) group = "Living";
-                        else if (n.includes("bathroom") || n.includes("toilette") || n.includes("wc") || n.includes("salle de bain")) group = "Bathroom";
-                        else if (n.includes("parking") || n.includes("garage")) group = "Parking";
-                        else if (n.includes("room") || n.includes("chambre") || n.includes("bedroom")) group = "Rooms";
-                        else group = c.name || "Other";
-                      }
-                      if (!typeGroups[group]) typeGroups[group] = [];
-                      typeGroups[group].push(c);
-                    });
+                  // Group rooms by type field (fallback to keyword matching)
+                  const typeGroups: Record<string, typeof immoRooms> = {};
+                  immoRooms.forEach(c => {
+                    let group = displayRoomType(c.type) || "";
+                    if (!group) {
+                      const n = (c.name || "").toLowerCase();
+                      if (n.includes("pool") || n.includes("piscine")) group = "Pool";
+                      else if (n.includes("kitchen") || n.includes("cuisine")) group = "Kitchen";
+                      else if (n.includes("terrace") || n.includes("terrasse")) group = "Terrace";
+                      else if (n.includes("living") || n.includes("salon")) group = "Living";
+                      else if (n.includes("bathroom") || n.includes("toilette") || n.includes("wc") || n.includes("salle de bain")) group = "Bathroom";
+                      else if (n.includes("parking") || n.includes("garage")) group = "Parking";
+                      else if (n.includes("room") || n.includes("chambre") || n.includes("bedroom")) group = "Rooms";
+                      else group = c.name || "Other";
+                    }
+                    if (!typeGroups[group]) typeGroups[group] = [];
+                    typeGroups[group].push(c);
+                  });
 
-                    const groupSections = Object.entries(typeGroups).map(([groupName, items]) => {
-                      const iconKey = groupName === "Pool" ? "palmtree" : groupName === "Kitchen" ? "utensils" : groupName === "Terrace" ? "palmtree" : groupName === "Parking" ? "briefcase" : groupName === "Bathroom" ? "bath" : "bed";
-                      return {
-                        title: groupName,
-                        iconKey,
-                        amenities: [] as string[],
-                        items: items.map(c => ({ name: c.name || "Room", iconKey: "bed", sub: c.price ? `${c.price} ${c.currency || "TND"}` : "", tagSid: c.tagSid || undefined, imageUrl: c.imageUrl || undefined })),
-                      };
-                    });
-
-                    // Pool from amenities if not already in chambers
-                    const hasPoolGroup = !!typeGroups["Pool"];
-                    const poolSection = !hasPoolGroup && immobilierAmenities.includes("Pool") ? [{
-                      title: "Pool",
-                      iconKey: "palmtree",
+                  const groupSections = Object.entries(typeGroups).map(([groupName, items]) => {
+                    const iconKey = groupName === "Pool" ? "palmtree" : groupName === "Kitchen" ? "utensils" : groupName === "Terrace" ? "palmtree" : groupName === "Parking" ? "briefcase" : groupName === "Bathroom" ? "bath" : "bed";
+                    return {
+                      title: groupName,
+                      iconKey,
                       amenities: [] as string[],
-                      items: [] as { name: string; iconKey: string; sub?: string; tagSid?: string }[],
-                    }] : [];
+                      items: items.map(c => ({ name: c.name || "Room", iconKey: "bed", sub: "", tagSid: c.tagSid || undefined, imageUrl: c.imageUrl || undefined })),
+                    };
+                  });
 
-                    // Other amenities
-                    const otherAmenities = immobilierAmenities.filter(a => a !== "Pool");
-                    const amenitiesSection = otherAmenities.length > 0 ? [{
-                      title: "Amenities",
-                      iconKey: "sparkles",
-                      amenities: otherAmenities,
-                      items: [] as { name: string; iconKey: string; sub?: string; tagSid?: string }[],
-                    }] : [];
+                  // Pool from amenities if not already in chambers
+                  const hasPoolGroup = !!typeGroups["Pool"];
+                  const poolSection = !hasPoolGroup && immobilierAmenities.includes("Pool") ? [{
+                    title: "Pool",
+                    iconKey: "palmtree",
+                    amenities: [] as string[],
+                    items: [] as { name: string; iconKey: string; sub?: string; tagSid?: string }[],
+                  }] : [];
 
-                    const allSections = [...groupSections, ...poolSection, ...amenitiesSection];
-                    if (allSections.length === 0) return null;
-                    return (
-                      <div className="rounded-xl overflow-hidden border border-white/[0.06]">
-                        {allSections.map((sec, i) => (
-                          <HotelMenuSection key={i} title={sec.title} iconKey={sec.iconKey} items={sec.items} amenities={sec.amenities} onItemClick={flyToTag} />
-                        ))}
-                      </div>
-                    );
-                  } catch { return null; }
+                  // Other amenities
+                  const otherAmenities = immobilierAmenities.filter(a => a !== "Pool");
+                  const amenitiesSection = otherAmenities.length > 0 ? [{
+                    title: "Amenities",
+                    iconKey: "sparkles",
+                    amenities: otherAmenities,
+                    items: [] as { name: string; iconKey: string; sub?: string; tagSid?: string }[],
+                  }] : [];
+
+                  const allSections = [...groupSections, ...poolSection, ...amenitiesSection];
+                  if (allSections.length === 0) return null;
+                  return (
+                    <div className="rounded-xl overflow-hidden border border-white/[0.06]">
+                      {allSections.map((sec, i) => (
+                        <HotelMenuSection key={i} title={sec.title} iconKey={sec.iconKey} items={sec.items} amenities={sec.amenities} onItemClick={flyToTag} />
+                      ))}
+                    </div>
+                  );
                 })()}
 
                 {/* Gym & Fitness Menu */}
@@ -4059,15 +4056,13 @@ const TourViewer = () => {
               })()}
 
               {/* Mobile: Immobilier Menu */}
-              {tour.category === "Immobilier" && tour.metadataJson && bottomStripConfig.chambers && (() => {
-                try {
-                  const meta = JSON.parse(tour.metadataJson);
-                  const rooms: { name: string; type?: string; description?: string; tagSid?: string; imageUrl?: string; price?: number; currency?: string }[] = meta.immobilierRooms || [];
+              {tour.category === "Immobilier" && bottomStripConfig.chambers && immoRooms.length > 0 && (() => {
+                  const meta = tour.metadataJson ? JSON.parse(tour.metadataJson) : {};
                   const immobilierAmenities: string[] = meta.immobilierAmenities || [];
 
                   // Group rooms by type field (fallback to keyword matching)
-                  const typeGroups: Record<string, typeof rooms> = {};
-                  rooms.forEach(c => {
+                  const typeGroups: Record<string, typeof immoRooms> = {};
+                  immoRooms.forEach(c => {
                     let group = displayRoomType(c.type) || "";
                     if (!group) {
                       const n = (c.name || "").toLowerCase();
@@ -4090,7 +4085,7 @@ const TourViewer = () => {
                       title: groupName,
                       iconKey,
                       amenities: [] as string[],
-                      items: items.map(c => ({ name: c.name || "Room", iconKey: "bed", sub: c.price ? `${c.price} ${c.currency || "TND"}` : "", tagSid: c.tagSid || undefined, imageUrl: c.imageUrl || undefined })),
+                      items: items.map(c => ({ name: c.name || "Room", iconKey: "bed", sub: "", tagSid: c.tagSid || undefined, imageUrl: c.imageUrl || undefined })),
                     };
                   });
 
@@ -4119,7 +4114,6 @@ const TourViewer = () => {
                       ))}
                     </div>
                   );
-                } catch { return null; }
               })()}
 
               {/* Mobile: Gym Menu */}
