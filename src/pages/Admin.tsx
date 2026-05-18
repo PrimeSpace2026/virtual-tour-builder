@@ -488,6 +488,7 @@ const UPLOAD_URL = "https://back-end-tp6x.onrender.com/api/upload";
 const Admin = () => {
   const [tours, setTours] = useState<Tour[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [activeFormTab, setActiveFormTab] = useState("general");
   const [editTour, setEditTour] = useState<Tour>(emptyTour);
   const [isEditing, setIsEditing] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -1663,34 +1664,86 @@ const Admin = () => {
 
       {/* Create / Edit Dialog */}
       <Dialog open={dialogOpen && !showScreenPlacer && !showAvatarPlacer} onOpenChange={(open) => { if (!showScreenPlacer && !showAvatarPlacer) setDialogOpen(open); }}>
-        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{isEditing ? "Modifier la visite" : "Nouvelle visite"}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 mt-2">
-            <div>
-              <label className="text-sm font-medium mb-1 block">Nom</label>
-              <Input value={editTour.name} onChange={(e) => setEditTour({ ...editTour, name: e.target.value })} />
+        <DialogContent className="sm:max-w-5xl max-h-[92vh] overflow-hidden p-0 gap-0">
+          {/* Sticky header with action buttons */}
+          <div className="bg-white border-b px-6 py-3 flex items-center justify-between">
+            <DialogHeader className="p-0 m-0 space-y-0">
+              <DialogTitle className="text-base font-extrabold uppercase tracking-wide">{isEditing ? "Modifier la visite" : "Nouvelle visite"}</DialogTitle>
+            </DialogHeader>
+            <div className="flex gap-2">
+              <Button type="button" size="sm" variant="outline" className="text-xs uppercase font-bold tracking-wide" onClick={() => setDialogOpen(false)}>Annuler</Button>
+              <Button type="button" size="sm" className="text-xs uppercase font-bold tracking-wide bg-blue-500 hover:bg-blue-600" onClick={handleSave} disabled={uploading}>Sauvegarder</Button>
             </div>
-            <div>
-              <label className="text-sm font-medium mb-1 block">Description</label>
-              <Textarea value={editTour.description} onChange={(e) => setEditTour({ ...editTour, description: e.target.value })} rows={3} />
+          </div>
+          {/* Sidebar + Content */}
+          <div className="flex h-[calc(92vh-60px)]">
+            {/* Sidebar Menu */}
+            <div className="w-56 shrink-0 bg-gray-50 border-r overflow-y-auto py-2">
+              {[
+                { key: "general", label: "Informations Générales", icon: "📋" },
+                { key: "image", label: "Image", icon: "🖼️" },
+                { key: "bottombar", label: "Bottom Bar", icon: "⚙️" },
+                { key: "matterport", label: "Matterport Features", icon: "🎮" },
+                ...(editTour.category === "Hôtellerie" ? [{ key: "hotel", label: "Sections du menu", icon: "🏨" }] : []),
+                ...(editTour.category === "Hôtellerie" ? [{ key: "rooms", label: "Chambres", icon: "🛏️" }] : []),
+                ...(editTour.category === "Wedding venue" ? [{ key: "wedding", label: "Wedding Venue", icon: "💒" }] : []),
+                ...(editTour.category === "Gym & Fitness" ? [{ key: "gym", label: "Gym & Fitness", icon: "💪" }] : []),
+                { key: "location", label: "Localisation", icon: "📍" },
+                { key: "media3d", label: "Écrans Vidéo 3D", icon: "🎬" },
+                { key: "guide", label: "Virtual Guide (TTS)", icon: "🎙️" },
+              ].map((tab) => (
+                <button
+                  key={tab.key}
+                  type="button"
+                  onClick={() => setActiveFormTab(tab.key)}
+                  className={`w-full text-left px-4 py-2.5 text-sm font-medium transition-all flex items-center gap-2 ${
+                    activeFormTab === tab.key
+                      ? "bg-blue-50 text-blue-700 border-r-2 border-blue-600"
+                      : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                  }`}
+                >
+                  <span className="text-base">{tab.icon}</span>
+                  {tab.label}
+                </button>
+              ))}
             </div>
-            <div>
-              <label className="text-sm font-medium mb-1 block">Catégorie</label>
-              <Select value={editTour.category} onValueChange={(v) => setEditTour({ ...editTour, category: v })}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Choisir une catégorie" />
-                </SelectTrigger>
-                <SelectContent>
-                  {CATEGORIES.map((c) => (
-                    <SelectItem key={c} value={c}>{c}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            {/* Content Area */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-5">
+
+            {/* ═══ Tab: Infos Générales ═══ */}
+            {activeFormTab === "general" && (
+            <div className="space-y-4">
+              <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wide pb-2 border-b border-gray-200">Informations Générales</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium mb-1 block">Nom</label>
+                  <Input value={editTour.name} onChange={(e) => setEditTour({ ...editTour, name: e.target.value })} />
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-1 block">Catégorie</label>
+                  <Select value={editTour.category} onValueChange={(v) => setEditTour({ ...editTour, category: v })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choisir une catégorie" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CATEGORIES.map((c) => (
+                        <SelectItem key={c} value={c}>{c}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block">Description</label>
+                <Textarea value={editTour.description} onChange={(e) => setEditTour({ ...editTour, description: e.target.value })} rows={3} />
+              </div>
             </div>
-            <div>
-              <label className="text-sm font-medium mb-1 block">Image</label>
+            )}
+
+            {/* ═══ Tab: Image ═══ */}
+            {activeFormTab === "image" && (
+            <div className="space-y-4">
+              <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wide pb-2 border-b border-gray-200">Image</h3>
               <div
                 onDrop={onDrop}
                 onDragOver={onDragOver}
@@ -1720,6 +1773,12 @@ const Admin = () => {
                 )}
               </div>
             </div>
+            )}
+
+            {/* ═══ Tab: Bottom Bar ═══ */}
+            {activeFormTab === "bottombar" && (
+            <div className="space-y-4">
+              <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wide pb-2 border-b border-gray-200">Bottom Bar (Tour Viewer)</h3>
 
             {/* Bottom Strip Visibility Toggles */}
             <div className="rounded-xl border p-4 space-y-3">
@@ -1797,10 +1856,16 @@ const Admin = () => {
                 <p className="text-xs text-muted-foreground italic">💡 Add custom sections below to display them in the bottom bar.</p>
               )}
             </div>
+            </div>
+            )}
+
+            {/* ═══ Tab: Matterport Features ═══ */}
+            {activeFormTab === "matterport" && (
+            <div className="space-y-4">
+              <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wide pb-2 border-b border-gray-200">Matterport Features</h3>
 
             {/* Matterport Viewer Features */}
             <div className="rounded-xl border p-4 space-y-4">
-              <label className="text-sm font-medium block">Matterport Features</label>
               <p className="text-xs text-muted-foreground">Choose which controls and features are displayed in the Matterport viewer</p>
               {(() => {
                 const groups: { title: string; items: { key: keyof typeof matterportFeatures; label: string }[] }[] = [
@@ -1874,9 +1939,13 @@ const Admin = () => {
                 ));
               })()}
             </div>
+            </div>
+            )}
 
-            {/* Hotel Rooms — only for Hôtellerie */}
-            {editTour.category === "Hôtellerie" && (
+            {/* ═══ Tab: Hotel (Menu Sections + Rooms) ═══ */}
+            {activeFormTab === "hotel" && editTour.category === "Hôtellerie" && (
+            <div className="space-y-4">
+              <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wide pb-2 border-b border-gray-200">Sections du menu</h3>
               <div className="space-y-4">
                 {/* ── Menu Sections (Canyon Ranch style) ── */}
                 <div className="space-y-3">
@@ -2133,6 +2202,14 @@ const Admin = () => {
                     <p className="text-xs text-muted-foreground text-center py-2">Aucune section ajoutée — Cliquez + Section pour créer un menu style Canyon Ranch</p>
                   )}
                 </div>
+              </div>
+            </div>
+            )}
+
+            {/* ═══ Tab: Rooms ═══ */}
+            {activeFormTab === "rooms" && editTour.category === "Hôtellerie" && (
+            <div className="space-y-4">
+              <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wide pb-2 border-b border-gray-200">Chambres</h3>
 
                 {/* ── Chambres détaillées ── */}
                 <div className="space-y-3">
@@ -2431,7 +2508,7 @@ const Admin = () => {
             )}
 
             {/* ══════ Immobilier Form ══════ */}
-            {editTour.category === "Immobilier" && (
+            {activeFormTab === "rooms" && editTour.category === "Immobilier" && (
               <div className="space-y-4">
                 {/* Type de bien & Transaction */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -2746,8 +2823,10 @@ const Admin = () => {
               </div>
             )}
 
-            {/* ══════ Wedding Venue Form ══════ */}
-            {editTour.category === "Wedding venue" && (
+            {/* ═══ Tab: Wedding Venue ═══ */}
+            {activeFormTab === "wedding" && editTour.category === "Wedding venue" && (
+            <div className="space-y-4">
+              <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wide pb-2 border-b border-gray-200">Wedding Venue</h3>
               <div className="space-y-4">
 
                 {/* ── Venue Details ── */}
@@ -3109,10 +3188,13 @@ const Admin = () => {
                   </div>
                 </div>
               </div>
+            </div>
             )}
 
-            {/* ══════ Gym & Fitness Form ══════ */}
-            {editTour.category === "Gym & Fitness" && (
+            {/* ═══ Tab: Gym & Fitness ═══ */}
+            {activeFormTab === "gym" && editTour.category === "Gym & Fitness" && (
+            <div className="space-y-4">
+              <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wide pb-2 border-b border-gray-200">Gym & Fitness</h3>
               <div className="space-y-4">
 
                 {/* ── Espaces / Facilities ── */}
@@ -3417,8 +3499,14 @@ const Admin = () => {
                   ))}
                 </div>
               </div>
+            </div>
             )}
 
+            {/* ═══ Tab: Localisation ═══ */}
+            {activeFormTab === "location" && (
+            <div className="space-y-4">
+              <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wide pb-2 border-b border-gray-200">Localisation & Détails</h3>
+            <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="text-sm font-medium mb-1 block">Surface (m²)</label>
               <Input
@@ -3428,7 +3516,7 @@ const Admin = () => {
               />
             </div>
             <div>
-              <label className="text-sm font-medium mb-1 block">URL de la visite virtuelle</label>
+              <label className="text-sm font-medium mb-1 block">URL visite virtuelle</label>
               <div className="flex gap-2">
                 <Input value={editTour.tourUrl} onChange={(e) => setEditTour({ ...editTour, tourUrl: e.target.value })} placeholder="https://my.matterport.com/show/..." className="flex-1" />
                 {editTour.tourUrl && (
@@ -3438,6 +3526,7 @@ const Admin = () => {
                 )}
               </div>
             </div>
+            </div>{/* end grid */}
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium mb-1 block">Latitude</label>
@@ -3517,9 +3606,14 @@ const Admin = () => {
                 </MapContainer>
               </div>
             </div>
+            </div>
+            )}
 
-            {/* ══════ Video Screens ══════ */}
-            <div className="space-y-3 border-t pt-4">
+            {/* ═══ Tab: Écrans Vidéo 3D ═══ */}
+            {activeFormTab === "media3d" && (
+            <div className="space-y-4">
+              <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wide pb-2 border-b border-gray-200">Écrans Vidéo 3D</h3>
+            <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <label className="text-sm font-medium flex items-center gap-2">
                   <Tv className="w-4 h-4" /> Écrans Vidéo 3D
@@ -3633,9 +3727,15 @@ const Admin = () => {
                 <p className="text-xs text-muted-foreground text-center py-2">Aucun écran vidéo — Cliquez + Écran pour placer une vidéo YouTube dans le tour 3D</p>
               )}
             </div>
+            </div>
+            )}
 
+            {/* ═══ Tab: Guide (TTS) ═══ */}
+            {activeFormTab === "guide" && (
+            <div className="space-y-4">
+              <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wide pb-2 border-b border-gray-200">Virtual Guide (TTS)</h3>
             {/* Tour Guide — Virtual Avatar with TTS */}
-            <div className="space-y-3 border-t pt-4">
+            <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <h4 className="font-medium text-sm flex items-center gap-2">🎙️ Virtual Guide (TTS)</h4>
                 <label className="flex items-center gap-2 text-xs">
@@ -3727,12 +3827,11 @@ const Admin = () => {
                 )}
               </div>
             </div>
-
-            <div className="flex justify-end gap-3 pt-2">
-              <Button variant="outline" onClick={() => setDialogOpen(false)}>Annuler</Button>
-              <Button onClick={handleSave} disabled={uploading}>Enregistrer</Button>
             </div>
-          </div>
+            )}
+
+          </div>{/* end content panel */}
+          </div>{/* end flex sidebar+content */}
         </DialogContent>
       </Dialog>
 
