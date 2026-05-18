@@ -270,9 +270,7 @@ interface ImmobilierRoom {
 }
 
 const IMMO_ROOM_TYPES = [
-  "Salon", "Cuisine", "Chambre", "Salle de bain", "Bureau",
-  "Terrasse", "Jardin", "Garage", "Entrée", "Couloir",
-  "Balcon", "Buanderie", "Cave", "Grenier", "Dressing",
+  "Rooms", "Pool", "Kitchen", "Terrace", "Living", "Bathroom", "Parking", "Other",
 ];
 
 const DEFAULT_IMMOBILIER: ImmobilierData = {
@@ -2713,6 +2711,22 @@ const Admin = () => {
                               onChange={(e) => { const u = [...immobilierRooms]; u[idx] = { ...room, name: e.target.value }; setImmobilierRooms(u); }}
                               placeholder="Ex: Kitchen, Pool, Room 1: Double..."
                             />
+                          </div>
+                          <div>
+                            <label className="text-xs text-muted-foreground mb-1 block">Type / Groupe</label>
+                            <Select
+                              value={room.type || ""}
+                              onValueChange={(v) => { const u = [...immobilierRooms]; u[idx] = { ...room, type: v }; setImmobilierRooms(u); }}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Choisir un type..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {IMMO_ROOM_TYPES.map((t) => (
+                                  <SelectItem key={t} value={t}>{t}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                           </div>
                         </div>
                         <div>

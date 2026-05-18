@@ -900,7 +900,22 @@ const TourViewer = () => {
         let tabSet = false;
         if (chambers.length > 0 && bsc.chambers) { setBottomTab("chambers"); tabSet = true; }
         if (!tabSet && normalizeCategory(tourData.category) === "Immobilier") {
-          try { const m = JSON.parse(tourData.metadataJson || "{}"); if (Array.isArray(m.immobilierRooms) && m.immobilierRooms.length > 0) { setBottomTab("rooms"); tabSet = true; } } catch {}
+          try { const m = JSON.parse(tourData.metadataJson || "{}"); if (Array.isArray(m.immobilierRooms) && m.immobilierRooms.length > 0) {
+            const firstRoom = m.immobilierRooms[0];
+            let firstType = firstRoom.type || "";
+            if (!firstType) {
+              const n = (firstRoom.name || "").toLowerCase();
+              if (n.includes("pool") || n.includes("piscine")) firstType = "Pool";
+              else if (n.includes("kitchen") || n.includes("cuisine")) firstType = "Kitchen";
+              else if (n.includes("terrace") || n.includes("terrasse")) firstType = "Terrace";
+              else if (n.includes("living") || n.includes("salon")) firstType = "Living";
+              else if (n.includes("bathroom") || n.includes("toilette") || n.includes("wc")) firstType = "Bathroom";
+              else if (n.includes("parking") || n.includes("garage")) firstType = "Parking";
+              else if (n.includes("room") || n.includes("chambre") || n.includes("bedroom")) firstType = "Rooms";
+              else firstType = firstRoom.name || "Other";
+            }
+            setBottomTab(`immo_${firstType}`); tabSet = true;
+          } } catch {}
         }
         if (!tabSet && items.length > 0 && bsc.products) { setBottomTab("products"); tabSet = true; }
         if (!tabSet && services.length > 0 && bsc.services) { setBottomTab("services"); tabSet = true; }
@@ -3394,22 +3409,24 @@ const TourViewer = () => {
                 {tour.category === "Immobilier" && tour.metadataJson && bottomStripConfig.chambers && (() => {
                   try {
                     const meta = JSON.parse(tour.metadataJson);
-                    const chambers: { name: string; description?: string; tagSid?: string; price?: number; currency?: string }[] = meta.chambers || [];
+                    const rooms: { name: string; type?: string; description?: string; tagSid?: string; price?: number; currency?: string }[] = meta.immobilierRooms || [];
                     const immobilierAmenities: string[] = meta.immobilierAmenities || [];
 
-                    // Group chambers by type
-                    const typeGroups: Record<string, typeof chambers> = {};
-                    chambers.forEach(c => {
-                      const n = (c.name || "").toLowerCase();
-                      let group = "Other";
-                      if (n.includes("pool") || n.includes("piscine")) group = "Pool";
-                      else if (n.includes("kitchen") || n.includes("cuisine")) group = "Kitchen";
-                      else if (n.includes("terrace") || n.includes("terrasse")) group = "Terrace";
-                      else if (n.includes("living") || n.includes("salon")) group = "Living";
-                      else if (n.includes("bathroom") || n.includes("toilette") || n.includes("wc") || n.includes("salle de bain")) group = "Bathroom";
-                      else if (n.includes("parking") || n.includes("garage")) group = "Parking";
-                      else if (n.includes("room") || n.includes("chambre") || n.includes("bedroom")) group = "Rooms";
-                      else group = c.name || "Other";
+                    // Group rooms by type field (fallback to keyword matching)
+                    const typeGroups: Record<string, typeof rooms> = {};
+                    rooms.forEach(c => {
+                      let group = c.type || "";
+                      if (!group) {
+                        const n = (c.name || "").toLowerCase();
+                        if (n.includes("pool") || n.includes("piscine")) group = "Pool";
+                        else if (n.includes("kitchen") || n.includes("cuisine")) group = "Kitchen";
+                        else if (n.includes("terrace") || n.includes("terrasse")) group = "Terrace";
+                        else if (n.includes("living") || n.includes("salon")) group = "Living";
+                        else if (n.includes("bathroom") || n.includes("toilette") || n.includes("wc") || n.includes("salle de bain")) group = "Bathroom";
+                        else if (n.includes("parking") || n.includes("garage")) group = "Parking";
+                        else if (n.includes("room") || n.includes("chambre") || n.includes("bedroom")) group = "Rooms";
+                        else group = c.name || "Other";
+                      }
                       if (!typeGroups[group]) typeGroups[group] = [];
                       typeGroups[group].push(c);
                     });
@@ -4044,22 +4061,24 @@ const TourViewer = () => {
               {tour.category === "Immobilier" && tour.metadataJson && bottomStripConfig.chambers && (() => {
                 try {
                   const meta = JSON.parse(tour.metadataJson);
-                  const chambers: { name: string; description?: string; tagSid?: string; price?: number; currency?: string }[] = meta.chambers || [];
+                  const rooms: { name: string; type?: string; description?: string; tagSid?: string; price?: number; currency?: string }[] = meta.immobilierRooms || [];
                   const immobilierAmenities: string[] = meta.immobilierAmenities || [];
 
-                  // Group chambers by type
-                  const typeGroups: Record<string, typeof chambers> = {};
-                  chambers.forEach(c => {
-                    const n = (c.name || "").toLowerCase();
-                    let group = "Other";
-                    if (n.includes("pool") || n.includes("piscine")) group = "Pool";
-                    else if (n.includes("kitchen") || n.includes("cuisine")) group = "Kitchen";
-                    else if (n.includes("terrace") || n.includes("terrasse")) group = "Terrace";
-                    else if (n.includes("living") || n.includes("salon")) group = "Living";
-                    else if (n.includes("bathroom") || n.includes("toilette") || n.includes("wc") || n.includes("salle de bain")) group = "Bathroom";
-                    else if (n.includes("parking") || n.includes("garage")) group = "Parking";
-                    else if (n.includes("room") || n.includes("chambre") || n.includes("bedroom")) group = "Rooms";
-                    else group = c.name || "Other";
+                  // Group rooms by type field (fallback to keyword matching)
+                  const typeGroups: Record<string, typeof rooms> = {};
+                  rooms.forEach(c => {
+                    let group = c.type || "";
+                    if (!group) {
+                      const n = (c.name || "").toLowerCase();
+                      if (n.includes("pool") || n.includes("piscine")) group = "Pool";
+                      else if (n.includes("kitchen") || n.includes("cuisine")) group = "Kitchen";
+                      else if (n.includes("terrace") || n.includes("terrasse")) group = "Terrace";
+                      else if (n.includes("living") || n.includes("salon")) group = "Living";
+                      else if (n.includes("bathroom") || n.includes("toilette") || n.includes("wc") || n.includes("salle de bain")) group = "Bathroom";
+                      else if (n.includes("parking") || n.includes("garage")) group = "Parking";
+                      else if (n.includes("room") || n.includes("chambre") || n.includes("bedroom")) group = "Rooms";
+                      else group = c.name || "Other";
+                    }
                     if (!typeGroups[group]) typeGroups[group] = [];
                     typeGroups[group].push(c);
                   });
@@ -5622,14 +5641,33 @@ const TourViewer = () => {
                     <DoorOpen className="w-3 h-3" /> Rooms ({tourChambers.length})
                   </button>
                 )}
-                {immoRooms.length > 0 && bottomStripConfig.chambers && (
-                  <button
-                    onClick={() => setBottomTab("rooms")}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold uppercase tracking-wider transition-all ${bottomTab === "rooms" ? "bg-white/15 text-white" : "text-white/40 hover:text-white/70"}`}
-                  >
-                    <DoorOpen className="w-3 h-3" /> Rooms ({immoRooms.length})
-                  </button>
-                )}
+                {immoRooms.length > 0 && bottomStripConfig.chambers && (() => {
+                  const typeGroups: Record<string, number> = {};
+                  immoRooms.forEach(r => {
+                    let group = r.type || "";
+                    if (!group) {
+                      const n = (r.name || "").toLowerCase();
+                      if (n.includes("pool") || n.includes("piscine")) group = "Pool";
+                      else if (n.includes("kitchen") || n.includes("cuisine")) group = "Kitchen";
+                      else if (n.includes("terrace") || n.includes("terrasse")) group = "Terrace";
+                      else if (n.includes("living") || n.includes("salon")) group = "Living";
+                      else if (n.includes("bathroom") || n.includes("toilette") || n.includes("wc")) group = "Bathroom";
+                      else if (n.includes("parking") || n.includes("garage")) group = "Parking";
+                      else if (n.includes("room") || n.includes("chambre") || n.includes("bedroom")) group = "Rooms";
+                      else group = r.name || "Other";
+                    }
+                    typeGroups[group] = (typeGroups[group] || 0) + 1;
+                  });
+                  return Object.entries(typeGroups).map(([type, count]) => (
+                    <button
+                      key={`immo_${type}`}
+                      onClick={() => setBottomTab(`immo_${type}`)}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold uppercase tracking-wider transition-all ${bottomTab === `immo_${type}` ? "bg-white/15 text-white" : "text-white/40 hover:text-white/70"}`}
+                    >
+                      <DoorOpen className="w-3 h-3" /> {type} ({count})
+                    </button>
+                  ));
+                })()}
                 {gymCoaches.length > 0 && (
                   <button
                     onClick={() => setBottomTab("coaches")}
@@ -5830,34 +5868,52 @@ const TourViewer = () => {
             )}
 
             {/* Immobilier rooms strip */}
-            {bottomTab === "rooms" && immoRooms.length > 0 && (
-              <div className="flex items-center md:justify-center gap-3 overflow-x-auto scrollbar-hide pb-1 [&>*:first-child]:ml-4 [&>*:last-child]:mr-4">
-                {immoRooms.map((room, ri) => (
-                  <button
-                    key={ri}
-                    onClick={() => {
-                      if (room.imageUrl || room.description) setSelectedImmoRoom(room);
-                      if (room.tagSid) flyToTag(room.tagSid);
-                    }}
-                    className="flex-shrink-0 flex items-center gap-2.5 bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.08] rounded-xl p-2 pr-4 transition-all group"
-                  >
-                    <div className="w-12 h-12 rounded-lg bg-white overflow-hidden flex items-center justify-center shrink-0">
-                      {room.imageUrl ? (
-                        <img src={room.imageUrl} alt={room.name} className="w-full h-full object-cover" />
-                      ) : (
-                        <DoorOpen className="w-5 h-5 text-gray-300" />
-                      )}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-white/80 text-xs font-semibold truncate max-w-[110px] group-hover:text-white transition-colors">{room.name || room.type}</p>
-                      {room.type && room.name !== room.type && (
-                        <p className="text-white/30 text-[10px] truncate mt-0.5">{room.type}</p>
-                      )}
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
+            {bottomTab.startsWith("immo_") && immoRooms.length > 0 && (() => {
+              const selectedType = bottomTab.replace("immo_", "");
+              const filtered = immoRooms.filter(r => {
+                let group = r.type || "";
+                if (!group) {
+                  const n = (r.name || "").toLowerCase();
+                  if (n.includes("pool") || n.includes("piscine")) group = "Pool";
+                  else if (n.includes("kitchen") || n.includes("cuisine")) group = "Kitchen";
+                  else if (n.includes("terrace") || n.includes("terrasse")) group = "Terrace";
+                  else if (n.includes("living") || n.includes("salon")) group = "Living";
+                  else if (n.includes("bathroom") || n.includes("toilette") || n.includes("wc")) group = "Bathroom";
+                  else if (n.includes("parking") || n.includes("garage")) group = "Parking";
+                  else if (n.includes("room") || n.includes("chambre") || n.includes("bedroom")) group = "Rooms";
+                  else group = r.name || "Other";
+                }
+                return group === selectedType;
+              });
+              return (
+                <div className="flex items-center md:justify-center gap-3 overflow-x-auto scrollbar-hide pb-1 [&>*:first-child]:ml-4 [&>*:last-child]:mr-4">
+                  {filtered.map((room, ri) => (
+                    <button
+                      key={ri}
+                      onClick={() => {
+                        if (room.imageUrl || room.description) setSelectedImmoRoom(room);
+                        if (room.tagSid) flyToTag(room.tagSid);
+                      }}
+                      className="flex-shrink-0 flex items-center gap-2.5 bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.08] rounded-xl p-2 pr-4 transition-all group"
+                    >
+                      <div className="w-12 h-12 rounded-lg bg-white overflow-hidden flex items-center justify-center shrink-0">
+                        {room.imageUrl ? (
+                          <img src={room.imageUrl} alt={room.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <DoorOpen className="w-5 h-5 text-gray-300" />
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-white/80 text-xs font-semibold truncate max-w-[110px] group-hover:text-white transition-colors">{room.name || room.type}</p>
+                        {room.type && room.name !== room.type && (
+                          <p className="text-white/30 text-[10px] truncate mt-0.5">{room.type}</p>
+                        )}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              );
+            })()}
 
             {/* Coaches strip */}
             {bottomTab === "coaches" && gymCoaches.length > 0 && (
