@@ -5884,9 +5884,9 @@ const TourViewer = () => {
                         )}
                       </div>
                       <div className="min-w-0">
-                        <p className="text-white/80 text-xs font-semibold truncate max-w-[110px] group-hover:text-white transition-colors">{room.name || room.type}</p>
-                        {room.type && room.name !== room.type && (
-                          <p className="text-white/30 text-[10px] truncate mt-0.5">{room.type}</p>
+                        <p className="text-white/80 text-xs font-semibold truncate max-w-[110px] group-hover:text-white transition-colors">{room.name || displayRoomType(room.type) || room.type}</p>
+                        {room.type && room.name !== room.type && displayRoomType(room.type) !== selectedType && (
+                          <p className="text-white/30 text-[10px] truncate mt-0.5">{displayRoomType(room.type)}</p>
                         )}
                       </div>
                     </button>
