@@ -3431,7 +3431,7 @@ const TourViewer = () => {
                 {tour.category === "Immobilier" && tour.metadataJson && bottomStripConfig.chambers && (() => {
                   try {
                     const meta = JSON.parse(tour.metadataJson);
-                    const rooms: { name: string; type?: string; description?: string; tagSid?: string; price?: number; currency?: string }[] = meta.immobilierRooms || [];
+                    const rooms: { name: string; type?: string; description?: string; tagSid?: string; imageUrl?: string; price?: number; currency?: string }[] = meta.immobilierRooms || [];
                     const immobilierAmenities: string[] = meta.immobilierAmenities || [];
 
                     // Group rooms by type field (fallback to keyword matching)
@@ -3459,7 +3459,7 @@ const TourViewer = () => {
                         title: groupName,
                         iconKey,
                         amenities: [] as string[],
-                        items: items.map(c => ({ name: c.name || "Room", iconKey: "bed", sub: c.price ? `${c.price} ${c.currency || "TND"}` : "", tagSid: c.tagSid || undefined })),
+                        items: items.map(c => ({ name: c.name || "Room", iconKey: "bed", sub: c.price ? `${c.price} ${c.currency || "TND"}` : "", tagSid: c.tagSid || undefined, imageUrl: c.imageUrl || undefined })),
                       };
                     });
 
@@ -4062,7 +4062,7 @@ const TourViewer = () => {
               {tour.category === "Immobilier" && tour.metadataJson && bottomStripConfig.chambers && (() => {
                 try {
                   const meta = JSON.parse(tour.metadataJson);
-                  const rooms: { name: string; type?: string; description?: string; tagSid?: string; price?: number; currency?: string }[] = meta.immobilierRooms || [];
+                  const rooms: { name: string; type?: string; description?: string; tagSid?: string; imageUrl?: string; price?: number; currency?: string }[] = meta.immobilierRooms || [];
                   const immobilierAmenities: string[] = meta.immobilierAmenities || [];
 
                   // Group rooms by type field (fallback to keyword matching)
@@ -4090,7 +4090,7 @@ const TourViewer = () => {
                       title: groupName,
                       iconKey,
                       amenities: [] as string[],
-                      items: items.map(c => ({ name: c.name || "Room", iconKey: "bed", sub: c.price ? `${c.price} ${c.currency || "TND"}` : "", tagSid: c.tagSid || undefined })),
+                      items: items.map(c => ({ name: c.name || "Room", iconKey: "bed", sub: c.price ? `${c.price} ${c.currency || "TND"}` : "", tagSid: c.tagSid || undefined, imageUrl: c.imageUrl || undefined })),
                     };
                   });
 
