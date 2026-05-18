@@ -3397,26 +3397,32 @@ const TourViewer = () => {
                     const chambers: { name: string; description?: string; tagSid?: string; price?: number; currency?: string }[] = meta.chambers || [];
                     const immobilierAmenities: string[] = meta.immobilierAmenities || [];
 
-                    const roomsSection = chambers.length > 0 ? [{
-                      title: "Rooms",
-                      iconKey: "home",
-                      amenities: immobilierAmenities,
-                      items: chambers.map(c => ({
-                        name: c.name || "Room",
-                        iconKey: "bed",
-                        sub: c.price ? `${c.price} ${c.currency || "TND"}` : "",
-                        tagSid: c.tagSid || undefined,
-                      })),
-                    }] : [];
+                    // Each chamber becomes its own section
+                    const chamberSections = chambers.map(c => ({
+                      title: c.name || "Room",
+                      iconKey: "bed",
+                      amenities: [] as string[],
+                      items: [{ name: c.description || c.name || "Room", iconKey: "bed", sub: c.price ? `${c.price} ${c.currency || "TND"}` : "", tagSid: c.tagSid || undefined }],
+                    }));
 
-                    const amenitiesSection = immobilierAmenities.length > 0 && chambers.length === 0 ? [{
-                      title: "Amenities",
-                      iconKey: "sparkles",
-                      amenities: immobilierAmenities,
+                    // Pool section if amenity is checked
+                    const poolSection = immobilierAmenities.includes("Pool") ? [{
+                      title: "Pool",
+                      iconKey: "palmtree",
+                      amenities: [] as string[],
                       items: [] as { name: string; iconKey: string; sub?: string; tagSid?: string }[],
                     }] : [];
 
-                    const allSections = [...roomsSection, ...amenitiesSection];
+                    // Other amenities (excluding Pool) shown as items in an Amenities section
+                    const otherAmenities = immobilierAmenities.filter(a => a !== "Pool");
+                    const amenitiesSection = otherAmenities.length > 0 ? [{
+                      title: "Amenities",
+                      iconKey: "sparkles",
+                      amenities: otherAmenities,
+                      items: [] as { name: string; iconKey: string; sub?: string; tagSid?: string }[],
+                    }] : [];
+
+                    const allSections = [...chamberSections, ...poolSection, ...amenitiesSection];
                     if (allSections.length === 0) return null;
                     return (
                       <div className="rounded-xl overflow-hidden border border-white/[0.06]">
@@ -4021,26 +4027,32 @@ const TourViewer = () => {
                   const chambers: { name: string; description?: string; tagSid?: string; price?: number; currency?: string }[] = meta.chambers || [];
                   const immobilierAmenities: string[] = meta.immobilierAmenities || [];
 
-                  const roomsSection = chambers.length > 0 ? [{
-                    title: "Rooms",
-                    iconKey: "home",
-                    amenities: immobilierAmenities,
-                    items: chambers.map(c => ({
-                      name: c.name || "Room",
-                      iconKey: "bed",
-                      sub: c.price ? `${c.price} ${c.currency || "TND"}` : "",
-                      tagSid: c.tagSid || undefined,
-                    })),
-                  }] : [];
+                  // Each chamber becomes its own section
+                  const chamberSections = chambers.map(c => ({
+                    title: c.name || "Room",
+                    iconKey: "bed",
+                    amenities: [] as string[],
+                    items: [{ name: c.description || c.name || "Room", iconKey: "bed", sub: c.price ? `${c.price} ${c.currency || "TND"}` : "", tagSid: c.tagSid || undefined }],
+                  }));
 
-                  const amenitiesSection = immobilierAmenities.length > 0 && chambers.length === 0 ? [{
-                    title: "Amenities",
-                    iconKey: "sparkles",
-                    amenities: immobilierAmenities,
+                  // Pool section if amenity is checked
+                  const poolSection = immobilierAmenities.includes("Pool") ? [{
+                    title: "Pool",
+                    iconKey: "palmtree",
+                    amenities: [] as string[],
                     items: [] as { name: string; iconKey: string; sub?: string; tagSid?: string }[],
                   }] : [];
 
-                  const allSections = [...roomsSection, ...amenitiesSection];
+                  // Other amenities (excluding Pool) shown as items in an Amenities section
+                  const otherAmenities = immobilierAmenities.filter(a => a !== "Pool");
+                  const amenitiesSection = otherAmenities.length > 0 ? [{
+                    title: "Amenities",
+                    iconKey: "sparkles",
+                    amenities: otherAmenities,
+                    items: [] as { name: string; iconKey: string; sub?: string; tagSid?: string }[],
+                  }] : [];
+
+                  const allSections = [...chamberSections, ...poolSection, ...amenitiesSection];
                   if (allSections.length === 0) return null;
                   return (
                     <div className="border-t border-white/[0.06] overflow-hidden">
