@@ -3390,6 +3390,44 @@ const TourViewer = () => {
                   } catch { return null; }
                 })()}
 
+                {/* Immobilier Menu */}
+                {tour.category === "Immobilier" && tour.metadataJson && (() => {
+                  try {
+                    const meta = JSON.parse(tour.metadataJson);
+                    const chambers: { name: string; description?: string; tagSid?: string; price?: number; currency?: string }[] = meta.chambers || [];
+                    const immobilierAmenities: string[] = meta.immobilierAmenities || [];
+
+                    const roomsSection = chambers.length > 0 ? [{
+                      title: "Rooms",
+                      iconKey: "home",
+                      amenities: immobilierAmenities,
+                      items: chambers.map(c => ({
+                        name: c.name || "Room",
+                        iconKey: "bed",
+                        sub: c.price ? `${c.price} ${c.currency || "TND"}` : "",
+                        tagSid: c.tagSid || undefined,
+                      })),
+                    }] : [];
+
+                    const amenitiesSection = immobilierAmenities.length > 0 && chambers.length === 0 ? [{
+                      title: "Amenities",
+                      iconKey: "sparkles",
+                      amenities: immobilierAmenities,
+                      items: [] as { name: string; iconKey: string; sub?: string; tagSid?: string }[],
+                    }] : [];
+
+                    const allSections = [...roomsSection, ...amenitiesSection];
+                    if (allSections.length === 0) return null;
+                    return (
+                      <div className="rounded-xl overflow-hidden border border-white/[0.06]">
+                        {allSections.map((sec, i) => (
+                          <HotelMenuSection key={i} title={sec.title} iconKey={sec.iconKey} items={sec.items} amenities={sec.amenities} onItemClick={flyToTag} />
+                        ))}
+                      </div>
+                    );
+                  } catch { return null; }
+                })()}
+
                 {/* Gym & Fitness Menu */}
                 {normalizeCategory(tour.category) === "Gym & Fitness" && tour.metadataJson && (() => {
                   try {
@@ -3970,6 +4008,44 @@ const TourViewer = () => {
                             setSelectedChamber({ id: 0, tourId: tour?.id || 0, name, description: "", imageUrl: room?.imageUrl || "", price: room?.price ?? null, currency: room?.currency || "TND", tagSid, bookingUrl: bookingUrl || "", bookingEnabled: true });
                           }
                         }} />
+                      ))}
+                    </div>
+                  );
+                } catch { return null; }
+              })()}
+
+              {/* Mobile: Immobilier Menu */}
+              {tour.category === "Immobilier" && tour.metadataJson && (() => {
+                try {
+                  const meta = JSON.parse(tour.metadataJson);
+                  const chambers: { name: string; description?: string; tagSid?: string; price?: number; currency?: string }[] = meta.chambers || [];
+                  const immobilierAmenities: string[] = meta.immobilierAmenities || [];
+
+                  const roomsSection = chambers.length > 0 ? [{
+                    title: "Rooms",
+                    iconKey: "home",
+                    amenities: immobilierAmenities,
+                    items: chambers.map(c => ({
+                      name: c.name || "Room",
+                      iconKey: "bed",
+                      sub: c.price ? `${c.price} ${c.currency || "TND"}` : "",
+                      tagSid: c.tagSid || undefined,
+                    })),
+                  }] : [];
+
+                  const amenitiesSection = immobilierAmenities.length > 0 && chambers.length === 0 ? [{
+                    title: "Amenities",
+                    iconKey: "sparkles",
+                    amenities: immobilierAmenities,
+                    items: [] as { name: string; iconKey: string; sub?: string; tagSid?: string }[],
+                  }] : [];
+
+                  const allSections = [...roomsSection, ...amenitiesSection];
+                  if (allSections.length === 0) return null;
+                  return (
+                    <div className="border-t border-white/[0.06] overflow-hidden">
+                      {allSections.map((sec, i) => (
+                        <HotelMenuSection key={i} title={sec.title} iconKey={sec.iconKey} items={sec.items} amenities={sec.amenities} onItemClick={flyToTag} />
                       ))}
                     </div>
                   );
