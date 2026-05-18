@@ -1700,6 +1700,7 @@ const Admin = () => {
                 { key: "matterport", label: "Matterport Features", icon: "🎮" },
                 ...(editTour.category === "Hôtellerie" ? [{ key: "hotel", label: "Sections du menu", icon: "🏨" }] : []),
                 ...(editTour.category === "Hôtellerie" ? [{ key: "rooms", label: "Chambres", icon: "🛏️" }] : []),
+                ...(editTour.category === "Immobilier" ? [{ key: "rooms", label: "Immobilier", icon: "🏠" }] : []),
                 ...(editTour.category === "Wedding venue" ? [{ key: "wedding", label: "Wedding Venue", icon: "💒" }] : []),
                 ...(editTour.category === "Gym & Fitness" ? [{ key: "gym", label: "Gym & Fitness", icon: "💪" }] : []),
                 { key: "location", label: "Localisation", icon: "📍" },
