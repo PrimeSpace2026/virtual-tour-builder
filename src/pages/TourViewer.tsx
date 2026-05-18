@@ -859,16 +859,18 @@ const TourViewer = () => {
               rooms = Array.isArray(meta.immobilierRooms) ? meta.immobilierRooms : [];
             } catch {}
           }
-          // If chambers exist, use them (they have richer data: tagSid, imageUrl, etc.)
-          const chambers = Array.isArray(chambersData) ? chambersData : [];
-          if (chambers.length > 0) {
-            rooms = chambers.map((ch: any) => ({
-              name: ch.name || "",
-              type: ch.description || "",
-              tagSid: ch.tagSid || "",
-              imageUrl: ch.imageUrl || "",
-              description: ch.description || "",
-            }));
+          // Only fall back to chambers API if no immobilierRooms in metadata
+          if (rooms.length === 0) {
+            const chambers = Array.isArray(chambersData) ? chambersData : [];
+            if (chambers.length > 0) {
+              rooms = chambers.map((ch: any) => ({
+                name: ch.name || "",
+                type: "",
+                tagSid: ch.tagSid || "",
+                imageUrl: ch.imageUrl || "",
+                description: ch.description || "",
+              }));
+            }
           }
           setImmoRooms(rooms);
         } else { setImmoRooms([]); }
