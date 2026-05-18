@@ -555,6 +555,8 @@ const Admin = () => {
   const [tourGuide, setTourGuide] = useState<TourGuideData>({ name: "Guide", message: "", language: "en", enabled: true, avatarUrl: "https://orpnrybtrnuqxfkrrnvx.supabase.co/storage/v1/object/public/tour-images/avatars/waitress-unlit.glb", position: "center", posX: 0, posY: 0, posZ: 0, rotY: 0 });
   // Bottom strip visibility toggles
   const [bottomStrip, setBottomStrip] = useState<{ products: boolean; services: boolean; chambers: boolean; customSections?: Record<string, boolean> }>({ products: true, services: true, chambers: true, customSections: {} });
+  // Side menu (nav bar) visibility toggles
+  const [sideMenuConfig, setSideMenuConfig] = useState<{ rooms: boolean; features: boolean; amenities: boolean; location: boolean; otherTours: boolean }>({ rooms: true, features: true, amenities: true, location: true, otherTours: true });
   // Matterport viewer feature toggles (all URL params)
   type MatterportFeatures = {
     dollhouse?: boolean; floorplan?: boolean;
@@ -1030,8 +1032,9 @@ const Admin = () => {
         setWeddingPackages(meta.weddingPackages || []);
         setWeddingCatVisibility(meta.weddingCatVisibility || {});
         setBottomStrip({ products: true, services: true, chambers: true, customSections: {}, ...(meta.bottomStrip || {}) });
+        setSideMenuConfig({ rooms: true, features: true, amenities: true, location: true, otherTours: true, ...(meta.sideMenuConfig || {}) });
         setMatterportFeatures({ ...(meta.matterportFeatures || {}) });
-      } catch { setHotelRooms([]); setMenuSections([]); setGymSpaces([]); setGymEquipment([]); setGymPlans([]); setGymClasses([]); setGymSections([]); setGymCoaches([]); setImmobilierData({ ...DEFAULT_IMMOBILIER }); setImmobilierRooms([]); setWeddingData({ ...DEFAULT_WEDDING }); setWeddingProviders([]); setWeddingPackages([]); setWeddingCatVisibility({}); setBottomStrip({ products: true, services: true, chambers: true, customSections: {} }); setMatterportFeatures({}); }
+      } catch { setHotelRooms([]); setMenuSections([]); setGymSpaces([]); setGymEquipment([]); setGymPlans([]); setGymClasses([]); setGymSections([]); setGymCoaches([]); setImmobilierData({ ...DEFAULT_IMMOBILIER }); setImmobilierRooms([]); setWeddingData({ ...DEFAULT_WEDDING }); setWeddingProviders([]); setWeddingPackages([]); setWeddingCatVisibility({}); setBottomStrip({ products: true, services: true, chambers: true, customSections: {} }); setSideMenuConfig({ rooms: true, features: true, amenities: true, location: true, otherTours: true }); setMatterportFeatures({}); }
     } else {
       setHotelRooms([]);
       setMenuSections([]);
@@ -1048,6 +1051,7 @@ const Admin = () => {
       setWeddingPackages([]);
       setWeddingCatVisibility({});
       setBottomStrip({ products: true, services: true, chambers: true, customSections: {} });
+      setSideMenuConfig({ rooms: true, features: true, amenities: true, location: true, otherTours: true });
       setMatterportFeatures({});
     }
     // Load video screens
@@ -1084,12 +1088,13 @@ const Admin = () => {
     }
     // For other categories, save bottomStrip if any toggle is off
     if (!payload.metadataJson) {
-      payload.metadataJson = JSON.stringify({ bottomStrip, matterportFeatures });
+      payload.metadataJson = JSON.stringify({ bottomStrip, sideMenuConfig, matterportFeatures });
     } else {
       // Ensure bottomStrip is in existing metadataJson
       try {
         const existing = JSON.parse(payload.metadataJson as string);
         existing.bottomStrip = bottomStrip;
+        existing.sideMenuConfig = sideMenuConfig;
         existing.matterportFeatures = matterportFeatures;
         payload.metadataJson = JSON.stringify(existing);
       } catch {}
@@ -1868,6 +1873,42 @@ const Admin = () => {
                 (editTour.category === "Gym & Fitness" && (gymSections || []).filter((s: { title?: string }) => (s.title || "").trim()).length === 0)) && (
                 <p className="text-xs text-muted-foreground italic">💡 Add custom sections below to display them in the bottom bar.</p>
               )}
+            </div>
+
+            {/* Side Menu (Nav Bar) Visibility Toggles */}
+            <div className="rounded-xl border p-4 space-y-3">
+              <label className="text-sm font-medium block">Side Menu (Nav Bar)</label>
+              <p className="text-xs text-muted-foreground">Choose which sections appear in the side navigation menu</p>
+              <div className="flex flex-wrap gap-3">
+                {([
+                  { key: "rooms", label: "Rooms" },
+                  { key: "features", label: "Features" },
+                  { key: "amenities", label: "Amenities" },
+                  { key: "location", label: "Location" },
+                  { key: "otherTours", label: "Other Tours" },
+                ] as const).map(({ key, label }) => {
+                  const active = sideMenuConfig[key];
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => setSideMenuConfig({ ...sideMenuConfig, [key]: !active })}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-medium transition-all ${
+                        active
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "bg-muted/50 text-muted-foreground border-muted-foreground/20"
+                      }`}
+                    >
+                      <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                        active ? "border-primary-foreground" : "border-muted-foreground/40"
+                      }`}>
+                        {active && <div className="w-2 h-2 rounded-full bg-primary-foreground" />}
+                      </div>
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
             </div>
             )}

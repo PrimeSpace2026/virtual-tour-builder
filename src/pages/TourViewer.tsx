@@ -706,6 +706,7 @@ const TourViewer = () => {
   const [bottomTab, setBottomTab] = useState<string>("products");
   const [bottomStripOpen, setBottomStripOpen] = useState(true);
   const [bottomStripConfig, setBottomStripConfig] = useState<{ products: boolean; services: boolean; chambers: boolean; customSections?: Record<string, boolean> }>({ products: true, services: true, chambers: true, customSections: {} });
+  const [sideMenuConfig, setSideMenuConfig] = useState<{ rooms: boolean; features: boolean; amenities: boolean; location: boolean; otherTours: boolean }>({ rooms: true, features: true, amenities: true, location: true, otherTours: true });
   const [matterportFeatures, setMatterportFeatures] = useState<MatterportFeatures>({});
   const matterportFeaturesRef = useRef<MatterportFeatures>({});
   const userOpenedStripRef = useRef(false);
@@ -899,6 +900,7 @@ const TourViewer = () => {
           try {
             const meta = JSON.parse(tourData.metadataJson);
             if (meta.bottomStrip) setBottomStripConfig(meta.bottomStrip);
+            if (meta.sideMenuConfig) setSideMenuConfig({ rooms: true, features: true, amenities: true, location: true, otherTours: true, ...meta.sideMenuConfig });
             if (meta.matterportFeatures && typeof meta.matterportFeatures === "object") {
               const mf: MatterportFeatures = { ...meta.matterportFeatures };
               setMatterportFeatures(mf);
@@ -3327,7 +3329,7 @@ const TourViewer = () => {
                       </p>
                     </div>
                   </div>
-                  {tour.location && (
+                  {sideMenuConfig.location && tour.location && (
                     <div className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.03] border border-white/[0.05]">
                       <div className="w-8 h-8 rounded-lg bg-white/[0.06] flex items-center justify-center shrink-0">
                         <MapPin className="w-4 h-4 text-white/50" />
@@ -3428,7 +3430,7 @@ const TourViewer = () => {
                 })()}
 
                 {/* Immobilier Menu */}
-                {tour.category === "Immobilier" && bottomStripConfig.chambers && immoRooms.length > 0 && (() => {
+                {tour.category === "Immobilier" && bottomStripConfig.chambers && sideMenuConfig.rooms && immoRooms.length > 0 && (() => {
                   const meta = tour.metadataJson ? JSON.parse(tour.metadataJson) : {};
                   const immobilierAmenities: string[] = meta.immobilierAmenities || [];
 
@@ -3621,7 +3623,7 @@ const TourViewer = () => {
                     return (
                       <>
                       <div className="rounded-xl overflow-hidden border border-white/[0.06] bg-white/[0.02]">
-                        {details.length > 0 && (
+                        {sideMenuConfig.features && details.length > 0 && (
                           <div className="p-3 space-y-1.5">
                             <p className="text-white/25 text-[10px] uppercase tracking-widest font-semibold mb-2">Features</p>
                             <div className="grid grid-cols-2 gap-x-3 gap-y-1">
@@ -3634,7 +3636,7 @@ const TourViewer = () => {
                             </div>
                           </div>
                         )}
-                        {amenities.length > 0 && (
+                        {sideMenuConfig.amenities && amenities.length > 0 && (
                           <div className="p-3 border-t border-white/[0.06]">
                             <p className="text-white/25 text-[10px] uppercase tracking-widest font-semibold mb-2">Amenities</p>
                             <div className="flex flex-wrap gap-1.5">
@@ -3847,7 +3849,7 @@ const TourViewer = () => {
                 })()}
 
                 {/* Navigation - Other tours */}
-                {!isClean && (prevTour || nextTour) && (
+                {!isClean && sideMenuConfig.otherTours && (prevTour || nextTour) && (
                   <div className="pt-2 border-t border-white/[0.06]">
                     <p className="text-white/25 text-[10px] uppercase tracking-widest font-semibold mb-2">
                       Other tours
@@ -4056,7 +4058,7 @@ const TourViewer = () => {
               })()}
 
               {/* Mobile: Immobilier Menu */}
-              {tour.category === "Immobilier" && bottomStripConfig.chambers && immoRooms.length > 0 && (() => {
+              {tour.category === "Immobilier" && bottomStripConfig.chambers && sideMenuConfig.rooms && immoRooms.length > 0 && (() => {
                   const meta = tour.metadataJson ? JSON.parse(tour.metadataJson) : {};
                   const immobilierAmenities: string[] = meta.immobilierAmenities || [];
 
@@ -4212,7 +4214,7 @@ const TourViewer = () => {
                   return (
                     <>
                     <div className="border-t border-white/[0.06] bg-white/[0.02]">
-                      {details.length > 0 && (
+                      {sideMenuConfig.features && details.length > 0 && (
                         <div className="p-3 space-y-1.5">
                           <p className="text-white/25 text-[10px] uppercase tracking-widest font-semibold mb-2">Features</p>
                           <div className="grid grid-cols-2 gap-x-3 gap-y-1">
@@ -4225,7 +4227,7 @@ const TourViewer = () => {
                           </div>
                         </div>
                       )}
-                      {amenities.length > 0 && (
+                      {sideMenuConfig.amenities && amenities.length > 0 && (
                         <div className="p-3 border-t border-white/[0.06]">
                           <p className="text-white/25 text-[10px] uppercase tracking-widest font-semibold mb-2">Amenities</p>
                           <div className="flex flex-wrap gap-1.5">
