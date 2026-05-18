@@ -920,8 +920,7 @@ const TourViewer = () => {
         let bsc = { products: true, services: true, chambers: true };
         if (tourData.metadataJson) { try { const m = JSON.parse(tourData.metadataJson); if (m.bottomStrip) bsc = m.bottomStrip; } catch {} }
         let tabSet = false;
-        if (chambers.length > 0 && bsc.chambers) { setBottomTab("chambers"); tabSet = true; }
-        if (!tabSet && normalizeCategory(tourData.category) === "Immobilier") {
+        if (normalizeCategory(tourData.category) === "Immobilier") {
           try { const m = JSON.parse(tourData.metadataJson || "{}"); if (Array.isArray(m.immobilierRooms) && m.immobilierRooms.length > 0) {
             const firstRoom = m.immobilierRooms[0];
             let firstType = displayRoomType(firstRoom.type) || "";
@@ -939,6 +938,7 @@ const TourViewer = () => {
             setBottomTab(`immo_${firstType}`); tabSet = true;
           } } catch {}
         }
+        if (!tabSet && chambers.length > 0 && bsc.chambers) { setBottomTab("chambers"); tabSet = true; }
         if (!tabSet && items.length > 0 && bsc.products) { setBottomTab("products"); tabSet = true; }
         if (!tabSet && services.length > 0 && bsc.services) { setBottomTab("services"); tabSet = true; }
         if (!tabSet && normalizeCategory(tourData.category) === "Gym & Fitness") { setBottomTab("coaches"); tabSet = true; }
