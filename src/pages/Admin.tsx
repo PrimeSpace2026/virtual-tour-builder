@@ -1013,6 +1013,20 @@ const Admin = () => {
         setGymCoaches(meta.coaches || []);
         setImmobilierData({ ...DEFAULT_IMMOBILIER, ...meta.immobilier });
         setImmobilierRooms(meta.immobilierRooms || []);
+        // Fetch immobilier rooms from chambers API (preferred over metadataJson)
+        if (tour.id && tour.category === "Immobilier") {
+          fetch(`/api/tours/${tour.id}/chambers`).then(r => r.ok ? r.json() : []).then((chambers: any[]) => {
+            if (chambers.length > 0) {
+              setImmobilierRooms(chambers.map((ch: any) => ({
+                name: ch.name || "",
+                type: ch.description || "",
+                tagSid: ch.tagSid || "",
+                imageUrl: ch.imageUrl || "",
+                description: ch.description || "",
+              })));
+            }
+          }).catch(() => {});
+        }
         setWeddingData({ ...DEFAULT_WEDDING, ...meta.wedding });
         setWeddingProviders(meta.weddingProviders || []);
         setWeddingPackages(meta.weddingPackages || []);
@@ -2690,27 +2704,13 @@ const Admin = () => {
                         >
                           <X className="w-4 h-4" />
                         </Button>
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-1 gap-3">
                           <div>
-                            <label className="text-xs text-muted-foreground mb-1 block">Type de pièce</label>
-                            <Select
-                              value={room.type}
-                              onValueChange={(v) => {
-                                const u = [...immobilierRooms]; u[idx] = { ...room, type: v, name: room.name || v }; setImmobilierRooms(u);
-                              }}
-                            >
-                              <SelectTrigger><SelectValue placeholder="Choisir..." /></SelectTrigger>
-                              <SelectContent>
-                                {IMMO_ROOM_TYPES.map((t) => (<SelectItem key={t} value={t}>{t}</SelectItem>))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div>
-                            <label className="text-xs text-muted-foreground mb-1 block">Nom affiché</label>
+                            <label className="text-xs text-muted-foreground mb-1 block">Nom de la pièce</label>
                             <Input
                               value={room.name}
                               onChange={(e) => { const u = [...immobilierRooms]; u[idx] = { ...room, name: e.target.value }; setImmobilierRooms(u); }}
-                              placeholder="Salon principal"
+                              placeholder="Ex: Kitchen, Pool, Room 1: Double..."
                             />
                           </div>
                         </div>
