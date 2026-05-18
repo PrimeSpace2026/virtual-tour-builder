@@ -1133,29 +1133,22 @@ const Admin = () => {
       // Sync hotel rooms to chambers API so they appear in the bottom strip
       if (editTour.category === "Hôtellerie" && tourId) {
         try {
-          // Delete existing chambers
           const existing = await fetch(`/api/tours/${tourId}/chambers`).then(r => r.ok ? r.json() : []).catch(() => []);
-          for (const ch of existing) {
-            await fetch(`/api/tours/${tourId}/chambers/${ch.id}`, { method: "DELETE" }).catch(() => {});
-          }
-          // Create new chambers from hotelRooms
-          for (const room of hotelRooms) {
-            if (!room.name) continue;
-            await fetch(`/api/tours/${tourId}/chambers`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                tourId,
-                name: room.name,
-                description: [room.bedType, room.capacity ? `${room.capacity} pers.` : "", (room.amenities || []).join(", ")].filter(Boolean).join(" · "),
-                imageUrl: room.imageUrl || "",
-                price: room.price ?? null,
-                currency: room.currency || "TND",
-                tagSid: room.tagSid || "",
-                bookingUrl: room.bookingUrl || "",
-              }),
-            }).catch(() => {});
-          }
+          await Promise.all(existing.map((ch: any) => fetch(`/api/tours/${tourId}/chambers/${ch.id}`, { method: "DELETE" }).catch(() => {})));
+          await Promise.all(hotelRooms.filter(r => r.name).map(room => fetch(`/api/tours/${tourId}/chambers`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              tourId,
+              name: room.name,
+              description: [room.bedType, room.capacity ? `${room.capacity} pers.` : "", (room.amenities || []).join(", ")].filter(Boolean).join(" · "),
+              imageUrl: room.imageUrl || "",
+              price: room.price ?? null,
+              currency: room.currency || "TND",
+              tagSid: room.tagSid || "",
+              bookingUrl: room.bookingUrl || "",
+            }),
+          }).catch(() => {})));
         } catch {}
       }
 
@@ -1163,26 +1156,21 @@ const Admin = () => {
       if (editTour.category === "Immobilier" && tourId && immobilierRooms.length > 0) {
         try {
           const existing = await fetch(`/api/tours/${tourId}/chambers`).then(r => r.ok ? r.json() : []).catch(() => []);
-          for (const ch of existing) {
-            await fetch(`/api/tours/${tourId}/chambers/${ch.id}`, { method: "DELETE" }).catch(() => {});
-          }
-          for (const room of immobilierRooms) {
-            if (!room.name) continue;
-            await fetch(`/api/tours/${tourId}/chambers`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                tourId,
-                name: room.name,
-                description: room.description || "",
-                imageUrl: room.imageUrl || "",
-                price: null,
-                currency: "TND",
-                tagSid: room.tagSid || "",
-                bookingUrl: "",
-              }),
-            }).catch(() => {});
-          }
+          await Promise.all(existing.map((ch: any) => fetch(`/api/tours/${tourId}/chambers/${ch.id}`, { method: "DELETE" }).catch(() => {})));
+          await Promise.all(immobilierRooms.filter(r => r.name).map(room => fetch(`/api/tours/${tourId}/chambers`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              tourId,
+              name: room.name,
+              description: room.description || "",
+              imageUrl: room.imageUrl || "",
+              price: null,
+              currency: "TND",
+              tagSid: room.tagSid || "",
+              bookingUrl: "",
+            }),
+          }).catch(() => {})));
         } catch {}
       }
 
@@ -1190,16 +1178,12 @@ const Admin = () => {
       if (tourId && videoScreens.length > 0) {
         try {
           const existing = await fetch(`/api/tours/${tourId}/video-screens`).then(r => r.ok ? r.json() : []).catch(() => []);
-          for (const s of existing) {
-            await fetch(`/api/tours/${tourId}/video-screens/${s.id}`, { method: "DELETE" }).catch(() => {});
-          }
-          for (const screen of videoScreens) {
-            await fetch(`/api/tours/${tourId}/video-screens`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ ...screen, tourId }),
-            }).catch(() => {});
-          }
+          await Promise.all(existing.map((s: any) => fetch(`/api/tours/${tourId}/video-screens/${s.id}`, { method: "DELETE" }).catch(() => {})));
+          await Promise.all(videoScreens.map(screen => fetch(`/api/tours/${tourId}/video-screens`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ...screen, tourId }),
+          }).catch(() => {})));
         } catch {}
       }
 
