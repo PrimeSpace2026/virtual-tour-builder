@@ -534,6 +534,8 @@ const PROPERTY_TYPE_DISPLAY: Record<string, string> = {
 };
 const TRANSACTION_TYPE_DISPLAY: Record<string, string> = {
   "Location": "Rental",
+  "Location saisonnière": "Seasonal Rental",
+  "Location saisonniÃ¨re": "Seasonal Rental",
   "Vente": "Sale",
   "Achat": "Purchase",
 };
@@ -2772,7 +2774,7 @@ const TourViewer = () => {
             <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-purple-500 animate-spin" />
           </div>
           <p className="text-white/50 text-sm tracking-wider uppercase">
-            Chargement...
+            Loading...
           </p>
         </div>
       </div>
