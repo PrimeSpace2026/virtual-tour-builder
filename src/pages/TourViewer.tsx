@@ -429,6 +429,8 @@ interface CustomTagData {
   stemDirZ?: number;
   floorIndex: number;
   enabled: boolean;
+  cameraYaw?: number;
+  cameraPitch?: number;
 }
 
 function extractModelId(tourUrl: string): string | null {
@@ -2664,19 +2666,23 @@ const TourViewer = () => {
     }
     if (!closest) return undefined;
 
-    // Direction from sweep to tag
+    // Use saved camera view if admin set it
+    if (closest.cameraYaw != null) {
+      console.log(`🎯 Using saved camera view: yaw=${closest.cameraYaw}° pitch=${closest.cameraPitch ?? 0}°`);
+      return { x: closest.cameraPitch ?? 0, y: closest.cameraYaw };
+    }
+
+    // Otherwise calculate from geometry
     const dx = closest.anchorX - sweep.position.x;
     const dy = closest.anchorY - sweep.position.y;
     const dz = closest.anchorZ - sweep.position.z;
     const horizDist = Math.sqrt(dx * dx + dz * dz);
 
-    // Matterport uses right-hand coords: +X right, +Y up, -Z forward
-    // Yaw = angle from -Z axis (forward) to target, measured clockwise
+    // Matterport: +X right, +Y up, -Z forward
     const yaw = Math.atan2(dx, -dz) * (180 / Math.PI);
-    // Pitch = vertical angle (negative = look down)
     const pitch = -Math.atan2(dy, horizDist) * (180 / Math.PI);
 
-    console.log(`🎯 Face tag rotation: yaw=${yaw.toFixed(1)}° pitch=${pitch.toFixed(1)}° dist=${horizDist.toFixed(2)}m`);
+    console.log(`🎯 Calculated camera rotation: yaw=${yaw.toFixed(1)}° pitch=${pitch.toFixed(1)}° dist=${horizDist.toFixed(2)}m`);
     return { x: pitch, y: yaw };
   }, []);
 

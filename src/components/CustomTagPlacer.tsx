@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { X, Check, MapPin, Upload, Image, Video, Link, FileText, Type } from "lucide-react";
+import { X, Check, MapPin, Upload, Image, Video, Link, FileText, Type, Camera } from "lucide-react";
 import TagIconPicker, { iconToDataUri, findIconByName } from "@/components/TagIconPicker";
 
 const SDK_KEY = "b7uar4u57xdec0zw7dwygt7md";
@@ -36,6 +36,8 @@ export interface CustomTagData {
   stemDirZ?: number;
   floorIndex: number;
   enabled: boolean;
+  cameraYaw?: number;
+  cameraPitch?: number;
 }
 
 interface CustomTagPlacerProps {
@@ -81,6 +83,8 @@ export default function CustomTagPlacer({ tourUrl, onSave, onClose, editTag }: C
   });
   const [color, setColor] = useState(editTag?.color || "#4A90D9");
   const [stemHeight, setStemHeight] = useState(editTag?.stemHeight ?? 0.5);
+  const [cameraYaw, setCameraYaw] = useState<number | undefined>(editTag?.cameraYaw ?? undefined);
+  const [cameraPitch, setCameraPitch] = useState<number | undefined>(editTag?.cameraPitch ?? undefined);
 
   const modelId = extractModelId(tourUrl);
   const iframeSrc = modelId
@@ -289,6 +293,8 @@ export default function CustomTagPlacer({ tourUrl, onSave, onClose, editTag }: C
       stemDirZ: clickNormal ? Math.round(clickNormal.z * 1000) / 1000 : 0,
       floorIndex: 0,
       enabled: true,
+      cameraYaw: cameraYaw != null ? Math.round(cameraYaw * 100) / 100 : undefined,
+      cameraPitch: cameraPitch != null ? Math.round(cameraPitch * 100) / 100 : undefined,
     });
   };
 
@@ -529,6 +535,39 @@ export default function CustomTagPlacer({ tourUrl, onSave, onClose, editTag }: C
                   </Button>
                 </div>
               )}
+
+              {/* Camera View — save current camera angle */}
+              <div className="bg-white/5 rounded-lg p-3 border border-white/10">
+                <Label className="text-gray-400 text-xs">Vue caméra (orientation)</Label>
+                <p className="text-[10px] text-gray-500 mt-0.5">Orientez la caméra face au tag, puis cliquez pour sauvegarder cette vue.</p>
+                {cameraYaw != null && (
+                  <div className="flex gap-3 mt-1 text-xs text-gray-300 font-mono">
+                    <span>Yaw: {cameraYaw.toFixed(1)}°</span>
+                    <span>Pitch: {(cameraPitch ?? 0).toFixed(1)}°</span>
+                  </div>
+                )}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="mt-2 text-xs border-blue-400/40 text-blue-300 hover:text-blue-100 hover:bg-blue-600/20"
+                  onClick={async () => {
+                    const sdk = sdkRef.current;
+                    if (!sdk?.Camera?.pose) return;
+                    try {
+                      const pose = await new Promise<any>((resolve) => {
+                        const sub = sdk.Camera.pose.subscribe((p: any) => { sub?.cancel?.(); resolve(p); });
+                      });
+                      if (pose?.rotation) {
+                        setCameraYaw(pose.rotation.y);
+                        setCameraPitch(pose.rotation.x);
+                      }
+                    } catch {}
+                  }}
+                >
+                  <Camera className="w-3 h-3 mr-1" />
+                  {cameraYaw != null ? "Recapturer la vue" : "Sauvegarder la vue"}
+                </Button>
+              </div>
             </div>
             </div>
 
