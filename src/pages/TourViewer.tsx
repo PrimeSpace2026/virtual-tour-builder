@@ -1590,68 +1590,73 @@ const TourViewer = () => {
             try {
               // Small delay to let Matterport finish state transition
               await new Promise(r => setTimeout(r, 1500));
-              // Re-read tags to refresh visibility
-              if (sdk.Tag?.getData) {
-                const tags = await sdk.Tag.getData();
-                console.log("🔄 Tags restored after state change:", tags.length);
-                tags.forEach((t: any) => {
-                  if (t.label) tagsMapRef.current.set(t.label.trim().toLowerCase(), t.sid);
-                  if (t.sid) tagsMapRef.current.set(t.sid, t.sid);
+
+              // Get current camera pose first (needed for sweep refresh and tag facing)
+              let currentPose: any = null;
+              try {
+                currentPose = await new Promise<any>((resolve) => {
+                  const sub = sdk.Camera.pose.subscribe((p: any) => { sub?.cancel?.(); resolve(p); });
                 });
+                if (currentPose?.position) {
+                  const cam = currentPose.position;
+                  console.log(`📍 Current position: x=${cam.x.toFixed(2)} y=${cam.y.toFixed(2)} z=${cam.z.toFixed(2)} | sweep: ${currentPose.sweep} | rotation: yaw=${currentPose.rotation?.y?.toFixed(1)}° pitch=${currentPose.rotation?.x?.toFixed(1)}°`);
+                }
+              } catch (e) { console.log("Pose read error:", e); }
 
-                // Face camera toward nearest tag after mode change
+              // Force refresh sweep visibility (fixes sweeps disappearing after portal/mode change)
+              if (currentPose?.sweep && sdk.Sweep?.moveTo) {
                 try {
-                  const pose = await new Promise<any>((resolve) => {
-                    const sub = sdk.Camera.pose.subscribe((p: any) => { sub?.cancel?.(); resolve(p); });
-                  });
-                  if (pose?.position && tags.length > 0) {
-                    const cam = pose.position;
-                    console.log(`📍 Current position: x=${cam.x.toFixed(2)} y=${cam.y.toFixed(2)} z=${cam.z.toFixed(2)} | rotation: yaw=${pose.rotation?.y?.toFixed(1)}° pitch=${pose.rotation?.x?.toFixed(1)}°`);
-                    // Find nearest tag with anchorPosition
-                    let nearest: any = null;
-                    let minDist = Infinity;
-                    for (const t of tags) {
-                      if (!t.anchorPosition) continue;
-                      const dx = t.anchorPosition.x - cam.x;
-                      const dz = t.anchorPosition.z - cam.z;
-                      const dist = Math.sqrt(dx * dx + dz * dz);
-                      if (dist < minDist && dist > 0.5) { minDist = dist; nearest = t; }
-                    }
-                    if (nearest) {
-                      const dx = nearest.anchorPosition.x - cam.x;
-                      const dy = nearest.anchorPosition.y - cam.y;
-                      const dz = nearest.anchorPosition.z - cam.z;
-                      const horizDist = Math.sqrt(dx * dx + dz * dz);
-                      const yaw = Math.atan2(dx, -dz) * (180 / Math.PI);
-                      const pitch = -Math.atan2(dy, horizDist) * (180 / Math.PI);
-                      console.log(`🎯 Facing nearest tag "${nearest.label}" at dist=${minDist.toFixed(2)}m | yaw=${yaw.toFixed(1)}° pitch=${pitch.toFixed(1)}°`);
-                      // Move to current sweep with rotation facing the tag
-                      if (pose.sweep && sdk.Sweep?.moveTo) {
-                        sdk.Sweep.moveTo(pose.sweep, { transition: sdk.Sweep.Transition?.INSTANT || 0, rotation: { x: pitch, y: yaw } })
-                          .catch(() => {});
-                      }
-                    }
-                  }
-                } catch (e) { console.log("Camera face-tag error:", e); }
-
-                // Force refresh sweep visibility (fixes sweeps disappearing after portal/mode change)
-                try {
-                  const pose = await new Promise<any>((resolve) => {
-                    const sub = sdk.Camera.pose.subscribe((p: any) => { sub?.cancel?.(); resolve(p); });
-                  });
-                  if (pose?.sweep && sdk.Sweep?.moveTo) {
-                    // Re-navigate to current sweep with INSTANT to force sweep dots to reappear
-                    console.log(`🔄 Refreshing sweep visibility at: ${pose.sweep}`);
-                    await sdk.Sweep.moveTo(pose.sweep, { transition: sdk.Sweep.Transition?.INSTANT || 0 }).catch(() => {});
-                  }
-                  // Also refresh floor to ensure sweep markers on this floor are visible
+                  console.log(`🔄 Refreshing sweep visibility at: ${currentPose.sweep}`);
+                  await sdk.Sweep.moveTo(currentPose.sweep, { transition: sdk.Sweep.Transition?.INSTANT || 0 }).catch(() => {});
+                  // Also refresh floor
                   if (sdk.Floor?.moveTo) {
-                    const floorData = pose?.floorInfo?.sequence ?? 0;
-                    sdk.Floor.moveTo(floorData).catch(() => {});
+                    const floorIdx = currentPose?.floorInfo?.sequence ?? 0;
+                    sdk.Floor.moveTo(floorIdx).catch(() => {});
                   }
                 } catch (e) { console.log("Sweep refresh error:", e); }
+              }
 
-                // Check if custom tags are still present, re-add if missing
+              // Re-read tags (try Tag.getData first, fallback to Mattertag.getData)
+              let tags: any[] = [];
+              if (sdk.Tag?.getData) {
+                tags = await sdk.Tag.getData();
+              } else if (sdk.Mattertag?.getData) {
+                tags = await sdk.Mattertag.getData();
+              }
+              console.log(`🔄 Tags after mode change: ${tags.length}`);
+              tags.forEach((t: any) => {
+                if (t.label) tagsMapRef.current.set(t.label.trim().toLowerCase(), t.sid);
+                if (t.sid) tagsMapRef.current.set(t.sid, t.sid);
+              });
+
+              // Face camera toward nearest tag
+              if (currentPose?.position && tags.length > 0) {
+                const cam = currentPose.position;
+                let nearest: any = null;
+                let minDist = Infinity;
+                for (const t of tags) {
+                  const anchor = t.anchorPosition || t.position;
+                  if (!anchor) continue;
+                  const dx = anchor.x - cam.x;
+                  const dz = anchor.z - cam.z;
+                  const dist = Math.sqrt(dx * dx + dz * dz);
+                  if (dist < minDist && dist > 0.5) { minDist = dist; nearest = { ...t, anchorPosition: anchor }; }
+                }
+                if (nearest && currentPose.sweep && sdk.Sweep?.moveTo) {
+                  const dx = nearest.anchorPosition.x - cam.x;
+                  const dy = nearest.anchorPosition.y - cam.y;
+                  const dz = nearest.anchorPosition.z - cam.z;
+                  const horizDist = Math.sqrt(dx * dx + dz * dz);
+                  const yaw = Math.atan2(dx, -dz) * (180 / Math.PI);
+                  const pitch = -Math.atan2(dy, horizDist) * (180 / Math.PI);
+                  console.log(`🎯 Facing nearest tag "${nearest.label}" at dist=${minDist.toFixed(2)}m | yaw=${yaw.toFixed(1)}° pitch=${pitch.toFixed(1)}°`);
+                  sdk.Sweep.moveTo(currentPose.sweep, { transition: sdk.Sweep.Transition?.INSTANT || 0, rotation: { x: pitch, y: yaw } })
+                    .catch(() => {});
+                }
+              }
+
+              // Check if custom tags are still present, re-add if missing
+              if (tags.length > 0 && customTagsRef.current.length > 0) {
                 const existingSids = new Set(tags.map((t: any) => t.sid));
                 const missingCustomTags = customTagsRef.current.filter((_ct, idx) => {
                   const sids = Array.from(customTagSidsRef.current);
@@ -1681,7 +1686,7 @@ const TourViewer = () => {
                     customTagSidsRef.current.clear();
                     // Re-register all custom tag SIDs
                     const allCtags = customTagsRef.current;
-                    const allTags = await sdk.Tag.getData();
+                    const allTags = sdk.Tag?.getData ? await sdk.Tag.getData() : (sdk.Mattertag?.getData ? await sdk.Mattertag.getData() : []);
                     allTags.forEach((t: any) => {
                       if (t.label) tagsMapRef.current.set(t.label.trim().toLowerCase(), t.sid);
                       if (t.sid) tagsMapRef.current.set(t.sid, t.sid);
