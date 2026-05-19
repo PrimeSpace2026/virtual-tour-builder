@@ -1661,6 +1661,7 @@ const TourViewer = () => {
           if (sdk.Mode?.Event?.CHANGE_END) {
             sdk.on(sdk.Mode.Event.CHANGE_END, () => {
               console.log("✅ Mode change ended — restoring tags (including outside/exterior tags)");
+              console.log(`📊 Custom tags tracked: ${customTagsRef.current.length}, SIDs: ${customTagSidsRef.current.size}`);
               restoreTags();
             });
           }
