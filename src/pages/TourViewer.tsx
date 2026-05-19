@@ -2475,7 +2475,8 @@ const TourViewer = () => {
             const isSweepId = sweeps.length > 0 && sweeps.some((s: any) => s.sid === resolvedSid || s.id === resolvedSid || s.uuid === resolvedSid);
             if (isSweepId && sdk.Sweep?.moveTo) {
               console.log(`📍 Product → Sweep.moveTo("${resolvedSid}")`);
-              await sdk.Sweep.moveTo(resolvedSid, { transition: sdk.Sweep.Transition?.FLY || 2 });
+              const rot = getRotationToNearestTag(resolvedSid);
+              await sdk.Sweep.moveTo(resolvedSid, { transition: sdk.Sweep.Transition?.FLY || 2, ...(rot && { rotation: rot }) });
               setSelectedItem(item);
               return;
             }
@@ -2511,7 +2512,8 @@ const TourViewer = () => {
             console.log("SDK fly failed, trying Sweep.moveTo as last SDK resort:", err);
             try {
               if (sdk.Sweep?.moveTo) {
-                await sdk.Sweep.moveTo(resolvedSid, { transition: sdk.Sweep.Transition?.FLY || 2 });
+                const rot = getRotationToNearestTag(resolvedSid);
+                await sdk.Sweep.moveTo(resolvedSid, { transition: sdk.Sweep.Transition?.FLY || 2, ...(rot && { rotation: rot }) });
                 setSelectedItem(item);
                 return;
               }
@@ -2567,7 +2569,8 @@ const TourViewer = () => {
             const isSweepId = sweeps.length > 0 && sweeps.some((s: any) => s.sid === resolvedSid || s.id === resolvedSid || s.uuid === resolvedSid);
             if (isSweepId && sdk.Sweep?.moveTo) {
               console.log(`📍 Chamber → Sweep.moveTo("${resolvedSid}")`);
-              await sdk.Sweep.moveTo(resolvedSid, { transition: sdk.Sweep.Transition?.FLY || 2 });
+              const rot = getRotationToNearestTag(resolvedSid);
+              await sdk.Sweep.moveTo(resolvedSid, { transition: sdk.Sweep.Transition?.FLY || 2, ...(rot && { rotation: rot }) });
               showPopupLater();
               return;
             }
@@ -2596,7 +2599,8 @@ const TourViewer = () => {
             console.log("Chamber SDK fly failed, trying Sweep.moveTo:", err);
             try {
               if (sdk.Sweep?.moveTo) {
-                await sdk.Sweep.moveTo(resolvedSid, { transition: sdk.Sweep.Transition?.FLY || 2 });
+                const rot = getRotationToNearestTag(resolvedSid);
+                await sdk.Sweep.moveTo(resolvedSid, { transition: sdk.Sweep.Transition?.FLY || 2, ...(rot && { rotation: rot }) });
                 showPopupLater();
                 return;
               }
@@ -2641,6 +2645,38 @@ const TourViewer = () => {
     return { isSweep: false };
   }, []);
 
+  // Helper: calculate camera rotation to face nearest custom tag from a sweep position
+  const getRotationToNearestTag = useCallback((sweepId: string): { x: number; y: number } | undefined => {
+    const sweeps = sweepsRef.current;
+    const sweep = sweeps.find((s: any) => s.sid === sweepId || s.id === sweepId || s.uuid === sweepId);
+    if (!sweep?.position) return undefined;
+    const tags = customTagsRef.current;
+    if (!tags.length) return undefined;
+
+    // Find nearest custom tag
+    let closest: typeof tags[0] | null = null;
+    let minDist = Infinity;
+    for (const ct of tags) {
+      const dx = ct.anchorX - sweep.position.x;
+      const dz = ct.anchorZ - sweep.position.z;
+      const dist = Math.sqrt(dx * dx + dz * dz);
+      if (dist < minDist) { minDist = dist; closest = ct; }
+    }
+    if (!closest) return undefined;
+
+    // Calculate yaw (horizontal angle to face tag)
+    const dx = closest.anchorX - sweep.position.x;
+    const dz = closest.anchorZ - sweep.position.z;
+    const yaw = Math.atan2(dx, dz) * (180 / Math.PI);
+
+    // Calculate pitch (vertical angle)
+    const dy = closest.anchorY - sweep.position.y;
+    const horizDist = Math.sqrt(dx * dx + dz * dz);
+    const pitch = -Math.atan2(dy, horizDist) * (180 / Math.PI);
+
+    return { x: pitch, y: yaw };
+  }, []);
+
   // Navigate to a Matterport tag by SID (used by hotel menu sections)
   // Uses iframe deep-link method (same as product navigation fallback)
   const navigateToMenuTag = useCallback((tagSid: string) => {
@@ -2657,7 +2693,8 @@ const TourViewer = () => {
       const sdk = sdkRef.current;
       if (sdk?.Sweep?.moveTo && sweepId) {
         console.log(`📍 Sweep.moveTo("${sweepId}") from ${tagSid}`);
-        sdk.Sweep.moveTo(sweepId, { transition: sdk.Sweep.Transition?.FLY || 2 })
+        const rot = getRotationToNearestTag(sweepId);
+        sdk.Sweep.moveTo(sweepId, { transition: sdk.Sweep.Transition?.FLY || 2, ...(rot && { rotation: rot }) })
           .catch(() => console.log("Sweep.moveTo failed, using iframe fallback"));
         return;
       }
@@ -2706,7 +2743,8 @@ const TourViewer = () => {
       const sdk = sdkRef.current;
       if (sdk?.Sweep?.moveTo && sweepId) {
         console.log(`📍 FLY to sweep: ${sweepId} (from ${tagSid})`);
-        sdk.Sweep.moveTo(sweepId, { transition: sdk.Sweep.Transition?.FLY || 2 })
+        const rot = getRotationToNearestTag(sweepId);
+        sdk.Sweep.moveTo(sweepId, { transition: sdk.Sweep.Transition?.FLY || 2, ...(rot && { rotation: rot }) })
           .catch(() => navigateToMenuTag(tagSid));
       } else {
         navigateToMenuTag(tagSid);
@@ -2737,7 +2775,8 @@ const TourViewer = () => {
       // Fallback: maybe it's a sweep UUID, not a tag SID
       try {
         if (sdk.Sweep?.moveTo) {
-          await sdk.Sweep.moveTo(resolvedSid, { transition: sdk.Sweep.Transition?.FLY || 2 });
+          const rot = getRotationToNearestTag(resolvedSid);
+          await sdk.Sweep.moveTo(resolvedSid, { transition: sdk.Sweep.Transition?.FLY || 2, ...(rot && { rotation: rot }) });
           console.log(`✅ Sweep.moveTo succeeded: ${resolvedSid}`);
           return;
         }
