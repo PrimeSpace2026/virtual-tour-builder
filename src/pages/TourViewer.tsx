@@ -496,7 +496,7 @@ function buildMatterportUrl(
     views: b(features.views),
     pin: bOn(features.pin),
     mt: "1",
-    portal: b(features.portal),
+    portal: bOn(features.portal),
     lang: "en",
   });
   for (const [k, v] of Object.entries(extraParams)) params.set(k, v);
@@ -3217,8 +3217,8 @@ const TourViewer = () => {
           )}
         </AnimatePresence>
 
-        {/* Book Now — always visible for Immobilier tours */}
-        {normalizeCategory(tour.category) === "Immobilier" && tour.bookNowEnabled !== false && (
+        {/* Book Now — always visible for Immobilier tours (hidden when a chamber book-now is showing) */}
+        {normalizeCategory(tour.category) === "Immobilier" && tour.bookNowEnabled !== false && !selectedChamber && (
           <button
             onClick={() => {
               if (tour.bookNowUrl && tour.bookNowUrl.trim()) {
