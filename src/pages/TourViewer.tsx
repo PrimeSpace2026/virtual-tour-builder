@@ -1596,6 +1596,56 @@ const TourViewer = () => {
                   if (t.label) tagsMapRef.current.set(t.label.trim().toLowerCase(), t.sid);
                   if (t.sid) tagsMapRef.current.set(t.sid, t.sid);
                 });
+                // Check if custom tags are still present, re-add if missing
+                const existingSids = new Set(tags.map((t: any) => t.sid));
+                const missingCustomTags = customTagsRef.current.filter((_ct, idx) => {
+                  const sids = Array.from(customTagSidsRef.current);
+                  return sids[idx] && !existingSids.has(sids[idx]);
+                });
+                if (missingCustomTags.length > 0) {
+                  console.log("🔄 Re-adding", missingCustomTags.length, "missing custom tags after mode change");
+                  const descriptors = missingCustomTags.map((ct) => {
+                    const hex = (ct.color || "#4A90D9").replace("#", "");
+                    const r = parseInt(hex.substring(0, 2), 16) / 255;
+                    const g = parseInt(hex.substring(2, 4), 16) / 255;
+                    const b = parseInt(hex.substring(4, 6), 16) / 255;
+                    return {
+                      label: ct.label || "",
+                      description: ct.description || "",
+                      anchorPosition: { x: ct.anchorX, y: ct.anchorY, z: ct.anchorZ },
+                      stemVector: ct.stemDirX != null
+                        ? { x: ct.stemDirX * (ct.stemHeight || 0.3), y: ct.stemDirY * (ct.stemHeight || 0.3), z: ct.stemDirZ * (ct.stemHeight || 0.3) }
+                        : { x: 0, y: ct.stemHeight || 0.3, z: 0 },
+                      color: { r, g, b },
+                      floorIndex: ct.floorIndex || 0,
+                    };
+                  });
+                  try {
+                    const newSids = await sdk.Mattertag.add(descriptors);
+                    console.log("🏷️ Re-added custom tags with SIDs:", newSids);
+                    customTagSidsRef.current.clear();
+                    // Re-register all custom tag SIDs
+                    const allCtags = customTagsRef.current;
+                    const allTags = await sdk.Tag.getData();
+                    allTags.forEach((t: any) => {
+                      if (t.label) tagsMapRef.current.set(t.label.trim().toLowerCase(), t.sid);
+                      if (t.sid) tagsMapRef.current.set(t.sid, t.sid);
+                    });
+                    for (let i = 0; i < newSids.length; i++) {
+                      customTagSidsRef.current.add(newSids[i]);
+                      const ct = missingCustomTags[i];
+                      tagDataCacheRef.current.set(newSids[i], {
+                        sid: newSids[i],
+                        label: ct.label,
+                        description: ct.description,
+                        mediaSrc: ct.mediaUrl || "",
+                        mediaType: ct.mediaType || "",
+                        mediaUrl: ct.mediaUrl || "",
+                        anchorPosition: { x: ct.anchorX, y: ct.anchorY, z: ct.anchorZ },
+                      });
+                    }
+                  } catch (e) { console.log("🏷️ Re-add custom tags failed:", e); }
+                }
               }
             } catch (e) { console.log("Tag restore error:", e); }
           };
@@ -1603,12 +1653,12 @@ const TourViewer = () => {
           // Listen for mode changes (Dollhouse ↔ Inside ↔ Floorplan, and Defurnished toggle)
           if (sdk.Mode?.Event?.CHANGE_START) {
             sdk.on(sdk.Mode.Event.CHANGE_START, () => {
-              console.log("🔄 Mode change detected");
+              console.log("🔄 Mode change detected — tags may be temporarily hidden");
             });
           }
           if (sdk.Mode?.Event?.CHANGE_END) {
             sdk.on(sdk.Mode.Event.CHANGE_END, () => {
-              console.log("✅ Mode change ended — restoring tags");
+              console.log("✅ Mode change ended — restoring tags (including outside/exterior tags)");
               restoreTags();
             });
           }
