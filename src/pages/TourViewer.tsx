@@ -2664,16 +2664,19 @@ const TourViewer = () => {
     }
     if (!closest) return undefined;
 
-    // Calculate yaw (horizontal angle to face tag)
+    // Direction from sweep to tag
     const dx = closest.anchorX - sweep.position.x;
-    const dz = closest.anchorZ - sweep.position.z;
-    const yaw = Math.atan2(dx, dz) * (180 / Math.PI);
-
-    // Calculate pitch (vertical angle)
     const dy = closest.anchorY - sweep.position.y;
+    const dz = closest.anchorZ - sweep.position.z;
     const horizDist = Math.sqrt(dx * dx + dz * dz);
+
+    // Matterport uses right-hand coords: +X right, +Y up, -Z forward
+    // Yaw = angle from -Z axis (forward) to target, measured clockwise
+    const yaw = Math.atan2(dx, -dz) * (180 / Math.PI);
+    // Pitch = vertical angle (negative = look down)
     const pitch = -Math.atan2(dy, horizDist) * (180 / Math.PI);
 
+    console.log(`🎯 Face tag rotation: yaw=${yaw.toFixed(1)}° pitch=${pitch.toFixed(1)}° dist=${horizDist.toFixed(2)}m`);
     return { x: pitch, y: yaw };
   }, []);
 
