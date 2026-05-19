@@ -1598,6 +1598,41 @@ const TourViewer = () => {
                   if (t.label) tagsMapRef.current.set(t.label.trim().toLowerCase(), t.sid);
                   if (t.sid) tagsMapRef.current.set(t.sid, t.sid);
                 });
+
+                // Face camera toward nearest tag after mode change
+                try {
+                  const pose = await new Promise<any>((resolve) => {
+                    const sub = sdk.Camera.pose.subscribe((p: any) => { sub?.cancel?.(); resolve(p); });
+                  });
+                  if (pose?.position && tags.length > 0) {
+                    const cam = pose.position;
+                    console.log(`📍 Current position: x=${cam.x.toFixed(2)} y=${cam.y.toFixed(2)} z=${cam.z.toFixed(2)} | rotation: yaw=${pose.rotation?.y?.toFixed(1)}° pitch=${pose.rotation?.x?.toFixed(1)}°`);
+                    // Find nearest tag with anchorPosition
+                    let nearest: any = null;
+                    let minDist = Infinity;
+                    for (const t of tags) {
+                      if (!t.anchorPosition) continue;
+                      const dx = t.anchorPosition.x - cam.x;
+                      const dz = t.anchorPosition.z - cam.z;
+                      const dist = Math.sqrt(dx * dx + dz * dz);
+                      if (dist < minDist && dist > 0.5) { minDist = dist; nearest = t; }
+                    }
+                    if (nearest) {
+                      const dx = nearest.anchorPosition.x - cam.x;
+                      const dy = nearest.anchorPosition.y - cam.y;
+                      const dz = nearest.anchorPosition.z - cam.z;
+                      const horizDist = Math.sqrt(dx * dx + dz * dz);
+                      const yaw = Math.atan2(dx, -dz) * (180 / Math.PI);
+                      const pitch = -Math.atan2(dy, horizDist) * (180 / Math.PI);
+                      console.log(`🎯 Facing nearest tag "${nearest.label}" at dist=${minDist.toFixed(2)}m | yaw=${yaw.toFixed(1)}° pitch=${pitch.toFixed(1)}°`);
+                      // Move to current sweep with rotation facing the tag
+                      if (pose.sweep && sdk.Sweep?.moveTo) {
+                        sdk.Sweep.moveTo(pose.sweep, { transition: sdk.Sweep.Transition?.INSTANT || 0, rotation: { x: pitch, y: yaw } })
+                          .catch(() => {});
+                      }
+                    }
+                  }
+                } catch (e) { console.log("Camera face-tag error:", e); }
                 // Check if custom tags are still present, re-add if missing
                 const existingSids = new Set(tags.map((t: any) => t.sid));
                 const missingCustomTags = customTagsRef.current.filter((_ct, idx) => {
