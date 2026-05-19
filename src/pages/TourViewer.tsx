@@ -1633,6 +1633,24 @@ const TourViewer = () => {
                     }
                   }
                 } catch (e) { console.log("Camera face-tag error:", e); }
+
+                // Force refresh sweep visibility (fixes sweeps disappearing after portal/mode change)
+                try {
+                  const pose = await new Promise<any>((resolve) => {
+                    const sub = sdk.Camera.pose.subscribe((p: any) => { sub?.cancel?.(); resolve(p); });
+                  });
+                  if (pose?.sweep && sdk.Sweep?.moveTo) {
+                    // Re-navigate to current sweep with INSTANT to force sweep dots to reappear
+                    console.log(`🔄 Refreshing sweep visibility at: ${pose.sweep}`);
+                    await sdk.Sweep.moveTo(pose.sweep, { transition: sdk.Sweep.Transition?.INSTANT || 0 }).catch(() => {});
+                  }
+                  // Also refresh floor to ensure sweep markers on this floor are visible
+                  if (sdk.Floor?.moveTo) {
+                    const floorData = pose?.floorInfo?.sequence ?? 0;
+                    sdk.Floor.moveTo(floorData).catch(() => {});
+                  }
+                } catch (e) { console.log("Sweep refresh error:", e); }
+
                 // Check if custom tags are still present, re-add if missing
                 const existingSids = new Set(tags.map((t: any) => t.sid));
                 const missingCustomTags = customTagsRef.current.filter((_ct, idx) => {
