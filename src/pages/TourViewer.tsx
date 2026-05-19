@@ -5873,11 +5873,7 @@ const TourViewer = () => {
                     <button
                       key={ri}
                       onClick={() => {
-                        if (room.imageUrl || room.description) {
-                          setSelectedImmoRoom(room);
-                        } else if (room.tagSid) {
-                          flyToTag(room.tagSid);
-                        }
+                        if (room.tagSid) flyToTag(room.tagSid);
                       }}
                       className="flex-shrink-0 flex items-center gap-2.5 bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.08] rounded-xl p-2 pr-4 transition-all group"
                     >
