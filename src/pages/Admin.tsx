@@ -94,6 +94,8 @@ interface HotelRoom {
   currency: string;
   bookingUrl: string;
   bookingEnabled?: boolean;
+  cameraYaw?: number | null;
+  cameraPitch?: number | null;
 }
 
 interface MenuItemData {
@@ -1147,6 +1149,8 @@ const Admin = () => {
               currency: room.currency || "TND",
               tagSid: room.tagSid || "",
               bookingUrl: room.bookingUrl || "",
+              cameraYaw: room.cameraYaw ?? null,
+              cameraPitch: room.cameraPitch ?? null,
             }),
           }).catch(() => {})));
         } catch {}
@@ -2441,6 +2445,36 @@ const Admin = () => {
                             setHotelRooms(updated);
                           }}
                         />
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-xs text-muted-foreground mb-1 block">Camera Yaw (°)</label>
+                          <Input
+                            type="number"
+                            step="any"
+                            value={room.cameraYaw ?? ""}
+                            onChange={(e) => {
+                              const updated = [...hotelRooms];
+                              updated[idx] = { ...room, cameraYaw: e.target.value ? Number(e.target.value) : null };
+                              setHotelRooms(updated);
+                            }}
+                            placeholder="-35.9"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs text-muted-foreground mb-1 block">Camera Pitch (°)</label>
+                          <Input
+                            type="number"
+                            step="any"
+                            value={room.cameraPitch ?? ""}
+                            onChange={(e) => {
+                              const updated = [...hotelRooms];
+                              updated[idx] = { ...room, cameraPitch: e.target.value ? Number(e.target.value) : null };
+                              setHotelRooms(updated);
+                            }}
+                            placeholder="-15.2"
+                          />
+                        </div>
                       </div>
                       <div>
                         <label className="text-xs text-muted-foreground mb-1 block">Équipements</label>

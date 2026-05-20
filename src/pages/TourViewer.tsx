@@ -334,6 +334,8 @@ interface ChamberData {
   tagSid?: string;
   bookingUrl?: string;
   bookingEnabled?: boolean;
+  cameraYaw?: number;
+  cameraPitch?: number;
 }
 
 interface GymCoachData {
@@ -1725,9 +1727,8 @@ const TourViewer = () => {
           }
 
           // Listen for model state/sweep changes that may affect tag visibility
-          if (sdk.Sweep?.Event?.EXIT) {
-            sdk.on(sdk.Sweep.Event.EXIT, () => restoreTags());
-          }
+          // Note: removed Sweep.EXIT → restoreTags() because it caused sudden camera snaps
+          // (camera would rotate to face nearest tag 1.5s after every normal walk transition)
         } catch (e) { console.log("Mode listener error:", e); }
 
         if (sdk.Tag?.Event?.CLICK) {
@@ -2630,7 +2631,9 @@ const TourViewer = () => {
             const isSweepId = sweeps.length > 0 && sweeps.some((s: any) => s.sid === resolvedSid || s.id === resolvedSid || s.uuid === resolvedSid);
             if (isSweepId && sdk.Sweep?.moveTo) {
               console.log(`📍 Chamber → Sweep.moveTo("${resolvedSid}")`);
-              const rot = getRotationToNearestTag(resolvedSid);
+              const rot = (ch.cameraYaw != null && ch.cameraPitch != null)
+                ? { x: ch.cameraPitch, y: ch.cameraYaw }
+                : getRotationToNearestTag(resolvedSid);
               await sdk.Sweep.moveTo(resolvedSid, { transition: sdk.Sweep.Transition?.FLY || 2, ...(rot && { rotation: rot }) });
               showPopupLater();
               return;
@@ -3179,7 +3182,29 @@ const TourViewer = () => {
           <button
             onClick={() => {
               if (selectedChamber || chamberSweepRef.current) {
-                flyToTag("Reception");
+                // Return to tour start: try SDK first, then reset iframe
+                const sdk = sdkRef.current;
+                const sweeps = sweepsRef.current;
+                if (sdk?.Sweep?.moveTo && sweeps.length > 0) {
+                  const firstSweep = sweeps[0]?.sid || sweeps[0]?.id || sweeps[0]?.uuid;
+                  if (firstSweep) {
+                    sdk.Sweep.moveTo(firstSweep, { transition: sdk.Sweep.Transition?.FLY || 2 }).catch(() => {
+                      // SDK failed — reset iframe to original tour URL
+                      if (tour?.tourUrl) {
+                        const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+                        setIframeSrc(buildEmbedUrl(tour.tourUrl, isLocal, matterportFeaturesRef.current));
+                        setIframeKey((k) => k + 1);
+                        setIframeLoaded(false);
+                      }
+                    });
+                  }
+                } else if (tour?.tourUrl) {
+                  // No SDK — reset iframe
+                  const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+                  setIframeSrc(buildEmbedUrl(tour.tourUrl, isLocal, matterportFeaturesRef.current));
+                  setIframeKey((k) => k + 1);
+                  setIframeLoaded(false);
+                }
                 setSelectedChamber(null);
                 chamberSweepRef.current = "";
               } else {
