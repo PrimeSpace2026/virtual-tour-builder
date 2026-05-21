@@ -23,6 +23,17 @@ const TOUR_PATH = "/view/la-perla-pieds-dans-l-eau";
 const TUNROOMS_LOGO = "https://www.tunrooms.com/images/logo.png";
 const TUNROOMS_URL = "https://www.tunrooms.com/rooms/11131";
 
+/* ─── TunRooms Logo SVG ─── */
+const TunRoomsLogo = () => (
+  <div className="flex items-center gap-1">
+    <svg width="28" height="28" viewBox="0 0 32 32" fill="none">
+      <path d="M16 2C16 2 6 14 6 20a10 10 0 0020 0C26 14 16 2 16 2z" fill="#29B6F6"/>
+      <path d="M16 6C16 6 10 12 10 16a6 6 0 0012 0C22 12 16 6 16 6z" fill="#4FC3F7"/>
+    </svg>
+    <span style={{ color: "#29B6F6", fontWeight: 700, fontSize: 18 }}>TunRooms</span>
+  </div>
+);
+
 /* ─── Property images ─── */
 const IMAGES = [
   "https://kabylis.tn/images/upload/fe39128b2da1746d42fc62fecce5a457.jpeg",
@@ -88,7 +99,7 @@ export default function TunRoomsDemo() {
       <nav style={{ backgroundColor: C.white, borderBottom: `1px solid ${C.border}`, height: 70 }} className="sticky top-0 z-50 shadow-sm">
         <div className="max-w-6xl mx-auto px-4 h-full flex items-center justify-between">
           <a href="https://www.tunrooms.com" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
-            <img src={TUNROOMS_LOGO} alt="TunRooms" style={{ height: 36 }} />
+            <TunRoomsLogo />
           </a>
           <div className="hidden md:flex items-center gap-5 text-sm" style={{ color: C.text }}>
             <a href="https://www.tunrooms.com" className="hover:underline" style={{ color: C.text }}>Accueil</a>
@@ -435,7 +446,7 @@ export default function TunRoomsDemo() {
         <div className="max-w-6xl mx-auto px-4 py-8">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <img src={TUNROOMS_LOGO} alt="TunRooms" style={{ height: 28 }} />
+              <TunRoomsLogo />
             </div>
             <div className="flex items-center gap-3">
               <a href="https://www.facebook.com/Tunrooms/" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-gray-600">
