@@ -19,47 +19,41 @@ const C = {
 };
 const FONT = `'Poppins', 'Inter', Arial, sans-serif`;
 
-const TOUR_PATH = "/view/westpoint-way-residence-donegal-ie";
+const TOUR_PATH = "/view/la-perla-pieds-dans-l-eau";
 const SUPERHOST_LOGO = "https://superhost.com.tn/assets/miniLogo-BMsTPNSh.svg";
-const SUPERHOST_URL = "https://superhost.com.tn/property-details/azura-house-ras-jebel-05tvxrq5";
+const SUPERHOST_URL = "https://kabylis.tn/rooms/la-perla---pieds-dans-l'eau-883?&guests=1";
 
-/* ─── Property images from Superhost listing ─── */
+/* ─── Property images ─── */
 const IMAGES = [
-  "https://imagedelivery.net/tfItMNmc0m4jZ4qP_DhHCg/9fcce267-a932-4c88-4035-a4d962658600/public",
-  "https://imagedelivery.net/tfItMNmc0m4jZ4qP_DhHCg/4e7570fe-16f4-4e9f-b688-5149f0c40100/public",
-  "https://imagedelivery.net/tfItMNmc0m4jZ4qP_DhHCg/fa8245e3-2af0-464f-8d76-afb331878400/public",
-  "https://imagedelivery.net/tfItMNmc0m4jZ4qP_DhHCg/9a59b166-da82-4967-ee80-6cb3808d0c00/public",
-  "https://imagedelivery.net/tfItMNmc0m4jZ4qP_DhHCg/fec004ca-2875-4da9-0c9f-cd04015e4e00/public",
+  "https://orpnrybtrnuqxfkrrnvx.supabase.co/storage/v1/object/public/tour-images/la-perla-1.jpg",
+  "https://orpnrybtrnuqxfkrrnvx.supabase.co/storage/v1/object/public/tour-images/la-perla-2.jpg",
+  "https://orpnrybtrnuqxfkrrnvx.supabase.co/storage/v1/object/public/tour-images/la-perla-3.jpg",
+  "https://orpnrybtrnuqxfkrrnvx.supabase.co/storage/v1/object/public/tour-images/la-perla-4.jpg",
+  "https://orpnrybtrnuqxfkrrnvx.supabase.co/storage/v1/object/public/tour-images/la-perla-5.jpg",
 ];
 
-const DESC = `Azura House — Villa vue mer avec piscine & prestations premium
+const DESC = `Magnifique villa S+4 climatisée située à Haouaria, parfaite pour des vacances inoubliables. Cette propriété luxueuse offre un confort exceptionnel avec un accès direct à la plage — les pieds dans l'eau.
 
-Nichée à Metline, Azura House est une villa d'exception pensée pour offrir une expérience unique entre confort, élégance et art de vivre face à la mer.
+Profitez d'une grande piscine privée, d'espaces de vie spacieux et lumineux, et d'une vue imprenable sur la mer. Idéale pour des séjours en famille ou entre amis dans un cadre paisible et exclusif.
 
-Avec sa vue panoramique imprenable, la villa dispose de 5 chambres doubles, dont 2 suites, 3 chambres supplémentaires ainsi qu'une chambre pour enfants, offrant un cadre idéal pour les séjours en famille ou entre amis.
-
-Profitez d'une piscine privée avec vue mer, d'un jardin méditerranéen soigneusement aménagé, et d'espaces de vie lumineux et raffinés.`;
+La maison dispose de 4 chambres confortables, 5 salles de bains, une cuisine entièrement équipée et des espaces extérieurs généreux pour profiter du beau temps tunisien.`;
 
 const EQUIP = [
-  { icon: <Wifi className="w-4 h-4" />, label: "WIFI" },
-  { icon: <Snowflake className="w-4 h-4" />, label: "Climatisation" },
-  { icon: <Waves className="w-4 h-4" />, label: "Piscine" },
-  { icon: <Car className="w-4 h-4" />, label: "Parking gratuit" },
+  { icon: <Snowflake className="w-4 h-4" />, label: "Climatiseur" },
   { icon: <UtensilsCrossed className="w-4 h-4" />, label: "Cuisine équipée" },
-  { icon: <TreePalm className="w-4 h-4" />, label: "Jardin" },
-  { icon: <Eye className="w-4 h-4" />, label: "Vue mer" },
-  { icon: <Bath className="w-4 h-4" />, label: "Linge de bain" },
-  { icon: <BedDouble className="w-4 h-4" />, label: "Literie premium" },
-  { icon: <ShieldCheck className="w-4 h-4" />, label: "Gardien" },
+  { icon: <Waves className="w-4 h-4" />, label: "Piscine" },
+  { icon: <Eye className="w-4 h-4" />, label: "Pieds dans l'eau" },
+  { icon: <Bath className="w-4 h-4" />, label: "5 Salles de bains" },
+  { icon: <BedDouble className="w-4 h-4" />, label: "4 Chambres Queen" },
+  { icon: <ShieldCheck className="w-4 h-4" />, label: "Quartier calme" },
+  { icon: <Car className="w-4 h-4" />, label: "Parking" },
 ];
 
 const ROOMS = [
-  { name: "Suite 1", beds: "1 × King" },
-  { name: "Suite 2", beds: "1 × King" },
-  { name: "Chambre 3", beds: "1 × Double" },
-  { name: "Chambre 4", beds: "1 × Double" },
-  { name: "Chambre 5", beds: "1 × Double" },
-  { name: "Chambre enfants", beds: "2 × Single" },
+  { name: "Chambre 1", beds: "1 × Queen" },
+  { name: "Chambre 2", beds: "1 × Queen" },
+  { name: "Chambre 3", beds: "1 × Queen" },
+  { name: "Chambre 4", beds: "1 × Queen" },
 ];
 
 export default function SuperhostDemo() {
@@ -111,15 +105,21 @@ export default function SuperhostDemo() {
         <div className="flex items-center gap-2 mb-1">
           <span className="text-xs px-2 py-0.5 rounded-full font-medium text-white" style={{ backgroundColor: C.coral }}>Superhost Exclusive</span>
         </div>
-        <h1 className="text-lg sm:text-2xl font-bold" style={{ color: C.dark }}>Azura House</h1>
+        <h1 className="text-lg sm:text-2xl font-bold" style={{ color: C.dark }}>La Perla - Pieds dans l'eau</h1>
         <div className="flex items-center gap-2 sm:gap-3 mt-1 flex-wrap">
+          <div className="flex items-center gap-1">
+            <Star className="w-4 h-4 fill-current" style={{ color: C.coral }} />
+            <span className="font-semibold text-sm" style={{ color: C.dark }}>4</span>
+            <span className="text-sm" style={{ color: C.gray }}>(2 avis)</span>
+          </div>
+          <span style={{ color: C.gray }}>·</span>
           <span className="flex items-center gap-1 text-sm" style={{ color: C.dark }}>
-            <MapPin className="w-3.5 h-3.5" />Ras Jebel, Tunisia
+            <MapPin className="w-3.5 h-3.5" />Haouaria, TN
           </span>
           <span style={{ color: C.gray }}>·</span>
-          <span className="text-sm" style={{ color: C.gray }}>Villa</span>
+          <span className="text-sm" style={{ color: C.gray }}>House</span>
           <span style={{ color: C.gray }}>·</span>
-          <span className="text-sm" style={{ color: C.gray }}>11 guests</span>
+          <span className="text-sm" style={{ color: C.gray }}>8 Invités</span>
           <div className="ml-auto hidden sm:flex items-center gap-4">
             <button onClick={() => setSaved(!saved)} className="flex items-center gap-1.5 text-sm underline" style={{ color: C.dark }}>
               <Heart className={`w-4 h-4 ${saved ? "fill-red-500 text-red-500" : ""}`} />
@@ -149,6 +149,40 @@ export default function SuperhostDemo() {
         </div>
       </div>
 
+      {/* ═══ Virtual Tour — right below photos ═══ */}
+      <div className="max-w-6xl mx-auto px-3 sm:px-4 pb-4 sm:pb-6">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-lg font-semibold" style={{ color: C.dark }}>
+            🏠 Visite Virtuelle 3D — <span style={{ color: C.coral }}>PrimeSpace</span>
+          </h3>
+          <span className="text-xs px-3 py-1 rounded-full font-semibold text-white" style={{ backgroundColor: "#00A699" }}>NOUVEAU</span>
+        </div>
+        <div className="rounded-xl overflow-hidden border" style={{ borderColor: C.border }}>
+          <div className="tour-container relative">
+            <style>{`.tour-container{padding-bottom:130vw}@media(min-width:640px){.tour-container{padding-bottom:75%}}@media(min-width:1024px){.tour-container{padding-bottom:56.25%}}`}</style>
+            <iframe
+              src={TOUR_PATH}
+              title="Visite 3D PrimeSpace — La Perla"
+              className="absolute inset-0 w-full h-full"
+              allowFullScreen
+              allow="xr-spatial-tracking"
+            />
+          </div>
+          <div className="px-4 py-3 flex items-center justify-between" style={{ backgroundColor: C.bg }}>
+            <p className="text-xs" style={{ color: C.gray }}>Naviguez librement dans l'espace 3D · Cliquez et déplacez-vous</p>
+            <a
+              href={TOUR_PATH}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs font-semibold px-4 py-1.5 rounded-lg text-white hover:opacity-90 transition"
+              style={{ backgroundColor: C.coral }}
+            >
+              Plein écran
+            </a>
+          </div>
+        </div>
+      </div>
+
       {/* ═══ Main Content ═══ */}
       <div className="max-w-6xl mx-auto px-3 sm:px-4 pb-20 lg:pb-12">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-12">
@@ -159,11 +193,11 @@ export default function SuperhostDemo() {
             {/* Host info */}
             <div className="flex items-center justify-between py-4 sm:py-6 border-b" style={{ borderColor: C.border }}>
               <div>
-                <h2 className="text-base sm:text-xl font-semibold" style={{ color: C.dark }}>Villa entière hébergée par Leger</h2>
-                <p className="text-xs sm:text-sm mt-1" style={{ color: C.gray }}>11 voyageurs · 6 chambres · 6 lits · 3 salles de bains</p>
+                <h2 className="text-base sm:text-xl font-semibold" style={{ color: C.dark }}>House hébergé par Kabylis</h2>
+                <p className="text-xs sm:text-sm mt-1" style={{ color: C.gray }}>8 voyageurs · 4 chambres · 4 lits · 5 salles de bains</p>
               </div>
-              <div className="w-11 h-11 sm:w-14 sm:h-14 rounded-full bg-gradient-to-br from-rose-400 to-orange-400 flex items-center justify-center text-white font-bold text-lg">
-                L
+              <div className="w-11 h-11 sm:w-14 sm:h-14 rounded-full bg-gradient-to-br from-blue-400 to-cyan-400 flex items-center justify-center text-white font-bold text-lg">
+                K
               </div>
             </div>
 
@@ -172,11 +206,11 @@ export default function SuperhostDemo() {
               <h3 className="text-lg font-semibold mb-4" style={{ color: C.dark }}>Highlights</h3>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                 {[
+                  { icon: <Waves className="w-5 h-5" />, label: "Pieds dans l'eau" },
                   { icon: <Waves className="w-5 h-5" />, label: "Piscine" },
-                  { icon: <TreePalm className="w-5 h-5" />, label: "Jardin" },
-                  { icon: <Eye className="w-5 h-5" />, label: "Vue mer" },
-                  { icon: <HomeIcon className="w-5 h-5" />, label: "Patio" },
-                  { icon: <Wifi className="w-5 h-5" />, label: "WIFI" },
+                  { icon: <Snowflake className="w-5 h-5" />, label: "Climatiseur" },
+                  { icon: <HomeIcon className="w-5 h-5" />, label: "Villa S+4" },
+                  { icon: <UtensilsCrossed className="w-5 h-5" />, label: "Cuisine équipée" },
                   { icon: <ShieldCheck className="w-5 h-5" />, label: "Quartier calme" },
                 ].map((item, i) => (
                   <div key={i} className="flex items-center gap-3 p-3 rounded-xl border" style={{ borderColor: C.border }}>
@@ -212,39 +246,6 @@ export default function SuperhostDemo() {
               </div>
             </div>
 
-            {/* ★★★ 3D Virtual Tour — PrimeSpace ★★★ */}
-            <div className="py-6 border-b" style={{ borderColor: C.border }}>
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold" style={{ color: C.dark }}>
-                  🏠 Visite Virtuelle 3D — <span style={{ color: C.coral }}>PrimeSpace</span>
-                </h3>
-                <span className="text-xs px-3 py-1 rounded-full font-semibold text-white" style={{ backgroundColor: "#00A699" }}>NOUVEAU</span>
-              </div>
-              <div className="rounded-xl overflow-hidden border" style={{ borderColor: C.border }}>
-                <div className="tour-container relative">
-                  <style>{`.tour-container{padding-bottom:130vw}@media(min-width:640px){.tour-container{padding-bottom:75%}}@media(min-width:1024px){.tour-container{padding-bottom:56.25%}}`}</style>
-                  <iframe
-                    src={TOUR_PATH}
-                    title="Visite 3D PrimeSpace — Azura House"
-                    className="absolute inset-0 w-full h-full"
-                    allowFullScreen
-                    allow="xr-spatial-tracking"
-                  />
-                </div>
-                <div className="px-4 py-3 flex items-center justify-between" style={{ backgroundColor: C.bg }}>
-                  <p className="text-xs" style={{ color: C.gray }}>Naviguez librement dans l'espace 3D · Cliquez et déplacez-vous</p>
-                  <a
-                    href={TOUR_PATH}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs font-semibold px-4 py-1.5 rounded-lg text-white hover:opacity-90 transition"
-                    style={{ backgroundColor: C.coral }}
-                  >
-                    Plein écran
-                  </a>
-                </div>
-              </div>
-            </div>
 
             {/* Équipements */}
             <div className="py-6 border-b" style={{ borderColor: C.border }}>
@@ -282,13 +283,12 @@ export default function SuperhostDemo() {
             {/* Host */}
             <div className="py-6">
               <div className="flex items-center gap-4 mb-3">
-                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-rose-400 to-orange-400 flex items-center justify-center text-white font-bold text-2xl">
-                  L
+                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-400 to-cyan-400 flex items-center justify-center text-white font-bold text-2xl">
+                  K
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold" style={{ color: C.dark }}>Hébergé par Leger</h3>
-                  <p className="text-sm" style={{ color: C.gray }}>16 reviews · 5.0 rating · 2 years of experience</p>
-                  <p className="text-xs mt-1" style={{ color: C.gray }}>Response rate: 100% · Usually responds within an hour</p>
+                  <h3 className="text-lg font-semibold" style={{ color: C.dark }}>Hébergé par Kabylis</h3>
+                  <p className="text-sm" style={{ color: C.gray }}>2 avis · 4.0 rating · Rejoint décembre 2020</p>
                 </div>
               </div>
               <a
@@ -307,9 +307,10 @@ export default function SuperhostDemo() {
           <div className="hidden lg:block">
             <div className="rounded-xl border shadow-xl p-6 sticky top-24" style={{ borderColor: C.border, backgroundColor: C.white }}>
               <div className="flex items-baseline gap-1 mb-1">
-                <span className="text-2xl font-bold" style={{ color: C.dark }}>Azura House</span>
+                <span className="text-xl font-bold" style={{ color: C.dark }}>1 200 TND</span>
+                <span className="text-sm" style={{ color: C.gray }}>/ Nuit</span>
               </div>
-              <p className="text-sm mb-5" style={{ color: C.gray }}>Villa vue mer avec piscine</p>
+              <p className="text-sm mb-5" style={{ color: C.gray }}>La Perla - Pieds dans l'eau</p>
 
               <div className="border rounded-xl overflow-hidden mb-4" style={{ borderColor: C.border }}>
                 <div className="grid grid-cols-2">
@@ -355,7 +356,7 @@ export default function SuperhostDemo() {
 
               <div className="mt-4 pt-4 border-t text-center" style={{ borderColor: C.border }}>
                 <p className="text-xs" style={{ color: C.gray }}>
-                  6 bedrooms · 6 beds · 3 baths · 11 guests
+                  4 bedrooms · 4 beds · 5 baths · 8 guests
                 </p>
               </div>
             </div>
@@ -392,8 +393,8 @@ export default function SuperhostDemo() {
       <div className="fixed bottom-0 left-0 right-0 z-50 lg:hidden border-t shadow-lg" style={{ backgroundColor: C.white, borderColor: C.border }}>
         <div className="flex items-center justify-between px-4 py-3">
           <div>
-            <span className="font-bold" style={{ color: C.dark }}>Azura House</span>
-            <p className="text-xs" style={{ color: C.gray }}>Ras Jebel · 11 guests</p>
+            <span className="font-bold" style={{ color: C.dark }}>1 200 TND / Nuit</span>
+            <p className="text-xs" style={{ color: C.gray }}>Haouaria · 8 Invités</p>
           </div>
           <a
             href={SUPERHOST_URL}
