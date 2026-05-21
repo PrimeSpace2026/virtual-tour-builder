@@ -20,18 +20,12 @@ const C = {
 const FONT = `'Poppins', 'Inter', Arial, sans-serif`;
 
 const TOUR_PATH = "/view/la-perla-pieds-dans-l-eau";
-const TUNROOMS_LOGO = "https://www.tunrooms.com/images/logo.png";
+const TUNROOMS_LOGO = "https://www.tunrooms.com/images/logos/logo.png?v=jcw9pU";
 const TUNROOMS_URL = "https://www.tunrooms.com/rooms/11131";
 
-/* ─── TunRooms Logo SVG ─── */
-const TunRoomsLogo = () => (
-  <div className="flex items-center gap-1">
-    <svg width="28" height="28" viewBox="0 0 32 32" fill="none">
-      <path d="M16 2C16 2 6 14 6 20a10 10 0 0020 0C26 14 16 2 16 2z" fill="#29B6F6"/>
-      <path d="M16 6C16 6 10 12 10 16a6 6 0 0012 0C22 12 16 6 16 6z" fill="#4FC3F7"/>
-    </svg>
-    <span style={{ color: "#29B6F6", fontWeight: 700, fontSize: 18 }}>TunRooms</span>
-  </div>
+/* ─── TunRooms Logo ─── */
+const TunRoomsLogo = ({ height = 36 }: { height?: number }) => (
+  <img src={TUNROOMS_LOGO} alt="TunRooms" style={{ height }} />
 );
 
 /* ─── Property images ─── */
