@@ -21,15 +21,15 @@ const FONT = `'Poppins', 'Inter', Arial, sans-serif`;
 
 const TOUR_PATH = "/view/la-perla-pieds-dans-l-eau";
 const SUPERHOST_LOGO = "https://superhost.com.tn/assets/miniLogo-BMsTPNSh.svg";
-const SUPERHOST_URL = "https://kabylis.tn/rooms/la-perla---pieds-dans-l'eau-883?&guests=1";
+const SUPERHOST_URL = "https://superhost.com.tn/property-details/la-perla-pieds-dans-l-eau";
 
 /* ─── Property images ─── */
 const IMAGES = [
-  "https://orpnrybtrnuqxfkrrnvx.supabase.co/storage/v1/object/public/tour-images/la-perla-1.jpg",
-  "https://orpnrybtrnuqxfkrrnvx.supabase.co/storage/v1/object/public/tour-images/la-perla-2.jpg",
-  "https://orpnrybtrnuqxfkrrnvx.supabase.co/storage/v1/object/public/tour-images/la-perla-3.jpg",
-  "https://orpnrybtrnuqxfkrrnvx.supabase.co/storage/v1/object/public/tour-images/la-perla-4.jpg",
-  "https://orpnrybtrnuqxfkrrnvx.supabase.co/storage/v1/object/public/tour-images/la-perla-5.jpg",
+  "https://kabylis.tn/images/upload/fe39128b2da1746d42fc62fecce5a457.jpeg",
+  "https://ucarecdn.com/c5c6dcfc-29e3-4f63-ba70-da58a5a861fc/-/format/auto/-/scale_crop/1440x960/smart/",
+  "https://ucarecdn.com/87f9967b-2a7e-481e-ad65-e525c3c9f71b/-/format/auto/-/scale_crop/1440x960/smart/",
+  "https://ucarecdn.com/994a698f-010a-419a-bb52-09fa9d61f3b3/-/format/auto/-/scale_crop/1440x960/smart/",
+  "https://ucarecdn.com/994a698f-010a-419a-bb52-09fa9d61f3b3/-/format/auto/-/scale_crop/1440x960/smart/",
 ];
 
 const DESC = `Magnifique villa S+4 climatisée située à Haouaria, parfaite pour des vacances inoubliables. Cette propriété luxueuse offre un confort exceptionnel avec un accès direct à la plage — les pieds dans l'eau.
@@ -193,11 +193,11 @@ export default function SuperhostDemo() {
             {/* Host info */}
             <div className="flex items-center justify-between py-4 sm:py-6 border-b" style={{ borderColor: C.border }}>
               <div>
-                <h2 className="text-base sm:text-xl font-semibold" style={{ color: C.dark }}>House hébergé par Kabylis</h2>
+                <h2 className="text-base sm:text-xl font-semibold" style={{ color: C.dark }}>Entire House</h2>
                 <p className="text-xs sm:text-sm mt-1" style={{ color: C.gray }}>8 voyageurs · 4 chambres · 4 lits · 5 salles de bains</p>
               </div>
-              <div className="w-11 h-11 sm:w-14 sm:h-14 rounded-full bg-gradient-to-br from-blue-400 to-cyan-400 flex items-center justify-center text-white font-bold text-lg">
-                K
+              <div className="w-11 h-11 sm:w-14 sm:h-14 rounded-full bg-gradient-to-br from-rose-400 to-orange-400 flex items-center justify-center text-white font-bold text-lg">
+                L
               </div>
             </div>
 
@@ -271,7 +271,7 @@ export default function SuperhostDemo() {
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm" style={{ color: C.text }}>
                 <div className="flex items-center gap-2"><Clock className="w-4 h-4" style={{ color: C.gray }} /><span>Check-in: 15h00</span></div>
                 <div className="flex items-center gap-2"><Clock className="w-4 h-4" style={{ color: C.gray }} /><span>Check-out: Avant 11:00</span></div>
-                <div className="flex items-center gap-2"><Users className="w-4 h-4" style={{ color: C.gray }} /><span>Max 11 guests</span></div>
+                <div className="flex items-center gap-2"><Users className="w-4 h-4" style={{ color: C.gray }} /><span>Max 8 guests</span></div>
               </div>
               <div className="mt-4 p-3 rounded-lg text-xs" style={{ backgroundColor: C.bg, color: C.gray }}>
                 <p>• A valid ID will be required upon arrival</p>
@@ -280,15 +280,23 @@ export default function SuperhostDemo() {
               </div>
             </div>
 
-            {/* Host */}
+            {/* Your host */}
             <div className="py-6">
+              <h3 className="text-lg font-semibold mb-4" style={{ color: C.dark }}>Your host</h3>
               <div className="flex items-center gap-4 mb-3">
-                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-400 to-cyan-400 flex items-center justify-center text-white font-bold text-2xl">
-                  K
+                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-rose-400 to-orange-400 flex items-center justify-center text-white font-bold text-2xl">
+                  L
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold" style={{ color: C.dark }}>Hébergé par Kabylis</h3>
-                  <p className="text-sm" style={{ color: C.gray }}>2 avis · 4.0 rating · Rejoint décembre 2020</p>
+                  <h4 className="text-base font-semibold" style={{ color: C.dark }}>Leger</h4>
+                  <div className="flex items-center gap-3 text-sm mt-1" style={{ color: C.gray }}>
+                    <span>16 reviews</span>
+                    <span>·</span>
+                    <span>5.0 <Star className="w-3 h-3 inline fill-current" style={{ color: C.coral }} /> rating</span>
+                    <span>·</span>
+                    <span>2 years of experience</span>
+                  </div>
+                  <p className="text-xs mt-1" style={{ color: C.gray }}>Response rate: 100% · Usually responds within an hour</p>
                 </div>
               </div>
               <a
@@ -360,6 +368,69 @@ export default function SuperhostDemo() {
                 </p>
               </div>
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ═══ Our Best Sellers ═══ */}
+      <div style={{ backgroundColor: C.bg, borderTop: `1px solid ${C.border}` }}>
+        <div className="max-w-6xl mx-auto px-3 sm:px-4 py-10">
+          <h2 className="text-xl sm:text-2xl font-bold mb-6" style={{ color: C.dark }}>Our Best Sellers</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Card 1 */}
+            <a href="https://superhost.com.tn/property-details/beach-house-location-villa-de-luxe-au-bord-de-mer-a-hammamet-rq47amow" target="_blank" rel="noopener noreferrer" className="group rounded-xl overflow-hidden border bg-white shadow-sm hover:shadow-md transition" style={{ borderColor: C.border }}>
+              <div className="relative h-48 overflow-hidden">
+                <img src="https://imagedelivery.net/tfItMNmc0m4jZ4qP_DhHCg/9fcce267-a932-4c88-4035-a4d962658600/public" alt="Beach House" className="w-full h-full object-cover group-hover:scale-105 transition" />
+                <span className="absolute top-3 left-3 text-xs px-2 py-0.5 rounded-full bg-white/90 font-medium" style={{ color: C.dark }}>Villa</span>
+              </div>
+              <div className="p-4">
+                <p className="text-xs mb-1" style={{ color: C.gray }}>Hammamet, Nabeul</p>
+                <h3 className="text-sm font-semibold line-clamp-2 mb-2" style={{ color: C.dark }}>Beach House : Location Villa de Luxe au bord de mer à Hammamet</h3>
+                <div className="flex items-center gap-2 text-xs mb-3" style={{ color: C.gray }}>
+                  <span>10 guests</span><span>·</span><span>5 beds</span><span>·</span><span>5 baths</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-sm" style={{ color: C.dark }}>TND 2 500 <span className="font-normal text-xs" style={{ color: C.gray }}>/ Night</span></span>
+                  <span className="text-xs px-3 py-1.5 rounded-lg text-white font-medium" style={{ backgroundColor: C.coral }}>Book Now</span>
+                </div>
+              </div>
+            </a>
+            {/* Card 2 */}
+            <a href="https://superhost.com.tn/property-details/the-cliff-location-appartement-s-1-a-la-marsa-avec-vue-mer-t6dsclry" target="_blank" rel="noopener noreferrer" className="group rounded-xl overflow-hidden border bg-white shadow-sm hover:shadow-md transition" style={{ borderColor: C.border }}>
+              <div className="relative h-48 overflow-hidden">
+                <img src="https://imagedelivery.net/tfItMNmc0m4jZ4qP_DhHCg/4e7570fe-16f4-4e9f-b688-5149f0c40100/public" alt="The Cliff" className="w-full h-full object-cover group-hover:scale-105 transition" />
+                <span className="absolute top-3 left-3 text-xs px-2 py-0.5 rounded-full bg-white/90 font-medium" style={{ color: C.dark }}>Apartment</span>
+              </div>
+              <div className="p-4">
+                <p className="text-xs mb-1" style={{ color: C.gray }}>La Marsa, Tunis</p>
+                <h3 className="text-sm font-semibold line-clamp-2 mb-2" style={{ color: C.dark }}>The Cliff : Location appartement S 1 à la Marsa avec vue mer</h3>
+                <div className="flex items-center gap-2 text-xs mb-3" style={{ color: C.gray }}>
+                  <span>2 guests</span><span>·</span><span>1 bed</span><span>·</span><span>1 bath</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-sm" style={{ color: C.dark }}>TND 630 <span className="font-normal text-xs" style={{ color: C.gray }}>/ Night</span></span>
+                  <span className="text-xs px-3 py-1.5 rounded-lg text-white font-medium" style={{ backgroundColor: C.coral }}>Book Now</span>
+                </div>
+              </div>
+            </a>
+            {/* Card 3 */}
+            <a href="https://superhost.com.tn/property-details/cliff-2-appartement-de-vacances-s2-avec-vue-mer-a-louer-a-la-marsa-sidi-dhrif-efiay9sh" target="_blank" rel="noopener noreferrer" className="group rounded-xl overflow-hidden border bg-white shadow-sm hover:shadow-md transition" style={{ borderColor: C.border }}>
+              <div className="relative h-48 overflow-hidden">
+                <img src="https://imagedelivery.net/tfItMNmc0m4jZ4qP_DhHCg/fa8245e3-2af0-464f-8d76-afb331878400/public" alt="Cliff 2" className="w-full h-full object-cover group-hover:scale-105 transition" />
+                <span className="absolute top-3 left-3 text-xs px-2 py-0.5 rounded-full bg-white/90 font-medium" style={{ color: C.dark }}>Apartment</span>
+              </div>
+              <div className="p-4">
+                <p className="text-xs mb-1" style={{ color: C.gray }}>La Marsa, Tunis</p>
+                <h3 className="text-sm font-semibold line-clamp-2 mb-2" style={{ color: C.dark }}>Cliff 2 : Appartement S+2 avec vue mer à La Marsa - Sidi Dhrif</h3>
+                <div className="flex items-center gap-2 text-xs mb-3" style={{ color: C.gray }}>
+                  <span>4 guests</span><span>·</span><span>2 beds</span><span>·</span><span>2 baths</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-sm" style={{ color: C.dark }}>TND 450 <span className="font-normal text-xs" style={{ color: C.gray }}>/ Night</span></span>
+                  <span className="text-xs px-3 py-1.5 rounded-lg text-white font-medium" style={{ backgroundColor: C.coral }}>Book Now</span>
+                </div>
+              </div>
+            </a>
           </div>
         </div>
       </div>
