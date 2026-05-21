@@ -19,24 +19,24 @@ const C = {
 };
 const FONT = `'Poppins', 'Inter', Arial, sans-serif`;
 
-const TOUR_PATH = "/view/villa-sunset";
+const TOUR_PATH = "/view/la-perla-pieds-dans-l-eau";
 const TUNROOMS_LOGO = "https://www.tunrooms.com/images/logo.png";
-const TUNROOMS_URL = "https://www.tunrooms.com/rooms/14191";
+const TUNROOMS_URL = "https://www.tunrooms.com/rooms/11131";
 
 /* ─── Property images ─── */
 const IMAGES = [
-  "https://www.tunrooms.com/images/rooms/14191/01778931870.jpg",
-  "https://www.tunrooms.com/images/rooms/14191/01776173928.jpg",
-  "https://www.tunrooms.com/images/rooms/14191/01776172814.jpg",
-  "https://www.tunrooms.com/images/rooms/14191/61776076148.jpeg",
-  "https://www.tunrooms.com/images/rooms/14191/81776076149.jpeg",
+  "https://kabylis.tn/images/upload/fe39128b2da1746d42fc62fecce5a457.jpeg",
+  "https://ucarecdn.com/c5c6dcfc-29e3-4f63-ba70-da58a5a861fc/-/format/auto/-/scale_crop/1440x960/smart/",
+  "https://ucarecdn.com/87f9967b-2a7e-481e-ad65-e525c3c9f71b/-/format/auto/-/scale_crop/1440x960/smart/",
+  "https://ucarecdn.com/994a698f-010a-419a-bb52-09fa9d61f3b3/-/format/auto/-/scale_crop/1440x960/smart/",
+  "https://www.tunrooms.com/images/rooms/11131/01777286923.jpg",
 ];
 
-const DESC = `Cette villa d'exception a été pensée pour offrir un séjour confortable et immersif face à la Méditerranée. Baignée de lumière grâce à ses grandes ouvertures sur l'extérieur, elle dispose de beaux espaces de vie ouverts sur les terrasses et la piscine, créant une atmosphère élégante et apaisante tout au long de la journée.
+const DESC = `Magnifique villa S+4 climatisée située à Haouaria, parfaite pour des vacances inoubliables. Cette propriété luxueuse offre un confort exceptionnel avec un accès direct à la plage — les pieds dans l'eau.
 
-La villa comprend 3 chambres avec vue mer, permettant de profiter pleinement du panorama dès le réveil, ainsi que des espaces soigneusement aménagés pour les séjours en famille ou entre amis. À l'extérieur, la piscine, les terrasses aménagées et l'espace barbecue invitent à partager des repas et de longues soirées face aux magnifiques couchers de soleil.
+Profitez d'une grande piscine privée, d'espaces de vie spacieux et lumineux, et d'une vue imprenable sur la mer. Idéale pour des séjours en famille ou entre amis dans un cadre paisible et exclusif.
 
-Entre confort, vue spectaculaire et ambiance chaleureuse, la villa promet une véritable parenthèse de détente dans un cadre raffiné.`;
+La maison dispose de 4 chambres confortables, 5 salles de bains, une cuisine entièrement équipée et des espaces extérieurs généreux pour profiter du beau temps tunisien.`;
 
 const EQUIP = [
   { icon: <Wifi className="w-4 h-4" />, label: "Essentials" },
@@ -46,13 +46,16 @@ const EQUIP = [
   { icon: <Flame className="w-4 h-4" />, label: "Heating" },
   { icon: <UtensilsCrossed className="w-4 h-4" />, label: "Kitchen" },
   { icon: <Waves className="w-4 h-4" />, label: "Piscine" },
-  { icon: <ShieldCheck className="w-4 h-4" />, label: "Private entrance" },
+  { icon: <Eye className="w-4 h-4" />, label: "Pieds dans l'eau" },
+  { icon: <Car className="w-4 h-4" />, label: "Parking" },
+  { icon: <ShieldCheck className="w-4 h-4" />, label: "Quartier calme" },
 ];
 
 const ROOMS = [
   { name: "Chambre 1", beds: "1 × Lit double" },
   { name: "Chambre 2", beds: "1 × Lit double" },
   { name: "Chambre 3", beds: "1 × Lit double" },
+  { name: "Chambre 4", beds: "1 × Lit double" },
 ];
 
 export default function TunRoomsDemo() {
@@ -100,15 +103,16 @@ export default function TunRoomsDemo() {
 
       {/* ═══ Title Bar ═══ */}
       <div className="max-w-6xl mx-auto px-3 sm:px-4 pt-4 sm:pt-6 pb-2 sm:pb-3">
-        <h1 className="text-lg sm:text-2xl font-bold" style={{ color: C.dark }}>Villa Sunset</h1>
+        <h1 className="text-lg sm:text-2xl font-bold" style={{ color: C.dark }}>La Perla - Pieds dans l'eau</h1>
         <div className="flex items-center gap-2 sm:gap-3 mt-1 flex-wrap">
           <div className="flex items-center gap-1">
             <Star className="w-4 h-4 fill-current" style={{ color: C.primary }} />
-            <span className="text-sm" style={{ color: C.gray }}>Aucun avis</span>
+            <span className="font-semibold text-sm" style={{ color: C.dark }}>5</span>
+            <span className="text-sm" style={{ color: C.gray }}>(9 Avis)</span>
           </div>
           <span style={{ color: C.gray }}>·</span>
           <span className="flex items-center gap-1 text-sm" style={{ color: C.dark }}>
-            <MapPin className="w-3.5 h-3.5" />Bizerte, Metline, TN
+            <MapPin className="w-3.5 h-3.5" />Haouaria, TN
           </span>
           <div className="ml-auto hidden sm:flex items-center gap-4">
             <button onClick={() => setSaved(!saved)} className="flex items-center gap-1.5 text-sm underline" style={{ color: C.dark }}>
@@ -152,7 +156,7 @@ export default function TunRoomsDemo() {
             <style>{`.tour-container{padding-bottom:130vw}@media(min-width:640px){.tour-container{padding-bottom:75%}}@media(min-width:1024px){.tour-container{padding-bottom:56.25%}}`}</style>
             <iframe
               src={TOUR_PATH}
-              title="Visite 3D PrimeSpace — Villa Sunset"
+              title="Visite 3D PrimeSpace — La Perla"
               className="absolute inset-0 w-full h-full"
               allowFullScreen
               allow="xr-spatial-tracking"
@@ -184,7 +188,7 @@ export default function TunRoomsDemo() {
             <div className="flex items-center justify-between py-4 sm:py-6 border-b" style={{ borderColor: C.border }}>
               <div>
                 <h2 className="text-base sm:text-xl font-semibold" style={{ color: C.dark }}>Logement entier</h2>
-                <p className="text-xs sm:text-sm mt-1" style={{ color: C.gray }}>6 Invités · 3 Chambres · 3 Lits · 4 Salles de bain</p>
+                <p className="text-xs sm:text-sm mt-1" style={{ color: C.gray }}>8 Invités · 4 Chambres · 4 Lits · 5 Salles de bain</p>
               </div>
               <div className="w-11 h-11 sm:w-14 sm:h-14 rounded-full overflow-hidden">
                 <img src="https://www.tunrooms.com/images/users/10005/p7cpqi3zh3buf3hbpesi_225x225.jpeg" alt="Host" className="w-full h-full object-cover" />
@@ -197,10 +201,10 @@ export default function TunRoomsDemo() {
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                 {[
                   { icon: <HomeIcon className="w-5 h-5" />, label: "Maison" },
-                  { icon: <Users className="w-5 h-5" />, label: "6 Membres" },
-                  { icon: <BedDouble className="w-5 h-5" />, label: "3 Chambres" },
-                  { icon: <BedDouble className="w-5 h-5" />, label: "3 Lits" },
-                  { icon: <Bath className="w-5 h-5" />, label: "4 SdB / Privé" },
+                  { icon: <Users className="w-5 h-5" />, label: "8 Membres" },
+                  { icon: <BedDouble className="w-5 h-5" />, label: "4 Chambres" },
+                  { icon: <BedDouble className="w-5 h-5" />, label: "4 Lits" },
+                  { icon: <Bath className="w-5 h-5" />, label: "5 SdB / Privé" },
                   { icon: <Waves className="w-5 h-5" />, label: "Piscine" },
                 ].map((item, i) => (
                   <div key={i} className="flex items-center gap-3 p-3 rounded-xl border" style={{ borderColor: C.border }}>
@@ -260,7 +264,7 @@ export default function TunRoomsDemo() {
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm" style={{ color: C.text }}>
                 <div className="flex items-center gap-2"><Clock className="w-4 h-4" style={{ color: C.gray }} /><span>Check-in: 15:00</span></div>
                 <div className="flex items-center gap-2"><Clock className="w-4 h-4" style={{ color: C.gray }} /><span>Check-out: 11:00</span></div>
-                <div className="flex items-center gap-2"><Users className="w-4 h-4" style={{ color: C.gray }} /><span>Max 6 invités</span></div>
+                <div className="flex items-center gap-2"><Users className="w-4 h-4" style={{ color: C.gray }} /><span>Max 8 invités</span></div>
               </div>
               <div className="mt-4 p-3 rounded-lg text-xs" style={{ backgroundColor: C.bg, color: C.gray }}>
                 <p>• Les événements ne sont pas acceptés</p>
@@ -356,7 +360,7 @@ export default function TunRoomsDemo() {
 
               <div className="mt-4 pt-4 border-t text-center" style={{ borderColor: C.border }}>
                 <p className="text-xs" style={{ color: C.gray }}>
-                  3 chambres · 3 lits · 4 SdB · 6 invités
+                  4 chambres · 4 lits · 5 SdB · 8 invités
                 </p>
               </div>
             </div>
@@ -370,26 +374,27 @@ export default function TunRoomsDemo() {
           <h2 className="text-xl sm:text-2xl font-bold mb-6" style={{ color: C.dark }}>Annonces Similaires</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {/* Card 1 */}
-            <a href="https://www.tunrooms.com/s?location=Bizerte" target="_blank" rel="noopener noreferrer" className="group rounded-xl overflow-hidden border bg-white shadow-sm hover:shadow-md transition" style={{ borderColor: C.border }}>
+            <a href="https://www.tunrooms.com/rooms/11131" target="_blank" rel="noopener noreferrer" className="group rounded-xl overflow-hidden border bg-white shadow-sm hover:shadow-md transition" style={{ borderColor: C.border }}>
               <div className="relative h-48 overflow-hidden">
-                <img src="https://www.tunrooms.com/images/rooms/14191/91776076150.jpeg" alt="Villa Bizerte" className="w-full h-full object-cover group-hover:scale-105 transition" />
+                <img src="https://www.tunrooms.com/images/rooms/11131/01777286923.jpg" alt="La Villa du Cap" className="w-full h-full object-cover group-hover:scale-105 transition" />
                 <span className="absolute top-3 left-3 text-xs px-2 py-0.5 rounded-full bg-white/90 font-medium" style={{ color: C.dark }}>Maison</span>
               </div>
               <div className="p-4">
                 <p className="text-xs mb-1" style={{ color: C.gray }}>Bizerte, TN</p>
-                <h3 className="text-sm font-semibold line-clamp-2 mb-2" style={{ color: C.dark }}>Villas vue mer à Bizerte</h3>
+                <h3 className="text-sm font-semibold line-clamp-2 mb-2" style={{ color: C.dark }}>La Villa du Cap — Vue mer & Piscine à débordement</h3>
                 <div className="flex items-center gap-2 text-xs mb-3" style={{ color: C.gray }}>
-                  <span>Découvrir</span>
+                  <span>8 invités</span><span>·</span><span>4 lits</span><span>·</span><span>3 SdB</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-xs px-3 py-1.5 rounded-lg text-white font-medium" style={{ backgroundColor: C.primary }}>Voir les annonces</span>
+                  <span className="font-bold text-sm" style={{ color: C.dark }}>TND 1 200 <span className="font-normal text-xs" style={{ color: C.gray }}>/ Nuit</span></span>
+                  <span className="text-xs px-3 py-1.5 rounded-lg text-white font-medium" style={{ backgroundColor: C.primary }}>Réserver</span>
                 </div>
               </div>
             </a>
             {/* Card 2 */}
             <a href="https://www.tunrooms.com/rooms/14191" target="_blank" rel="noopener noreferrer" className="group rounded-xl overflow-hidden border bg-white shadow-sm hover:shadow-md transition" style={{ borderColor: C.border }}>
               <div className="relative h-48 overflow-hidden">
-                <img src="https://www.tunrooms.com/images/rooms/14191/21776076088.jpeg" alt="Villa Sunset" className="w-full h-full object-cover group-hover:scale-105 transition" />
+                <img src="https://www.tunrooms.com/images/rooms/14191/01778931870.jpg" alt="Villa Sunset" className="w-full h-full object-cover group-hover:scale-105 transition" />
                 <span className="absolute top-3 left-3 text-xs px-2 py-0.5 rounded-full bg-white/90 font-medium" style={{ color: C.dark }}>Vue mer</span>
               </div>
               <div className="p-4">
@@ -405,13 +410,13 @@ export default function TunRoomsDemo() {
               </div>
             </a>
             {/* Card 3 */}
-            <a href="https://www.tunrooms.com" target="_blank" rel="noopener noreferrer" className="group rounded-xl overflow-hidden border bg-white shadow-sm hover:shadow-md transition" style={{ borderColor: C.border }}>
+            <a href="https://www.tunrooms.com/s?location=Nabeul" target="_blank" rel="noopener noreferrer" className="group rounded-xl overflow-hidden border bg-white shadow-sm hover:shadow-md transition" style={{ borderColor: C.border }}>
               <div className="relative h-48 overflow-hidden">
-                <img src="https://www.tunrooms.com/images/rooms/14191/01776076087.jpeg" alt="Villa" className="w-full h-full object-cover group-hover:scale-105 transition" />
+                <img src="https://www.tunrooms.com/images/rooms/11131/11726137922.jpg" alt="Locations Nabeul" className="w-full h-full object-cover group-hover:scale-105 transition" />
                 <span className="absolute top-3 left-3 text-xs px-2 py-0.5 rounded-full bg-white/90 font-medium" style={{ color: C.dark }}>Maison</span>
               </div>
               <div className="p-4">
-                <p className="text-xs mb-1" style={{ color: C.gray }}>Tunisie</p>
+                <p className="text-xs mb-1" style={{ color: C.gray }}>Nabeul, TN</p>
                 <h3 className="text-sm font-semibold line-clamp-2 mb-2" style={{ color: C.dark }}>Découvrez plus de locations sur TunRooms</h3>
                 <div className="flex items-center gap-2 text-xs mb-3" style={{ color: C.gray }}>
                   <span>Locations de vacances en Tunisie</span>
@@ -454,7 +459,7 @@ export default function TunRoomsDemo() {
         <div className="flex items-center justify-between px-4 py-3">
           <div>
             <span className="font-bold" style={{ color: C.dark }}>TND 1 200 / Nuit</span>
-            <p className="text-xs" style={{ color: C.gray }}>Metline · 6 Invités</p>
+            <p className="text-xs" style={{ color: C.gray }}>Haouaria · 8 Invités</p>
           </div>
           <a
             href={TUNROOMS_URL}
