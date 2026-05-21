@@ -35,6 +35,7 @@ import AnalyticsDashboard from "./pages/AnalyticsDashboard";
 import VirtualStaging from "./pages/VirtualStaging";
 import Demo from "./pages/Demo";
 import KabylisDemo from "./pages/KabylisDemo";
+import SuperhostDemo from "./pages/SuperhostDemo";
 import AddTourForm from "@/components/AddTourForm";
 
 const ShareRedirect = () => {
@@ -82,6 +83,7 @@ const App = () => (
               <Route path="/admin" element={<Admin />} />
               <Route path="/demo" element={<Demo />} />
               <Route path="/demo/kabylis" element={<KabylisDemo />} />
+              <Route path="/demo/superhost" element={<SuperhostDemo />} />
               <Route path="/admin/add-tour-test" element={<AddTourForm />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
