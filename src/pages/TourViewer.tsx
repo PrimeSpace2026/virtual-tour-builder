@@ -665,6 +665,7 @@ const TourViewer = () => {
   const [tagPopupPos, setTagPopupPos] = useState<{ x: number; y: number } | null>(null);
   const selectedTagRef = useRef<TagItem | null>(null);
   const selectedItemRef = useRef<TourItemData | null>(null);
+  const modeTransitionRef = useRef(false); // true during dollhouse↔inside transitions
 
   // Floor selector state
   const [floors, setFloors] = useState<{index: number; name: string}[]>([]);
@@ -1043,6 +1044,20 @@ const TourViewer = () => {
     const handleTagClick = async (sdk: any, tagSid: string) => {
       try {
         console.log("🏷️ Tag clicked — SID:", tagSid);
+
+        // If the same tag is already showing, just refresh the timer (don't re-fetch)
+        if (selectedTagRef.current && selectedTagRef.current.sid === tagSid) {
+          console.log("🏷️ Same tag already open, skipping duplicate click");
+          forceCloseNative(sdk, tagSid);
+          return;
+        }
+
+        // During mode transition (dollhouse→inside), don't process new clicks if popup is open
+        if (modeTransitionRef.current && (selectedTagRef.current || selectedItemRef.current)) {
+          console.log("🛑 Mode transition in progress with popup open — ignoring click");
+          forceCloseNative(sdk, tagSid);
+          return;
+        }
 
         // Close native popup immediately and repeatedly
         forceCloseNative(sdk, tagSid);
@@ -1720,12 +1735,19 @@ const TourViewer = () => {
           if (sdk.Mode?.Event?.CHANGE_START) {
             sdk.on(sdk.Mode.Event.CHANGE_START, () => {
               console.log("🔄 Mode change detected — tags may be temporarily hidden");
+              modeTransitionRef.current = true;
             });
           }
           if (sdk.Mode?.Event?.CHANGE_END) {
             sdk.on(sdk.Mode.Event.CHANGE_END, () => {
               console.log("✅ Mode change ended — restoring tags (including outside/exterior tags)");
               console.log(`📊 Custom tags tracked: ${customTagsRef.current.length}, SIDs: ${customTagSidsRef.current.size}`);
+              modeTransitionRef.current = false;
+              // Don't run restoreTags if a popup is open — the camera rotation interferes with the popup
+              if (selectedTagRef.current || selectedItemRef.current) {
+                console.log("🛑 Skipping restoreTags — popup is open");
+                return;
+              }
               restoreTags();
             });
           }
