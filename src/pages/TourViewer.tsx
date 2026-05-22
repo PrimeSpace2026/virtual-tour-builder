@@ -697,7 +697,6 @@ const TourViewer = () => {
   const customTagSidsRef = useRef<Set<string>>(new Set());
   const [selectedItem, setSelectedItem] = useState<TourItemData | null>(null);
   useEffect(() => {
-  useEffect(() => {
     selectedItemRef.current = selectedItem;
     if (selectedItem) {
       console.log("🛍️ PRODUCT POPUP OPENED — selectedItem set:", selectedItem.name);
@@ -1205,17 +1204,17 @@ const TourViewer = () => {
         }
         // For non-product tags: merge with cached data (enriched from Graph API) and show custom popup
         // The SDK doesn't expose image media, but the Graph API cache has fileAttachment URLs
-        const cachedTag = tagDataCacheRef.current.get(tagSid);
-        if (cachedTag) {
+        const cachedTagMerge = tagDataCacheRef.current.get(tagSid);
+        if (cachedTagMerge) {
           // Merge cached data into tagData
           if (tagData) {
-            if (!tagData.mediaSrc && cachedTag.mediaSrc) { tagData.mediaSrc = cachedTag.mediaSrc; tagData.mediaUrl = cachedTag.mediaUrl; }
-            if (!tagData.mediaType && cachedTag.mediaType) tagData.mediaType = cachedTag.mediaType;
-            if ((!tagData.attachments || tagData.attachments.length === 0) && cachedTag.attachments && cachedTag.attachments.length > 0) tagData.attachments = cachedTag.attachments;
-            if (!tagData.description && cachedTag.description) tagData.description = cachedTag.description;
-            if (!tagData.anchorPosition && cachedTag.anchorPosition) tagData.anchorPosition = cachedTag.anchorPosition;
+            if (!tagData.mediaSrc && cachedTagMerge.mediaSrc) { tagData.mediaSrc = cachedTagMerge.mediaSrc; tagData.mediaUrl = cachedTagMerge.mediaUrl; }
+            if (!tagData.mediaType && cachedTagMerge.mediaType) tagData.mediaType = cachedTagMerge.mediaType;
+            if ((!tagData.attachments || tagData.attachments.length === 0) && cachedTagMerge.attachments && cachedTagMerge.attachments.length > 0) tagData.attachments = cachedTagMerge.attachments;
+            if (!tagData.description && cachedTagMerge.description) tagData.description = cachedTagMerge.description;
+            if (!tagData.anchorPosition && cachedTagMerge.anchorPosition) tagData.anchorPosition = cachedTagMerge.anchorPosition;
           } else {
-            tagData = { ...cachedTag };
+            tagData = { ...cachedTagMerge };
           }
         }
 
