@@ -663,6 +663,8 @@ const TourViewer = () => {
   // Tag/Item popup state
   const [selectedTag, setSelectedTag] = useState<TagItem | null>(null);
   const [tagPopupPos, setTagPopupPos] = useState<{ x: number; y: number } | null>(null);
+  const selectedTagRef = useRef<TagItem | null>(null);
+  const selectedItemRef = useRef<TourItemData | null>(null);
 
   // Floor selector state
   const [floors, setFloors] = useState<{index: number; name: string}[]>([]);
@@ -674,6 +676,8 @@ const TourViewer = () => {
   const customTagsRef = useRef<CustomTagData[]>([]);
   const customTagSidsRef = useRef<Set<string>>(new Set());
   const [selectedItem, setSelectedItem] = useState<TourItemData | null>(null);
+  useEffect(() => { selectedTagRef.current = selectedTag; }, [selectedTag]);
+  useEffect(() => { selectedItemRef.current = selectedItem; }, [selectedItem]);
   const [hoveredItem, setHoveredItem] = useState<TourItemData | null>(null);
   const [activeTagFilter, setActiveTagFilter] = useState<string | null>(null); // tag SID or name that was clicked in 3D
   const [cart, setCart] = useState<CartEntry[]>(() => {
@@ -1751,11 +1755,14 @@ const TourViewer = () => {
         // Our previous explicit close on hover-off was preventing the full media popup from showing
 
         // Desktop hover: show our custom popup on hover, suppress native popup
+        // But SKIP hover if a popup is already open (prevents dollhouse rapid-fire replacement)
         const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
         if (!isTouchDevice) {
           const handleTagHover = (tagSid: string) => {
             // Close native popup aggressively so only our popup shows
             forceCloseNative(sdk, tagSid);
+            // Don't replace/open popup on hover if one is already showing
+            if (selectedTagRef.current || selectedItemRef.current) return;
             handleTagClick(sdk, tagSid);
           };
           if (sdk.Tag?.Event?.HOVER) {
