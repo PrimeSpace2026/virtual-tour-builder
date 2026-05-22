@@ -1177,6 +1177,7 @@ const TourViewer = () => {
           if (tour?.id) trackEvent(tour.id, "tag_click", matchedItem.name, tagSid);
           forceCloseNative(sdk, tagSid);
           // Show custom product popup instead
+          selectedItemRef.current = matchedItem; // sync ref immediately (prevents hover race)
           setSelectedItem(matchedItem);
           setActiveTagFilter(matchedItem.tagSid);
           return;
@@ -1203,6 +1204,7 @@ const TourViewer = () => {
 
           // Always close native popup and show our custom popup
           forceCloseNative(sdk, tagSid);
+          selectedTagRef.current = tagData; // sync ref immediately (prevents hover race)
           setSelectedTag(tagData);
         }
       } catch (err) {
@@ -1790,7 +1792,9 @@ const TourViewer = () => {
           const handleTagHover = (tagSid: string) => {
             // Close native popup aggressively so only our popup shows
             forceCloseNative(sdk, tagSid);
-            // Don't replace popup on hover if one is already open (fixes dollhouse rapid-fire)
+            // Block ALL hovers during mode transitions (dollhouse fly-in causes stray hovers)
+            if (modeTransitionRef.current) return;
+            // Don't replace popup on hover if one is already open
             if (selectedTagRef.current || selectedItemRef.current) return;
             handleTagClick(sdk, tagSid);
           };
