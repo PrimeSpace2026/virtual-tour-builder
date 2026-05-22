@@ -685,6 +685,7 @@ const TourViewer = () => {
   const selectedTagRef = useRef<TagItem | null>(null);
   const selectedItemRef = useRef<TourItemData | null>(null);
   const modeTransitionRef = useRef(false); // true during dollhouse↔inside transitions
+  const currentModeRef = useRef<string>('mode.inside'); // track current Matterport mode
 
   // Floor selector state
   const [floors, setFloors] = useState<{index: number; name: string}[]>([]);
@@ -1762,6 +1763,14 @@ const TourViewer = () => {
           };
 
           // Listen for mode changes (Dollhouse ↔ Inside ↔ Floorplan, and Defurnished toggle)
+          // Track the current mode via observable so we know when to skip restoreTags
+          if (sdk.Mode?.current?.subscribe) {
+            sdk.Mode.current.subscribe((mode: string) => {
+              console.log(`📐 Mode observable: ${mode}`);
+              currentModeRef.current = mode;
+            });
+          }
+
           if (sdk.Mode?.Event?.CHANGE_START) {
             sdk.on(sdk.Mode.Event.CHANGE_START, () => {
               console.log("🔄 Mode change detected — tags may be temporarily hidden");
@@ -1769,21 +1778,17 @@ const TourViewer = () => {
             });
           }
           if (sdk.Mode?.Event?.CHANGE_END) {
-            sdk.on(sdk.Mode.Event.CHANGE_END, async () => {
+            sdk.on(sdk.Mode.Event.CHANGE_END, () => {
               console.log("✅ Mode change ended — restoring tags (including outside/exterior tags)");
               console.log(`📊 Custom tags tracked: ${customTagsRef.current.length}, SIDs: ${customTagSidsRef.current.size}`);
+              console.log(`📐 Current mode (from ref): ${currentModeRef.current}`);
               modeTransitionRef.current = false;
 
-              // Check current mode — skip restoreTags in dollhouse/floorplan (Sweep.moveTo would force exit)
-              try {
-                const currentMode = await sdk.Mode.getCurrentMode();
-                console.log(`📐 Current mode after transition: ${currentMode}`);
-                if (currentMode !== 'mode.inside' && currentMode !== sdk.Mode?.Mode?.INSIDE) {
-                  console.log("🛑 Skipping restoreTags — not in INSIDE mode (dollhouse/floorplan active)");
-                  return;
-                }
-              } catch (e) {
-                console.log("Mode check failed, proceeding with restoreTags:", e);
+              // Skip restoreTags if NOT in inside mode — Sweep.moveTo forces exit from dollhouse/floorplan
+              const mode = currentModeRef.current?.toLowerCase() || '';
+              if (!mode.includes('inside')) {
+                console.log("🛑 Skipping restoreTags — not in INSIDE mode (dollhouse/floorplan active)");
+                return;
               }
 
               // Don't run restoreTags if a popup is open — the camera rotation interferes with the popup
