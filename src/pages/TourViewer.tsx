@@ -1881,15 +1881,7 @@ const TourViewer = () => {
     };
   }, [selectedTag]);
 
-  // Auto-dismiss tag popup if not hovered within 4s
-  useEffect(() => {
-    if (!selectedTag) return;
-    tagPopupHoveredRef.current = false;
-    const timer = setTimeout(() => {
-      if (!tagPopupHoveredRef.current) setSelectedTag(null);
-    }, 4000);
-    return () => clearTimeout(timer);
-  }, [selectedTag]);
+  // Tag popup stays open until user manually closes it
 
   const [videoScreensData, setVideoScreensData] = useState<{ id: number; name: string; youtubeUrl: string; embedUrl: string; youtubeId: string; posX: number; posY: number; posZ: number; rotX: number; rotY: number; rotZ: number; width: number; height: number; iconType: string; visibilityRange: number }[]>([]);
   const videoOverlayContainerRef = useRef<HTMLDivElement>(null);
@@ -4775,10 +4767,7 @@ const TourViewer = () => {
                 transform: 'translate(-50%, -50%)',
               }}
               onMouseEnter={() => { tagPopupHoveredRef.current = true; }}
-              onMouseLeave={() => {
-                tagPopupHoveredRef.current = false;
-                setTimeout(() => { if (!tagPopupHoveredRef.current) setSelectedTag(null); }, 200);
-              }}
+              onMouseLeave={() => { tagPopupHoveredRef.current = false; }}
             >
             <div className="rounded-lg overflow-hidden bg-[#2d2d2d] shadow-[0_4px_24px_rgba(0,0,0,0.6)]">
               {/* Top bar: share + copy */}
