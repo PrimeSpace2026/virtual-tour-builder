@@ -662,12 +662,24 @@ const TourViewer = () => {
 
   // Tag/Item popup state
   const [selectedTag, _setSelectedTag] = useState<TagItem | null>(null);
+  const userRequestedCloseRef = useRef(false);
   const setSelectedTag = useCallback((val: TagItem | null) => {
     if (!val && selectedTagRef.current) {
-      console.warn("🚨 POPUP BEING CLOSED! Trace:", new Error().stack);
+      // ONLY allow closing if explicitly requested by user action (close button, escape, backdrop)
+      if (!userRequestedCloseRef.current) {
+        console.warn("🛑 BLOCKED popup close — not user-initiated. Trace:", new Error().stack);
+        return; // BLOCK the close
+      }
+      userRequestedCloseRef.current = false; // reset after use
     }
     selectedTagRef.current = val;
     _setSelectedTag(val);
+  }, []);
+  // Explicit close function — only this should be used for user-initiated closes
+  const closeTagPopup = useCallback(() => {
+    userRequestedCloseRef.current = true;
+    selectedTagRef.current = null;
+    _setSelectedTag(null);
   }, []);
   const [tagPopupPos, setTagPopupPos] = useState<{ x: number; y: number } | null>(null);
   const selectedTagRef = useRef<TagItem | null>(null);
@@ -827,7 +839,7 @@ const TourViewer = () => {
     console.log("🔄 TOUR FETCH useEffect fired — closing popups (id changed to:", id, ")");
     setLoading(true);
     setIframeLoaded(false);
-    setSelectedTag(null);
+    closeTagPopup();
     setSelectedItem(null);
     setSdkConnected(false);
     setSdkFailed(false);
@@ -2948,7 +2960,7 @@ const TourViewer = () => {
         else if (selectedChamber) { setSelectedChamber(null); chamberSweepRef.current = ""; }
         else if (selectedCoach) setSelectedCoach(null);
         else if (selectedService) setSelectedService(null);
-        else if (selectedTag) { console.log("⌨️ ESCAPE pressed — closing tag popup"); setSelectedTag(null); }
+        else if (selectedTag) { console.log("⌨️ ESCAPE pressed — closing tag popup"); closeTagPopup(); }
         else if (selectedItem) setSelectedItem(null);
         else if (activeTagFilter) setActiveTagFilter(null);
         else if (showCart) setShowCart(false);
@@ -4681,7 +4693,7 @@ const TourViewer = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={() => { console.log("👆 MOBILE BACKDROP clicked — closing tag popup"); setSelectedTag(null); }}
+              onClick={() => { console.log("👆 MOBILE BACKDROP clicked — closing tag popup"); closeTagPopup(); }}
               className="fixed inset-0 bg-black/50 z-[99] sm:hidden"
             />
             <motion.div
@@ -4701,7 +4713,7 @@ const TourViewer = () => {
                 {/* Close button */}
                 <div className="flex justify-end px-3">
                   <button
-                    onClick={() => { console.log("❎ MOBILE X clicked — closing tag popup"); setSelectedTag(null); }}
+                    onClick={() => { console.log("❎ MOBILE X clicked — closing tag popup"); closeTagPopup(); }}
                     className="w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
                   >
                     <X className="w-4 h-4" />
@@ -4789,7 +4801,7 @@ const TourViewer = () => {
                   <Share2 className="w-3.5 h-3.5" />
                 </button>
                 <button
-                  onClick={() => { console.log("❎ DESKTOP X clicked — closing tag popup"); setSelectedTag(null); }}
+                  onClick={() => { console.log("❎ DESKTOP X clicked — closing tag popup"); closeTagPopup(); }}
                   className="w-7 h-7 rounded flex items-center justify-center text-white/50 hover:text-white hover:bg-white/10 transition-colors"
                   title="Close"
                 >
