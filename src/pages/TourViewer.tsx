@@ -1045,16 +1045,10 @@ const TourViewer = () => {
       try {
         console.log("🏷️ Tag clicked — SID:", tagSid);
 
-        // If the same tag is already showing, just refresh the timer (don't re-fetch)
-        if (selectedTagRef.current && selectedTagRef.current.sid === tagSid) {
-          console.log("🏷️ Same tag already open, skipping duplicate click");
-          forceCloseNative(sdk, tagSid);
-          return;
-        }
-
-        // During mode transition (dollhouse→inside), don't process new clicks if popup is open
-        if (modeTransitionRef.current && (selectedTagRef.current || selectedItemRef.current)) {
-          console.log("🛑 Mode transition in progress with popup open — ignoring click");
+        // If ANY popup is already open, block all new tag interactions
+        // User must close the popup manually before opening another
+        if (selectedTagRef.current || selectedItemRef.current) {
+          console.log("🛑 Popup already open — ignoring new tag click (user must close first)");
           forceCloseNative(sdk, tagSid);
           return;
         }
