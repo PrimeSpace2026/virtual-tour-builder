@@ -1073,14 +1073,22 @@ const TourViewer = () => {
         let tagLabel = "";
         let tagData: TagItem | null = null;
 
+        // Use pre-cached data first (populated at init, works even during mode transitions)
+        const cachedTag = tagDataCacheRef.current.get(tagSid);
+        if (cachedTag) {
+          tagData = { ...cachedTag };
+          tagLabel = cachedTag.label || "";
+          console.log("🏷️ Using cached tag data:", tagSid, tagData.label);
+        }
+
         // Merge: try Tag data first, then legacy Mattertag data (has media for old tours)
         const mt = mattertagsRef.current.find((m: any) => m.sid === tagSid);
         if (mt) {
           console.log("📌 Matched Mattertag:", mt);
-          tagLabel = mt.label || "";
+          tagLabel = mt.label || tagLabel;
         }
 
-        if (sdk.Tag?.getData) {
+        if (sdk.Tag?.getData && !tagData) {
           const tags = await sdk.Tag.getData();
           const found = tags.find((t: any) => t.sid === tagSid);
           if (found) {
