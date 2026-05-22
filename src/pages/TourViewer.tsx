@@ -1760,6 +1760,8 @@ const TourViewer = () => {
           const handleTagHover = (tagSid: string) => {
             // Close native popup aggressively so only our popup shows
             forceCloseNative(sdk, tagSid);
+            // Don't replace popup on hover if one is already open (fixes dollhouse rapid-fire)
+            if (selectedTagRef.current || selectedItemRef.current) return;
             handleTagClick(sdk, tagSid);
           };
           if (sdk.Tag?.Event?.HOVER) {
