@@ -1865,9 +1865,9 @@ const TourViewer = () => {
       const sp = sdk.Conversion.worldToScreen(anchor, latestPose, size);
       if (sp && typeof sp.x === "number" && sp.z > 0) {
         setTagPopupPos({ x: rect.left + sp.x, y: rect.top + sp.y });
-      } else {
-        setTagPopupPos(null);
       }
+      // During mode transitions, keep last known position instead of resetting to null
+      // (tag goes briefly "behind camera" during dollhouse→inside fly-in)
     };
     rafId = requestAnimationFrame(update);
 
