@@ -661,7 +661,14 @@ const TourViewer = () => {
   const [iframeKey, setIframeKey] = useState(0);
 
   // Tag/Item popup state
-  const [selectedTag, setSelectedTag] = useState<TagItem | null>(null);
+  const [selectedTag, _setSelectedTag] = useState<TagItem | null>(null);
+  const setSelectedTag = useCallback((val: TagItem | null) => {
+    if (!val && selectedTagRef.current) {
+      console.warn("🚨 POPUP BEING CLOSED! Trace:", new Error().stack);
+    }
+    selectedTagRef.current = val;
+    _setSelectedTag(val);
+  }, []);
   const [tagPopupPos, setTagPopupPos] = useState<{ x: number; y: number } | null>(null);
   const selectedTagRef = useRef<TagItem | null>(null);
   const selectedItemRef = useRef<TourItemData | null>(null);
@@ -677,8 +684,15 @@ const TourViewer = () => {
   const customTagsRef = useRef<CustomTagData[]>([]);
   const customTagSidsRef = useRef<Set<string>>(new Set());
   const [selectedItem, setSelectedItem] = useState<TourItemData | null>(null);
-  useEffect(() => { selectedTagRef.current = selectedTag; }, [selectedTag]);
-  useEffect(() => { selectedItemRef.current = selectedItem; }, [selectedItem]);
+  useEffect(() => {
+  useEffect(() => {
+    selectedItemRef.current = selectedItem;
+    if (selectedItem) {
+      console.log("🛍️ PRODUCT POPUP OPENED — selectedItem set:", selectedItem.name);
+    } else {
+      console.log("🛍️ PRODUCT POPUP CLOSED — selectedItem is now null");
+    }
+  }, [selectedItem]);
   const [hoveredItem, setHoveredItem] = useState<TourItemData | null>(null);
   const [activeTagFilter, setActiveTagFilter] = useState<string | null>(null); // tag SID or name that was clicked in 3D
   const [cart, setCart] = useState<CartEntry[]>(() => {
@@ -810,6 +824,7 @@ const TourViewer = () => {
   // Fetch tour data
   useEffect(() => {
     if (!id) return;
+    console.log("🔄 TOUR FETCH useEffect fired — closing popups (id changed to:", id, ")");
     setLoading(true);
     setIframeLoaded(false);
     setSelectedTag(null);
@@ -2933,7 +2948,7 @@ const TourViewer = () => {
         else if (selectedChamber) { setSelectedChamber(null); chamberSweepRef.current = ""; }
         else if (selectedCoach) setSelectedCoach(null);
         else if (selectedService) setSelectedService(null);
-        else if (selectedTag) setSelectedTag(null);
+        else if (selectedTag) { console.log("⌨️ ESCAPE pressed — closing tag popup"); setSelectedTag(null); }
         else if (selectedItem) setSelectedItem(null);
         else if (activeTagFilter) setActiveTagFilter(null);
         else if (showCart) setShowCart(false);
@@ -4666,7 +4681,7 @@ const TourViewer = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={() => setSelectedTag(null)}
+              onClick={() => { console.log("👆 MOBILE BACKDROP clicked — closing tag popup"); setSelectedTag(null); }}
               className="fixed inset-0 bg-black/50 z-[99] sm:hidden"
             />
             <motion.div
@@ -4686,7 +4701,7 @@ const TourViewer = () => {
                 {/* Close button */}
                 <div className="flex justify-end px-3">
                   <button
-                    onClick={() => setSelectedTag(null)}
+                    onClick={() => { console.log("❎ MOBILE X clicked — closing tag popup"); setSelectedTag(null); }}
                     className="w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
                   >
                     <X className="w-4 h-4" />
@@ -4774,7 +4789,7 @@ const TourViewer = () => {
                   <Share2 className="w-3.5 h-3.5" />
                 </button>
                 <button
-                  onClick={() => { setSelectedTag(null); }}
+                  onClick={() => { console.log("❎ DESKTOP X clicked — closing tag popup"); setSelectedTag(null); }}
                   className="w-7 h-7 rounded flex items-center justify-center text-white/50 hover:text-white hover:bg-white/10 transition-colors"
                   title="Close"
                 >
