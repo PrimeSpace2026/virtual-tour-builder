@@ -1769,10 +1769,23 @@ const TourViewer = () => {
             });
           }
           if (sdk.Mode?.Event?.CHANGE_END) {
-            sdk.on(sdk.Mode.Event.CHANGE_END, () => {
+            sdk.on(sdk.Mode.Event.CHANGE_END, async () => {
               console.log("✅ Mode change ended — restoring tags (including outside/exterior tags)");
               console.log(`📊 Custom tags tracked: ${customTagsRef.current.length}, SIDs: ${customTagSidsRef.current.size}`);
               modeTransitionRef.current = false;
+
+              // Check current mode — skip restoreTags in dollhouse/floorplan (Sweep.moveTo would force exit)
+              try {
+                const currentMode = await sdk.Mode.getCurrentMode();
+                console.log(`📐 Current mode after transition: ${currentMode}`);
+                if (currentMode !== 'mode.inside' && currentMode !== sdk.Mode?.Mode?.INSIDE) {
+                  console.log("🛑 Skipping restoreTags — not in INSIDE mode (dollhouse/floorplan active)");
+                  return;
+                }
+              } catch (e) {
+                console.log("Mode check failed, proceeding with restoreTags:", e);
+              }
+
               // Don't run restoreTags if a popup is open — the camera rotation interferes with the popup
               if (selectedTagRef.current || selectedItemRef.current) {
                 console.log("🛑 Skipping restoreTags — popup is open");
