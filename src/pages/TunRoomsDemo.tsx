@@ -102,7 +102,7 @@ export default function TunRoomsDemo() {
 
       {/* ═══ Navbar — exact TunRooms ═══ */}
       <nav className="sticky top-0 z-50 shadow-sm" style={{ backgroundColor: C.white, borderBottom: `1px solid ${C.border}` }}>
-        <div className="max-w-[720px] mx-auto px-4 h-[70px] flex items-center justify-between">
+        <div className="max-w-[1100px] mx-auto px-4 h-[70px] flex items-center justify-between">
           <a href="https://www.tunrooms.com" target="_blank" rel="noopener noreferrer">
             <img src={TUNROOMS_LOGO} alt="TunRooms" style={{ height: 36 }} />
           </a>
@@ -123,7 +123,7 @@ export default function TunRoomsDemo() {
       </nav>
 
       {/* ═══ Content — single column, centered (like TunRooms) ═══ */}
-      <div className="max-w-[720px] mx-auto px-4">
+      <div className="max-w-[1100px] mx-auto px-4">
 
         {/* Title */}
         <div className="pt-6 pb-2">
@@ -432,7 +432,7 @@ export default function TunRoomsDemo() {
 
       {/* ═══ Footer — TunRooms style ═══ */}
       <footer style={{ backgroundColor: C.bg, borderTop: `1px solid ${C.border}` }}>
-        <div className="max-w-[720px] mx-auto px-4 py-8">
+        <div className="max-w-[1100px] mx-auto px-4 py-8">
           <div className="flex flex-wrap gap-4 text-sm mb-4">
             <a href="https://www.tunrooms.com/terms_of_service" target="_blank" rel="noopener noreferrer" className="hover:underline" style={{ color: C.gray }}>Conditions Générales d'utilisation</a>
             <a href="https://www.tunrooms.com/about_us" target="_blank" rel="noopener noreferrer" className="hover:underline" style={{ color: C.gray }}>À propos de Tunrooms</a>
