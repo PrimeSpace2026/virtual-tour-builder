@@ -161,6 +161,32 @@ export default function TunRoomsDemo() {
           </div>
         </div>
 
+        {/* ═══ Virtual Tour — PrimeSpace ═══ */}
+        <div className="py-6 border-b" style={{ borderColor: C.border }}>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-lg font-bold" style={{ color: C.dark }}>
+              🏠 Visite Virtuelle 3D — <span style={{ color: C.brand }}>PrimeSpace</span>
+            </h3>
+          </div>
+          <div className="rounded-xl overflow-hidden border" style={{ borderColor: C.border }}>
+            <div className="relative" style={{ paddingBottom: "56.25%" }}>
+              <iframe
+                src={TOUR_PATH}
+                title="Visite 3D PrimeSpace — La Perla"
+                className="absolute inset-0 w-full h-full"
+                allowFullScreen
+                allow="xr-spatial-tracking"
+              />
+            </div>
+            <div className="px-4 py-3 flex items-center justify-between" style={{ backgroundColor: C.bg }}>
+              <p className="text-xs" style={{ color: C.gray }}>Naviguez librement dans l'espace 3D</p>
+              <a href={TOUR_PATH} target="_blank" rel="noopener noreferrer" className="text-xs font-bold px-4 py-1.5 rounded-md text-white hover:opacity-90 transition" style={{ backgroundColor: C.brand }}>
+                Plein écran
+              </a>
+            </div>
+          </div>
+        </div>
+
         {/* ═══ Booking Card — inline like TunRooms ═══ */}
         <div className="border rounded-xl p-5 mb-6" style={{ borderColor: C.border }}>
           <p className="text-xs mb-1" style={{ color: C.gray }}>À partir de</p>
@@ -219,32 +245,6 @@ export default function TunRoomsDemo() {
           <p className="text-sm leading-relaxed" style={{ color: C.text }}>
             Magnifique villa S+4 climatisée située à Haouaria, parfaite pour des vacances inoubliables. Cette propriété luxueuse offre un confort exceptionnel avec un accès direct à la plage — les pieds dans l'eau. Profitez d'une grande piscine privée, d'espaces de vie spacieux et lumineux, et d'une vue imprenable sur la mer. Idéale pour des séjours en famille ou entre amis dans un cadre paisible et exclusif.
           </p>
-        </div>
-
-        {/* ═══ Virtual Tour — PrimeSpace ═══ */}
-        <div className="py-6 border-b" style={{ borderColor: C.border }}>
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-lg font-bold" style={{ color: C.dark }}>
-              🏠 Visite Virtuelle 3D — <span style={{ color: C.brand }}>PrimeSpace</span>
-            </h3>
-          </div>
-          <div className="rounded-xl overflow-hidden border" style={{ borderColor: C.border }}>
-            <div className="relative" style={{ paddingBottom: "56.25%" }}>
-              <iframe
-                src={TOUR_PATH}
-                title="Visite 3D PrimeSpace — La Perla"
-                className="absolute inset-0 w-full h-full"
-                allowFullScreen
-                allow="xr-spatial-tracking"
-              />
-            </div>
-            <div className="px-4 py-3 flex items-center justify-between" style={{ backgroundColor: C.bg }}>
-              <p className="text-xs" style={{ color: C.gray }}>Naviguez librement dans l'espace 3D</p>
-              <a href={TOUR_PATH} target="_blank" rel="noopener noreferrer" className="text-xs font-bold px-4 py-1.5 rounded-md text-white hover:opacity-90 transition" style={{ backgroundColor: C.brand }}>
-                Plein écran
-              </a>
-            </div>
-          </div>
         </div>
 
         {/* Détails du logement — 2 col grid like TunRooms */}
