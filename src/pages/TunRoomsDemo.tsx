@@ -169,7 +169,7 @@ export default function TunRoomsDemo() {
             </h3>
           </div>
           <div className="rounded-xl overflow-hidden border" style={{ borderColor: C.border }}>
-            <div className="relative" style={{ paddingBottom: "56.25%" }}>
+            <div className="relative pb-[80vh] sm:pb-[56.25%]">
               <iframe
                 src={TOUR_PATH}
                 title="Visite 3D PrimeSpace — La Perla"
