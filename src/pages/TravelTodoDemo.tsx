@@ -163,7 +163,7 @@ export default function TravelTodoDemo() {
         <div className="flex flex-col lg:flex-row gap-6">
 
           {/* ═══ Left Sidebar — Green search box + map ═══ */}
-          <div className="w-full lg:w-[280px] flex-shrink-0">
+          <div className="hidden lg:block w-full lg:w-[280px] flex-shrink-0">
             <div className="rounded-lg overflow-hidden" style={{ backgroundColor: C.searchBg }}>
               <div className="px-4 pt-4 pb-2">
                 <h3 className="text-white font-bold text-lg">Rechercher</h3>
