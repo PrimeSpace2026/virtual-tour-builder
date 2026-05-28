@@ -27,11 +27,11 @@ const TRAVELTODO_LOGO = "https://www.traveltodo.com/dist/img/logo.png";
 const TRAVELTODO_URL = "https://www.thesamuelhotel.com/";
 
 const IMAGES = [
-  "https://media.thesamuelhotel.com/image/upload/f_auto,g_auto,c_auto,w_828,q_auto/v1727951259/Uploads/Samuel/The_Samuel_59_f0deb1426d.png",
-  "https://media.thesamuelhotel.com/image/upload/f_auto,g_auto,c_auto,w_828,q_auto/v1727951262/Uploads/Samuel/The_Samuel_58_3b28c85050.png",
-  "https://media.thesamuelhotel.com/image/upload/f_auto,g_auto,c_auto,w_828,q_auto/v1727951269/Uploads/Samuel/Friends_Dinner_bkrnpr_0cd5301828.png",
-  "https://media.thesamuelhotel.com/image/fetch/f_auto,c_auto,g_auto/https://bookings.thesamuelhotel.com/storage/jPFZyhNScemMvSLk4yzYW32NboYIROqbrZOxuoHp.jpg",
-  "https://media.thesamuelhotel.com/image/fetch/f_auto,c_auto,g_auto/https://bookings.thesamuelhotel.com/storage/FDf67VP3vjorjOpM1rbfLCN4a2LDSEWj0QTBm1F0.jpg",
+  "https://cf.bstatic.com/xdata/images/hotel/max500/354744738.jpg?k=e4a0e720e7686611104dbf758246f783d4a11a25add309656fab696b1323ffdf&o=",
+  "https://cf.bstatic.com/xdata/images/hotel/max1024x768/356520670.jpg?k=c3d2d22f1ea615b92da1008a163ff19fed5082896264ca2862b2f0eaab89fafa&o=",
+  "https://cf.bstatic.com/xdata/images/hotel/max1024x768/421643646.jpg?k=1aaaa6e8d59bf85b0635b55de57f2d1abfc240e988aa30fe7b1588e10de677e7&o=",
+  "https://cf.bstatic.com/xdata/images/hotel/max1024x768/484261733.jpg?k=8c35a0540c60e0e1d18f7e4f40ccc0ec315829d2913289fdd13cc87c7896d6ec&o=",
+  "https://cf.bstatic.com/xdata/images/hotel/max1024x768/356520285.jpg?k=838201017a7a758010b2cac73cd0bbf769344932738f7c6bee3037d3069f0bf5&o=",
 ];
 
 const SERVICES = [
