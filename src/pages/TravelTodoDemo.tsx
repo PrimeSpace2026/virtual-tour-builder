@@ -24,38 +24,37 @@ const FONT = `'Open Sans', 'Segoe UI', Arial, sans-serif`;
 
 const TOUR_PATH = "/view/the-samuel-hotel-dublin";
 const TRAVELTODO_LOGO = "https://www.traveltodo.com/dist/img/logo.png";
-const TRAVELTODO_URL = "https://www.traveltodo.com/hotels-tunisie/korba/africa-jade-thalasso-1112.html";
+const TRAVELTODO_URL = "https://www.thesamuelhotel.com/";
 
 const IMAGES = [
-  "https://www.resabo.com/cr.fwk/images/hotels/Hotel-1876-20260330-123156.jpg",
-  "https://www.resabo.com/cr.fwk/images/hotels/Hotel-1876-20221104-025212.jpg",
-  "https://www.resabo.com/cr.fwk/images/hotels/Hotel-1876-20221104-025411.jpg",
-  "https://www.resabo.com/cr.fwk/images/hotels/Hotel-1876-20221104-025356.jpg",
-  "https://www.resabo.com/cr.fwk/images/hotels/Hotel-1876-20221104-025600.jpg",
-  "https://www.resabo.com/cr.fwk/images/hotels/Hotel-1876-20221104-025642.jpg",
-  "https://www.resabo.com/cr.fwk/images/hotels/Hotel-1876-20221104-025657.jpg",
+  "https://media.thesamuelhotel.com/image/upload/f_auto,g_auto,c_auto,w_828,q_auto/v1727951259/Uploads/Samuel/The_Samuel_59_f0deb1426d.png",
+  "https://media.thesamuelhotel.com/image/upload/f_auto,g_auto,c_auto,w_828,q_auto/v1727951262/Uploads/Samuel/The_Samuel_58_3b28c85050.png",
+  "https://media.thesamuelhotel.com/image/upload/f_auto,g_auto,c_auto,w_828,q_auto/v1727951269/Uploads/Samuel/Friends_Dinner_bkrnpr_0cd5301828.png",
+  "https://media.thesamuelhotel.com/image/fetch/f_auto,c_auto,g_auto/https://bookings.thesamuelhotel.com/storage/jPFZyhNScemMvSLk4yzYW32NboYIROqbrZOxuoHp.jpg",
+  "https://media.thesamuelhotel.com/image/fetch/f_auto,c_auto,g_auto/https://bookings.thesamuelhotel.com/storage/FDf67VP3vjorjOpM1rbfLCN4a2LDSEWj0QTBm1F0.jpg",
 ];
 
 const SERVICES = [
-  "Climatisation", "Téléphone avec ligne directe", "Restaurant", "Plage",
-  "Club de remise en forme", "Coffre fort", "Centre d'affaires", "Massage",
-  "Centre de remise en forme", "Piscine", "Télévision",
+  "Air Conditioning", "Iron & Ironing Board", "Tea & Coffee Facilities",
+  "Restaurant & Bar", "Gym & Fitness Centre", "Free WiFi",
+  "24h Reception", "Accessible Rooms", "Meeting Rooms",
+  "Rituals Toiletries", "Coffee Pod Machine",
 ];
 
 const CHAMBRES = [
-  "Chambre Standards (2 Pax)",
-  "Chambre Standard Single",
-  "Suite Junior (Max 2 Pax)",
-  "Chambre Single Vue Mer",
-  "Chambre Standards Vue Mer Partielle (2 Pax)",
-  "Chambre Triple",
-  "Chambre Quadruple 2AD + 2ENF",
+  "Deluxe Double Rooms",
+  "Deluxe Twin Rooms",
+  "Deluxe King Rooms",
+  "Deluxe Double & Single Rooms",
+  "Deluxe Double Double Rooms",
+  "Executive King Rooms",
+  "Accessible Rooms",
 ];
 
 const PENSIONS = [
-  "Logement Petit Déjeuner",
-  "Demi Pension",
-  "Pension Complète",
+  "Room Only",
+  "Bed & Breakfast",
+  "Dinner, Bed & Breakfast",
 ];
 
 export default function TravelTodoDemo() {
@@ -137,7 +136,7 @@ export default function TravelTodoDemo() {
         <span style={{ color: C.lightGray }}>|</span>
         <a href="https://www.traveltodo.com/sejours-en-tunisie/hotels-tunisie/" target="_blank" rel="noopener noreferrer" className="hover:underline" style={{ color: C.blue }}>Hôtels</a>
         <span style={{ color: C.lightGray }}>|</span>
-        <span style={{ color: C.dark }}>Africa Jade Thalasso</span>
+        <span style={{ color: C.dark }}>The Samuel Hotel</span>
       </div>
 
       {/* ═══ Tabs ═══ */}
@@ -173,7 +172,7 @@ export default function TravelTodoDemo() {
               <div className="px-4 pb-4 space-y-2">
                 <div className="bg-white rounded px-3 py-2.5 flex items-center gap-2">
                   <svg className="w-4 h-4" fill="none" stroke={C.gray} strokeWidth="2" viewBox="0 0 24 24"><path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                  <span className="text-sm" style={{ color: C.dark }}>Korba, Tunisie</span>
+                  <span className="text-sm" style={{ color: C.dark }}>Dublin, Ireland</span>
                   <span className="ml-auto text-orange-400 cursor-pointer">×</span>
                 </div>
                 <div className="bg-white rounded px-3 py-2.5 flex items-center gap-2">
@@ -198,7 +197,7 @@ export default function TravelTodoDemo() {
             {/* Map placeholder */}
             <div className="mt-4 rounded-lg overflow-hidden border" style={{ borderColor: C.border, height: 180 }}>
               <div className="w-full h-full bg-gray-200 flex items-center justify-center relative">
-                <img src="https://maps.googleapis.com/maps/api/staticmap?center=36.5833,10.8667&zoom=12&size=280x180&key=placeholder" alt="" className="w-full h-full object-cover opacity-30" />
+                <img src="https://maps.googleapis.com/maps/api/staticmap?center=53.3478,-6.2397&zoom=14&size=280x180&key=placeholder" alt="" className="w-full h-full object-cover opacity-30" />
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
                   <svg className="w-8 h-8 mb-1" fill={C.brand} viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 010-5 2.5 2.5 0 010 5z"/></svg>
                   <span className="bg-green-700 text-white text-xs font-bold px-3 py-1 rounded cursor-pointer">VOIR SUR CARTE</span>
@@ -214,14 +213,14 @@ export default function TravelTodoDemo() {
             <div className="flex items-start justify-between mb-2">
               <div>
                 <h1 className="text-2xl font-bold flex items-center gap-2" style={{ color: C.blue }}>
-                  Africa Jade Thalasso
+                  The Samuel Hotel
                   <span className="flex gap-0.5">
                     {[1,2,3,4].map(i => (
                       <svg key={i} className="w-4 h-4" fill={C.gold} viewBox="0 0 20 20"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/></svg>
                     ))}
                   </span>
                 </h1>
-                <p className="text-sm mt-1" style={{ color: C.gray }}>Korba, Tunisie Station touristique</p>
+                <p className="text-sm mt-1" style={{ color: C.gray }}>Dublin, Ireland — City Centre</p>
                 <div className="flex items-center gap-4 mt-2 text-sm" style={{ color: C.gray }}>
                   <span className="cursor-pointer hover:underline">↗ Partager ▾</span>
                   <span className="cursor-pointer hover:underline">♡ Enregistrer</span>
@@ -235,7 +234,7 @@ export default function TravelTodoDemo() {
 
             {/* Main Image */}
             <div className="mt-4 relative rounded-lg overflow-hidden" style={{ height: 380 }}>
-              <img src={IMAGES[imgIdx]} alt="Africa Jade Thalasso" className="w-full h-full object-cover cursor-pointer" onClick={() => setLightbox(imgIdx)} />
+              <img src={IMAGES[imgIdx]} alt="The Samuel Hotel" className="w-full h-full object-cover cursor-pointer" onClick={() => setLightbox(imgIdx)} />
               <button onClick={prev} className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/80 shadow flex items-center justify-center">
                 <ChevronLeft className="w-5 h-5" style={{ color: C.dark }} />
               </button>
@@ -244,8 +243,8 @@ export default function TravelTodoDemo() {
               </button>
               {/* Rating badge */}
               <div className="absolute top-4 right-4 bg-white rounded-lg px-3 py-1.5 shadow flex items-center gap-2">
-                <span className="text-sm font-semibold" style={{ color: C.dark }}>Adorable</span>
-                <span className="text-sm font-bold px-2 py-0.5 rounded" style={{ color: C.brand, border: `2px solid ${C.brand}` }}>15/20</span>
+                <span className="text-sm font-semibold" style={{ color: C.dark }}>Excellent</span>
+                <span className="text-sm font-bold px-2 py-0.5 rounded" style={{ color: C.brand, border: `2px solid ${C.brand}` }}>18/20</span>
               </div>
             </div>
 
@@ -274,7 +273,7 @@ export default function TravelTodoDemo() {
                 <div className="relative pb-[80vh] sm:pb-[56.25%]">
                   <iframe
                     src={TOUR_PATH}
-                    title="Visite 3D PrimeSpace — Africa Jade Thalasso"
+                    title="Visite 3D PrimeSpace — The Samuel Hotel"
                     className="absolute inset-0 w-full h-full"
                     allowFullScreen
                     allow="xr-spatial-tracking"
@@ -306,13 +305,13 @@ export default function TravelTodoDemo() {
             <div className="py-6 border-t" style={{ borderColor: C.border }}>
               <h3 className="text-base font-bold mb-3" style={{ color: C.blue }}>Hébergement</h3>
               <p className="text-sm leading-relaxed mb-3" style={{ color: C.text }}>
-                Africa Jade Thalasso, c'est le premier hôtel de son genre en Tunisie. Un concept de vacances inédit dédié au tourisme tunisien, offrant un accueil spécial et personnalisé 24h/7j.
+                Overlooking the River Liffey and a short walk from O'Connell Street, The Samuel Hotel is one of the newest hotels in Dublin city centre with shops, restaurants and historic landmarks nearby.
               </p>
               <p className="text-sm leading-relaxed mb-3" style={{ color: C.text }}>
-                Situé à Korba, le Africa Jade Thalasso se trouve au cœur d'un majestueux jardin de neuf hectares, bordé par une plage de sable blanc. Son architecture mauresque, son décor africain, et ses 257 chambres et suites offrent un séjour unique.
+                Whether you are looking for an activity-packed city break, a romantic getaway or visiting the city on business, The Samuel Hotel is the perfect hotel for every occasion. Named after Samuel Beckett, the hotel blends modern design with Dublin's rich literary heritage.
               </p>
               <p className="text-sm leading-relaxed" style={{ color: C.text }}>
-                Profitez d'une plage privée, de 3 piscines, et d'un centre de spa pour une expérience inoubliable. L'hôtel propose 257 chambres et suites — des chambres standards, des suites juniors spacieuses, et des suites seniors avec une seconde chambre.
+                Enjoy the Samuel Bar & Grill — a vibrant, modern restaurant with all-day dining, boasting a chargrill and seasonally inspired favourites as well as plenty of comfort food and healthy choices from around the world. The hotel also features a fully-equipped gym and meeting facilities.
               </p>
             </div>
 
@@ -346,19 +345,19 @@ export default function TravelTodoDemo() {
               <h3 className="text-base font-bold mb-4" style={{ color: C.blue }}>Avis des voyageurs</h3>
               <div className="flex items-center gap-4 mb-4">
                 <div className="text-center px-4 py-2 rounded border-2" style={{ borderColor: C.brand }}>
-                  <span className="text-2xl font-bold" style={{ color: C.brand }}>15</span><span className="text-sm" style={{ color: C.brand }}>/20</span>
+                  <span className="text-2xl font-bold" style={{ color: C.brand }}>18</span><span className="text-sm" style={{ color: C.brand }}>/20</span>
                 </div>
                 <div>
-                  <p className="font-bold" style={{ color: C.dark }}>Adorable</p>
-                  <p className="text-xs" style={{ color: C.gray }}>Basé sur 3963 avis</p>
+                  <p className="font-bold" style={{ color: C.dark }}>Excellent</p>
+                  <p className="text-xs" style={{ color: C.gray }}>Based on 1,247 reviews</p>
                 </div>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
                 {[
-                  { label: "Voyageurs individuels", count: 305 },
-                  { label: "Couples jeunes", count: 1134 },
-                  { label: "Familles avec enfants", count: 1483 },
-                  { label: "Familles avec ados", count: 352 },
+                  { label: "Business travellers", count: 412 },
+                  { label: "Couples", count: 389 },
+                  { label: "Friends", count: 298 },
+                  { label: "Families", count: 148 },
                 ].map((r, i) => (
                   <div key={i} className="border rounded p-3" style={{ borderColor: C.border }}>
                     <p className="text-lg font-bold" style={{ color: C.blue }}>{r.count}</p>
