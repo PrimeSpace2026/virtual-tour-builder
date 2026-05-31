@@ -21,10 +21,11 @@ const FONT_BODY = `'Lato', 'Segoe UI', Arial, sans-serif`;
 const TOUR_URL = "https://my.matterport.com/show?play=1&lang=en-US&m=paAemusufeL";
 
 const IMAGES = [
-  "https://cf.bstatic.com/xdata/images/hotel/max1024x768/418834073.jpg?k=71c77ee82aff2d200f58f8927d2ed3ae7a8eaa77f54e8e0e6d70b38db879f2f8&o=",
-  "https://cf.bstatic.com/xdata/images/hotel/max1024x768/418831782.jpg?k=0e218d26c0e59a0f2f6b2f2b4ef46cc4dbfdf0c6cc0ff0c92e3f3d8a9e6d47d0&o=",
-  "https://cf.bstatic.com/xdata/images/hotel/max1024x768/418831777.jpg?k=06c5e8c4c2d8d3f0ad3d3b6b2a7a9e6d47d0dbfdf0c6cc0ff0c92e3f3d8a9e6d&o=",
-  "https://cf.bstatic.com/xdata/images/hotel/max1024x768/418831786.jpg?k=0e218d26c0e59a0f2f6b2f2b4ef46cc4dbfdf0c6cc0ff0c92e3f3d8a9e6d47d0&o=",
+  "https://eauxdecarpis.com/wp-content/uploads/2026/01/Photo-Piscine-Korbus-2026.jpg",
+  "https://eauxdecarpis.com/wp-content/uploads/2026/02/Piscine-Eau-de-Mer-5.jpg",
+  "https://eauxdecarpis.com/wp-content/uploads/2026/02/ZSK06818.jpg",
+  "https://eauxdecarpis.com/wp-content/uploads/2026/02/ZSK06778.jpg",
+  "https://eauxdecarpis.com/wp-content/uploads/2026/01/Slide-1Carpis.jpg",
 ];
 
 const UNIVERS = [
