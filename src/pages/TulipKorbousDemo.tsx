@@ -1,338 +1,373 @@
-import { useState } from "react";
-import { ChevronLeft, ChevronRight, X, Menu } from "lucide-react";
+import { useState, useRef } from "react";
+import { ChevronLeft, ChevronRight, Menu, X } from "lucide-react";
 
-/* ─── Royal Tulip Korbous / Les eaux de Carpis colors ─── */
+/* ─── Exact colors from eauxdecarpis.com ─── */
 const C = {
-  navy: "#1a2744",
-  navyLight: "#223356",
-  gold: "#c9a96e",
-  goldLight: "#d4b97e",
-  goldDark: "#b08a50",
+  gold: "#C3AA82",
+  goldDark: "#a8905e",
+  navy: "#1e2d4d",
+  navyDark: "#162240",
   white: "#ffffff",
-  offWhite: "#f8f6f3",
-  text: "#e8e4df",
-  darkText: "#222222",
-  gray: "#888888",
-  border: "rgba(201,169,110,0.3)",
+  offWhite: "#f9f7f4",
+  dark: "#222222",
+  text: "#666666",
+  lightText: "#999999",
+  border: "#e5e5e5",
 };
-const FONT = `'Cormorant Garamond', 'Georgia', serif`;
-const FONT_BODY = `'Lato', 'Segoe UI', Arial, sans-serif`;
+
+const FONT_HEADING = `'Cormorant Garamond', 'Georgia', serif`;
+const FONT_BODY = `'Inter', 'Segoe UI', Arial, sans-serif`;
 
 const TOUR_URL = "https://my.matterport.com/show?play=1&lang=en-US&m=paAemusufeL";
 
-const IMAGES = [
-  "https://eauxdecarpis.com/wp-content/uploads/2026/01/Photo-Piscine-Korbus-2026.jpg",
-  "https://eauxdecarpis.com/wp-content/uploads/2026/02/Piscine-Eau-de-Mer-5.jpg",
-  "https://eauxdecarpis.com/wp-content/uploads/2026/02/ZSK06818.jpg",
-  "https://eauxdecarpis.com/wp-content/uploads/2026/02/ZSK06778.jpg",
-  "https://eauxdecarpis.com/wp-content/uploads/2026/01/Slide-1Carpis.jpg",
-];
+const LOGO = "https://eauxdecarpis.com/wp-content/uploads/2026/01/Logo-Carpis-Fn-white.png";
+const POOL_IMG = "https://eauxdecarpis.com/wp-content/uploads/2026/01/Photo-Piscine-Korbus-2026.jpg";
+const HOTEL_AERIAL = "https://eauxdecarpis.com/wp-content/uploads/2026/01/Vue-hotel.png";
 
 const UNIVERS = [
-  { name: "Espace Thermal & Marin", desc: "Soins thermaux et marins d'exception" },
-  { name: "Espace Évasion", desc: "Massages et rituels du monde" },
-  { name: "Espace Beauté & Séduction", desc: "Soins visage et corps" },
-  { name: "Espace Rééducation", desc: "Rééducation fonctionnelle en milieu thermal" },
-  { name: "Espace Sérénité", desc: "Relaxation et méditation" },
-  { name: "Espace Forme & Détente", desc: "Fitness, piscine et aquagym" },
+  { name: "Espace Thermal & Marin", img: "https://eauxdecarpis.com/wp-content/uploads/2026/02/ZSK06810-610x610.jpg" },
+  { name: "Espace Évasion", img: "https://eauxdecarpis.com/wp-content/uploads/2026/02/Evasion-610x610.jpg" },
+  { name: "Espace Beauté & Séduction", img: "https://eauxdecarpis.com/wp-content/uploads/2026/01/Soin-Esthetique-1-610x610.jpg" },
+  { name: "Espace Rééducation", img: "https://eauxdecarpis.com/wp-content/uploads/2026/02/reudication-carpis-610x610.jpg" },
+  { name: "Espace Sérénité", img: "https://eauxdecarpis.com/wp-content/uploads/2026/01/Slide-1Carpis-1-610x610.jpg" },
+  { name: "Espace Tradition", img: "https://eauxdecarpis.com/wp-content/uploads/2026/01/Hamam-1-610x610.jpg" },
+  { name: "Espace Forme & Détente", img: "https://eauxdecarpis.com/wp-content/uploads/2026/02/Piscine-Eau-de-Mer-5-610x610.jpg" },
+];
+
+const SLIDES = [
+  { num: "01", title: "Quand la Méditerranée sublime les saveurs", img: "https://eauxdecarpis.com/wp-content/uploads/2026/02/ZSK06496-HDR.jpg" },
+  { num: "02", title: "Là où vos projets prennent vie", img: "https://eauxdecarpis.com/wp-content/uploads/2026/02/ZSK06778.jpg" },
+  { num: "03", title: "Dépassez-vous, respirez la nature", img: "https://eauxdecarpis.com/wp-content/uploads/2026/02/R17.jpg" },
 ];
 
 const NAV_LINKS = ["Le Centre", "Histoire", "L'Hôtel", "Destination", "Tarifs", "Contact"];
 
 export default function TulipKorbousDemo() {
-  const [imgIdx, setImgIdx] = useState(0);
-  const [lightbox, setLightbox] = useState<number | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [slideIdx, setSlideIdx] = useState(0);
+  const universRef = useRef<HTMLDivElement>(null);
 
-  const prev = () => setImgIdx(i => (i - 1 + IMAGES.length) % IMAGES.length);
-  const next = () => setImgIdx(i => (i + 1) % IMAGES.length);
+  const scrollUnivers = (dir: number) => {
+    if (universRef.current) {
+      universRef.current.scrollBy({ left: dir * 320, behavior: "smooth" });
+    }
+  };
 
   return (
-    <div style={{ fontFamily: FONT_BODY, color: C.text, backgroundColor: C.navy, minHeight: "100vh" }}>
-      <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400&family=Lato:wght@300;400;700&display=swap" rel="stylesheet" />
-
-      {/* ═══ Lightbox ═══ */}
-      {lightbox !== null && (
-        <div className="fixed inset-0 z-[9999] bg-black/90 flex items-center justify-center" onClick={() => setLightbox(null)}>
-          <button onClick={e => { e.stopPropagation(); setLightbox(null); }} className="absolute top-4 right-4 text-white p-2 rounded-full hover:bg-white/20 z-10"><X className="w-7 h-7" /></button>
-          <button onClick={e => { e.stopPropagation(); setLightbox((lightbox - 1 + IMAGES.length) % IMAGES.length); }} className="absolute left-4 top-1/2 -translate-y-1/2 text-white p-3 rounded-full hover:bg-white/20"><ChevronLeft className="w-8 h-8" /></button>
-          <button onClick={e => { e.stopPropagation(); setLightbox((lightbox + 1) % IMAGES.length); }} className="absolute right-4 top-1/2 -translate-y-1/2 text-white p-3 rounded-full hover:bg-white/20"><ChevronRight className="w-8 h-8" /></button>
-          <img src={IMAGES[lightbox]} alt="" className="max-w-[90vw] max-h-[85vh] object-contain" onClick={e => e.stopPropagation()} />
-          <div className="absolute bottom-4 text-white/70 text-sm">{lightbox + 1} / {IMAGES.length}</div>
-        </div>
-      )}
+    <div style={{ fontFamily: FONT_BODY, color: C.dark, backgroundColor: C.white, minHeight: "100vh" }}>
+      <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
 
       {/* ═══ Mobile Menu Overlay ═══ */}
       {menuOpen && (
-        <div className="fixed inset-0 z-[9998] bg-black/80 flex flex-col items-center justify-center gap-6" onClick={() => setMenuOpen(false)}>
+        <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center" style={{ backgroundColor: C.navyDark }}>
+          <button onClick={() => setMenuOpen(false)} className="absolute top-6 right-6 text-white/70 hover:text-white"><X className="w-7 h-7" /></button>
+          <img src={LOGO} alt="Les eaux de Carpis" className="h-12 mb-10 opacity-80" />
           {NAV_LINKS.map(link => (
-            <span key={link} className="text-xl tracking-wide cursor-pointer hover:opacity-80 transition" style={{ fontFamily: FONT, color: C.gold }}>{link}</span>
+            <span key={link} className="text-xl tracking-wide cursor-pointer hover:opacity-80 transition py-2" style={{ fontFamily: FONT_HEADING, color: C.white }}>{link}</span>
           ))}
+          <div className="flex gap-4 mt-10">
+            {["Facebook", "TripAdvisor", "YouTube", "Instagram"].map(s => (
+              <span key={s} className="w-10 h-10 rounded-full flex items-center justify-center text-xs text-white/60" style={{ border: `1px solid ${C.gold}44` }}>{s[0]}</span>
+            ))}
+          </div>
         </div>
       )}
 
-      {/* ═══ Top announcement bar ═══ */}
-      <div className="text-center py-2 text-xs tracking-widest uppercase" style={{ backgroundColor: C.goldDark, color: C.white }}>
-        <span>Découvrez le Royal Tulip Korbous Bay 5* — reservation@royaltulipkorbous.com</span>
-      </div>
+      {/* ═══ Header — fixed, dark, transparent ═══ */}
+      <header className="fixed top-0 left-0 right-0 z-[999] flex items-center justify-between px-6 sm:px-10 py-5" style={{ backgroundColor: "rgba(0,0,0,0.4)" }}>
+        {/* Left — Menu */}
+        <button onClick={() => setMenuOpen(true)} className="flex items-center gap-2 text-white text-sm tracking-wider hover:opacity-80 transition">
+          <Menu className="w-5 h-5" />
+          <span className="hidden sm:inline" style={{ fontFamily: FONT_HEADING, fontSize: 18 }}>Menu</span>
+        </button>
 
-      {/* ═══ Header / Navbar ═══ */}
-      <header className="relative border-b" style={{ borderColor: C.border }}>
-        <div className="max-w-[1200px] mx-auto px-4 h-[90px] flex items-center justify-between">
-          {/* Left — Menu */}
-          <button onClick={() => setMenuOpen(!menuOpen)} className="flex items-center gap-2 text-sm tracking-widest uppercase hover:opacity-80 transition" style={{ color: C.text }}>
-            <Menu className="w-5 h-5" />
-            <span className="hidden sm:inline">Menu</span>
-          </button>
+        {/* Center — Logo */}
+        <a href="https://eauxdecarpis.com" target="_blank" rel="noopener noreferrer" className="absolute left-1/2 -translate-x-1/2">
+          <img src={LOGO} alt="Les eaux de Carpis" className="h-9 sm:h-11" />
+        </a>
 
-          {/* Center — Logo */}
-          <div className="absolute left-1/2 -translate-x-1/2 text-center">
-            <div className="text-3xl sm:text-4xl italic" style={{ fontFamily: FONT, color: C.gold }}>
-              Les eaux de Carpis
-            </div>
-          </div>
-
-          {/* Right — CTA */}
-          <a
-            href="https://heyzine.com/flip-book/7ec149933d.html#page/1"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hidden sm:inline-block px-5 py-2 text-xs tracking-widest uppercase font-bold transition hover:opacity-90"
-            style={{ backgroundColor: C.gold, color: C.navy }}
-          >
-            LA BROCHURE
-          </a>
-        </div>
+        {/* Right — LA BROCHURE */}
+        <a
+          href="https://heyzine.com/flip-book/7ec149933d.html#page/1"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="px-5 py-2.5 text-[11px] tracking-[0.15em] font-medium text-white uppercase transition hover:opacity-90"
+          style={{ backgroundColor: C.gold }}
+        >
+          LA BROCHURE
+        </a>
       </header>
 
-      {/* ═══ Hero Section ═══ */}
-      <section className="relative overflow-hidden" style={{ minHeight: 420 }}>
-        {/* Background image with overlay */}
-        <div className="absolute inset-0">
-          <img
-            src={IMAGES[0]}
-            alt="Royal Tulip Korbous Bay"
-            className="w-full h-full object-cover"
-          />
-          <div className="absolute inset-0" style={{ background: `linear-gradient(to bottom, ${C.navy}dd 0%, ${C.navy}88 50%, ${C.navy}dd 100%)` }} />
-        </div>
-        <div className="relative z-10 max-w-[900px] mx-auto px-4 py-20 text-center">
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl leading-tight mb-4" style={{ fontFamily: FONT, color: C.gold }}>
+      {/* ═══ HERO — Full-screen Virtual Tour (replaces video) ═══ */}
+      <section className="relative w-full" style={{ height: "100vh" }}>
+        <iframe
+          src={TOUR_URL}
+          title="Visite Virtuelle 3D — Les Eaux de Carpis"
+          className="absolute inset-0 w-full h-full"
+          allowFullScreen
+          allow="xr-spatial-tracking"
+        />
+        {/* Dark overlay at bottom for text */}
+        <div className="absolute bottom-0 left-0 right-0 pointer-events-none" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 60%)", height: "40%" }} />
+        <div className="absolute bottom-16 left-8 sm:left-16 z-10 pointer-events-none">
+          <h1 className="text-4xl sm:text-5xl lg:text-[50px] text-white mb-2" style={{ fontFamily: FONT_HEADING }}>
             Les eaux de Carpis
           </h1>
-          <p className="text-lg sm:text-xl italic opacity-90 mb-2" style={{ fontFamily: FONT, color: C.text }}>
+          <p className="text-base sm:text-xl italic text-white/80" style={{ fontFamily: FONT_HEADING }}>
             l'alliance du thermalisme et de la thalassothérapie
           </p>
-          <div className="w-16 h-[2px] mx-auto my-6" style={{ backgroundColor: C.gold }} />
-          <p className="text-sm sm:text-base leading-relaxed max-w-[650px] mx-auto opacity-80">
-            Korbous... Quand tes eaux thermales et marines nous racontent 2000 ans d'histoire !
-          </p>
         </div>
       </section>
 
-      {/* ═══ Virtual Tour Section — PrimeSpace ═══ */}
-      <section className="py-16 px-4" style={{ backgroundColor: C.navy }}>
-        <div className="max-w-[1000px] mx-auto">
-          <div className="text-center mb-10">
-            <h2 className="text-3xl sm:text-4xl mb-3" style={{ fontFamily: FONT, color: C.gold }}>
-              Visite Virtuelle 3D
+      {/* ═══ Gold subtitle line ═══ */}
+      <section className="py-12 px-6 text-center">
+        <h2 className="text-xl sm:text-[26px] leading-relaxed" style={{ fontFamily: FONT_HEADING, color: C.gold }}>
+          Korbous... Quand tes eaux thermales et marines<br />nous racontent 2000 ans d'histoire !
+        </h2>
+      </section>
+
+      {/* ═══ La Tunisie, perle méditerranéenne — Two columns ═══ */}
+      <section className="max-w-[1100px] mx-auto px-6 py-10">
+        <div className="flex flex-col md:flex-row gap-10 items-start">
+          {/* Image left */}
+          <div className="w-full md:w-1/2">
+            <img src={POOL_IMG} alt="Piscine Korbous" className="w-full h-auto" />
+          </div>
+          {/* Text right */}
+          <div className="w-full md:w-1/2">
+            <h2 className="text-3xl sm:text-[38px] leading-tight mb-6" style={{ fontFamily: FONT_HEADING, color: C.gold }}>
+              La Tunisie, perle<br />méditerranéenne !
             </h2>
-            <p className="text-sm opacity-70">Explorez nos espaces comme si vous y étiez — propulsé par <span className="font-bold" style={{ color: C.gold }}>PrimeSpace</span></p>
-          </div>
-          <div className="rounded-lg overflow-hidden shadow-2xl" style={{ border: `1px solid ${C.border}` }}>
-            <div className="relative pb-[80vh] sm:pb-[56.25%]">
-              <iframe
-                src={TOUR_URL}
-                title="Visite Virtuelle 3D — Les Eaux de Carpis"
-                className="absolute inset-0 w-full h-full"
-                allowFullScreen
-                allow="xr-spatial-tracking"
-              />
-            </div>
-            <div className="px-4 py-3 flex items-center justify-between" style={{ backgroundColor: C.navyLight }}>
-              <p className="text-xs opacity-60">Naviguez librement dans l'espace 3D</p>
-              <a href={TOUR_URL} target="_blank" rel="noopener noreferrer" className="text-xs font-bold px-4 py-1.5 rounded transition hover:opacity-90" style={{ backgroundColor: C.gold, color: C.navy }}>
-                Plein écran
-              </a>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ═══ About the Hotel ═══ */}
-      <section className="py-16 px-4" style={{ backgroundColor: C.navyLight }}>
-        <div className="max-w-[900px] mx-auto text-center">
-          <p className="text-xs tracking-[0.3em] uppercase mb-3" style={{ color: C.gold }}>ROYAL TULIP KORBOUS BAY</p>
-          <h2 className="text-3xl sm:text-4xl mb-6" style={{ fontFamily: FONT, color: C.gold }}>
-            Thermes & Thalasso
-          </h2>
-          <p className="text-sm sm:text-base leading-relaxed opacity-80 mb-6">
-            Ouvert en 2022, le Royal Tulip Korbous Bay Thalasso & Springs a été bâti dans un site spectaculaire, encore préservé. Son design contemporain et raffiné abrite 160 chambres et suites ainsi que trois villas privées. Vue mer ou montagne : le décor change au fil du jour, pour des levers et couchers de soleil inoubliables.
-          </p>
-          <p className="text-sm sm:text-base leading-relaxed opacity-80">
-            L'attention portée aux détails et la Conciergerie «Clefs d'Or» confirment le positionnement haut de gamme de l'établissement et garantissent une expérience personnalisée, du séjour bien-être à l'escapade découverte.
-          </p>
-          <div className="flex items-center justify-center gap-8 mt-10 text-center">
-            <div>
-              <p className="text-3xl font-bold" style={{ fontFamily: FONT, color: C.gold }}>160</p>
-              <p className="text-xs uppercase tracking-wider opacity-60 mt-1">Chambres & Suites</p>
-            </div>
-            <div className="w-px h-12" style={{ backgroundColor: C.border }} />
-            <div>
-              <p className="text-3xl font-bold" style={{ fontFamily: FONT, color: C.gold }}>3 675</p>
-              <p className="text-xs uppercase tracking-wider opacity-60 mt-1">m² de Spa</p>
-            </div>
-            <div className="w-px h-12" style={{ backgroundColor: C.border }} />
-            <div>
-              <p className="text-3xl font-bold" style={{ fontFamily: FONT, color: C.gold }}>5★</p>
-              <p className="text-xs uppercase tracking-wider opacity-60 mt-1">Classification</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ═══ Image Gallery ═══ */}
-      <section className="py-16 px-4" style={{ backgroundColor: C.navy }}>
-        <div className="max-w-[1000px] mx-auto">
-          <div className="text-center mb-8">
-            <h2 className="text-3xl" style={{ fontFamily: FONT, color: C.gold }}>Galerie</h2>
-          </div>
-          <div className="relative rounded-lg overflow-hidden" style={{ height: 420 }}>
-            <img
-              src={IMAGES[imgIdx]}
-              alt="Royal Tulip Korbous"
-              className="w-full h-full object-cover cursor-pointer"
-              onClick={() => setLightbox(imgIdx)}
-            />
-            <button onClick={prev} className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full flex items-center justify-center transition hover:opacity-100 opacity-70" style={{ backgroundColor: `${C.navy}cc` }}>
-              <ChevronLeft className="w-5 h-5" style={{ color: C.gold }} />
-            </button>
-            <button onClick={next} className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full flex items-center justify-center transition hover:opacity-100 opacity-70" style={{ backgroundColor: `${C.navy}cc` }}>
-              <ChevronRight className="w-5 h-5" style={{ color: C.gold }} />
-            </button>
-          </div>
-          <div className="flex gap-2 mt-3 overflow-x-auto">
-            {IMAGES.map((img, i) => (
-              <img
-                key={i}
-                src={img}
-                alt=""
-                className="w-[120px] h-[75px] object-cover rounded cursor-pointer flex-shrink-0 transition"
-                style={{ border: i === imgIdx ? `2px solid ${C.gold}` : "2px solid transparent", opacity: i === imgIdx ? 1 : 0.6 }}
-                onClick={() => setImgIdx(i)}
-              />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ═══ Les Univers / Spa Spaces ═══ */}
-      <section className="py-16 px-4" style={{ backgroundColor: C.navyLight }}>
-        <div className="max-w-[1000px] mx-auto">
-          <div className="text-center mb-10">
-            <h2 className="text-3xl sm:text-4xl mb-3" style={{ fontFamily: FONT, color: C.gold }}>
-              Les eaux de Carpis & ses univers
-            </h2>
-            <p className="text-sm opacity-70 max-w-[600px] mx-auto">
-              Les eaux de Carpis couvre une superficie de 3 675 m² répartis sur quatre étages, dédié au bien-être et à l'expérience.
+            <p className="text-sm leading-[1.8] mb-4" style={{ color: C.text }}>
+              Le village de Korbous se love au pied d'un massif montagneux qui domine le somptueux golfe de Tunis, dans un paysage naturel rare, digne des plus belles baies de la Méditerranée.
             </p>
+            <p className="text-sm leading-[1.8] mb-8" style={{ color: C.text }}>
+              C'est dans ce décor majestueux que jaillissent des profondeurs de la terre des eaux chaudes réputées pour leurs vertus depuis l'ère carthaginoise et romaine : les sources de Carpis, nom antique de Korbous.
+            </p>
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-[1px]" style={{ backgroundColor: C.dark }} />
+              <span className="text-xs tracking-[0.2em] uppercase font-medium cursor-pointer hover:opacity-70 transition" style={{ color: C.dark }}>LA DESTINATION</span>
+            </div>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        </div>
+      </section>
+
+      {/* ═══ Les eaux de Carpis & ses univers ═══ */}
+      <section className="py-16 px-6">
+        <div className="max-w-[1100px] mx-auto text-center mb-6">
+          <h2 className="text-3xl sm:text-[40px] leading-tight mb-4" style={{ fontFamily: FONT_HEADING, color: C.gold }}>
+            Les eaux de Carpis<br />& ses univers
+          </h2>
+          <p className="text-sm max-w-[620px] mx-auto leading-[1.8]" style={{ color: C.text }}>
+            Les eaux de Carpis couvre une superficie de 3675 m² répartis sur quatre étages. Il dispose de son propre ascenseur et est accessible directement depuis les chambres de l'hôtel.
+          </p>
+        </div>
+        <div className="max-w-[1100px] mx-auto mb-8">
+          <p className="text-sm text-center max-w-[650px] mx-auto leading-[1.8]" style={{ color: C.text }}>
+            Carpis déploie plusieurs univers dédiés au bien-être et à l'expérience : spa et détente, activités sportives et nature, espaces de réunions et incentives. Des lieux complémentaires, pensés pour se ressourcer, se dépasser, se retrouver et vivre des moments uniques, dans un cadre harmonieux et inspirant.
+          </p>
+        </div>
+        {/* Horizontal carousel */}
+        <div className="relative max-w-[1100px] mx-auto">
+          <button onClick={() => scrollUnivers(-1)} className="absolute -left-4 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-white shadow-lg flex items-center justify-center hover:shadow-xl transition hidden md:flex">
+            <ChevronLeft className="w-5 h-5" style={{ color: C.dark }} />
+          </button>
+          <button onClick={() => scrollUnivers(1)} className="absolute -right-4 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-white shadow-lg flex items-center justify-center hover:shadow-xl transition hidden md:flex">
+            <ChevronRight className="w-5 h-5" style={{ color: C.dark }} />
+          </button>
+          <div ref={universRef} className="flex gap-4 overflow-x-auto scroll-smooth pb-4" style={{ scrollbarWidth: "none" }}>
             {UNIVERS.map((u, i) => (
-              <div
-                key={i}
-                className="rounded-lg p-6 text-center transition hover:scale-[1.02]"
-                style={{ backgroundColor: C.navy, border: `1px solid ${C.border}` }}
-              >
-                <div className="w-12 h-12 mx-auto mb-4 rounded-full flex items-center justify-center" style={{ backgroundColor: `${C.gold}22`, border: `1px solid ${C.gold}44` }}>
-                  <svg className="w-5 h-5" fill={C.gold} viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+              <div key={i} className="flex-shrink-0 w-[260px] sm:w-[300px] relative overflow-hidden cursor-pointer group">
+                <img src={u.img} alt={u.name} className="w-full h-[340px] object-cover transition group-hover:scale-105 duration-500" />
+                <div className="absolute bottom-0 left-0 right-0 p-4" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.6), transparent)" }}>
+                  <span className="text-white text-sm bg-black/30 px-3 py-1.5 backdrop-blur-sm">{u.name}</span>
                 </div>
-                <h3 className="text-base font-semibold mb-2" style={{ fontFamily: FONT, color: C.gold }}>{u.name}</h3>
-                <p className="text-xs opacity-60">{u.desc}</p>
               </div>
             ))}
           </div>
+          {/* Dots */}
+          <div className="flex justify-center gap-2 mt-4">
+            {[0, 1, 2, 3].map(i => (
+              <span key={i} className="w-2.5 h-2.5 rounded-full cursor-pointer transition" style={{ backgroundColor: i === 1 ? C.gold : C.border }} />
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* ═══ Destination Section ═══ */}
-      <section className="py-16 px-4" style={{ backgroundColor: C.navy }}>
-        <div className="max-w-[900px] mx-auto text-center">
-          <h2 className="text-3xl sm:text-4xl mb-6" style={{ fontFamily: FONT, color: C.gold }}>
-            La Tunisie, perle méditerranéenne !
+      {/* ═══ Divider ═══ */}
+      <div className="max-w-[1100px] mx-auto px-6">
+        <div className="h-[1px]" style={{ backgroundColor: C.border }} />
+      </div>
+
+      {/* ═══ ROYAL TULIP KORBOUS BAY — Two columns ═══ */}
+      <section className="max-w-[1100px] mx-auto px-6 py-16">
+        <div className="flex flex-col md:flex-row gap-10 items-center">
+          {/* Text left */}
+          <div className="w-full md:w-2/5">
+            <h2 className="text-[40px] sm:text-[50px] leading-[1.1] mb-1" style={{ fontFamily: FONT_HEADING, color: C.gold }}>
+              ROYAL TULIP<br />KORBOUS BAY
+            </h2>
+            <h3 className="text-[26px] sm:text-[32px] font-semibold mb-6 leading-tight" style={{ fontFamily: FONT_HEADING, color: C.dark }}>
+              THERMES &<br />THALASSO
+            </h3>
+            <p className="text-sm leading-[1.8] mb-4" style={{ color: C.text }}>
+              Ouvert en 2022, le Royal Tulip Korbous Bay Thalasso & Springs a été bâti dans un site spectaculaire, encore préservé. Son design contemporain et raffiné abrite 160 chambres et suites ainsi que trois villas privées. Vue mer ou montagne : le décor change au fil du jour, pour des levers et couchers de soleil inoubliables.
+            </p>
+            <p className="text-sm leading-[1.8] mb-8" style={{ color: C.text }}>
+              L'attention portée aux détails et la Conciergerie «Clefs d'Or» confirment le positionnement haut de gamme de l'établissement et garantissent une expérience personnalisée, du séjour bien-être à l'escapade découverte.
+            </p>
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-[1px]" style={{ backgroundColor: C.dark }} />
+              <span className="text-xs tracking-[0.2em] uppercase font-medium cursor-pointer hover:opacity-70 transition" style={{ color: C.dark }}>L'HÔTEL</span>
+            </div>
+          </div>
+          {/* Image right */}
+          <div className="w-full md:w-3/5">
+            <img src={HOTEL_AERIAL} alt="Royal Tulip Korbous Bay" className="w-full h-auto" />
+          </div>
+        </div>
+      </section>
+
+      {/* ═══ Dark navy section — "L'élégance d'un refuge cinq étoiles" ═══ */}
+      <section className="py-20 px-6" style={{ backgroundColor: C.navy }}>
+        <div className="max-w-[900px] mx-auto text-center mb-12">
+          <p className="text-sm tracking-[0.15em] mb-4" style={{ color: C.gold }}>Royal Tulip Korbous Bay</p>
+          <h2 className="text-3xl sm:text-4xl lg:text-[44px] leading-tight text-white" style={{ fontFamily: FONT_HEADING }}>
+            L'élégance d'un refuge cinq étoiles entre mer, sources thermales et montagne
           </h2>
-          <p className="text-sm sm:text-base leading-relaxed opacity-80 mb-4">
-            Le village de Korbous se love au pied d'un massif montagneux qui domine le somptueux golfe de Tunis, dans un paysage naturel rare, digne des plus belles baies de la Méditerranée.
-          </p>
-          <p className="text-sm sm:text-base leading-relaxed opacity-80">
-            C'est dans ce décor majestueux que jaillissent des profondeurs de la terre des eaux chaudes réputées pour leurs vertus depuis l'ère carthaginoise et romaine : les sources de Carpis, nom antique de Korbous.
+        </div>
+        <div className="max-w-[700px] mx-auto text-center mb-14">
+          <p className="text-sm leading-[1.8] text-white/80">
+            Niché entre la montagne et la Méditerranée, le <strong className="text-white">Royal Tulip Korbous Bay</strong> incarne l'élégance d'un refuge cinq étoiles dédié au bien-être et à l'art de vivre. Idéalement situé au cœur d'un paysage naturel d'exception, l'hôtel propose <strong className="text-white">127 chambres, 33 suites et 3 villas avec piscine privative</strong>, pour la plupart ouvertes sur la mer. Chaque hébergement a été pensé comme un cocon de confort et de sérénité, alliant raffinement, intimité et services haut de gamme, afin d'offrir une expérience de séjour unique, entre détente absolue et horizon infini.
           </p>
         </div>
+
+        {/* Numbered slider */}
+        <div className="max-w-[900px] mx-auto">
+          <div className="flex items-end gap-4 mb-6">
+            {SLIDES.map((s, i) => (
+              <button
+                key={i}
+                onClick={() => setSlideIdx(i)}
+                className="transition-all duration-300"
+                style={{
+                  opacity: slideIdx === i ? 1 : 0.25,
+                  fontFamily: FONT_HEADING,
+                  fontSize: slideIdx === i ? 70 : 45,
+                  color: slideIdx === i ? C.gold : "rgba(255,255,255,0.5)",
+                  lineHeight: 1,
+                }}
+              >
+                {s.num}
+              </button>
+            ))}
+          </div>
+          <div className="relative overflow-hidden">
+            <img src={SLIDES[slideIdx].img} alt={SLIDES[slideIdx].title} className="w-full h-[280px] sm:h-[400px] object-cover transition-all duration-500" />
+            <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-8" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.7), transparent)" }}>
+              <h3 className="text-2xl sm:text-3xl text-white" style={{ fontFamily: FONT_HEADING }}>
+                {SLIDES[slideIdx].title}
+              </h3>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══ "Powered by PrimeSpace" ═══ */}
+      <section className="py-10 px-6 text-center" style={{ backgroundColor: C.offWhite }}>
+        <p className="text-[11px] tracking-[0.2em] uppercase mb-2" style={{ color: C.lightText }}>Visite virtuelle propulsée par</p>
+        <p className="text-2xl italic" style={{ fontFamily: FONT_HEADING, color: C.gold }}>PrimeSpace</p>
       </section>
 
       {/* ═══ Contact Section ═══ */}
-      <section className="py-16 px-4" style={{ backgroundColor: C.navyLight }}>
-        <div className="max-w-[900px] mx-auto">
-          <h2 className="text-3xl text-center mb-10" style={{ fontFamily: FONT, color: C.gold }}>Contactez-nous</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-            <div className="space-y-6">
+      <section className="py-16 px-6" style={{ backgroundColor: C.white }}>
+        <div className="max-w-[1000px] mx-auto">
+          <h2 className="text-3xl sm:text-[38px] mb-12" style={{ fontFamily: FONT_HEADING, color: C.dark }}>Contactez-nous</h2>
+          <div className="flex flex-col md:flex-row gap-16">
+            {/* Form left */}
+            <div className="w-full md:w-1/2 space-y-6">
               <div>
-                <p className="text-xs uppercase tracking-wider mb-1" style={{ color: C.gold }}>Notre adresse</p>
-                <p className="text-sm opacity-80">Aïn Oktor, 8041 Soliman, Tunisie</p>
-              </div>
-              <div>
-                <p className="text-xs uppercase tracking-wider mb-1" style={{ color: C.gold }}>Contact</p>
-                <p className="text-sm opacity-80">directrice.thalasso@shpp.com.tn</p>
-                <p className="text-sm opacity-80">Tel. +216 98 184 160</p>
+                <label className="block text-[13px] font-medium mb-2" style={{ color: C.dark }}>Your name</label>
+                <input type="text" className="w-full border-b bg-transparent py-2 text-sm outline-none" style={{ borderColor: C.border, color: C.dark }} />
               </div>
               <div>
-                <p className="text-xs uppercase tracking-wider mb-1" style={{ color: C.gold }}>Réservation</p>
-                <p className="text-sm opacity-80">Tel. +216 98 184 166</p>
-                <p className="text-sm opacity-80">reservation@royaltulipkorbous.com</p>
+                <label className="block text-[13px] font-medium mb-2" style={{ color: C.dark }}>Your email</label>
+                <input type="email" className="w-full border-b bg-transparent py-2 text-sm outline-none" style={{ borderColor: C.border, color: C.dark }} />
               </div>
-              <div className="flex gap-3 pt-2">
-                <a href="https://www.facebook.com" target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-full flex items-center justify-center transition hover:opacity-80" style={{ backgroundColor: C.gold }}>
-                  <svg className="w-4 h-4" fill={C.navy} viewBox="0 0 24 24"><path d="M18.77 7.46H14.5v-1.9c0-.9.6-1.1 1-1.1h3V.5h-4.33C10.24.5 9.5 3.44 9.5 5.32v2.15h-3v4h3v12h5v-12h3.85l.42-4z"/></svg>
-                </a>
-                <a href="https://www.instagram.com" target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-full flex items-center justify-center transition hover:opacity-80" style={{ backgroundColor: C.gold }}>
-                  <svg className="w-4 h-4" fill={C.navy} viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
-                </a>
-                <a href="https://www.youtube.com" target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-full flex items-center justify-center transition hover:opacity-80" style={{ backgroundColor: C.gold }}>
-                  <svg className="w-4 h-4" fill={C.navy} viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 00-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 00.502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 002.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 002.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
-                </a>
+              <div>
+                <label className="block text-[13px] font-medium mb-2" style={{ color: C.dark }}>Subject</label>
+                <input type="text" className="w-full border-b bg-transparent py-2 text-sm outline-none" style={{ borderColor: C.border, color: C.dark }} />
               </div>
-            </div>
-            <div className="space-y-4">
-              <input type="text" placeholder="Votre nom" className="w-full bg-transparent border-b px-0 py-3 text-sm outline-none placeholder:opacity-50" style={{ borderColor: C.border, color: C.text }} />
-              <input type="email" placeholder="Votre email" className="w-full bg-transparent border-b px-0 py-3 text-sm outline-none placeholder:opacity-50" style={{ borderColor: C.border, color: C.text }} />
-              <input type="text" placeholder="Sujet" className="w-full bg-transparent border-b px-0 py-3 text-sm outline-none placeholder:opacity-50" style={{ borderColor: C.border, color: C.text }} />
-              <textarea placeholder="Votre message (optionnel)" rows={3} className="w-full bg-transparent border-b px-0 py-3 text-sm outline-none resize-none placeholder:opacity-50" style={{ borderColor: C.border, color: C.text }} />
-              <button className="mt-2 px-8 py-3 text-xs font-bold tracking-widest uppercase transition hover:opacity-90" style={{ backgroundColor: C.gold, color: C.navy }}>
-                Envoyer
+              <div>
+                <label className="block text-[13px] font-medium mb-2" style={{ color: C.dark }}>Your message (optional)</label>
+                <textarea rows={3} className="w-full border-b bg-transparent py-2 text-sm outline-none resize-none" style={{ borderColor: C.border, color: C.dark }} />
+              </div>
+              <button className="px-8 py-3.5 text-[11px] tracking-[0.15em] uppercase font-medium text-white transition hover:opacity-90 mt-2" style={{ backgroundColor: C.gold }}>
+                Submit
               </button>
+            </div>
+            {/* Info right */}
+            <div className="w-full md:w-1/2 space-y-8">
+              <div>
+                <p className="text-sm mb-1" style={{ color: C.gold }}>Notre adresse</p>
+                <p className="text-sm" style={{ color: C.dark }}>Aïn Oktor</p>
+                <p className="text-sm" style={{ color: C.dark }}>8041 Soliman, Tunisie</p>
+              </div>
+              <div>
+                <p className="text-sm mb-1" style={{ color: C.gold }}>Contact</p>
+                <p className="text-sm" style={{ color: C.dark }}>directrice.thalasso@shpp.com.tn</p>
+                <p className="text-sm" style={{ color: C.dark }}>Tel. +216 98 184 160</p>
+              </div>
+              <div>
+                <p className="text-sm mb-1" style={{ color: C.gold }}>Réservation</p>
+                <p className="text-sm" style={{ color: C.dark }}>Tel. +216 98 184 166</p>
+                <p className="text-sm" style={{ color: C.dark }}>reservation @royaltulipkorbous .com</p>
+              </div>
+              <div>
+                <p className="text-sm mb-3" style={{ color: C.gold }}>Suivez-nous</p>
+                <div className="flex gap-3">
+                  {["f", "✈", "▶", "📷"].map((icon, i) => (
+                    <span key={i} className="w-11 h-11 rounded-full flex items-center justify-center text-white text-sm cursor-pointer transition hover:opacity-80" style={{ backgroundColor: C.gold }}>
+                      {icon}
+                    </span>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
       {/* ═══ Footer ═══ */}
-      <footer className="border-t py-8 px-4" style={{ borderColor: C.border, backgroundColor: C.navy }}>
+      <footer className="border-t py-8 px-6" style={{ borderColor: C.border }}>
         <div className="max-w-[1000px] mx-auto">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <p className="text-xs opacity-50">© LES EAUX DE CARPIS 2026</p>
-            <div className="flex items-center gap-4 text-xs opacity-50">
-              <span>Les eaux de Carpis</span>
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6">
+            <p className="text-xs" style={{ color: C.dark }}>© LES EAUX DE CARPIS 2026</p>
+            <div className="flex items-center gap-2 text-xs flex-wrap justify-center" style={{ color: C.text }}>
+              <span style={{ fontFamily: FONT_HEADING, color: C.gold }}>Les eaux de Carpis</span>
               <span>|</span>
               <span>directrice.thalasso@shpp.com.tn</span>
               <span>|</span>
               <span>Mob. +216 98 184 160</span>
             </div>
           </div>
-          <div className="flex items-center justify-center gap-8 mt-6">
-            <span className="text-sm tracking-wider uppercase" style={{ fontFamily: FONT, color: C.gold, opacity: 0.7 }}>Royal Tulip</span>
-            <span className="text-sm tracking-wider uppercase" style={{ fontFamily: FONT, color: C.gold, opacity: 0.7 }}>Cinq Mondes</span>
-            <span className="text-sm tracking-wider uppercase" style={{ fontFamily: FONT, color: C.gold, opacity: 0.7 }}>Amarante</span>
+          <div className="border-t pt-6 flex items-center justify-center gap-10 flex-wrap" style={{ borderColor: C.border }}>
+            <div className="text-center">
+              <p className="text-[11px] tracking-[0.12em] uppercase font-medium" style={{ color: C.dark }}>ROYAL TULIP</p>
+              <p className="text-[9px] tracking-wider" style={{ color: C.text }}>KORBOUS BAY HOTEL</p>
+              <p className="text-[8px]" style={{ color: C.text }}>THERMES & THALASSO</p>
+            </div>
+            <div className="text-center">
+              <p className="text-[12px] tracking-[0.1em]" style={{ color: C.dark }}>CINQ MONDES</p>
+              <p className="text-[9px]" style={{ color: C.text }}>PARIS</p>
+            </div>
+            <div className="text-center">
+              <p className="text-[13px] tracking-wider uppercase" style={{ fontFamily: FONT_HEADING, color: C.dark }}>AMARANTE</p>
+            </div>
           </div>
+          <p className="text-center text-[11px] mt-6" style={{ color: C.lightText }}>
+            Powered by <a href="https://antagency.net/" target="_blank" rel="noopener noreferrer" className="underline hover:no-underline">Ant Agency</a>
+          </p>
         </div>
       </footer>
     </div>
