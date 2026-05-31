@@ -18,7 +18,8 @@ const C = {
 const FONT_HEADING = `'Cormorant Garamond', 'Georgia', serif`;
 const FONT_BODY = `'Inter', 'Segoe UI', Arial, sans-serif`;
 
-const TOUR_URL = "https://my.matterport.com/show?play=1&lang=en-US&m=paAemusufeL";
+const TOUR_URL = "/view/the-ritz-carlton-istanbul-spa-floor";
+const YOUTUBE_ID = "DpF6n8ChZn4";
 
 const LOGO = "https://eauxdecarpis.com/wp-content/uploads/2026/01/Logo-Carpis-Fn-white.png";
 const POOL_IMG = "https://eauxdecarpis.com/wp-content/uploads/2026/01/Photo-Piscine-Korbus-2026.jpg";
@@ -98,14 +99,15 @@ export default function TulipKorbousDemo() {
         </a>
       </header>
 
-      {/* ═══ HERO — Full-screen Virtual Tour (replaces video) ═══ */}
+      {/* ═══ HERO — Full-screen YouTube video like original ═══ */}
       <section className="relative w-full" style={{ height: "100vh" }}>
         <iframe
-          src={TOUR_URL}
-          title="Visite Virtuelle 3D — Les Eaux de Carpis"
+          src={`https://www.youtube.com/embed/${YOUTUBE_ID}?autoplay=1&mute=1&loop=1&playlist=${YOUTUBE_ID}&controls=0&showinfo=0&rel=0&modestbranding=1&playsinline=1`}
+          title="Les Eaux de Carpis"
           className="absolute inset-0 w-full h-full"
+          style={{ pointerEvents: "none" }}
           allowFullScreen
-          allow="xr-spatial-tracking"
+          allow="autoplay; encrypted-media"
         />
         {/* Dark overlay at bottom for text */}
         <div className="absolute bottom-0 left-0 right-0 pointer-events-none" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 60%)", height: "40%" }} />
@@ -116,6 +118,34 @@ export default function TulipKorbousDemo() {
           <p className="text-base sm:text-xl italic text-white/80" style={{ fontFamily: FONT_HEADING }}>
             l'alliance du thermalisme et de la thalassothérapie
           </p>
+        </div>
+      </section>
+
+      {/* ═══ Virtual Tour 3D — PrimeSpace ═══ */}
+      <section className="py-16 px-6" style={{ backgroundColor: C.navyDark }}>
+        <div className="max-w-[1100px] mx-auto">
+          <div className="text-center mb-8">
+            <p className="text-[11px] tracking-[0.2em] uppercase mb-2" style={{ color: C.gold }}>Visite Virtuelle 3D</p>
+            <h2 className="text-3xl sm:text-[40px] text-white mb-3" style={{ fontFamily: FONT_HEADING }}>
+              Explorez nos espaces
+            </h2>
+            <p className="text-sm text-white/60">Propulsé par <span style={{ color: C.gold }}>PrimeSpace</span></p>
+          </div>
+          <div className="overflow-hidden" style={{ border: `1px solid ${C.gold}33` }}>
+            <div className="relative pb-[80vh] sm:pb-[56.25%]">
+              <iframe
+                src={TOUR_URL}
+                title="Visite Virtuelle 3D — Les Eaux de Carpis"
+                className="absolute inset-0 w-full h-full"
+                allowFullScreen
+                allow="xr-spatial-tracking"
+              />
+            </div>
+          </div>
+          <div className="flex items-center justify-between mt-3">
+            <p className="text-xs text-white/40">Naviguez librement dans l'espace 3D</p>
+            <a href={TOUR_URL} target="_blank" rel="noopener noreferrer" className="text-xs px-5 py-2 text-white tracking-wider uppercase transition hover:opacity-90" style={{ backgroundColor: C.gold }}>Plein écran</a>
+          </div>
         </div>
       </section>
 
