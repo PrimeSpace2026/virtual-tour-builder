@@ -38,6 +38,7 @@ import KabylisDemo from "./pages/KabylisDemo";
 import SuperhostDemo from "./pages/SuperhostDemo";
 import TunRoomsDemo from "./pages/TunRoomsDemo";
 import TravelTodoDemo from "./pages/TravelTodoDemo";
+import TulipKorbousDemo from "./pages/TulipKorbousDemo";
 import AddTourForm from "@/components/AddTourForm";
 
 const ShareRedirect = () => {
@@ -88,6 +89,7 @@ const App = () => (
               <Route path="/demo/superhost" element={<SuperhostDemo />} />
               <Route path="/demo/tunrooms" element={<TunRoomsDemo />} />
               <Route path="/demo/traveltodo" element={<TravelTodoDemo />} />
+              <Route path="/demo/tulip-korbous" element={<TulipKorbousDemo />} />
               <Route path="/admin/add-tour-test" element={<AddTourForm />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
